@@ -57,7 +57,7 @@ export default function Project({ user }) {
   const handleDeleteProject = async () => {
     if (!confirm('Are you sure you want to delete this project?')) return;
     try {
-      await fetch(`http://localhost:3001/api/projects/${id}`, { method: 'DELETE' });
+      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/projects/${id}`, { method: 'DELETE' });
       navigate('/');
     } catch (err) {
       console.error('Failed to delete project', err);
@@ -68,7 +68,7 @@ export default function Project({ user }) {
     e.stopPropagation();
     if (!confirm('Are you sure you want to delete this track?')) return;
     try {
-      await fetch(`http://localhost:3001/api/tracks/${trackId}`, { method: 'DELETE' });
+      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/tracks/${trackId}`, { method: 'DELETE' });
       setTracks(tracks.filter(t => t.id !== trackId));
       if (currentTrack?.id === trackId) {
         setIsPlaying(false);
@@ -239,6 +239,8 @@ export default function Project({ user }) {
         onClose={() => setIsCoverPickerOpen(false)}
         onSelect={handleCoverSelect}
         projectId={id}
+        onRefresh={fetchWorkspace}
+        projectCoverUrl={project?.coverArt}
       />
     </div>
   );

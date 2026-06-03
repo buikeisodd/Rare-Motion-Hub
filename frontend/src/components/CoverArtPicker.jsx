@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, UploadCloud, Image as ImageIcon, Trash2, Loader2 } from 'lucide-react';
 
-export default function CoverArtPicker({ isOpen, onClose, onSelect, projectId }) {
+export default function CoverArtPicker({ isOpen, onClose, onSelect, projectId, onRefresh, projectCoverUrl }) {
   const [covers, setCovers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -57,8 +57,13 @@ export default function CoverArtPicker({ isOpen, onClose, onSelect, projectId })
     if (!confirm('Delete this cover art?')) return;
     
     try {
-      await fetch(`http://localhost:3001/api/covers/${id}`, { method: 'DELETE' });
+      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/covers/${id}`, { method: 'DELETE' });
+      const deletedCover = covers.find(c => c.id === id);
       setCovers(covers.filter(c => c.id !== id));
+      if (deletedCover && deletedCover.url === projectCoverUrl) {
+        // clear project's cover if it was the deleted one
+        onRefresh();
+      }
     } catch (err) {
       console.error('Delete failed', err);
     }
@@ -66,7 +71,7 @@ export default function CoverArtPicker({ isOpen, onClose, onSelect, projectId })
 
   const handleSelect = async (url) => {
     try {
-      await fetch(`http://localhost:3001/api/projects/${projectId}/cover`, {
+      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/projects/${projectId}/cover`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ coverUrl: url })
