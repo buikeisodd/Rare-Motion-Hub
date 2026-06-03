@@ -1,0 +1,6 @@
+node_modules/
+backend/uploads/
+backend/covers/
+.env
+dist/
+.DS_Store

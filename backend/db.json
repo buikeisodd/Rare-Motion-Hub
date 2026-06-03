@@ -1,0 +1,86 @@
+{
+  "users": [
+    {
+      "id": "1",
+      "name": "étrange",
+      "email": "buikeisodd@yahoo.com"
+    },
+    {
+      "id": "2",
+      "name": "sholabomii",
+      "email": "sholabomii@placeholder.com"
+    },
+    {
+      "id": "3",
+      "name": "aderoju",
+      "email": "aderoju@placeholder.com"
+    },
+    {
+      "id": "4",
+      "name": "quarter21",
+      "email": "quarter21@placeholder.com"
+    }
+  ],
+  "folders": [],
+  "projects": [
+    {
+      "id": "1780481527585",
+      "name": "GG",
+      "userId": "1",
+      "folderId": null,
+      "coverArt": "http://localhost:3001/covers/cover-1780481579232.jpeg",
+      "createdAt": "2026-06-03T10:12:07.585Z"
+    }
+  ],
+  "tracks": [
+    {
+      "id": "1780481078208",
+      "projectId": "1780481011305",
+      "title": "beki -105",
+      "artist": "Buike",
+      "producer": "etrange",
+      "filename": "1780481077752-654467613.wav",
+      "url": "http://localhost:3001/uploads/1780481077752-654467613.wav",
+      "uploader": {
+        "id": "1",
+        "name": "étrange"
+      },
+      "uploadedAt": "2026-06-03T10:04:38.208Z"
+    },
+    {
+      "id": "1780481266057",
+      "projectId": "1780481011305",
+      "title": "KILLERTUNES_108_percussion_loop_shabalil_01",
+      "artist": "killertunes",
+      "producer": "killertunes",
+      "filename": "1780481265978-938734513.wav",
+      "url": "http://localhost:3001/uploads/1780481265978-938734513.wav",
+      "uploader": {
+        "id": "1",
+        "name": "étrange"
+      },
+      "uploadedAt": "2026-06-03T10:07:46.057Z"
+    },
+    {
+      "id": "1780481551125",
+      "projectId": "1780481527585",
+      "title": "beki -105",
+      "artist": "EMMANUEL",
+      "producer": "EMMANUEL",
+      "filename": "1780481550742-663326978.wav",
+      "url": "http://localhost:3001/uploads/1780481550742-663326978.wav",
+      "uploader": {
+        "id": "1",
+        "name": "étrange"
+      },
+      "uploadedAt": "2026-06-03T10:12:31.125Z"
+    }
+  ],
+  "coverArts": [
+    {
+      "id": "1780481579448",
+      "url": "http://localhost:3001/covers/cover-1780481579232.jpeg",
+      "uploadedAt": "2026-06-03T10:12:59.448Z"
+    }
+  ]
+}

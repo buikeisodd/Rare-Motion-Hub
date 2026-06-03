@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-primary-background text-primary-label font-sans antialiased selection:bg-highlight selection:text-white;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-shading backdrop-blur-md border border-border;
+  }
+  
+  .glass-hover {
+    @apply transition-colors duration-300 hover:bg-highlight;
+  }
+  
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
