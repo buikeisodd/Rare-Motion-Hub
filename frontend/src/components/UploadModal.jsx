@@ -59,7 +59,7 @@ export default function UploadModal({ isOpen, onClose, onSuccess, userId, projec
     if (projectId) formData.append('projectId', projectId);
 
     try {
-      const res = await fetch('http://localhost:3001/api/upload', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/upload`, {
         method: 'POST',
         body: formData,
       });

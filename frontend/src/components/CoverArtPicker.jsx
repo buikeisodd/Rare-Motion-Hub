@@ -15,7 +15,7 @@ export default function CoverArtPicker({ isOpen, onClose, onSelect, projectId })
 
   const fetchCovers = async () => {
     try {
-      const res = await fetch('http://localhost:3001/api/workspace');
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/workspace`);
       const data = await res.json();
       // Most recent first
       setCovers(data.coverArts.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt)) || []);
@@ -35,7 +35,7 @@ export default function CoverArtPicker({ isOpen, onClose, onSelect, projectId })
     formData.append('cover', file);
 
     try {
-      const res = await fetch('http://localhost:3001/api/upload-cover', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/upload-cover`, {
         method: 'POST',
         body: formData,
       });

@@ -79,7 +79,7 @@ export default function Dashboard({ user, onLogout }) {
 
   const fetchWorkspace = async () => {
     try {
-      const res = await fetch('http://localhost:3001/api/workspace');
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/workspace`);
       const data = await res.json();
       setWorkspace(data);
     } catch (err) {
@@ -96,7 +96,7 @@ export default function Dashboard({ user, onLogout }) {
   const createFolder = async () => {
     const name = prompt('Enter folder name:');
     if (!name) return;
-    const res = await fetch('http://localhost:3001/api/folders', {
+    const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/folders`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, userId: user.id })
@@ -108,7 +108,7 @@ export default function Dashboard({ user, onLogout }) {
   const createProject = async () => {
     const name = prompt('Enter project name:');
     if (!name) return;
-    const res = await fetch('http://localhost:3001/api/projects', {
+    const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/projects`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, userId: user.id })

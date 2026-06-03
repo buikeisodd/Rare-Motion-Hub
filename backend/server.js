@@ -5,7 +5,8 @@ const fs = require('fs');
 const path = require('path');
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
+const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 
 app.use(cors());
 app.use(express.json());
@@ -118,7 +119,7 @@ app.put('/api/projects/:id/cover', (req, res) => {
 app.post('/api/upload-cover', uploadCover.single('cover'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No image file uploaded' });
   const db = readDB();
-  const url = `http://localhost:${PORT}/covers/${req.file.filename}`;
+  const url = `${BASE_URL}/covers/${req.file.filename}`;
   const newCover = { id: Date.now().toString(), url, uploadedAt: new Date().toISOString() };
   db.coverArts.push(newCover);
   writeDB(db);
@@ -146,7 +147,7 @@ app.post('/api/upload', uploadTrack.single('track'), (req, res) => {
     artist: artist || '',
     producer: producer || '',
     filename: req.file.filename,
-    url: `http://localhost:${PORT}/uploads/${req.file.filename}`,
+    url: `${BASE_URL}/uploads/${req.file.filename}`,
     uploader: { id: uploader.id, name: uploader.name },
     uploadedAt: new Date().toISOString()
   };
