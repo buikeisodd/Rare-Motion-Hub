@@ -78,10 +78,11 @@ export default function AudioPlayer({ track, isPlaying, onPlayPause, onNext, onP
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.playbackRate = playbackRate;
-      // When changing HTML5 audio playback rate, it preserves pitch by default in most modern browsers.
-      // To ensure our PitchShift handles pitch independently, we let HTML5 Audio handle speed.
-      // We can also disable native pitch preservation if we wanted speed to affect pitch:
-      // audioRef.current.preservesPitch = false;
+      // Disable the browser's built-in pitch correction algorithm.
+      // It causes distortion at higher speeds. Tone.js PitchShift handles
+      // pitch correction cleanly, so we don't need the native one.
+      audioRef.current.preservesPitch = false;
+      audioRef.current.mozPreservesPitch = false; // Firefox fallback
     }
   }, [playbackRate]);
 
