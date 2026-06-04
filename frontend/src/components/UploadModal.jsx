@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { X, UploadCloud, Loader2, Music } from 'lucide-react';
+import { Check, X, UploadCloud, Loader2, Music } from 'lucide-react';
 
 export default function UploadModal({ isOpen, onClose, onSuccess, userId, projectId }) {
   const [file, setFile] = useState(null);
@@ -7,6 +7,8 @@ export default function UploadModal({ isOpen, onClose, onSuccess, userId, projec
   const [artist, setArtist] = useState('');
   const [producer, setProducer] = useState('');
   const [loading, setLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadComplete, setUploadComplete] = useState(false);
   const [error, setError] = useState('');
   const fileInputRef = useRef(null);
 
@@ -48,6 +50,8 @@ export default function UploadModal({ isOpen, onClose, onSuccess, userId, projec
     }
 
     setLoading(true);
+    setUploadComplete(false);
+    setUploadProgress(0);
     setError('');
 
     const formData = new FormData();
@@ -58,28 +62,42 @@ export default function UploadModal({ isOpen, onClose, onSuccess, userId, projec
     formData.append('userId', userId);
     if (projectId) formData.append('projectId', projectId);
 
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/upload`, {
-        method: 'POST',
-        body: formData,
-      });
+    const xhr = new XMLHttpRequest();
 
-      const data = await res.json();
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        setUploadProgress(Math.round((event.loaded / event.total) * 100));
+      }
+    };
 
-      if (res.ok) {
-        setFile(null);
-        setTitle('');
-        setArtist('');
-        setProducer('');
-        onSuccess(data.track);
+    xhr.onload = () => {
+      setLoading(false);
+      const data = JSON.parse(xhr.responseText || '{}');
+
+      if (xhr.status >= 200 && xhr.status < 300) {
+        setUploadProgress(100);
+        setUploadComplete(true);
+        window.setTimeout(() => {
+          setFile(null);
+          setTitle('');
+          setArtist('');
+          setProducer('');
+          setUploadProgress(0);
+          setUploadComplete(false);
+          onSuccess(data.track);
+        }, 650);
       } else {
         setError(data.error || 'Upload failed');
       }
-    } catch (err) {
-      setError('Could not connect to the server.');
-    } finally {
+    };
+
+    xhr.onerror = () => {
       setLoading(false);
-    }
+      setError('Could not connect to the server.');
+    };
+
+    xhr.open('POST', `${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/upload`);
+    xhr.send(formData);
   };
 
   return (
@@ -94,6 +112,7 @@ export default function UploadModal({ isOpen, onClose, onSuccess, userId, projec
       <div className="relative glass w-full max-w-lg rounded-3xl p-6 shadow-2xl animate-slide-up border-border border max-h-[90vh] overflow-y-auto">
         <button 
           onClick={onClose}
+          disabled={loading}
           className="absolute top-6 right-6 text-secondary-label hover:text-primary-label transition-colors"
         >
           <X className="w-5 h-5" />
@@ -186,12 +205,28 @@ export default function UploadModal({ isOpen, onClose, onSuccess, userId, projec
             </div>
           )}
 
+          {(loading || uploadComplete) && (
+            <div className="rounded-2xl bg-shading p-4 border border-border">
+              <div className="mb-3 flex items-center justify-between text-sm font-medium">
+                <span className="flex items-center gap-2">
+                  {uploadComplete ? <Check className="h-4 w-4 text-green-300" /> : <Loader2 className="h-4 w-4 animate-spin" />}
+                  {uploadComplete ? 'Uploaded' : 'Uploading track'}
+                </span>
+                <span>{uploadProgress}%</span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-primary-background">
+                <div className="h-full rounded-full bg-primary-label transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center justify-between pt-2">
             <span className="text-xs text-secondary-label">Timestamp will be auto-generated</span>
             <div className="flex gap-3">
               <button
                 type="button"
                 onClick={onClose}
+                disabled={loading}
                 className="px-5 py-2.5 text-sm font-medium rounded-xl hover:bg-shading transition-colors text-primary-label"
               >
                 Cancel
