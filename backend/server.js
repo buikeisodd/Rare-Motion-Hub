@@ -39,7 +39,9 @@ const uploadCover = multer({ storage: coverStorage });
 
 // --- AUTH ---
 app.post('/api/auth', (req, res) => {
-  const { email } = req.body;
+  const email = req.body.email?.trim();
+  if (!email) return res.status(400).json({ error: 'Email is required.' });
+
   const db = readDB();
   const user = db.users.find((u) => u.email.toLowerCase() === email.toLowerCase());
   if (user) res.json({ user });

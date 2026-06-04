@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Mail } from 'lucide-react';
+import heroImage from '../assets/hero.png';
 
 export default function Login({ onLogin }) {
   const [email, setEmail] = useState('');
@@ -25,7 +26,7 @@ export default function Login({ onLogin }) {
       } else {
         setError(data.error || 'Login failed');
       }
-    } catch (err) {
+    } catch {
       setError('Could not connect to the server. Make sure the backend is running.');
     } finally {
       setLoading(false);
@@ -33,51 +34,49 @@ export default function Login({ onLogin }) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-primary-background">
-      {/* Subtle background glow effect */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-white opacity-[0.02] rounded-full blur-[120px] pointer-events-none"></div>
+    <div className="min-h-screen bg-primary-background px-6 py-12 md:px-20 relative overflow-hidden">
+      <div className="text-3xl font-bold tracking-tighter text-primary-label">[untitled]</div>
 
-      <div className="z-10 w-full max-w-md p-8 animate-fade-in">
-        <div className="flex justify-center mb-12">
-          {/* Faux logo representation */}
-          <div className="text-3xl font-bold tracking-tighter text-primary-label">
-            [untitled]
-          </div>
+      <div className="mx-auto flex min-h-[calc(100vh-8rem)] w-full max-w-3xl flex-col items-center justify-center animate-fade-in">
+        <div className="mb-14 h-56 w-56 overflow-hidden rounded-[3rem] bg-shading border border-border shadow-2xl">
+          <img src={heroImage} alt="" className="h-full w-full object-cover" />
         </div>
 
-        <div className="glass rounded-3xl p-8 shadow-2xl">
-          <h2 className="text-xl font-medium mb-2 text-center">Welcome back</h2>
-          <p className="text-sm text-secondary-label text-center mb-8">
-            Enter your email to access your sacred place for work-in-progress music.
-          </p>
+        <h1 className="max-w-xl text-center text-4xl md:text-5xl font-semibold leading-tight tracking-normal mb-9">
+          A sacred place for your work-in-progress music
+        </h1>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email address"
-                className="w-full bg-shading border border-border rounded-xl px-4 py-3 text-primary-label placeholder:text-secondary-label focus:outline-none focus:ring-2 focus:ring-white/20 transition-all"
-                required
-              />
+        <form onSubmit={handleSubmit} className="w-full max-w-lg space-y-5">
+          <label className="relative block">
+            <Mail className="absolute left-8 top-1/2 h-5 w-5 -translate-y-1/2 text-secondary-label" />
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email address"
+              className="h-20 w-full rounded-full bg-shading border border-border pl-16 pr-8 text-center text-lg font-semibold text-primary-label placeholder:text-secondary-label focus:outline-none focus:ring-2 focus:ring-white/20 transition-all"
+              required
+            />
+          </label>
+
+          {error && (
+            <div className="text-red-300 text-sm text-center bg-red-400/10 py-3 rounded-full border border-red-300/10">
+              {error}
             </div>
-            
-            {error && (
-              <div className="text-red-400 text-sm text-center bg-red-400/10 py-2 rounded-lg">
-                {error}
-              </div>
-            )}
+          )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-primary-label text-primary-background font-medium rounded-xl px-4 py-3 hover:opacity-90 transition-opacity flex items-center justify-center disabled:opacity-70"
-            >
-              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Continue'}
-            </button>
-          </form>
-        </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex h-20 w-full items-center justify-center rounded-full bg-primary-label text-lg font-semibold text-primary-background transition-transform hover:scale-[1.01] disabled:opacity-70"
+          >
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Continue with email'}
+          </button>
+        </form>
+
+        <p className="mt-12 max-w-md text-center text-sm text-secondary-label">
+          By continuing you confirm that this email belongs to an approved [untitled] collaborator.
+        </p>
       </div>
     </div>
   );

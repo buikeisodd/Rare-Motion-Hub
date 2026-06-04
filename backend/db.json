@@ -2,7 +2,7 @@
   "users": [
     {
       "id": "1",
-      "name": "étrange",
+      "name": "etrange",
       "email": "buikeisodd@yahoo.com"
     },
     {
@@ -43,7 +43,7 @@
       "url": "http://localhost:3001/uploads/1780481077752-654467613.wav",
       "uploader": {
         "id": "1",
-        "name": "étrange"
+        "name": "etrange"
       },
       "uploadedAt": "2026-06-03T10:04:38.208Z"
     },
@@ -57,7 +57,7 @@
       "url": "http://localhost:3001/uploads/1780481265978-938734513.wav",
       "uploader": {
         "id": "1",
-        "name": "étrange"
+        "name": "etrange"
       },
       "uploadedAt": "2026-06-03T10:07:46.057Z"
     },
@@ -71,7 +71,7 @@
       "url": "http://localhost:3001/uploads/1780481550742-663326978.wav",
       "uploader": {
         "id": "1",
-        "name": "étrange"
+        "name": "etrange"
       },
       "uploadedAt": "2026-06-03T10:12:31.125Z"
     }
