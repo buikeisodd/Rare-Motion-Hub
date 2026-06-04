@@ -32,6 +32,7 @@ const ensureDBShape = (db) => {
   db.tracks ||= [];
   db.coverArts ||= [];
   db.notifications ||= [];
+  db.playEvents ||= [];
   return db;
 };
 const userExists = (db, userId) => db.users.some((user) => user.id === userId);
@@ -159,6 +160,7 @@ app.delete('/api/users/:id', (req, res) => {
   db.tracks = db.tracks.filter((track) => track.userId !== req.params.id && track.uploader?.id !== req.params.id);
   db.coverArts = db.coverArts.filter((cover) => cover.userId !== req.params.id);
   db.notifications = db.notifications.filter((notification) => notification.userId !== req.params.id && notification.actor?.id !== req.params.id);
+  db.playEvents = db.playEvents.filter((event) => event.ownerId !== req.params.id && event.actorId !== req.params.id);
   writeDB(db);
 
   removeDirIfExists(getUserDir(uploadDir, req.params.id));
@@ -312,6 +314,20 @@ app.post('/api/listen', (req, res) => {
   const folder = folderId ? db.folders.find((item) => item.id === folderId) : null;
   const track = db.tracks.find((item) => item.id === trackId);
   const ownerId = track?.sourceUserId || project?.sourceUserId || folder?.sourceUserId || project?.userId || folder?.userId;
+  if (ownerId && track) {
+    db.playEvents.push({
+      id: makeId(),
+      ownerId,
+      actorId: userId,
+      projectId: project?.id || null,
+      sourceProjectId: track.sourceProjectId || project?.sourceProjectId || project?.id || null,
+      folderId: folder?.id || null,
+      sourceFolderId: track.sourceFolderId || folder?.sourceFolderId || folder?.id || null,
+      trackId: track.id,
+      sourceTrackId: track.sourceTrackId || track.id,
+      createdAt: new Date().toISOString()
+    });
+  }
   notifyListen(db, { ownerId, actorId: userId, project, folder, track });
   writeDB(db);
   res.json({ success: true });
@@ -388,6 +404,63 @@ app.put('/api/projects/:id/cover', (req, res) => {
   db.projects[projIndex].coverArt = coverUrl;
   writeDB(db);
   res.json(db.projects[projIndex]);
+});
+
+app.get('/api/projects/:id/insights', (req, res) => {
+  const db = ensureDBShape(readDB());
+  const userId = requireUserId(req, res);
+  if (!userId) return;
+
+  const project = db.projects.find((item) => item.id === req.params.id && item.userId === userId);
+  if (!project) return res.status(404).json({ error: 'Project not found' });
+
+  const projectTracks = db.tracks.filter((track) => track.projectId === project.id);
+  const sourceProjectId = project.sourceProjectId || project.id;
+  const trackSourceIds = new Set(projectTracks.map((track) => track.sourceTrackId || track.id));
+  const playEvents = db.playEvents.filter((event) => (
+    event.ownerId === userId &&
+    (event.sourceProjectId === sourceProjectId || event.projectId === project.id || trackSourceIds.has(event.sourceTrackId || event.trackId))
+  ));
+
+  const byTrack = projectTracks.map((track) => {
+    const sourceTrackId = track.sourceTrackId || track.id;
+    const plays = playEvents.filter((event) => event.sourceTrackId === sourceTrackId || event.trackId === track.id).length;
+    return {
+      id: track.id,
+      title: track.title,
+      coverArt: project.coverArt,
+      plays
+    };
+  });
+
+  const listenerMap = new Map();
+  playEvents.forEach((event) => {
+    const user = db.users.find((item) => item.id === event.actorId);
+    const key = event.actorId || 'unknown';
+    const current = listenerMap.get(key) || {
+      id: key,
+      name: user?.name || 'Unknown listener',
+      avatarUrl: user?.avatarUrl || null,
+      plays: 0,
+      lastListenedAt: event.createdAt
+    };
+    current.plays += 1;
+    if (new Date(event.createdAt) > new Date(current.lastListenedAt)) current.lastListenedAt = event.createdAt;
+    listenerMap.set(key, current);
+  });
+
+  res.json({
+    project: {
+      id: project.id,
+      name: project.name,
+      coverArt: project.coverArt,
+      ownerName: db.users.find((user) => user.id === project.userId)?.name || '',
+      trackCount: projectTracks.length
+    },
+    totalPlays: playEvents.length,
+    byTrack,
+    byListener: Array.from(listenerMap.values()).sort((a, b) => b.plays - a.plays)
+  });
 });
 
 // --- COVERS ---

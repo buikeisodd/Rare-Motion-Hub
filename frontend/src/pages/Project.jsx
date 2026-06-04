@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, Image as ImageIcon, Link2, Lock, MoreHorizontal, Music, Play, Plus, Search, Trash2 } from 'lucide-react';
+import { BarChart3, ChevronLeft, Download, FileText, Image as ImageIcon, Link2, Lock, MoreHorizontal, Music, Play, Plus, Search, Trash2 } from 'lucide-react';
 import AudioPlayer from '../components/AudioPlayer';
 import UploadModal from '../components/UploadModal';
 import CoverArtPicker from '../components/CoverArtPicker';
@@ -18,6 +18,7 @@ export default function Project({ user }) {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isCoverPickerOpen, setIsCoverPickerOpen] = useState(false);
   const [shareStatus, setShareStatus] = useState('');
+  const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false);
 
   const fetchWorkspace = async ({ showLoading = false } = {}) => {
     if (showLoading) setLoading(true);
@@ -112,6 +113,22 @@ export default function Project({ user }) {
     }
   };
 
+  const handleExport = () => {
+    const payload = {
+      project,
+      tracks,
+      exportedAt: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `${project.name || 'project'}-export.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    setIsProjectMenuOpen(false);
+  };
+
   const handleCopyShareLink = async () => {
     const shareUrl = `${window.location.origin}/shared/project/${id}`;
     try {
@@ -144,9 +161,32 @@ export default function Project({ user }) {
           <button className="grid h-16 w-16 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Search project">
             <Search className="w-7 h-7" />
           </button>
-          <button onClick={handleDeleteProject} className="grid h-16 w-16 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Delete project">
-            <MoreHorizontal className="w-7 h-7" />
-          </button>
+          <div className="relative">
+            <button onClick={() => setIsProjectMenuOpen((open) => !open)} className="grid h-16 w-16 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Project options">
+              <MoreHorizontal className="w-7 h-7" />
+            </button>
+            {isProjectMenuOpen && (
+              <div className="absolute right-0 top-20 z-40 w-72 rounded-[1.5rem] border border-border bg-[#191919] p-4 shadow-2xl">
+                <button onClick={() => navigate(`/project/${id}/insights`)} className="flex w-full items-center gap-5 rounded-xl px-4 py-4 text-left text-xl font-bold hover:bg-highlight">
+                  <BarChart3 className="h-6 w-6" />
+                  Insights
+                </button>
+                <button onClick={() => { alert('Notes are coming soon.'); setIsProjectMenuOpen(false); }} className="flex w-full items-center gap-5 rounded-xl px-4 py-4 text-left text-xl font-bold hover:bg-highlight">
+                  <FileText className="h-6 w-6" />
+                  Notes
+                </button>
+                <button onClick={handleExport} className="flex w-full items-center gap-5 rounded-xl px-4 py-4 text-left text-xl font-bold hover:bg-highlight">
+                  <Download className="h-6 w-6" />
+                  Export
+                </button>
+                <div className="my-3 border-t border-border" />
+                <button onClick={handleDeleteProject} className="flex w-full items-center gap-5 rounded-xl px-4 py-4 text-left text-xl font-bold text-red-500 hover:bg-red-500/10">
+                  <Trash2 className="h-6 w-6" />
+                  Delete project
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
