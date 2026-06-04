@@ -4,3 +4,4 @@ backend/covers/
 .env
 dist/
 .DS_Store
+.db.json
