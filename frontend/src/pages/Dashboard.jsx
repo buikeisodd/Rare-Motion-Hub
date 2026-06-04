@@ -59,7 +59,7 @@ export default function Dashboard({ user, onLogout }) {
 
     async function loadWorkspace() {
       try {
-        const res = await fetch(`${apiUrl}/api/workspace`);
+        const res = await fetch(`${apiUrl}/api/workspace?userId=${encodeURIComponent(user.id)}`);
         const data = await res.json();
         if (!cancelled) {
           setWorkspace({
@@ -80,7 +80,7 @@ export default function Dashboard({ user, onLogout }) {
     return () => {
       cancelled = true;
     };
-  }, [apiUrl]);
+  }, [apiUrl, user.id]);
 
   const createFolder = async () => {
     const name = prompt('Enter folder name:');

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Activity, FastForward, ListMusic, Pause, Play, Repeat2, Rewind, Shuffle, SkipBack, SkipForward, Volume2, VolumeX, X } from 'lucide-react';
+import { Activity, FastForward, ListMusic, Pause, Play, Repeat2, Shuffle, SkipBack, SkipForward, Volume2, VolumeX, X } from 'lucide-react';
 
 export default function AudioPlayer({ track, projectName, isPlaying, onPlayPause, onNext, onPrev, hasNext, hasPrev }) {
   const [progress, setProgress] = useState(0);
@@ -26,7 +26,6 @@ export default function AudioPlayer({ track, projectName, isPlaying, onPlayPause
     const audio = new Audio(track.url);
     audio.preload = 'metadata';
     audio.crossOrigin = 'anonymous';
-    audio.muted = isMuted;
     audioRef.current = audio;
 
     const onTimeUpdate = () => setProgress(audio.currentTime);

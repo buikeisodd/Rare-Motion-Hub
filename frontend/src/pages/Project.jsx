@@ -18,9 +18,10 @@ export default function Project({ user }) {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isCoverPickerOpen, setIsCoverPickerOpen] = useState(false);
 
-  const fetchWorkspace = async () => {
+  const fetchWorkspace = async ({ showLoading = false } = {}) => {
+    if (showLoading) setLoading(true);
     try {
-      const res = await fetch(`${apiUrl}/api/workspace`);
+      const res = await fetch(`${apiUrl}/api/workspace?userId=${encodeURIComponent(user.id)}`);
       const data = await res.json();
       const nextProject = data.projects.find((item) => item.id === id);
       const nextTracks = data.tracks.filter((track) => track.projectId === id);
@@ -34,8 +35,32 @@ export default function Project({ user }) {
   };
 
   useEffect(() => {
-    fetchWorkspace();
-  }, [id]);
+    let cancelled = false;
+
+    async function loadWorkspace() {
+      try {
+        const res = await fetch(`${apiUrl}/api/workspace?userId=${encodeURIComponent(user.id)}`);
+        const data = await res.json();
+        if (!cancelled) {
+          const nextProject = data.projects.find((item) => item.id === id);
+          const nextTracks = data.tracks.filter((track) => track.projectId === id);
+          setProject(nextProject);
+          setTracks(nextTracks);
+        }
+      } catch (err) {
+        console.error('Failed to fetch workspace', err);
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadWorkspace();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, user.id]);
 
   const handlePlay = (track) => {
     if (currentTrack?.id === track.id) {
@@ -58,7 +83,7 @@ export default function Project({ user }) {
   const handleDeleteProject = async () => {
     if (!confirm('Are you sure you want to delete this project?')) return;
     try {
-      await fetch(`${apiUrl}/api/projects/${id}`, { method: 'DELETE' });
+      await fetch(`${apiUrl}/api/projects/${id}?userId=${encodeURIComponent(user.id)}`, { method: 'DELETE' });
       navigate('/library');
     } catch (err) {
       console.error('Failed to delete project', err);
@@ -69,7 +94,7 @@ export default function Project({ user }) {
     event.stopPropagation();
     if (!confirm('Are you sure you want to delete this track?')) return;
     try {
-      await fetch(`${apiUrl}/api/tracks/${trackId}`, { method: 'DELETE' });
+      await fetch(`${apiUrl}/api/tracks/${trackId}?userId=${encodeURIComponent(user.id)}`, { method: 'DELETE' });
       setTracks((prev) => prev.filter((track) => track.id !== trackId));
       if (currentTrack?.id === trackId) {
         setIsPlaying(false);
@@ -218,6 +243,7 @@ export default function Project({ user }) {
         onClose={() => setIsCoverPickerOpen(false)}
         onSelect={handleCoverSelect}
         projectId={id}
+        userId={user.id}
         onRefresh={fetchWorkspace}
         projectCoverUrl={project?.coverArt}
       />

@@ -1,30 +1,40 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, UploadCloud, Image as ImageIcon, Trash2, Loader2 } from 'lucide-react';
 
-export default function CoverArtPicker({ isOpen, onClose, onSelect, projectId, onRefresh, projectCoverUrl }) {
+export default function CoverArtPicker({ isOpen, onClose, onSelect, projectId, userId, onRefresh, projectCoverUrl }) {
   const [covers, setCovers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    if (isOpen) {
-      fetchCovers();
-    }
-  }, [isOpen]);
+    let cancelled = false;
 
-  const fetchCovers = async () => {
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/workspace`);
-      const data = await res.json();
-      // Most recent first
-      setCovers(data.coverArts.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt)) || []);
-    } catch (err) {
-      console.error('Failed to fetch covers', err);
-    } finally {
-      setLoading(false);
+    if (isOpen) {
+      async function loadCovers() {
+        setLoading(true);
+        try {
+          const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/workspace?userId=${encodeURIComponent(userId)}`);
+          const data = await res.json();
+          if (!cancelled) {
+            setCovers((data.coverArts || []).sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt)));
+          }
+        } catch (err) {
+          console.error('Failed to fetch covers', err);
+        } finally {
+          if (!cancelled) {
+            setLoading(false);
+          }
+        }
+      }
+
+      loadCovers();
     }
-  };
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, userId]);
 
   const handleUpload = async (e) => {
     const file = e.target.files[0];
@@ -32,6 +42,7 @@ export default function CoverArtPicker({ isOpen, onClose, onSelect, projectId, o
 
     setUploading(true);
     const formData = new FormData();
+    formData.append('userId', userId);
     formData.append('cover', file);
 
     try {
@@ -57,7 +68,7 @@ export default function CoverArtPicker({ isOpen, onClose, onSelect, projectId, o
     if (!confirm('Delete this cover art?')) return;
     
     try {
-      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/covers/${id}`, { method: 'DELETE' });
+      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/covers/${id}?userId=${encodeURIComponent(userId)}`, { method: 'DELETE' });
       const deletedCover = covers.find(c => c.id === id);
       setCovers(covers.filter(c => c.id !== id));
       if (deletedCover && deletedCover.url === projectCoverUrl) {
@@ -74,7 +85,7 @@ export default function CoverArtPicker({ isOpen, onClose, onSelect, projectId, o
       await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/projects/${projectId}/cover`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ coverUrl: url })
+        body: JSON.stringify({ coverUrl: url, userId })
       });
       onSelect(url);
       onClose();
