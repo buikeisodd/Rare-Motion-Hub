@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, Link, useNavigate } from 'react
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Project from './pages/Project';
+import SharedItem from './pages/SharedItem';
 
 function WelcomeBack({ user, onDone }) {
   const seenKey = `seen-welcome-${user.id}`;
@@ -108,6 +109,7 @@ function App() {
             <Route path="/login" element={<Navigate to="/" replace />} />
             <Route path="/library" element={<Dashboard user={user} onLogout={handleLogout} onUserUpdate={handleUserUpdate} />} />
             <Route path="/project/:id" element={<Project user={user} onLogout={handleLogout} />} />
+            <Route path="/shared/:type/:id" element={<SharedItem user={user} />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         )}

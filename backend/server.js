@@ -12,17 +12,28 @@ app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/covers', express.static(path.join(__dirname, 'covers')));
+app.use('/avatars', express.static(path.join(__dirname, 'avatars')));
 
 const dbPath = path.join(__dirname, 'db.json');
 const uploadDir = path.join(__dirname, 'uploads');
 const coverDir = path.join(__dirname, 'covers');
+const avatarDir = path.join(__dirname, 'avatars');
 
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 if (!fs.existsSync(coverDir)) fs.mkdirSync(coverDir);
+if (!fs.existsSync(avatarDir)) fs.mkdirSync(avatarDir);
 
 // Helpers
 const readDB = () => JSON.parse(fs.readFileSync(dbPath, 'utf8'));
 const writeDB = (data) => fs.writeFileSync(dbPath, JSON.stringify(data, null, 2), 'utf8');
+const ensureDBShape = (db) => {
+  db.folders ||= [];
+  db.projects ||= [];
+  db.tracks ||= [];
+  db.coverArts ||= [];
+  db.notifications ||= [];
+  return db;
+};
 const userExists = (db, userId) => db.users.some((user) => user.id === userId);
 const getUserDir = (baseDir, userId) => path.join(baseDir, userId);
 const ensureUserDir = (baseDir, userId) => {
@@ -50,6 +61,32 @@ const requireUserId = (req, res) => {
   }
   return userId;
 };
+const makeId = () => `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+const publicUser = (user) => user ? { id: user.id, name: user.name, avatarUrl: user.avatarUrl || null } : null;
+const getProjectBundle = (db, project) => ({
+  type: 'project',
+  project,
+  owner: publicUser(db.users.find((user) => user.id === project.userId)),
+  tracks: db.tracks.filter((track) => track.projectId === project.id)
+});
+const notifyListen = (db, { ownerId, actorId, project, folder, track }) => {
+  if (!ownerId || !actorId || ownerId === actorId) return;
+  const actor = db.users.find((user) => user.id === actorId);
+  if (!actor) return;
+
+  db.notifications.push({
+    id: makeId(),
+    userId: ownerId,
+    type: 'listen',
+    actor: publicUser(actor),
+    project: project ? { id: project.id, name: project.name } : null,
+    folder: folder ? { id: folder.id, name: folder.name } : null,
+    track: track ? { id: track.id, title: track.title } : null,
+    message: `${actor.name} listened to ${track?.title || project?.name || folder?.name || 'your shared item'}`,
+    read: false,
+    createdAt: new Date().toISOString()
+  });
+};
 
 // Multer setups
 const trackStorage = multer.diskStorage({
@@ -64,6 +101,12 @@ const coverStorage = multer.diskStorage({
 });
 const uploadCover = multer({ storage: coverStorage });
 
+const avatarStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, avatarDir),
+  filename: (req, file, cb) => cb(null, 'avatar-' + Date.now() + path.extname(file.originalname))
+});
+const uploadAvatar = multer({ storage: avatarStorage });
+
 // --- AUTH ---
 app.post('/api/auth', (req, res) => {
   const email = req.body.email?.trim();
@@ -77,25 +120,36 @@ app.post('/api/auth', (req, res) => {
 
 // --- USERS ---
 app.put('/api/users/:id', (req, res) => {
-  const { name, email } = req.body;
-  const db = readDB();
+  const { name } = req.body;
+  const db = ensureDBShape(readDB());
   const userIndex = db.users.findIndex((user) => user.id === req.params.id);
   if (userIndex === -1) return res.status(404).json({ error: 'User not found.' });
 
   const nextName = name?.trim();
-  const nextEmail = email?.trim();
-  if (!nextName || !nextEmail) return res.status(400).json({ error: 'Name and email are required.' });
+  if (!nextName) return res.status(400).json({ error: 'Username is required.' });
 
-  const emailTaken = db.users.some((user) => user.id !== req.params.id && user.email.toLowerCase() === nextEmail.toLowerCase());
-  if (emailTaken) return res.status(409).json({ error: 'Email is already assigned to another user.' });
+  db.users[userIndex] = { ...db.users[userIndex], name: nextName };
+  writeDB(db);
+  res.json({ user: db.users[userIndex] });
+});
 
-  db.users[userIndex] = { ...db.users[userIndex], name: nextName, email: nextEmail };
+app.post('/api/users/:id/avatar', uploadAvatar.single('avatar'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No profile image uploaded.' });
+  const db = ensureDBShape(readDB());
+  const userIndex = db.users.findIndex((user) => user.id === req.params.id);
+  if (userIndex === -1) {
+    removeFileIfExists(req.file.path);
+    return res.status(404).json({ error: 'User not found.' });
+  }
+
+  moveFileToUserDir(req.file, avatarDir, req.params.id);
+  db.users[userIndex].avatarUrl = `${BASE_URL}/avatars/${req.params.id}/${req.file.filename}`;
   writeDB(db);
   res.json({ user: db.users[userIndex] });
 });
 
 app.delete('/api/users/:id', (req, res) => {
-  const db = readDB();
+  const db = ensureDBShape(readDB());
   const user = db.users.find((item) => item.id === req.params.id);
   if (!user) return res.status(404).json({ error: 'User not found.' });
 
@@ -104,16 +158,18 @@ app.delete('/api/users/:id', (req, res) => {
   db.projects = db.projects.filter((project) => project.userId !== req.params.id);
   db.tracks = db.tracks.filter((track) => track.userId !== req.params.id && track.uploader?.id !== req.params.id);
   db.coverArts = db.coverArts.filter((cover) => cover.userId !== req.params.id);
+  db.notifications = db.notifications.filter((notification) => notification.userId !== req.params.id && notification.actor?.id !== req.params.id);
   writeDB(db);
 
   removeDirIfExists(getUserDir(uploadDir, req.params.id));
   removeDirIfExists(getUserDir(coverDir, req.params.id));
+  removeDirIfExists(getUserDir(avatarDir, req.params.id));
   res.json({ success: true });
 });
 
 // --- DATA FETCHING ---
 app.get('/api/workspace', (req, res) => {
-  const db = readDB();
+  const db = ensureDBShape(readDB());
   const userId = requireUserId(req, res);
   if (!userId) return;
   if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
@@ -122,8 +178,143 @@ app.get('/api/workspace', (req, res) => {
     folders: db.folders.filter((folder) => folder.userId === userId),
     projects: db.projects.filter((project) => project.userId === userId),
     tracks: db.tracks.filter((track) => track.userId === userId || track.uploader?.id === userId),
-    coverArts: db.coverArts.filter((cover) => cover.userId === userId)
+    coverArts: db.coverArts.filter((cover) => cover.userId === userId),
+    notifications: db.notifications.filter((notification) => notification.userId === userId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
   });
+});
+
+// --- SHARING ---
+app.get('/api/share/project/:id', (req, res) => {
+  const db = ensureDBShape(readDB());
+  const project = db.projects.find((item) => item.id === req.params.id);
+  if (!project) return res.status(404).json({ error: 'Project not found.' });
+  res.json(getProjectBundle(db, project));
+});
+
+app.get('/api/share/folder/:id', (req, res) => {
+  const db = ensureDBShape(readDB());
+  const folder = db.folders.find((item) => item.id === req.params.id);
+  if (!folder) return res.status(404).json({ error: 'Folder not found.' });
+  const projects = db.projects.filter((project) => project.folderId === folder.id && project.userId === folder.userId);
+  const projectIds = projects.map((project) => project.id);
+  res.json({
+    type: 'folder',
+    folder,
+    owner: publicUser(db.users.find((user) => user.id === folder.userId)),
+    projects,
+    tracks: db.tracks.filter((track) => projectIds.includes(track.projectId))
+  });
+});
+
+app.post('/api/share/project/:id/save', (req, res) => {
+  const { userId } = req.body;
+  const db = ensureDBShape(readDB());
+  if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
+
+  const sourceProject = db.projects.find((project) => project.id === req.params.id);
+  if (!sourceProject) return res.status(404).json({ error: 'Project not found.' });
+  if (sourceProject.userId === userId) return res.json({ project: sourceProject, alreadyOwner: true });
+
+  const existing = db.projects.find((project) => project.userId === userId && project.sourceProjectId === sourceProject.id);
+  if (existing) return res.json({ project: existing, alreadySaved: true });
+
+  const nextProject = {
+    ...sourceProject,
+    id: makeId(),
+    userId,
+    folderId: null,
+    sourceProjectId: sourceProject.sourceProjectId || sourceProject.id,
+    sourceUserId: sourceProject.sourceUserId || sourceProject.userId,
+    savedAt: new Date().toISOString(),
+    createdAt: new Date().toISOString()
+  };
+  db.projects.push(nextProject);
+
+  const sourceTracks = db.tracks.filter((track) => track.projectId === sourceProject.id);
+  const copiedTracks = sourceTracks.map((track) => ({
+    ...track,
+    id: makeId(),
+    userId,
+    projectId: nextProject.id,
+    sourceTrackId: track.sourceTrackId || track.id,
+    sourceProjectId: sourceProject.sourceProjectId || sourceProject.id,
+    sourceUserId: track.sourceUserId || sourceProject.sourceUserId || sourceProject.userId,
+    uploadedAt: new Date().toISOString()
+  }));
+  db.tracks.push(...copiedTracks);
+  writeDB(db);
+  res.json({ project: nextProject, tracks: copiedTracks });
+});
+
+app.post('/api/share/folder/:id/save', (req, res) => {
+  const { userId } = req.body;
+  const db = ensureDBShape(readDB());
+  if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
+
+  const sourceFolder = db.folders.find((folder) => folder.id === req.params.id);
+  if (!sourceFolder) return res.status(404).json({ error: 'Folder not found.' });
+  if (sourceFolder.userId === userId) return res.json({ folder: sourceFolder, alreadyOwner: true });
+
+  const nextFolder = {
+    ...sourceFolder,
+    id: makeId(),
+    userId,
+    sourceFolderId: sourceFolder.sourceFolderId || sourceFolder.id,
+    sourceUserId: sourceFolder.sourceUserId || sourceFolder.userId,
+    savedAt: new Date().toISOString(),
+    createdAt: new Date().toISOString()
+  };
+  db.folders.push(nextFolder);
+
+  const sourceProjects = db.projects.filter((project) => project.folderId === sourceFolder.id && project.userId === sourceFolder.userId);
+  const projectIdMap = new Map();
+  const copiedProjects = sourceProjects.map((project) => {
+    const id = makeId();
+    projectIdMap.set(project.id, id);
+    return {
+      ...project,
+      id,
+      userId,
+      folderId: nextFolder.id,
+      sourceProjectId: project.sourceProjectId || project.id,
+      sourceFolderId: sourceFolder.sourceFolderId || sourceFolder.id,
+      sourceUserId: project.sourceUserId || project.userId,
+      savedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString()
+    };
+  });
+  db.projects.push(...copiedProjects);
+
+  const copiedTracks = db.tracks
+    .filter((track) => projectIdMap.has(track.projectId))
+    .map((track) => ({
+      ...track,
+      id: makeId(),
+      userId,
+      projectId: projectIdMap.get(track.projectId),
+      sourceTrackId: track.sourceTrackId || track.id,
+      sourceProjectId: track.sourceProjectId || track.projectId,
+      sourceFolderId: sourceFolder.sourceFolderId || sourceFolder.id,
+      sourceUserId: track.sourceUserId || sourceFolder.sourceUserId || sourceFolder.userId,
+      uploadedAt: new Date().toISOString()
+    }));
+  db.tracks.push(...copiedTracks);
+  writeDB(db);
+  res.json({ folder: nextFolder, projects: copiedProjects, tracks: copiedTracks });
+});
+
+app.post('/api/listen', (req, res) => {
+  const { userId, projectId, folderId, trackId } = req.body;
+  const db = ensureDBShape(readDB());
+  if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
+
+  const project = db.projects.find((item) => item.id === projectId);
+  const folder = folderId ? db.folders.find((item) => item.id === folderId) : null;
+  const track = db.tracks.find((item) => item.id === trackId);
+  const ownerId = track?.sourceUserId || project?.sourceUserId || folder?.sourceUserId || project?.userId || folder?.userId;
+  notifyListen(db, { ownerId, actorId: userId, project, folder, track });
+  writeDB(db);
+  res.json({ success: true });
 });
 
 // --- FOLDERS ---

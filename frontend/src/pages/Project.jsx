@@ -17,6 +17,7 @@ export default function Project({ user }) {
   const [loading, setLoading] = useState(true);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isCoverPickerOpen, setIsCoverPickerOpen] = useState(false);
+  const [shareStatus, setShareStatus] = useState('');
 
   const fetchWorkspace = async ({ showLoading = false } = {}) => {
     if (showLoading) setLoading(true);
@@ -69,6 +70,12 @@ export default function Project({ user }) {
       setCurrentTrack(track);
       setIsPlaying(true);
     }
+
+    fetch(`${apiUrl}/api/listen`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: user.id, projectId: project?.id, trackId: track.id })
+    }).catch((err) => console.error('Failed to record listening activity', err));
   };
 
   const handleUploadSuccess = (newTrack) => {
@@ -105,6 +112,18 @@ export default function Project({ user }) {
     }
   };
 
+  const handleCopyShareLink = async () => {
+    const shareUrl = `${window.location.origin}/shared/project/${id}`;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShareStatus('Copied');
+    } catch {
+      window.prompt('Copy project link:', shareUrl);
+      setShareStatus('Ready');
+    }
+    window.setTimeout(() => setShareStatus(''), 1600);
+  };
+
   if (loading) return null;
   if (!project) return <div className="text-center mt-20">Project not found</div>;
 
@@ -118,8 +137,9 @@ export default function Project({ user }) {
         </Link>
 
         <div className="flex items-center gap-3">
-          <button className="grid h-16 w-16 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Copy project link">
+          <button onClick={handleCopyShareLink} className="relative grid h-16 w-16 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Copy project link">
             <Link2 className="w-7 h-7" />
+            {shareStatus && <span className="absolute -bottom-8 rounded-full bg-primary-label px-3 py-1 text-xs font-bold text-primary-background">{shareStatus}</span>}
           </button>
           <button className="grid h-16 w-16 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Search project">
             <Search className="w-7 h-7" />
