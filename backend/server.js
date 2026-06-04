@@ -540,5 +540,125 @@ app.delete('/api/tracks/:id', (req, res) => {
   res.json({ success: true });
 });
 
+// --- CHAT ---
+const ensureChatShape = (db) => {
+  db.messages ||= [];
+  return db;
+};
+
+// Get all users (for chat contacts)
+app.get('/api/users', (req, res) => {
+  const db = readDB();
+  const userId = requireUserId(req, res);
+  if (!userId) return;
+  if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
+  const others = db.users.filter((u) => u.id !== userId).map(publicUser);
+  res.json({ users: others });
+});
+
+// Get messages between two users (DM) or group
+// conversationType: 'dm' | 'group'
+// For dm: partnerId required
+// For group: returns all group messages
+app.get('/api/messages', (req, res) => {
+  const db = ensureChatShape(ensureDBShape(readDB()));
+  const userId = requireUserId(req, res);
+  if (!userId) return;
+  if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
+
+  const { type, partnerId } = req.query;
+
+  let msgs;
+  if (type === 'group') {
+    msgs = db.messages.filter((m) => m.conversationType === 'group');
+  } else {
+    if (!partnerId) return res.status(400).json({ error: 'partnerId required for DM.' });
+    msgs = db.messages.filter(
+      (m) => m.conversationType === 'dm' &&
+        ((m.senderId === userId && m.recipientId === partnerId) ||
+          (m.senderId === partnerId && m.recipientId === userId))
+    );
+  }
+
+  // Hydrate sender info
+  const hydrated = msgs.map((m) => ({
+    ...m,
+    sender: publicUser(db.users.find((u) => u.id === m.senderId))
+  }));
+
+  res.json({ messages: hydrated });
+});
+
+// Send a message
+app.post('/api/messages', (req, res) => {
+  const db = ensureChatShape(ensureDBShape(readDB()));
+  const { senderId, recipientId, conversationType, text } = req.body;
+  if (!senderId || !text?.trim()) return res.status(400).json({ error: 'senderId and text required.' });
+  if (!userExists(db, senderId)) return res.status(401).json({ error: 'Unauthorized user.' });
+
+  if (conversationType === 'dm' && !recipientId) return res.status(400).json({ error: 'recipientId required for DM.' });
+
+  const msg = {
+    id: makeId(),
+    senderId,
+    recipientId: conversationType === 'group' ? null : recipientId,
+    conversationType: conversationType || 'dm',
+    text: text.trim(),
+    createdAt: new Date().toISOString()
+  };
+
+  db.messages.push(msg);
+  writeDB(db);
+
+  const hydrated = { ...msg, sender: publicUser(db.users.find((u) => u.id === senderId)) };
+  res.json({ message: hydrated });
+});
+
+// Get conversation previews (last message per convo) for a user
+app.get('/api/conversations', (req, res) => {
+  const db = ensureChatShape(ensureDBShape(readDB()));
+  const userId = requireUserId(req, res);
+  if (!userId) return;
+  if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
+
+  const others = db.users.filter((u) => u.id !== userId);
+  const conversations = [];
+
+  // DMs
+  for (const other of others) {
+    const msgs = db.messages.filter(
+      (m) => m.conversationType === 'dm' &&
+        ((m.senderId === userId && m.recipientId === other.id) ||
+          (m.senderId === other.id && m.recipientId === userId))
+    );
+    const last = msgs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] || null;
+    conversations.push({
+      type: 'dm',
+      partner: publicUser(other),
+      lastMessage: last ? { ...last, sender: publicUser(db.users.find((u) => u.id === last.senderId)) } : null,
+      updatedAt: last?.createdAt || null
+    });
+  }
+
+  // Group
+  const groupMsgs = db.messages.filter((m) => m.conversationType === 'group');
+  const lastGroup = groupMsgs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] || null;
+  conversations.push({
+    type: 'group',
+    partner: null,
+    lastMessage: lastGroup ? { ...lastGroup, sender: publicUser(db.users.find((u) => u.id === lastGroup.senderId)) } : null,
+    updatedAt: lastGroup?.createdAt || null
+  });
+
+  conversations.sort((a, b) => {
+    if (!a.updatedAt && !b.updatedAt) return 0;
+    if (!a.updatedAt) return 1;
+    if (!b.updatedAt) return -1;
+    return new Date(b.updatedAt) - new Date(a.updatedAt);
+  });
+
+  res.json({ conversations });
+});
+
 app.listen(PORT, () => console.log(`Backend server running on http://localhost:${PORT}`));
 // End of server file
