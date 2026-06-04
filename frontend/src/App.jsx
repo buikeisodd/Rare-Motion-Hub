@@ -74,7 +74,7 @@ function AuthLanding({ user, justAuthenticated, onDone }) {
 
 function App() {
   const [user, setUser] = useState(() => {
-    const storedUser = sessionStorage.getItem('user');
+    const storedUser = localStorage.getItem('user');
     return storedUser ? JSON.parse(storedUser) : null;
   });
   const [justAuthenticated, setJustAuthenticated] = useState(false);
@@ -82,18 +82,18 @@ function App() {
   const handleLogin = (userData) => {
     setUser(userData);
     setJustAuthenticated(true);
-    sessionStorage.setItem('user', JSON.stringify(userData));
+    localStorage.setItem('user', JSON.stringify(userData));
   };
 
   const handleLogout = () => {
     setUser(null);
     setJustAuthenticated(false);
-    sessionStorage.removeItem('user');
+    localStorage.removeItem('user');
   };
 
   const handleUserUpdate = (nextUser) => {
     setUser(nextUser);
-    sessionStorage.setItem('user', JSON.stringify(nextUser));
+    localStorage.setItem('user', JSON.stringify(nextUser));
   };
 
   return (

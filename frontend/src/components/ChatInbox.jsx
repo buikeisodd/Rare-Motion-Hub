@@ -202,6 +202,11 @@ function ChatWindow({ convo, currentUser, onClose }) {
               {!isMine && (
                 <ProfileAvatar user={msg.sender} isGroup={false} size="h-6 w-6" />
               )}
+              {isMine && (
+                <div className="order-last ml-1">
+                  <ProfileAvatar user={currentUser} isGroup={false} size="h-6 w-6" />
+                </div>
+              )}
               <div className={`max-w-[72%] ${isMine ? 'items-end' : 'items-start'} flex flex-col`}>
                 {showSender && (
                   <span className="mb-0.5 ml-1 text-[10px] font-semibold text-secondary-label">{msg.sender?.name}</span>
