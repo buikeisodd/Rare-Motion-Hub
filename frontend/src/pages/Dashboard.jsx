@@ -1,58 +1,104 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Bell, Circle, Disc3, FolderPlus, LogOut, MoreHorizontal, Music, Play, Plus, Search, User, Video, X } from 'lucide-react';
+import { DndContext, useDraggable, useDroppable } from '@dnd-kit/core';
+import { Bell, Circle, Disc3, Folder, FolderPlus, LogOut, MoreHorizontal, Music, Play, Plus, Search, User, Video, X } from 'lucide-react';
+
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
+function gradientFor(id = '') {
+  const palettes = [
+    ['#b7ff63', '#d6c18e', '#d84f93'],
+    ['#72e4ff', '#7467f0', '#ff7bbd'],
+    ['#ffe27a', '#ff8f70', '#845ef7'],
+    ['#8dffce', '#72a7ff', '#f584e3'],
+  ];
+  const sum = String(id).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const colors = palettes[sum % palettes.length];
+  return `linear-gradient(135deg, ${colors[0]} 0%, ${colors[1]} 48%, ${colors[2]} 100%)`;
+}
+
+function ProjectArtwork({ project, tracks }) {
+  const projectTracks = tracks.filter((track) => track.projectId === project.id);
+  const leadTrack = projectTracks[0];
+
+  return (
+    <div className="relative aspect-square overflow-hidden rounded-[1.35rem]" style={{ backgroundImage: gradientFor(project.id) }}>
+      {project.coverArt ? (
+        <img src={project.coverArt} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+      ) : projectTracks.length > 1 ? (
+        <div className="grid h-full w-full grid-cols-2 gap-3 bg-[#242424]/35 p-3">
+          {projectTracks.slice(0, 4).map((track) => (
+            <div key={track.id} className="rounded-xl bg-black/30" />
+          ))}
+        </div>
+      ) : null}
+
+      {leadTrack && (
+        <span className="absolute bottom-3 right-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-shading text-primary-label backdrop-blur-md transition-transform group-hover:scale-105">
+          <Play className="h-7 w-7 fill-current translate-x-0.5" />
+        </span>
+      )}
+    </div>
+  );
+}
 
 function LibraryProject({ project, tracks }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: `project-${project.id}`,
+    data: { type: 'project', project },
+  });
   const projectTracks = tracks.filter((track) => track.projectId === project.id);
   const leadTrack = projectTracks[0];
   const title = leadTrack?.title || project.name;
   const artist = leadTrack?.artist || leadTrack?.producer || project.name;
+  const style = transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 40 } : undefined;
 
   return (
-    <Link to={`/project/${project.id}`} className="group block w-56">
-      <div className="relative aspect-square overflow-hidden rounded-[1.35rem] bg-shading">
-        {project.coverArt ? (
-          <img src={project.coverArt} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-        ) : (
-          <div className="grid h-full w-full grid-cols-2 gap-3 bg-[#242424] p-3">
-            {projectTracks.slice(0, 4).map((track) => (
-              <div key={track.id} className="rounded-xl bg-[radial-gradient(circle_at_50%_70%,#191919_0_24%,#3c3c3c_25%_100%)]" />
-            ))}
-            {projectTracks.length === 0 && (
-              <div className="col-span-2 flex h-full items-center justify-center rounded-xl bg-[#303030] text-secondary-label">
-                <Disc3 className="h-10 w-10" />
-              </div>
-            )}
+    <div ref={setNodeRef} style={style} className={`group block w-56 ${isDragging ? 'opacity-60' : ''}`}>
+      <Link to={`/project/${project.id}`} {...listeners} {...attributes} className="block cursor-grab active:cursor-grabbing">
+        <ProjectArtwork project={project} tracks={tracks} />
+        <div className="mt-5 flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h2 className="text-xl font-semibold leading-tight tracking-normal text-primary-label line-clamp-2">{title}</h2>
+            <p className="mt-2 truncate text-xl text-secondary-label">{artist}</p>
           </div>
-        )}
-
-        {leadTrack && (
-          <span className="absolute bottom-3 right-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-shading text-primary-label backdrop-blur-md transition-transform group-hover:scale-105">
-            <Play className="h-7 w-7 fill-current translate-x-0.5" />
+          <span className="mt-8 shrink-0 text-primary-label opacity-90 transition-opacity group-hover:opacity-100" aria-hidden="true">
+            <MoreHorizontal className="h-6 w-6" />
           </span>
-        )}
-      </div>
-
-      <div className="mt-5 flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <h2 className="text-xl font-semibold leading-tight tracking-normal text-primary-label line-clamp-2">{title}</h2>
-          <p className="mt-2 truncate text-xl text-secondary-label">{artist}</p>
         </div>
-        <span className="mt-8 shrink-0 text-primary-label opacity-90 transition-opacity group-hover:opacity-100" aria-hidden="true">
-          <MoreHorizontal className="h-6 w-6" />
-        </span>
+      </Link>
+    </div>
+  );
+}
+
+function LibraryFolder({ folder, projects }) {
+  const { isOver, setNodeRef } = useDroppable({
+    id: `folder-${folder.id}`,
+    data: { type: 'folder', folder },
+  });
+
+  return (
+    <div ref={setNodeRef} className="group block w-56">
+      <div className={`aspect-square rounded-[1.35rem] border transition-all ${isOver ? 'border-primary-label bg-highlight' : 'border-border bg-shading'}`}>
+        <div className="grid h-full place-items-center p-6">
+          <div className="flex h-24 w-24 items-center justify-center rounded-[1.4rem] bg-primary-background/35 text-primary-label">
+            <Folder className="h-12 w-12 fill-current" />
+          </div>
+        </div>
       </div>
-    </Link>
+      <div className="mt-5">
+        <h2 className="truncate text-xl font-semibold leading-tight tracking-normal text-primary-label">{folder.name}</h2>
+        <p className="mt-2 truncate text-xl text-secondary-label">{projects.length} project{projects.length === 1 ? '' : 's'}</p>
+      </div>
+    </div>
   );
 }
 
 export default function Dashboard({ user, onLogout }) {
-  const [workspace, setWorkspace] = useState({ projects: [], tracks: [] });
+  const [workspace, setWorkspace] = useState({ folders: [], projects: [], tracks: [] });
   const [loading, setLoading] = useState(true);
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
   const navigate = useNavigate();
-
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
   useEffect(() => {
     let cancelled = false;
@@ -63,6 +109,7 @@ export default function Dashboard({ user, onLogout }) {
         const data = await res.json();
         if (!cancelled) {
           setWorkspace({
+            folders: data.folders || [],
             projects: data.projects || [],
             tracks: data.tracks || [],
           });
@@ -70,9 +117,7 @@ export default function Dashboard({ user, onLogout }) {
       } catch (err) {
         console.error('Failed to fetch workspace', err);
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        if (!cancelled) setLoading(false);
       }
     }
 
@@ -80,17 +125,19 @@ export default function Dashboard({ user, onLogout }) {
     return () => {
       cancelled = true;
     };
-  }, [apiUrl]);
+  }, []);
 
   const createFolder = async () => {
     const name = prompt('Enter folder name:');
     if (!name) return;
 
-    await fetch(`${apiUrl}/api/folders`, {
+    const res = await fetch(`${apiUrl}/api/folders`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, userId: user.id })
+      body: JSON.stringify({ name, userId: user.id }),
     });
+    const folder = await res.json();
+    setWorkspace((prev) => ({ ...prev, folders: [...prev.folders, folder] }));
     setIsAddMenuOpen(false);
   };
 
@@ -101,7 +148,7 @@ export default function Dashboard({ user, onLogout }) {
     const res = await fetch(`${apiUrl}/api/projects`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, userId: user.id })
+      body: JSON.stringify({ name, userId: user.id }),
     });
     const newProject = await res.json();
     setWorkspace((prev) => ({ ...prev, projects: [...prev.projects, newProject] }));
@@ -111,8 +158,27 @@ export default function Dashboard({ user, onLogout }) {
 
   const createAudioProject = async () => {
     const newProject = await createProject('Untitled audio');
-    if (newProject?.id) {
-      navigate(`/project/${newProject.id}`);
+    if (newProject?.id) navigate(`/project/${newProject.id}`);
+  };
+
+  const handleDragEnd = async ({ active, over }) => {
+    if (!over || active.data.current?.type !== 'project') return;
+    const project = active.data.current.project;
+    const folderId = over.data.current?.type === 'folder' ? over.data.current.folder.id : null;
+
+    setWorkspace((prev) => ({
+      ...prev,
+      projects: prev.projects.map((item) => (item.id === project.id ? { ...item, folderId } : item)),
+    }));
+
+    try {
+      await fetch(`${apiUrl}/api/projects/${project.id}/move`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ folderId }),
+      });
+    } catch (err) {
+      console.error('Failed to move project', err);
     }
   };
 
@@ -122,6 +188,8 @@ export default function Dashboard({ user, onLogout }) {
   };
 
   if (loading) return null;
+
+  const rootProjects = workspace.projects.filter((project) => !project.folderId);
 
   return (
     <div className="min-h-screen bg-primary-background px-6 py-12 md:px-20 pb-36 animate-fade-in">
@@ -145,21 +213,26 @@ export default function Dashboard({ user, onLogout }) {
         </div>
       </header>
 
-      <main className="mx-auto flex min-h-[calc(100vh-18rem)] max-w-5xl items-center justify-center">
-        {workspace.projects.length === 0 ? (
-          <div className="text-center">
-            <Disc3 className="mx-auto mb-5 h-12 w-12 text-secondary-label" />
-            <h1 className="text-2xl font-semibold">No projects yet</h1>
-            <p className="mt-2 text-secondary-label">Create your first library project.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-20 sm:grid-cols-2 lg:grid-cols-3">
-            {workspace.projects.map((project) => (
-              <LibraryProject key={project.id} project={project} tracks={workspace.tracks} />
-            ))}
-          </div>
-        )}
-      </main>
+      <DndContext onDragEnd={handleDragEnd}>
+        <main className="mx-auto flex min-h-[calc(100vh-18rem)] max-w-5xl items-center justify-center">
+          {workspace.projects.length === 0 && workspace.folders.length === 0 ? (
+            <div className="text-center">
+              <Disc3 className="mx-auto mb-5 h-12 w-12 text-secondary-label" />
+              <h1 className="text-2xl font-semibold">No projects yet</h1>
+              <p className="mt-2 text-secondary-label">Create your first library project.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-20 sm:grid-cols-2 lg:grid-cols-3">
+              {workspace.folders.map((folder) => (
+                <LibraryFolder key={folder.id} folder={folder} projects={workspace.projects.filter((project) => project.folderId === folder.id)} />
+              ))}
+              {rootProjects.map((project) => (
+                <LibraryProject key={project.id} project={project} tracks={workspace.tracks} />
+              ))}
+            </div>
+          )}
+        </main>
+      </DndContext>
 
       <div className="fixed inset-x-0 bottom-12 z-30 flex flex-col items-center gap-4 px-6">
         {isAddMenuOpen && (
@@ -187,10 +260,7 @@ export default function Dashboard({ user, onLogout }) {
           </div>
         )}
 
-        <button
-          onClick={() => setIsAddMenuOpen((open) => !open)}
-          className="inline-flex h-20 min-w-56 items-center justify-center gap-4 rounded-full bg-shading px-10 text-2xl font-semibold text-primary-label shadow-2xl backdrop-blur-md transition-transform hover:scale-[1.02]"
-        >
+        <button onClick={() => setIsAddMenuOpen((open) => !open)} className="inline-flex h-20 min-w-56 items-center justify-center gap-4 rounded-full bg-shading px-10 text-2xl font-semibold text-primary-label shadow-2xl backdrop-blur-md transition-transform hover:scale-[1.02]">
           {isAddMenuOpen ? <X className="h-8 w-8" /> : <Plus className="h-8 w-8" />}
           {isAddMenuOpen ? 'Close' : 'Add'}
         </button>
