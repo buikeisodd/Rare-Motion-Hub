@@ -39,6 +39,9 @@ const moveFileToUserDir = (file, baseDir, userId) => {
 const removeFileIfExists = (filePath) => {
   if (filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath);
 };
+const removeDirIfExists = (dirPath) => {
+  if (dirPath && fs.existsSync(dirPath)) fs.rmSync(dirPath, { recursive: true, force: true });
+};
 const requireUserId = (req, res) => {
   const userId = (req.query.userId || req.body.userId || '').toString();
   if (!userId) {
@@ -70,6 +73,42 @@ app.post('/api/auth', (req, res) => {
   const user = db.users.find((u) => u.email.toLowerCase() === email.toLowerCase());
   if (user) res.json({ user });
   else res.status(401).json({ error: 'Unauthorized email. Only specific users are allowed.' });
+});
+
+// --- USERS ---
+app.put('/api/users/:id', (req, res) => {
+  const { name, email } = req.body;
+  const db = readDB();
+  const userIndex = db.users.findIndex((user) => user.id === req.params.id);
+  if (userIndex === -1) return res.status(404).json({ error: 'User not found.' });
+
+  const nextName = name?.trim();
+  const nextEmail = email?.trim();
+  if (!nextName || !nextEmail) return res.status(400).json({ error: 'Name and email are required.' });
+
+  const emailTaken = db.users.some((user) => user.id !== req.params.id && user.email.toLowerCase() === nextEmail.toLowerCase());
+  if (emailTaken) return res.status(409).json({ error: 'Email is already assigned to another user.' });
+
+  db.users[userIndex] = { ...db.users[userIndex], name: nextName, email: nextEmail };
+  writeDB(db);
+  res.json({ user: db.users[userIndex] });
+});
+
+app.delete('/api/users/:id', (req, res) => {
+  const db = readDB();
+  const user = db.users.find((item) => item.id === req.params.id);
+  if (!user) return res.status(404).json({ error: 'User not found.' });
+
+  db.users = db.users.filter((item) => item.id !== req.params.id);
+  db.folders = db.folders.filter((folder) => folder.userId !== req.params.id);
+  db.projects = db.projects.filter((project) => project.userId !== req.params.id);
+  db.tracks = db.tracks.filter((track) => track.userId !== req.params.id && track.uploader?.id !== req.params.id);
+  db.coverArts = db.coverArts.filter((cover) => cover.userId !== req.params.id);
+  writeDB(db);
+
+  removeDirIfExists(getUserDir(uploadDir, req.params.id));
+  removeDirIfExists(getUserDir(coverDir, req.params.id));
+  res.json({ success: true });
 });
 
 // --- DATA FETCHING ---

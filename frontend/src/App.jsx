@@ -89,6 +89,11 @@ function App() {
     sessionStorage.removeItem('user');
   };
 
+  const handleUserUpdate = (nextUser) => {
+    setUser(nextUser);
+    sessionStorage.setItem('user', JSON.stringify(nextUser));
+  };
+
   return (
     <div className="min-h-screen bg-primary-background text-primary-label font-sans selection:bg-highlight selection:text-white">
       <BrowserRouter>
@@ -101,7 +106,7 @@ function App() {
           <Routes>
             <Route path="/" element={<AuthLanding user={user} justAuthenticated={justAuthenticated} onDone={() => setJustAuthenticated(false)} />} />
             <Route path="/login" element={<Navigate to="/" replace />} />
-            <Route path="/library" element={<Dashboard user={user} onLogout={handleLogout} />} />
+            <Route path="/library" element={<Dashboard user={user} onLogout={handleLogout} onUserUpdate={handleUserUpdate} />} />
             <Route path="/project/:id" element={<Project user={user} onLogout={handleLogout} />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

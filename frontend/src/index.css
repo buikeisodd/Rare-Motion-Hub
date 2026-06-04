@@ -3,6 +3,24 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --color-primary-background: 0 0 0;
+    --color-primary-label: 255 255 255;
+    --color-secondary-label: 163 163 163;
+    --color-shading: 255 255 255;
+    --color-border: 255 255 255;
+    --color-highlight: 255 255 255;
+  }
+
+  :root.theme-light {
+    --color-primary-background: 239 239 236;
+    --color-primary-label: 18 18 18;
+    --color-secondary-label: 102 102 102;
+    --color-shading: 255 255 255;
+    --color-border: 0 0 0;
+    --color-highlight: 0 0 0;
+  }
+
   body {
     @apply bg-primary-background text-primary-label font-sans antialiased selection:bg-highlight selection:text-white;
   }
