@@ -100,8 +100,7 @@ app.put('/api/projects/:id/move', (req, res) => {
 app.delete('/api/projects/:id', (req, res) => {
   const db = readDB();
   db.projects = db.projects.filter(p => p.id !== req.params.id);
-  // Also delete tracks inside project? Optional, let's just orphan them or delete them.
-  // The user asked to delete project, we'll keep it simple and just delete project.
+  db.tracks = db.tracks.filter(t => t.projectId !== req.params.id);
   writeDB(db);
   res.json({ success: true });
 });

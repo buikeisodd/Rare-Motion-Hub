@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Bell, Disc3, LogOut, MoreHorizontal, Play, Plus, Search, User } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Bell, Circle, Disc3, FolderPlus, LogOut, MoreHorizontal, Music, Play, Plus, Search, User, Video, X } from 'lucide-react';
 
 function LibraryProject({ project, tracks }) {
   const projectTracks = tracks.filter((track) => track.projectId === project.id);
@@ -49,6 +49,8 @@ function LibraryProject({ project, tracks }) {
 export default function Dashboard({ user, onLogout }) {
   const [workspace, setWorkspace] = useState({ projects: [], tracks: [] });
   const [loading, setLoading] = useState(true);
+  const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -80,9 +82,21 @@ export default function Dashboard({ user, onLogout }) {
     };
   }, [apiUrl]);
 
-  const createProject = async () => {
-    const name = prompt('Enter project name:');
+  const createFolder = async () => {
+    const name = prompt('Enter folder name:');
     if (!name) return;
+
+    await fetch(`${apiUrl}/api/folders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, userId: user.id })
+    });
+    setIsAddMenuOpen(false);
+  };
+
+  const createProject = async (defaultName = '') => {
+    const name = prompt('Enter project name:', defaultName);
+    if (!name) return null;
 
     const res = await fetch(`${apiUrl}/api/projects`, {
       method: 'POST',
@@ -91,6 +105,20 @@ export default function Dashboard({ user, onLogout }) {
     });
     const newProject = await res.json();
     setWorkspace((prev) => ({ ...prev, projects: [...prev.projects, newProject] }));
+    setIsAddMenuOpen(false);
+    return newProject;
+  };
+
+  const createAudioProject = async () => {
+    const newProject = await createProject('Untitled audio');
+    if (newProject?.id) {
+      navigate(`/project/${newProject.id}`);
+    }
+  };
+
+  const showComingSoon = (label) => {
+    alert(`${label} is coming soon.`);
+    setIsAddMenuOpen(false);
   };
 
   if (loading) return null;
@@ -133,13 +161,38 @@ export default function Dashboard({ user, onLogout }) {
         )}
       </main>
 
-      <div className="fixed inset-x-0 bottom-12 z-30 flex justify-center px-6">
+      <div className="fixed inset-x-0 bottom-12 z-30 flex flex-col items-center gap-4 px-6">
+        {isAddMenuOpen && (
+          <div className="w-64 rounded-[1.4rem] bg-[#282828]/95 p-4 shadow-2xl backdrop-blur-xl animate-slide-up">
+            <button onClick={createAudioProject} className="flex w-full items-center gap-5 rounded-xl px-4 py-3 text-left text-xl font-semibold hover:bg-highlight transition-colors">
+              <Music className="h-6 w-6" />
+              Audio
+            </button>
+            <button onClick={() => showComingSoon('Convert')} className="flex w-full items-center gap-5 rounded-xl px-4 py-3 text-left text-xl font-semibold hover:bg-highlight transition-colors">
+              <Video className="h-6 w-6" />
+              Convert
+            </button>
+            <button onClick={() => showComingSoon('Record')} className="flex w-full items-center gap-5 rounded-xl px-4 py-3 text-left text-xl font-semibold hover:bg-highlight transition-colors">
+              <Circle className="h-6 w-6 fill-red-500 text-red-500" />
+              Record
+            </button>
+            <button onClick={createFolder} className="flex w-full items-center gap-5 rounded-xl px-4 py-3 text-left text-xl font-semibold hover:bg-highlight transition-colors">
+              <FolderPlus className="h-6 w-6" />
+              New Folder
+            </button>
+            <button onClick={() => createProject()} className="flex w-full items-center gap-5 rounded-xl px-4 py-3 text-left text-xl font-semibold hover:bg-highlight transition-colors">
+              <Plus className="h-6 w-6" />
+              New Project
+            </button>
+          </div>
+        )}
+
         <button
-          onClick={createProject}
+          onClick={() => setIsAddMenuOpen((open) => !open)}
           className="inline-flex h-20 min-w-56 items-center justify-center gap-4 rounded-full bg-shading px-10 text-2xl font-semibold text-primary-label shadow-2xl backdrop-blur-md transition-transform hover:scale-[1.02]"
         >
-          <Plus className="h-8 w-8" />
-          Add
+          {isAddMenuOpen ? <X className="h-8 w-8" /> : <Plus className="h-8 w-8" />}
+          {isAddMenuOpen ? 'Close' : 'Add'}
         </button>
       </div>
     </div>

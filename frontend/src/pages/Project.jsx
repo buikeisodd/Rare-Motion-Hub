@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Upload, Music, Play, Image as ImageIcon, Trash2, MoreVertical, X } from 'lucide-react';
+import { ChevronLeft, Upload, Music, Play, Image as ImageIcon, Trash2 } from 'lucide-react';
 import * as Tone from 'tone';
 import AudioPlayer from '../components/AudioPlayer';
 import UploadModal from '../components/UploadModal';
@@ -58,7 +58,7 @@ export default function Project({ user }) {
     if (!confirm('Are you sure you want to delete this project?')) return;
     try {
       await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/projects/${id}`, { method: 'DELETE' });
-      navigate('/');
+      navigate('/library');
     } catch (err) {
       console.error('Failed to delete project', err);
     }
@@ -85,7 +85,7 @@ export default function Project({ user }) {
   return (
     <div className="min-h-screen bg-primary-background pb-32 animate-fade-in relative">
       <header className="sticky top-0 z-40 glass px-6 py-4 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 text-secondary-label hover:text-primary-label transition-colors">
+        <Link to="/library" className="flex items-center gap-2 text-secondary-label hover:text-primary-label transition-colors">
           <ChevronLeft className="w-5 h-5" />
           Back to Dashboard
         </Link>
