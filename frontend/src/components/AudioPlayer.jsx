@@ -92,9 +92,9 @@ export default function AudioPlayer({ track, projectName, isPlaying, onPlayPause
   if (!track) return null;
 
   return (
-    <div className="fixed inset-x-0 bottom-8 z-50 flex justify-center px-4">
+    <div className="fixed inset-x-0 bottom-4 z-50 flex justify-center px-3 sm:bottom-6 sm:px-4">
       {showControls && (
-        <div className="absolute bottom-24 w-[min(90vw,34rem)] rounded-[1.5rem] bg-[#292929]/95 p-5 shadow-2xl backdrop-blur-xl animate-slide-up">
+        <div className="absolute bottom-24 w-[min(92vw,30rem)] rounded-[1.25rem] bg-[#292929]/95 p-4 shadow-2xl backdrop-blur-xl animate-slide-up sm:p-5">
           <button onClick={() => setShowControls(false)} className="absolute right-4 top-4 text-secondary-label hover:text-primary-label" aria-label="Close audio controls">
             <X className="h-5 w-5" />
           </button>
@@ -121,16 +121,16 @@ export default function AudioPlayer({ track, projectName, isPlaying, onPlayPause
         </div>
       )}
 
-      <div className="flex w-[min(92vw,74rem)] items-center gap-5 rounded-full bg-[#2b2b2b]/95 px-4 py-3 shadow-2xl backdrop-blur-xl">
-        <div className="flex min-w-0 items-center gap-4 w-60">
-          <div className="h-16 w-16 shrink-0 rounded-full bg-[linear-gradient(145deg,#b8ff65,#df5b9c)]" />
+      <div className="grid w-[min(94vw,58rem)] grid-cols-[1fr_auto] items-center gap-x-3 gap-y-3 rounded-[1.5rem] bg-[#2b2b2b]/95 px-3 py-3 shadow-2xl backdrop-blur-xl sm:flex sm:gap-4 sm:rounded-full sm:px-4">
+        <div className="flex min-w-0 items-center gap-3 sm:w-56 sm:gap-4">
+          <div className="h-12 w-12 shrink-0 rounded-full bg-[linear-gradient(145deg,#b8ff65,#df5b9c)] sm:h-14 sm:w-14" />
           <div className="min-w-0">
             <h4 className="truncate text-base font-semibold">{track.title}</h4>
             <p className="truncate text-sm text-secondary-label">{projectName || track.artist || track.uploader?.name || 'untitled project'}</p>
           </div>
         </div>
 
-        <div className="hidden h-16 flex-1 items-center gap-4 md:flex">
+        <div className="hidden h-14 flex-1 items-center gap-4 md:flex">
           <div className="flex h-12 flex-1 items-end gap-1 overflow-hidden">
             {Array.from({ length: 44 }).map((_, index) => (
               <span key={index} className="w-1 rounded-full bg-primary-label/40" style={{ height: `${18 + ((index * 17) % 30)}px` }} />
@@ -143,23 +143,23 @@ export default function AudioPlayer({ track, projectName, isPlaying, onPlayPause
 
         <input type="range" min="0" max={duration || 100} value={progress} onChange={handleSeek} className="sr-only" aria-label="Track progress" />
 
-        <div className="flex items-center gap-4 text-primary-label">
+        <div className="flex items-center justify-end gap-2 text-primary-label sm:gap-3">
           <button onClick={onPrev} disabled={!hasPrev} className="disabled:opacity-30" aria-label="Previous track">
-            <SkipBack className="h-6 w-6 fill-current" />
+            <SkipBack className="h-5 w-5 fill-current sm:h-6 sm:w-6" />
           </button>
-          <button onClick={onPlayPause} className="grid h-12 w-12 place-items-center rounded-full bg-primary-label text-primary-background" aria-label={isPlaying ? 'Pause' : 'Play'}>
-            {isPlaying ? <Pause className="h-6 w-6 fill-current" /> : <Play className="h-6 w-6 fill-current translate-x-0.5" />}
+          <button onClick={onPlayPause} className="grid h-10 w-10 place-items-center rounded-full bg-primary-label text-primary-background sm:h-12 sm:w-12" aria-label={isPlaying ? 'Pause' : 'Play'}>
+            {isPlaying ? <Pause className="h-5 w-5 fill-current sm:h-6 sm:w-6" /> : <Play className="h-5 w-5 fill-current translate-x-0.5 sm:h-6 sm:w-6" />}
           </button>
           <button onClick={onNext} disabled={!hasNext} className="disabled:opacity-30" aria-label="Next track">
-            <SkipForward className="h-6 w-6 fill-current" />
+            <SkipForward className="h-5 w-5 fill-current sm:h-6 sm:w-6" />
           </button>
           <Shuffle className="hidden h-5 w-5 text-secondary-label md:block" />
           <Repeat2 className="hidden h-5 w-5 text-secondary-label md:block" />
           <button onClick={() => setShowControls((open) => !open)} className={showControls ? 'text-primary-label' : 'text-secondary-label hover:text-primary-label'} aria-label="Audio controls">
-            <ListMusic className="h-6 w-6" />
+            <ListMusic className="h-5 w-5 sm:h-6 sm:w-6" />
           </button>
           <button onClick={() => setIsMuted((muted) => !muted)} className="text-primary-label" aria-label={isMuted ? 'Unmute' : 'Mute'}>
-            {isMuted ? <VolumeX className="h-6 w-6" /> : <Volume2 className="h-6 w-6" />}
+            {isMuted ? <VolumeX className="h-5 w-5 sm:h-6 sm:w-6" /> : <Volume2 className="h-5 w-5 sm:h-6 sm:w-6" />}
           </button>
         </div>
       </div>

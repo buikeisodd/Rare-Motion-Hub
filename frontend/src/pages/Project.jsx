@@ -147,41 +147,41 @@ export default function Project({ user }) {
   const leadTrack = tracks[0];
 
   return (
-    <div className="min-h-screen bg-primary-background pb-40 animate-fade-in relative">
-      <header className="px-6 py-12 md:px-20 flex items-center justify-between">
-        <Link to="/library" className="grid h-16 w-16 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Back to library">
-          <ChevronLeft className="w-8 h-8" />
+    <div className="relative min-h-screen bg-primary-background pb-36 animate-fade-in sm:pb-40">
+      <header className="flex items-center justify-between px-4 py-6 sm:px-6 sm:py-8 md:px-10 lg:px-14">
+        <Link to="/library" className="grid h-11 w-11 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:h-14 sm:w-14 sm:rounded-3xl" aria-label="Back to library">
+          <ChevronLeft className="h-6 w-6 sm:h-7 sm:w-7" />
         </Link>
 
-        <div className="flex items-center gap-3">
-          <button onClick={handleCopyShareLink} className="relative grid h-16 w-16 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Copy project link">
-            <Link2 className="w-7 h-7" />
+        <div className="flex items-center gap-2 sm:gap-3">
+          <button onClick={handleCopyShareLink} className="relative grid h-11 w-11 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:h-14 sm:w-14 sm:rounded-3xl" aria-label="Copy project link">
+            <Link2 className="h-5 w-5 sm:h-6 sm:w-6" />
             {shareStatus && <span className="absolute -bottom-8 rounded-full bg-primary-label px-3 py-1 text-xs font-bold text-primary-background">{shareStatus}</span>}
           </button>
-          <button className="grid h-16 w-16 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Search project">
-            <Search className="w-7 h-7" />
+          <button className="hidden h-11 w-11 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:grid sm:h-14 sm:w-14 sm:rounded-3xl" aria-label="Search project">
+            <Search className="h-6 w-6" />
           </button>
           <div className="relative">
-            <button onClick={() => setIsProjectMenuOpen((open) => !open)} className="grid h-16 w-16 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Project options">
-              <MoreHorizontal className="w-7 h-7" />
+            <button onClick={() => setIsProjectMenuOpen((open) => !open)} className="grid h-11 w-11 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:h-14 sm:w-14 sm:rounded-3xl" aria-label="Project options">
+              <MoreHorizontal className="h-6 w-6" />
             </button>
             {isProjectMenuOpen && (
-              <div className="absolute right-0 top-20 z-40 w-72 rounded-[1.5rem] border border-border bg-[#191919] p-4 shadow-2xl">
-                <button onClick={() => navigate(`/project/${id}/insights`)} className="flex w-full items-center gap-5 rounded-xl px-4 py-4 text-left text-xl font-bold hover:bg-highlight">
-                  <BarChart3 className="h-6 w-6" />
+              <div className="absolute right-0 top-14 z-40 w-[min(18rem,86vw)] rounded-[1.25rem] border border-border bg-[#191919] p-3 shadow-2xl sm:top-16 sm:p-4">
+                <button onClick={() => navigate(`/project/${id}/insights`)} className="flex w-full items-center gap-4 rounded-xl px-4 py-3 text-left text-base font-bold hover:bg-highlight sm:py-4 sm:text-lg">
+                  <BarChart3 className="h-5 w-5 sm:h-6 sm:w-6" />
                   Insights
                 </button>
-                <button onClick={() => { alert('Notes are coming soon.'); setIsProjectMenuOpen(false); }} className="flex w-full items-center gap-5 rounded-xl px-4 py-4 text-left text-xl font-bold hover:bg-highlight">
-                  <FileText className="h-6 w-6" />
+                <button onClick={() => { alert('Notes are coming soon.'); setIsProjectMenuOpen(false); }} className="flex w-full items-center gap-4 rounded-xl px-4 py-3 text-left text-base font-bold hover:bg-highlight sm:py-4 sm:text-lg">
+                  <FileText className="h-5 w-5 sm:h-6 sm:w-6" />
                   Notes
                 </button>
-                <button onClick={handleExport} className="flex w-full items-center gap-5 rounded-xl px-4 py-4 text-left text-xl font-bold hover:bg-highlight">
-                  <Download className="h-6 w-6" />
+                <button onClick={handleExport} className="flex w-full items-center gap-4 rounded-xl px-4 py-3 text-left text-base font-bold hover:bg-highlight sm:py-4 sm:text-lg">
+                  <Download className="h-5 w-5 sm:h-6 sm:w-6" />
                   Export
                 </button>
                 <div className="my-3 border-t border-border" />
-                <button onClick={handleDeleteProject} className="flex w-full items-center gap-5 rounded-xl px-4 py-4 text-left text-xl font-bold text-red-500 hover:bg-red-500/10">
-                  <Trash2 className="h-6 w-6" />
+                <button onClick={handleDeleteProject} className="flex w-full items-center gap-4 rounded-xl px-4 py-3 text-left text-base font-bold text-red-500 hover:bg-red-500/10 sm:py-4 sm:text-lg">
+                  <Trash2 className="h-5 w-5 sm:h-6 sm:w-6" />
                   Delete project
                 </button>
               </div>
@@ -190,9 +190,9 @@ export default function Project({ user }) {
         </div>
       </header>
 
-      <main className="mx-auto grid max-w-7xl gap-14 px-6 md:grid-cols-[minmax(18rem,38rem)_minmax(20rem,47rem)] md:px-20 md:pt-16">
+      <main className="mx-auto grid max-w-6xl gap-8 px-4 sm:px-6 md:grid-cols-[minmax(16rem,30rem)_minmax(20rem,1fr)] md:gap-12 md:px-10 md:pt-10 lg:px-14">
         <section className="flex justify-center md:justify-start">
-          <div className="relative group aspect-square w-full max-w-[38rem] overflow-hidden rounded-[1.4rem] bg-[linear-gradient(135deg,#b7ff63_0%,#d6c18e_45%,#d84f93_100%)] shadow-2xl">
+          <div className="group relative aspect-square w-full max-w-[24rem] overflow-hidden rounded-[1.2rem] bg-[linear-gradient(135deg,#b7ff63_0%,#d6c18e_45%,#d84f93_100%)] shadow-2xl md:max-w-[30rem]">
             {project.coverArt && <img src={project.coverArt} alt={project.name} className="h-full w-full object-cover" />}
             <button
               type="button"
@@ -205,12 +205,12 @@ export default function Project({ user }) {
           </div>
         </section>
 
-        <section className="pt-2">
-          <div className="mb-8 flex items-start justify-between gap-6">
+        <section className="pt-1">
+          <div className="mb-6 flex items-start justify-between gap-4 sm:mb-8">
             <div className="min-w-0">
-              <h1 className="text-4xl font-semibold tracking-normal text-secondary-label md:text-5xl">{project.name}</h1>
-              <p className="mt-2 flex flex-wrap items-center gap-2 text-xl text-secondary-label">
-                <Lock className="h-5 w-5 fill-current" />
+              <h1 className="text-3xl font-semibold tracking-normal text-secondary-label sm:text-4xl md:text-5xl">{project.name}</h1>
+              <p className="mt-2 flex flex-wrap items-center gap-2 text-base text-secondary-label sm:text-lg">
+                <Lock className="h-4 w-4 fill-current sm:h-5 sm:w-5" />
                 <span>{user.name}</span>
                 <span>•</span>
                 <span>{tracks.length} track{tracks.length !== 1 ? 's' : ''}</span>
@@ -218,19 +218,19 @@ export default function Project({ user }) {
                 <span>{tracks.length ? '0s' : 'Now'}</span>
               </p>
             </div>
-            <button onClick={() => leadTrack ? handlePlay(leadTrack) : setIsUploadOpen(true)} className="grid h-16 w-16 shrink-0 place-items-center rounded-3xl bg-primary-label text-primary-background transition-transform hover:scale-105" aria-label={leadTrack ? 'Play project' : 'Add tracks'}>
-              <Play className="h-8 w-8 fill-current translate-x-0.5" />
+            <button onClick={() => leadTrack ? handlePlay(leadTrack) : setIsUploadOpen(true)} className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-primary-label text-primary-background transition-transform hover:scale-105 sm:h-14 sm:w-14 sm:rounded-3xl" aria-label={leadTrack ? 'Play project' : 'Add tracks'}>
+              <Play className="h-6 w-6 fill-current translate-x-0.5 sm:h-7 sm:w-7" />
             </button>
           </div>
 
-          <button onClick={() => setIsUploadOpen(true)} className="mb-10 flex h-16 w-full items-center justify-center gap-3 rounded-2xl bg-shading text-xl font-semibold text-primary-label transition-colors hover:bg-highlight">
-            <Plus className="h-7 w-7" />
+          <button onClick={() => setIsUploadOpen(true)} className="mb-7 flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-shading py-4 text-lg font-semibold text-primary-label transition-colors hover:bg-highlight sm:mb-9 sm:text-xl">
+            <Plus className="h-5 w-5 sm:h-6 sm:w-6" />
             Add tracks
           </button>
 
           <div className="space-y-2">
             {tracks.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-border bg-shading/50 p-12 text-center flex flex-col items-center">
+              <div className="flex flex-col items-center rounded-2xl border border-dashed border-border bg-shading/50 p-8 text-center sm:p-10">
                 <Music className="w-12 h-12 text-secondary-label mb-4" />
                 <h3 className="text-lg font-medium mb-1">No tracks yet</h3>
                 <p className="text-secondary-label text-sm mb-6">Upload a work-in-progress audio file.</p>
@@ -240,13 +240,13 @@ export default function Project({ user }) {
               </div>
             ) : (
               tracks.map((track, index) => (
-                <div key={track.id} onClick={() => handlePlay(track)} className={`group grid grid-cols-[2rem_1fr_auto] items-center gap-4 rounded-2xl px-3 py-4 cursor-pointer transition-all ${currentTrack?.id === track.id ? 'bg-highlight' : 'hover:bg-shading'}`}>
-                  <div className="text-center text-xl text-secondary-label">
+                <div key={track.id} onClick={() => handlePlay(track)} className={`group grid cursor-pointer grid-cols-[1.5rem_1fr_auto] items-center gap-3 rounded-2xl px-2 py-3 transition-all sm:grid-cols-[2rem_1fr_auto] sm:gap-4 sm:px-3 sm:py-4 ${currentTrack?.id === track.id ? 'bg-highlight' : 'hover:bg-shading'}`}>
+                  <div className="text-center text-base text-secondary-label sm:text-xl">
                     {currentTrack?.id === track.id && isPlaying ? <Play className="mx-auto h-5 w-5 fill-current text-primary-label" /> : index + 1}
                   </div>
                   <div className="min-w-0">
-                    <h3 className="truncate text-xl font-semibold text-primary-label">{track.title}</h3>
-                    <p className="mt-1 text-lg text-secondary-label">{new Date(track.uploadedAt).toLocaleDateString() === new Date().toLocaleDateString() ? 'Now' : new Date(track.uploadedAt).toLocaleDateString()}</p>
+                    <h3 className="truncate text-lg font-semibold text-primary-label sm:text-xl">{track.title}</h3>
+                    <p className="mt-1 text-sm text-secondary-label sm:text-base">{new Date(track.uploadedAt).toLocaleDateString() === new Date().toLocaleDateString() ? 'Now' : new Date(track.uploadedAt).toLocaleDateString()}</p>
                   </div>
                   <div className="flex items-center gap-4 text-primary-label">
                     <button onClick={(event) => handleDeleteTrack(event, track.id)} className="p-2 text-secondary-label hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors opacity-0 group-hover:opacity-100" title="Delete track">

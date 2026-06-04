@@ -24,6 +24,18 @@
   body {
     @apply bg-primary-background text-primary-label font-sans antialiased selection:bg-highlight selection:text-white;
   }
+
+  html,
+  body,
+  #root {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  button,
+  input {
+    min-width: 0;
+  }
 }
 
 @layer utilities {

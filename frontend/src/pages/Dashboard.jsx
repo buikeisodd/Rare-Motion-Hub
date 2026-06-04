@@ -9,8 +9,8 @@ function LibraryProject({ project, tracks }) {
   const artist = leadTrack?.artist || leadTrack?.producer || project.name;
 
   return (
-    <Link to={`/project/${project.id}`} className="group block w-56">
-      <div className="relative aspect-square overflow-hidden rounded-[1.35rem] bg-shading">
+    <Link to={`/project/${project.id}`} className="group block w-full max-w-[15rem]">
+      <div className="relative aspect-square overflow-hidden rounded-[1.1rem] bg-shading sm:rounded-[1.25rem]">
         {project.coverArt ? (
           <img src={project.coverArt} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
         ) : (
@@ -27,16 +27,16 @@ function LibraryProject({ project, tracks }) {
         )}
 
         {leadTrack && (
-          <span className="absolute bottom-3 right-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-shading text-primary-label backdrop-blur-md transition-transform group-hover:scale-105">
-            <Play className="h-7 w-7 fill-current translate-x-0.5" />
+          <span className="absolute bottom-3 right-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-shading text-primary-label backdrop-blur-md transition-transform group-hover:scale-105 sm:h-14 sm:w-14">
+            <Play className="h-5 w-5 fill-current translate-x-0.5 sm:h-6 sm:w-6" />
           </span>
         )}
       </div>
 
-      <div className="mt-5 flex items-start justify-between gap-4">
+      <div className="mt-4 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-xl font-semibold leading-tight tracking-normal text-primary-label line-clamp-2">{title}</h2>
-          <p className="mt-2 truncate text-xl text-secondary-label">{artist}</p>
+          <h2 className="text-base font-semibold leading-tight tracking-normal text-primary-label line-clamp-2 sm:text-lg">{title}</h2>
+          <p className="mt-1 truncate text-base text-secondary-label sm:text-lg">{artist}</p>
         </div>
         <span className="mt-8 shrink-0 text-primary-label opacity-90 transition-opacity group-hover:opacity-100" aria-hidden="true">
           <MoreHorizontal className="h-6 w-6" />
@@ -72,7 +72,7 @@ function ProfileAvatar({ user, size = 'h-11 w-11', className = '' }) {
 
 function NotificationsMenu({ notifications }) {
   return (
-    <div className="absolute right-0 top-20 z-50 w-[min(24rem,90vw)] rounded-[1.5rem] border border-border bg-[#191919] p-4 shadow-2xl">
+    <div className="fixed left-4 right-4 top-24 z-50 rounded-[1.25rem] border border-border bg-[#191919] p-3 shadow-2xl sm:absolute sm:left-auto sm:right-0 sm:top-16 sm:w-[min(24rem,90vw)] sm:p-4">
       <h2 className="px-3 pb-3 text-lg font-bold">Notifications</h2>
       {notifications.length === 0 ? (
         <p className="px-3 py-6 text-sm text-secondary-label">No shared-listening activity yet.</p>
@@ -99,22 +99,22 @@ function NotificationsMenu({ notifications }) {
 
 function ProfilePanel({ user, theme, onThemeChange, onEditProfile, onLogout, onDeleteAccount }) {
   return (
-    <div className="absolute right-0 top-20 z-50 w-[min(24rem,90vw)] rounded-[1.6rem] border border-border bg-[#191919] p-4 shadow-2xl">
-      <div className="mb-4 flex items-center gap-4 rounded-2xl bg-shading p-4">
-        <ProfileAvatar user={user} size="h-16 w-16" />
+    <div className="fixed left-4 right-4 top-24 z-50 rounded-[1.25rem] border border-border bg-[#191919] p-3 shadow-2xl sm:absolute sm:left-auto sm:right-0 sm:top-16 sm:w-[min(24rem,90vw)] sm:p-4">
+      <div className="mb-3 flex items-center gap-3 rounded-2xl bg-shading p-3 sm:mb-4 sm:gap-4 sm:p-4">
+        <ProfileAvatar user={user} size="h-12 w-12 sm:h-16 sm:w-16" />
         <div className="min-w-0">
-          <h2 className="truncate text-xl font-bold">{user.name}</h2>
+          <h2 className="truncate text-lg font-bold sm:text-xl">{user.name}</h2>
           <p className="truncate text-sm text-secondary-label">{user.email}</p>
         </div>
       </div>
 
-      <button onClick={onEditProfile} className="flex w-full items-center gap-4 rounded-xl px-4 py-4 text-left text-lg font-semibold hover:bg-highlight">
+      <button onClick={onEditProfile} className="flex w-full items-center gap-4 rounded-xl px-4 py-3 text-left text-base font-semibold hover:bg-highlight sm:py-4 sm:text-lg">
         <Edit3 className="h-5 w-5" />
         Edit profile
       </button>
 
       <div className="my-2 rounded-xl px-4 py-4">
-        <div className="mb-4 flex items-center gap-4 text-lg font-semibold">
+        <div className="mb-4 flex items-center gap-4 text-base font-semibold sm:text-lg">
           <Palette className="h-5 w-5" />
           Theme setting
         </div>
@@ -131,11 +131,11 @@ function ProfilePanel({ user, theme, onThemeChange, onEditProfile, onLogout, onD
         </div>
       </div>
 
-      <button onClick={onLogout} className="flex w-full items-center gap-4 rounded-xl px-4 py-4 text-left text-lg font-semibold hover:bg-highlight">
+      <button onClick={onLogout} className="flex w-full items-center gap-4 rounded-xl px-4 py-3 text-left text-base font-semibold hover:bg-highlight sm:py-4 sm:text-lg">
         <LogOut className="h-5 w-5" />
         Sign out
       </button>
-      <button onClick={onDeleteAccount} className="flex w-full items-center gap-4 rounded-xl px-4 py-4 text-left text-lg font-semibold text-red-500 hover:bg-red-500/10">
+      <button onClick={onDeleteAccount} className="flex w-full items-center gap-4 rounded-xl px-4 py-3 text-left text-base font-semibold text-red-500 hover:bg-red-500/10 sm:py-4 sm:text-lg">
         <Trash2 className="h-5 w-5" />
         Delete Account
       </button>
@@ -155,25 +155,25 @@ function EditProfileModal({ user, onClose, onSave, saving, error }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm animate-fade-in">
-      <form onSubmit={handleSubmit} className="relative grid w-full max-w-[52rem] gap-10 rounded-[1.6rem] bg-[#1b1b1b] p-8 shadow-2xl md:grid-cols-[1fr_0.9fr] md:p-14">
-        <button type="button" onClick={onClose} className="absolute right-8 top-8 grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Close edit profile">
-          <X className="h-7 w-7" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 px-4 py-6 backdrop-blur-sm animate-fade-in">
+      <form onSubmit={handleSubmit} className="relative grid w-full max-w-[44rem] gap-6 rounded-[1.25rem] bg-[#1b1b1b] p-5 shadow-2xl sm:gap-8 sm:p-8 md:grid-cols-[0.9fr_1fr]">
+        <button type="button" onClick={onClose} className="absolute right-4 top-4 grid h-11 w-11 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:right-6 sm:top-6 sm:h-12 sm:w-12" aria-label="Close edit profile">
+          <X className="h-6 w-6" />
         </button>
-        <h2 className="col-span-full text-center text-3xl font-bold">Edit Profile</h2>
+        <h2 className="col-span-full pr-12 text-center text-2xl font-bold sm:text-3xl">Edit Profile</h2>
 
         <section className="flex flex-col items-center justify-center">
-          <DiscArtwork className="aspect-square w-full max-w-[22rem] rounded-[3rem]" />
+          <DiscArtwork className="aspect-square w-full max-w-[14rem] rounded-[2rem] sm:max-w-[18rem] md:max-w-[20rem] md:rounded-[2.5rem]" />
         </section>
 
-        <section className="flex flex-col items-center justify-center gap-7">
+        <section className="flex flex-col items-center justify-center gap-5 sm:gap-6">
           <div className="w-full max-w-[23rem]">
-            <p className="mb-5 text-xl text-secondary-label">Profile picture</p>
-            <button type="button" onClick={() => fileInputRef.current?.click()} className="relative mx-auto grid h-64 w-64 place-items-center overflow-hidden rounded-full bg-shading">
+            <p className="mb-4 text-base text-secondary-label sm:text-lg">Profile picture</p>
+            <button type="button" onClick={() => fileInputRef.current?.click()} className="relative mx-auto grid h-36 w-36 place-items-center overflow-hidden rounded-full bg-shading sm:h-48 sm:w-48">
               {avatarPreview ? (
                 <img src={avatarPreview} alt="" className="h-full w-full object-cover" />
               ) : (
-                <ProfileAvatar user={{ name }} size="h-64 w-64 text-7xl" />
+                <ProfileAvatar user={{ name }} size="h-36 w-36 text-5xl sm:h-48 sm:w-48 sm:text-6xl" />
               )}
               <span className="absolute inset-0 grid place-items-center bg-black/0 text-white opacity-0 transition-opacity hover:bg-black/45 hover:opacity-100">
                 <UploadCloud className="h-9 w-9" />
@@ -183,9 +183,9 @@ function EditProfileModal({ user, onClose, onSave, saving, error }) {
           </div>
 
           <label className="w-full max-w-[23rem]">
-            <span className="mb-4 block text-center text-xl text-secondary-label">Username</span>
-            <span className="flex h-16 items-center rounded-[1.4rem] bg-[#292929] px-7">
-              <input value={name} onChange={(event) => setName(event.target.value)} className="min-w-0 flex-1 bg-transparent text-xl font-bold text-primary-label outline-none" required />
+            <span className="mb-3 block text-center text-base text-secondary-label sm:text-lg">Username</span>
+            <span className="flex h-14 items-center rounded-[1.1rem] bg-[#292929] px-5 sm:h-16 sm:rounded-[1.4rem] sm:px-7">
+              <input value={name} onChange={(event) => setName(event.target.value)} className="min-w-0 flex-1 bg-transparent text-lg font-bold text-primary-label outline-none sm:text-xl" required />
               <Edit3 className="h-5 w-5" />
             </span>
           </label>
@@ -334,22 +334,22 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
   if (loading) return null;
 
   return (
-    <div className="min-h-screen bg-primary-background px-6 py-12 md:px-20 pb-36 animate-fade-in">
-      <header className="flex items-start justify-between gap-6">
-        <Link to="/" className="text-3xl font-bold tracking-tighter text-primary-label">[untitled]</Link>
+    <div className="min-h-screen bg-primary-background px-4 py-6 pb-28 animate-fade-in sm:px-6 sm:py-8 md:px-10 lg:px-14">
+      <header className="flex items-start justify-between gap-3">
+        <Link to="/" className="min-w-0 truncate text-2xl font-bold tracking-tighter text-primary-label sm:text-3xl">[untitled]</Link>
 
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           <div className="relative">
-            <button onClick={() => { setIsNotificationsOpen((open) => !open); setIsProfileOpen(false); }} className="relative grid h-16 w-16 place-items-center rounded-3xl bg-primary-label text-primary-background transition-transform hover:scale-105" aria-label="Notifications">
-              <Bell className="h-7 w-7 fill-current" />
-              {workspace.notifications.length > 0 && <span className="absolute right-5 top-5 h-2.5 w-2.5 rounded-full bg-blue-500" />}
+            <button onClick={() => { setIsNotificationsOpen((open) => !open); setIsProfileOpen(false); }} className="relative grid h-11 w-11 place-items-center rounded-2xl bg-primary-label text-primary-background transition-transform hover:scale-105 sm:h-14 sm:w-14 sm:rounded-3xl" aria-label="Notifications">
+              <Bell className="h-5 w-5 fill-current sm:h-6 sm:w-6" />
+              {workspace.notifications.length > 0 && <span className="absolute right-3 top-3 h-2 w-2 rounded-full bg-blue-500 sm:right-4 sm:top-4" />}
             </button>
             {isNotificationsOpen && <NotificationsMenu notifications={workspace.notifications} />}
           </div>
 
           <div className="relative">
-            <button onClick={() => { setIsProfileOpen((open) => !open); setIsNotificationsOpen(false); }} className="grid h-16 w-16 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label={`Open ${user.name} profile`}>
-              <ProfileAvatar user={user} size="h-8 w-8" />
+            <button onClick={() => { setIsProfileOpen((open) => !open); setIsNotificationsOpen(false); }} className="grid h-11 w-11 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:h-14 sm:w-14 sm:rounded-3xl" aria-label={`Open ${user.name} profile`}>
+              <ProfileAvatar user={user} size="h-7 w-7 sm:h-8 sm:w-8" />
             </button>
             {isProfileOpen && (
               <ProfilePanel
@@ -363,16 +363,16 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
             )}
           </div>
 
-          <button className="grid h-16 w-16 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Search library">
-            <Search className="h-7 w-7" />
+          <button className="hidden h-11 w-11 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:grid sm:h-14 sm:w-14 sm:rounded-3xl" aria-label="Search library">
+            <Search className="h-6 w-6" />
           </button>
-          <button onClick={onLogout} className="grid h-16 w-16 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Log out">
-            <LogOut className="h-6 w-6" />
+          <button onClick={onLogout} className="hidden h-11 w-11 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:grid sm:h-14 sm:w-14 sm:rounded-3xl" aria-label="Log out">
+            <LogOut className="h-5 w-5 sm:h-6 sm:w-6" />
           </button>
         </div>
       </header>
 
-      <main className="mx-auto flex min-h-[calc(100vh-18rem)] max-w-5xl items-center justify-center">
+      <main className="mx-auto flex min-h-[calc(100vh-14rem)] max-w-4xl items-center justify-center py-10 sm:min-h-[calc(100vh-16rem)]">
         {workspace.projects.length === 0 ? (
           <div className="text-center">
             <Disc3 className="mx-auto mb-5 h-12 w-12 text-secondary-label" />
@@ -380,7 +380,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
             <p className="mt-2 text-secondary-label">Create your first library project.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-20 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid w-full grid-cols-2 justify-items-center gap-x-4 gap-y-10 sm:gap-x-8 sm:gap-y-12 md:grid-cols-3">
             {workspace.projects.map((project) => (
               <LibraryProject key={project.id} project={project} tracks={workspace.tracks} />
             ))}
@@ -388,9 +388,9 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
         )}
       </main>
 
-      <div className="fixed inset-x-0 bottom-12 z-30 flex flex-col items-center gap-4 px-6">
+      <div className="fixed inset-x-0 bottom-6 z-30 flex flex-col items-center gap-3 px-4 sm:bottom-8">
         {isAddMenuOpen && (
-          <div className="w-64 rounded-[1.4rem] bg-[#282828]/95 p-4 shadow-2xl backdrop-blur-xl animate-slide-up">
+          <div className="w-[min(16rem,92vw)] rounded-[1.2rem] bg-[#282828]/95 p-3 shadow-2xl backdrop-blur-xl animate-slide-up">
             <button onClick={createAudioProject} className="flex w-full items-center gap-5 rounded-xl px-4 py-3 text-left text-xl font-semibold hover:bg-highlight transition-colors">
               <Music className="h-6 w-6" />
               Audio
@@ -416,9 +416,9 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
 
         <button
           onClick={() => setIsAddMenuOpen((open) => !open)}
-          className="inline-flex h-20 min-w-56 items-center justify-center gap-4 rounded-full bg-shading px-10 text-2xl font-semibold text-primary-label shadow-2xl backdrop-blur-md transition-transform hover:scale-[1.02]"
+          className="inline-flex h-14 min-w-40 items-center justify-center gap-3 rounded-full bg-shading px-7 text-lg font-semibold text-primary-label shadow-2xl backdrop-blur-md transition-transform hover:scale-[1.02] sm:h-16 sm:min-w-48 sm:text-xl"
         >
-          {isAddMenuOpen ? <X className="h-8 w-8" /> : <Plus className="h-8 w-8" />}
+          {isAddMenuOpen ? <X className="h-6 w-6" /> : <Plus className="h-6 w-6" />}
           {isAddMenuOpen ? 'Close' : 'Add'}
         </button>
       </div>
