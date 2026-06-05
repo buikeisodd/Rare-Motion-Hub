@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, CheckCheck, Copy, Forward, MessageCircle, Mic, Paperclip, Pin, PinOff, Reply, Send, Smile, Trash2, Users, X } from 'lucide-react';
+import { ArrowLeft, CheckCheck, Copy, Forward, MessageCircle, Mic, MicOff, MonitorUp, Paperclip, PhoneOff, Pin, PinOff, Reply, Send, Smile, Trash2, Users, Video, VideoOff, Volume2, X } from 'lucide-react';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 const emojis = ['😀', '😂', '😍', '🥹', '🔥', '🙏', '❤️', '🎧', '🎵', '✅', '😭', '😤', '🤝', '✨', '💿', '🚀'];
@@ -36,12 +36,14 @@ function ConvoItem({ convo, isActive, onClick }) {
   const lastSender = convo.lastMessage?.sender?.name || null;
   const time = convo.updatedAt ? new Date(convo.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null;
 
+  const hasUnread = (convo.unreadCount || 0) > 0;
+
   return (
-    <button onClick={onClick} className={`flex w-full items-center gap-3 px-4 py-3 text-left transition-colors ${isActive ? 'bg-highlight' : 'hover:bg-shading'}`}>
+    <button onClick={onClick} className={`flex w-full items-center gap-3 px-4 py-3 text-left transition-colors ${isActive ? 'bg-highlight' : hasUnread ? 'bg-primary-label/10 hover:bg-primary-label/15' : 'hover:bg-shading'}`}>
       <ProfileAvatar user={convo.partner} isGroup={isGroup} size="h-11 w-11" />
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
-          <span className="truncate text-sm font-semibold text-primary-label">{name}</span>
+          <span className={`truncate text-sm text-primary-label ${hasUnread ? 'font-extrabold' : 'font-semibold'}`}>{name}</span>
           {time && <span className="shrink-0 text-[11px] text-secondary-label">{time}</span>}
         </div>
         {lastText ? (
@@ -50,7 +52,131 @@ function ConvoItem({ convo, isActive, onClick }) {
           <p className="mt-0.5 text-xs italic text-secondary-label/50">No messages yet</p>
         )}
       </div>
+      {hasUnread && <span className="grid h-5 min-w-5 place-items-center rounded-full bg-green-400 px-1.5 text-[10px] font-bold text-black">{convo.unreadCount}</span>}
     </button>
+  );
+}
+
+function GroupStreamPanel({ currentUser, participants }) {
+  const [joined, setJoined] = useState(false);
+  const [micOn, setMicOn] = useState(false);
+  const [cameraOn, setCameraOn] = useState(false);
+  const [screenOn, setScreenOn] = useState(false);
+  const [participantVolumes, setParticipantVolumes] = useState({});
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
+
+  const stopStream = () => {
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    if (videoRef.current) videoRef.current.srcObject = null;
+  };
+
+  const setLocalStream = (stream) => {
+    stopStream();
+    streamRef.current = stream;
+    if (videoRef.current) videoRef.current.srcObject = stream;
+  };
+
+  const joinVoice = async () => {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    setLocalStream(stream);
+    setJoined(true);
+    setMicOn(true);
+  };
+
+  const toggleMic = async () => {
+    if (!joined) return joinVoice();
+    const audioTracks = streamRef.current?.getAudioTracks() || [];
+    audioTracks.forEach((track) => { track.enabled = !micOn; });
+    setMicOn((value) => !value);
+  };
+
+  const toggleCamera = async () => {
+    if (cameraOn) {
+      stopStream();
+      setCameraOn(false);
+      setScreenOn(false);
+      if (micOn) await joinVoice();
+      return;
+    }
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+    setLocalStream(stream);
+    setJoined(true);
+    setMicOn(true);
+    setCameraOn(true);
+    setScreenOn(false);
+  };
+
+  const shareScreen = async () => {
+    if (screenOn) {
+      stopStream();
+      setScreenOn(false);
+      if (micOn) await joinVoice();
+      return;
+    }
+    const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+    setLocalStream(stream);
+    setJoined(true);
+    setScreenOn(true);
+    setCameraOn(false);
+    stream.getVideoTracks()[0]?.addEventListener('ended', () => setScreenOn(false));
+  };
+
+  const leave = () => {
+    stopStream();
+    setJoined(false);
+    setMicOn(false);
+    setCameraOn(false);
+    setScreenOn(false);
+  };
+
+  return (
+    <div className="border-b border-border bg-[#111111] p-3">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-bold">Group voice channel</p>
+          <p className="text-[11px] text-secondary-label">{joined ? 'Connected locally' : 'Join voice, camera, or screen share'}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={toggleMic} className={`grid h-9 w-9 place-items-center rounded-xl ${micOn ? 'bg-green-400 text-black' : 'bg-shading'}`} aria-label="Toggle mic">
+            {micOn ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
+          </button>
+          <button onClick={toggleCamera} className={`grid h-9 w-9 place-items-center rounded-xl ${cameraOn ? 'bg-green-400 text-black' : 'bg-shading'}`} aria-label="Toggle camera">
+            {cameraOn ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
+          </button>
+          <button onClick={shareScreen} className={`grid h-9 w-9 place-items-center rounded-xl ${screenOn ? 'bg-green-400 text-black' : 'bg-shading'}`} aria-label="Share screen">
+            <MonitorUp className="h-4 w-4" />
+          </button>
+          <button onClick={leave} className="grid h-9 w-9 place-items-center rounded-xl bg-red-500/20 text-red-300" aria-label="Leave call">
+            <PhoneOff className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      {(cameraOn || screenOn) && (
+        <video ref={videoRef} autoPlay muted playsInline className="mb-3 aspect-video w-full rounded-xl bg-black object-cover" />
+      )}
+
+      <div className="grid gap-2 sm:grid-cols-2">
+        {participants.filter((participant) => participant.id !== currentUser.id).map((participant) => (
+          <div key={participant.id} className="flex items-center gap-3 rounded-xl bg-shading px-3 py-2">
+            <ProfileAvatar user={participant} size="h-8 w-8" />
+            <span className="min-w-0 flex-1 truncate text-xs font-semibold">{participant.name}</span>
+            <Volume2 className="h-4 w-4 text-secondary-label" />
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={participantVolumes[participant.id] ?? 80}
+              onChange={(event) => setParticipantVolumes((prev) => ({ ...prev, [participant.id]: event.target.value }))}
+              className="w-20 accent-white"
+              aria-label={`Volume for ${participant.name}`}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -93,6 +219,7 @@ function ChatWindow({ convo, currentUser, conversations, onClose }) {
 
   const isGroup = convo.type === 'group';
   const chatName = isGroup ? 'Group Chat' : convo.partner?.name || 'Unknown';
+  const participants = convo.participants || [];
 
   const fetchMessages = useCallback(async () => {
     try {
@@ -248,6 +375,8 @@ function ChatWindow({ convo, currentUser, conversations, onClose }) {
           {isGroup && <p className="truncate text-[11px] text-secondary-label">etrange · sholabomii · aderoju · quarter21</p>}
         </div>
       </div>
+
+      {isGroup && <GroupStreamPanel currentUser={currentUser} participants={participants} />}
 
       {pinned && (
         <button onClick={() => setReplyTo(pinned)} className="flex shrink-0 items-center gap-3 border-b border-border bg-shading px-4 py-2 text-left text-xs">

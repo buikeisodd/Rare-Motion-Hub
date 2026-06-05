@@ -133,6 +133,29 @@ const notifyListen = (db, { ownerId, actorId, project, folder, track }) => {
     createdAt: new Date().toISOString()
   });
 };
+const notifyMessage = (db, message) => {
+  const sender = db.users.find((user) => user.id === message.senderId);
+  if (!sender) return;
+
+  chatRecipientIds(db, message).forEach((recipientId) => {
+    db.notifications.push({
+      id: makeId(),
+      userId: recipientId,
+      type: 'message',
+      actor: publicUser(sender),
+      chat: {
+        type: message.conversationType,
+        partnerId: message.conversationType === 'dm' ? message.senderId : null
+      },
+      message: message.conversationType === 'group'
+        ? `${sender.name} sent a message in Group Chat`
+        : `${sender.name} sent you a message`,
+      preview: message.text || (message.attachments?.length ? 'Media message' : ''),
+      read: false,
+      createdAt: new Date().toISOString()
+    });
+  });
+};
 
 // Multer setups
 const trackStorage = multer.diskStorage({
@@ -641,6 +664,13 @@ const markConversationRead = (db, { userId, type, partnerId }) => {
       if (!message.readBy.includes(userId)) message.readBy.push(userId);
     }
   });
+  db.notifications.forEach((notification) => {
+    const isChatNotification = notification.type === 'message' && notification.userId === userId &&
+      (type === 'group'
+        ? notification.chat?.type === 'group'
+        : notification.chat?.type === 'dm' && notification.actor?.id === partnerId);
+    if (isChatNotification) notification.read = true;
+  });
 };
 const createMessage = (db, { senderId, recipientId, conversationType, text = '', attachments = [], replyToMessageId = null, forwardedFrom = null }) => {
   const type = conversationType || 'dm';
@@ -717,6 +747,7 @@ app.post('/api/messages', (req, res) => {
   const msg = createMessage(db, { senderId, recipientId, conversationType, text, replyToMessageId });
 
   db.messages.push(msg);
+  notifyMessage(db, msg);
   writeDB(db);
 
   res.json({ message: hydrateMessage(db, msg) });
@@ -760,6 +791,7 @@ app.post('/api/messages/media', uploadChatMedia.single('media'), (req, res) => {
   });
 
   db.messages.push(msg);
+  notifyMessage(db, msg);
   writeDB(db);
   res.json({ message: hydrateMessage(db, msg) });
 });
@@ -809,6 +841,7 @@ app.post('/api/messages/:id/forward', (req, res) => {
     forwardedFrom: { id: source.id, senderId: source.senderId }
   });
   db.messages.push(msg);
+  notifyMessage(db, msg);
   writeDB(db);
   res.json({ message: hydrateMessage(db, msg) });
 });
@@ -831,10 +864,12 @@ app.get('/api/conversations', (req, res) => {
           (m.senderId === other.id && m.recipientId === userId))
     );
     const last = msgs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] || null;
+    const unreadCount = msgs.filter((message) => message.senderId === other.id && !(message.readBy || []).includes(userId)).length;
     conversations.push({
       type: 'dm',
       partner: publicUser(other),
       lastMessage: last ? hydrateMessage(db, last) : null,
+      unreadCount,
       updatedAt: last?.createdAt || null
     });
   }
@@ -842,11 +877,13 @@ app.get('/api/conversations', (req, res) => {
   // Group
   const groupMsgs = db.messages.filter((m) => m.conversationType === 'group');
   const lastGroup = groupMsgs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] || null;
+  const groupUnreadCount = groupMsgs.filter((message) => message.senderId !== userId && !(message.readBy || []).includes(userId)).length;
   conversations.push({
     type: 'group',
     partner: null,
     participants: db.users.map(publicUser),
     lastMessage: lastGroup ? hydrateMessage(db, lastGroup) : null,
+    unreadCount: groupUnreadCount,
     updatedAt: lastGroup?.createdAt || null
   });
 

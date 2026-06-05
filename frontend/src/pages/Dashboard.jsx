@@ -76,22 +76,24 @@ function NotificationsMenu({ notifications }) {
     <div className="fixed left-4 right-4 top-24 z-50 rounded-[1.25rem] border border-border bg-[#191919] p-3 shadow-2xl sm:absolute sm:left-auto sm:right-0 sm:top-16 sm:w-[min(24rem,90vw)] sm:p-4">
       <h2 className="px-3 pb-3 text-lg font-bold">Notifications</h2>
       {notifications.length === 0 ? (
-        <p className="px-3 py-6 text-sm text-secondary-label">No shared-listening activity yet.</p>
+        <p className="px-3 py-6 text-sm text-secondary-label">No notifications yet.</p>
       ) : (
         <div className="max-h-96 space-y-2 overflow-y-auto">
-          {notifications.map((notification) => (
-            <div key={notification.id} className="flex gap-3 rounded-2xl bg-shading p-3">
-              <ProfileAvatar user={notification.actor || { name: '?' }} size="h-10 w-10" />
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-primary-label">
-                  {notification.actor?.name || 'Someone'} listened to {notification.track?.title || notification.project?.name || notification.folder?.name || 'your shared item'}
-                </p>
-                <p className="mt-1 text-xs text-secondary-label">
-                  {new Date(notification.createdAt).toLocaleString()}
-                </p>
+          {notifications.map((notification) => {
+            const text = notification.type === 'message'
+              ? notification.message
+              : `${notification.actor?.name || 'Someone'} listened to ${notification.track?.title || notification.project?.name || notification.folder?.name || 'your shared item'}`;
+            return (
+              <div key={notification.id} className={`flex gap-3 rounded-2xl p-3 ${notification.read ? 'bg-shading' : 'bg-primary-label/10'}`}>
+                <ProfileAvatar user={notification.actor || { name: '?' }} size="h-10 w-10" />
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-primary-label">{text}</p>
+                  {notification.preview && <p className="mt-1 truncate text-xs text-secondary-label">{notification.preview}</p>}
+                  <p className="mt-1 text-xs text-secondary-label">{new Date(notification.createdAt).toLocaleString()}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
