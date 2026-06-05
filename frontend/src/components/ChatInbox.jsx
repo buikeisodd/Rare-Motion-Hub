@@ -306,9 +306,9 @@ export default function ChatInbox({ user, isOpen, onToggle }) {
           >
             {/* Header */}
             <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-4">
-              <div className="flex items-center gap-2">
-                <MessageCircle className="h-5 w-5 text-primary-label" />
-                <h2 className="text-base font-bold text-primary-label">Messages</h2>
+              <div className="flex flex-col">
+                <span className="text-lg font-bold tracking-tighter text-primary-label">[untitled]</span>
+                <span className="text-xs text-secondary-label font-medium">Messages</span>
               </div>
               <button
                 onClick={onToggle}
