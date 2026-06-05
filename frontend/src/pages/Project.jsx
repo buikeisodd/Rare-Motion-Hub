@@ -65,6 +65,7 @@ export default function Project({ user }) {
   }, [id, user.id]);
 
   const handlePlay = (track) => {
+    const isSameTrack = currentTrack?.id === track.id;
     if (currentTrack?.id === track.id) {
       setIsPlaying((playing) => !playing);
     } else {
@@ -72,11 +73,13 @@ export default function Project({ user }) {
       setIsPlaying(true);
     }
 
-    fetch(`${apiUrl}/api/listen`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: user.id, projectId: project?.id, trackId: track.id })
-    }).catch((err) => console.error('Failed to record listening activity', err));
+    if (!isSameTrack || !isPlaying) {
+      fetch(`${apiUrl}/api/listen`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, projectId: project?.id, trackId: track.id })
+      }).catch((err) => console.error('Failed to record listening activity', err));
+    }
   };
 
   const handleUploadSuccess = (newTrack) => {

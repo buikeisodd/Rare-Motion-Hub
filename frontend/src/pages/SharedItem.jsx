@@ -51,6 +51,7 @@ export default function SharedItem({ user }) {
   const itemName = sharedItem?.project?.name || sharedItem?.folder?.name || 'Shared item';
 
   const handlePlay = (track) => {
+    const isSameTrack = currentTrack?.id === track.id;
     if (currentTrack?.id === track.id) {
       setIsPlaying((playing) => !playing);
     } else {
@@ -58,16 +59,18 @@ export default function SharedItem({ user }) {
       setIsPlaying(true);
     }
 
-    fetch(`${apiUrl}/api/listen`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userId: user.id,
-        projectId: track.projectId || sharedItem?.project?.id,
-        folderId: sharedItem?.folder?.id,
-        trackId: track.id
-      })
-    }).catch((err) => console.error('Failed to record listening activity', err));
+    if (!isSameTrack || !isPlaying) {
+      fetch(`${apiUrl}/api/listen`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          projectId: track.projectId || sharedItem?.project?.id,
+          folderId: sharedItem?.folder?.id,
+          trackId: track.id
+        })
+      }).catch((err) => console.error('Failed to record listening activity', err));
+    }
   };
 
   const handleSave = async () => {
