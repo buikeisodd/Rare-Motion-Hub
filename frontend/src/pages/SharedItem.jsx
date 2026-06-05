@@ -117,7 +117,7 @@ export default function SharedItem({ user }) {
         <section className="flex justify-center md:justify-start">
           <div className="grid aspect-square w-full max-w-[24rem] place-items-center overflow-hidden rounded-[1.25rem] bg-shading shadow-2xl md:max-w-[28rem]">
             {sharedItem.project?.coverArt ? (
-              <img src={sharedItem.project.coverArt} alt="" className="h-full w-full object-cover" />
+              <img src={sharedItem.project.coverArt} alt="" onError={(event) => { event.currentTarget.style.display = 'none'; }} className="h-full w-full object-cover" />
             ) : type === 'folder' ? (
               <Folder className="h-20 w-20 text-secondary-label sm:h-24 sm:w-24" />
             ) : (

@@ -223,7 +223,7 @@ export default function Project({ user }) {
       <main className="mx-auto grid max-w-6xl gap-8 px-4 sm:px-6 md:grid-cols-[minmax(16rem,30rem)_minmax(20rem,1fr)] md:gap-12 md:px-10 md:pt-10 lg:px-14">
         <section className="flex justify-center md:justify-start">
           <div className="group relative aspect-square w-full max-w-[24rem] overflow-hidden rounded-[1.2rem] bg-[linear-gradient(135deg,#b7ff63_0%,#d6c18e_45%,#d84f93_100%)] shadow-2xl md:max-w-[30rem]">
-            {project.coverArt && <img src={project.coverArt} alt={project.title || project.name} className="h-full w-full object-cover" />}
+            {project.coverArt && <img src={project.coverArt} alt={project.title || project.name} onError={(event) => { event.currentTarget.style.display = 'none'; }} className="h-full w-full object-cover" />}
             <button
               type="button"
               className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"

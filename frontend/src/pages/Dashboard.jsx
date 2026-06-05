@@ -13,7 +13,7 @@ function LibraryProject({ project, tracks }) {
     <Link to={`/project/${project.id}`} className="group block w-full max-w-[15rem]">
       <div className="relative aspect-square overflow-hidden rounded-[1.1rem] bg-shading sm:rounded-[1.25rem]">
         {project.coverArt ? (
-          <img src={project.coverArt} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+          <img src={project.coverArt} alt="" onError={(event) => { event.currentTarget.style.display = 'none'; }} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
         ) : (
           <div className="grid h-full w-full grid-cols-2 gap-3 bg-[#242424] p-3">
             {projectTracks.slice(0, 4).map((track) => (

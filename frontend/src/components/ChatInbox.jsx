@@ -93,6 +93,7 @@ function GroupStreamPanel({ currentUser, participants, activeCall, onJoinCall, o
   const [remoteStreams, setRemoteStreams] = useState({});
   const [participantVolumes, setParticipantVolumes] = useState({});
   const [status, setStatus] = useState('');
+  const [callStageOpen, setCallStageOpen] = useState(false);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const peersRef = useRef({});
@@ -158,6 +159,12 @@ function GroupStreamPanel({ currentUser, participants, activeCall, onJoinCall, o
     Object.values(peersRef.current).forEach(addLocalTracks);
   };
 
+  useEffect(() => {
+    if (videoRef.current && streamRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+    }
+  }, [callStageOpen, cameraOn, screenOn, joined]);
+
   const connectToParticipants = useCallback(async (call) => {
     const remotes = (call?.participants || []).filter((participant) => participant.id !== currentUser.id);
     for (const participant of remotes) {
@@ -174,6 +181,7 @@ function GroupStreamPanel({ currentUser, participants, activeCall, onJoinCall, o
     setLocalStream(stream);
     const call = await onJoinCall?.();
     setJoined(true);
+    setCallStageOpen(true);
     setMicOn(stream.getAudioTracks().some((track) => track.enabled));
     setCameraOn(mode === 'camera');
     setScreenOn(mode === 'screen');
@@ -225,6 +233,7 @@ function GroupStreamPanel({ currentUser, participants, activeCall, onJoinCall, o
     setMicOn(false);
     setCameraOn(false);
     setScreenOn(false);
+    setCallStageOpen(false);
     setStatus('');
     onLeaveCall?.();
   };
@@ -302,18 +311,110 @@ function GroupStreamPanel({ currentUser, participants, activeCall, onJoinCall, o
   }, []);
 
   const connectedParticipants = participants.filter((participant) => participant.id !== currentUser.id && remoteStreams[participant.id]);
+  const callStage = (
+    <div className="fixed inset-0 z-[70] flex flex-col bg-[#050505] text-primary-label">
+      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-6">
+        <div className="min-w-0">
+          <p className="truncate text-base font-bold sm:text-lg">Group call</p>
+          <p className="truncate text-xs text-secondary-label">{joined ? `${status || 'Connected'} · ${connectedParticipants.length + 1} in call` : `${otherCallers.map((participant) => participant.name).join(', ') || 'Someone'} is on a call`}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {!joined && (
+            <button onClick={joinVoice} className="inline-flex h-10 items-center gap-2 rounded-xl bg-green-400 px-4 text-sm font-bold text-black">
+              <PhoneCall className="h-4 w-4" />
+              Join
+            </button>
+          )}
+          <button onClick={() => setCallStageOpen(false)} className="grid h-10 w-10 place-items-center rounded-xl bg-shading" aria-label="Minimize call">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+      </div>
+
+      <div className="grid flex-1 auto-rows-fr gap-3 overflow-y-auto p-3 sm:grid-cols-2 sm:p-6 lg:grid-cols-3">
+        {joined && (
+          <div className="relative min-h-52 overflow-hidden rounded-2xl bg-black">
+            {(cameraOn || screenOn) ? (
+              <video ref={videoRef} autoPlay muted playsInline className="h-full min-h-52 w-full object-cover" />
+            ) : (
+              <div className="grid h-full min-h-52 place-items-center bg-shading">
+                <ProfileAvatar user={currentUser} size="h-20 w-20" />
+              </div>
+            )}
+            <span className="absolute bottom-3 left-3 rounded-full bg-black/70 px-3 py-1 text-xs font-bold">You</span>
+          </div>
+        )}
+        {connectedParticipants.map((participant) => (
+          <div key={participant.id} className="relative min-h-52 overflow-hidden rounded-2xl bg-black">
+            <RemoteMedia stream={remoteStreams[participant.id]} volume={participantVolumes[participant.id] ?? 80} className="h-full min-h-52 w-full object-cover" />
+            {!remoteStreams[participant.id]?.getVideoTracks().length && (
+              <div className="absolute inset-0 grid place-items-center bg-shading">
+                <ProfileAvatar user={participant} size="h-20 w-20" />
+              </div>
+            )}
+            <div className="absolute bottom-3 left-3 flex items-center gap-2 rounded-full bg-black/70 px-3 py-1">
+              <span className="text-xs font-bold">{participant.name}</span>
+              <Volume2 className="h-3.5 w-3.5 text-secondary-label" />
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={participantVolumes[participant.id] ?? 80}
+                onChange={(event) => setParticipantVolumes((prev) => ({ ...prev, [participant.id]: Number(event.target.value) }))}
+                className="w-20 accent-white"
+                aria-label={`Volume for ${participant.name}`}
+              />
+            </div>
+          </div>
+        ))}
+        {!joined && connectedParticipants.length === 0 && (
+          <div className="col-span-full grid place-items-center text-center text-secondary-label">
+            <div>
+              <PhoneCall className="mx-auto mb-4 h-10 w-10" />
+              <p className="text-sm">Join the call to see and hear everyone.</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="flex shrink-0 items-center justify-center gap-3 border-t border-border px-4 py-4">
+        <button onClick={toggleMic} className={`grid h-12 w-12 place-items-center rounded-2xl ${micOn ? 'bg-green-400 text-black' : 'bg-shading'}`} aria-label="Toggle mic">
+          {micOn ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
+        </button>
+        <button onClick={toggleCamera} className={`grid h-12 w-12 place-items-center rounded-2xl ${cameraOn ? 'bg-green-400 text-black' : 'bg-shading'}`} aria-label="Toggle camera">
+          {cameraOn ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
+        </button>
+        <button onClick={shareScreen} className={`grid h-12 w-12 place-items-center rounded-2xl ${screenOn ? 'bg-green-400 text-black' : 'bg-shading'}`} aria-label="Share screen">
+          <MonitorUp className="h-5 w-5" />
+        </button>
+        <button onClick={leave} className="grid h-12 w-12 place-items-center rounded-2xl bg-red-500 text-white" aria-label="Leave call">
+          <PhoneOff className="h-5 w-5" />
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="border-b border-border bg-[#111111] p-3">
+      {callStageOpen && callStage}
       {activeCall && !joined && !isInActiveCall && (
-        <button onClick={joinVoice} className="mb-3 flex w-full items-center gap-3 rounded-2xl border border-green-400/30 bg-green-400/10 px-3 py-3 text-left transition-colors hover:bg-green-400/15">
+        <button onClick={() => setCallStageOpen(true)} className="mb-3 flex w-full items-center gap-3 rounded-2xl border border-green-400/30 bg-green-400/10 px-3 py-3 text-left transition-colors hover:bg-green-400/15">
           <span className="grid h-9 w-9 place-items-center rounded-xl bg-green-400 text-black">
             <PhoneCall className="h-4 w-4" />
           </span>
           <span className="min-w-0">
             <span className="block text-sm font-bold text-primary-label">{activeCall.startedBy?.name || otherCallers[0]?.name || 'Someone'} is on a group call</span>
-            <span className="block truncate text-[11px] text-secondary-label">{otherCallers.map((participant) => participant.name).join(', ') || 'Tap to join the call'}</span>
+            <span className="block truncate text-[11px] text-secondary-label">{otherCallers.map((participant) => participant.name).join(', ') || 'Tap to open the call'}</span>
           </span>
+        </button>
+      )}
+      {activeCall && (joined || isInActiveCall) && !callStageOpen && (
+        <button onClick={() => setCallStageOpen(true)} className="mb-3 flex w-full items-center justify-between gap-3 rounded-2xl bg-highlight px-3 py-3 text-left">
+          <span className="flex min-w-0 items-center gap-3">
+            <PhoneCall className="h-5 w-5 text-green-300" />
+            <span className="truncate text-sm font-bold">Return to group call</span>
+          </span>
+          <span className="text-xs text-secondary-label">{callParticipants.length} joined</span>
         </button>
       )}
 
@@ -338,7 +439,7 @@ function GroupStreamPanel({ currentUser, participants, activeCall, onJoinCall, o
         </div>
       </div>
 
-      {(joined || connectedParticipants.length > 0) && (
+      {(joined || connectedParticipants.length > 0) && !callStageOpen && (
         <div className="mb-3 grid gap-2 sm:grid-cols-2">
           {joined && (
             <div className="relative overflow-hidden rounded-xl bg-black">

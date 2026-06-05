@@ -10,6 +10,11 @@ const BASE_URL = process.env.BASE_URL || process.env.RENDER_EXTERNAL_URL || 'htt
 
 app.use(cors());
 app.use(express.json());
+app.use((req, res, next) => {
+  res.setHeader('Accept-Ranges', 'bytes');
+  res.setHeader('Access-Control-Expose-Headers', 'Accept-Ranges, Content-Length, Content-Range, Content-Type');
+  next();
+});
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/covers', express.static(path.join(__dirname, 'covers')));
 app.use('/avatars', express.static(path.join(__dirname, 'avatars')));
@@ -101,6 +106,10 @@ const removeFileIfExists = (filePath) => {
 const removeDirIfExists = (dirPath) => {
   if (dirPath && fs.existsSync(dirPath)) fs.rmSync(dirPath, { recursive: true, force: true });
 };
+const fileToDataUrl = (file) => {
+  const buffer = fs.readFileSync(file.path);
+  return `data:${file.mimetype};base64,${buffer.toString('base64')}`;
+};
 const requireUserId = (req, res) => {
   const userId = (req.query.userId || req.body.userId || '').toString();
   if (!userId) {
@@ -118,11 +127,15 @@ const normalizeLibraryItem = (item, db, type) => {
   const artist = item.artist || ownerNameFor(db, item.userId);
   return { ...item, title, name: title, artist };
 };
+const normalizeTrack = (track) => ({
+  ...track,
+  url: track.filename ? `${BASE_URL}/api/media/tracks/${track.id}` : track.url
+});
 const getProjectBundle = (db, project) => ({
   type: 'project',
   project: normalizeLibraryItem(project, db, 'project'),
   owner: publicUser(db.users.find((user) => user.id === project.userId)),
-  tracks: db.tracks.filter((track) => track.projectId === project.id)
+  tracks: db.tracks.filter((track) => track.projectId === project.id).map(normalizeTrack)
 });
 const notifyListen = (db, { ownerId, actorId, project, folder, track }) => {
   if (!ownerId || !actorId || ownerId === actorId) return;
@@ -299,7 +312,7 @@ app.get('/api/workspace', (req, res) => {
   res.json({
     folders: db.folders.filter((folder) => folder.userId === userId).map((folder) => normalizeLibraryItem(folder, db, 'folder')),
     projects: db.projects.filter((project) => project.userId === userId).map((project) => normalizeLibraryItem(project, db, 'project')),
-    tracks: db.tracks.filter((track) => track.userId === userId || track.uploader?.id === userId),
+    tracks: db.tracks.filter((track) => track.userId === userId || track.uploader?.id === userId).map(normalizeTrack),
     coverArts: db.coverArts.filter((cover) => cover.userId === userId),
     notifications: db.notifications.filter((notification) => notification.userId === userId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
   });
@@ -324,7 +337,7 @@ app.get('/api/share/folder/:id', (req, res) => {
     folder: normalizeLibraryItem(folder, db, 'folder'),
     owner: publicUser(db.users.find((user) => user.id === folder.userId)),
     projects: projects.map((project) => normalizeLibraryItem(project, db, 'project')),
-    tracks: db.tracks.filter((track) => projectIds.includes(track.projectId))
+    tracks: db.tracks.filter((track) => projectIds.includes(track.projectId)).map(normalizeTrack)
   });
 });
 
@@ -644,9 +657,9 @@ app.post('/api/upload-cover', uploadCover.single('cover'), (req, res) => {
     return res.status(401).json({ error: 'Unauthorized user.' });
   }
 
-  moveFileToUserDir(req.file, coverDir, userId);
-  const url = `${BASE_URL}/covers/${userId}/${req.file.filename}`;
-  const newCover = { id: Date.now().toString(), userId, url, uploadedAt: new Date().toISOString() };
+  const url = fileToDataUrl(req.file);
+  removeFileIfExists(req.file.path);
+  const newCover = { id: Date.now().toString(), userId, url, mimeType: req.file.mimetype, uploadedAt: new Date().toISOString() };
   db.coverArts.push(newCover);
   writeDB(db);
   res.json(newCover);
@@ -681,15 +694,18 @@ app.post('/api/upload', uploadTrack.single('track'), (req, res) => {
   
   moveFileToUserDir(req.file, uploadDir, userId);
   
+  const trackId = Date.now().toString();
   const newTrack = {
-    id: Date.now().toString(),
+    id: trackId,
     userId,
     projectId: projectId || null,
     title: title || req.file.originalname,
     artist: artist || '',
     producer: producer || '',
     filename: req.file.filename,
-    url: `${BASE_URL}/uploads/${userId}/${req.file.filename}`,
+    mimeType: req.file.mimetype,
+    size: req.file.size,
+    url: `${BASE_URL}/api/media/tracks/${trackId}`,
     uploader: { id: uploader.id, name: uploader.name },
     uploadedAt: new Date().toISOString()
   };
@@ -709,6 +725,43 @@ app.delete('/api/tracks/:id', (req, res) => {
   db.tracks = db.tracks.filter(t => t.id !== req.params.id);
   writeDB(db);
   res.json({ success: true });
+});
+
+app.get('/api/media/tracks/:id', (req, res) => {
+  const db = ensureDBShape(readDB());
+  const track = db.tracks.find((item) => item.id === req.params.id);
+  if (!track) return res.status(404).json({ error: 'Track not found' });
+
+  const mediaOwnerId = track.sourceUserId || track.uploader?.id || track.userId;
+  const filePath = path.join(uploadDir, mediaOwnerId, track.filename);
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Track media file not found' });
+
+  const stat = fs.statSync(filePath);
+  const fileSize = stat.size;
+  const contentType = track.mimeType || 'audio/mpeg';
+  const range = req.headers.range;
+
+  res.setHeader('Content-Type', contentType);
+  res.setHeader('Accept-Ranges', 'bytes');
+  res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+
+  if (!range) {
+    res.setHeader('Content-Length', fileSize);
+    return fs.createReadStream(filePath).pipe(res);
+  }
+
+  const parts = range.replace(/bytes=/, '').split('-');
+  const start = parseInt(parts[0], 10);
+  const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+  if (Number.isNaN(start) || Number.isNaN(end) || start >= fileSize || end >= fileSize) {
+    res.setHeader('Content-Range', `bytes */${fileSize}`);
+    return res.status(416).end();
+  }
+
+  res.status(206);
+  res.setHeader('Content-Range', `bytes ${start}-${end}/${fileSize}`);
+  res.setHeader('Content-Length', end - start + 1);
+  fs.createReadStream(filePath, { start, end }).pipe(res);
 });
 
 // --- CHAT ---

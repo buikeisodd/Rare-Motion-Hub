@@ -59,7 +59,7 @@ export default function ProjectInsights({ user }) {
       <main className="mx-auto flex max-w-2xl flex-col items-center pt-8 text-center sm:pt-10">
         <div className="grid h-36 w-36 place-items-center overflow-hidden rounded-[1.1rem] bg-shading shadow-2xl sm:h-44 sm:w-44 md:h-52 md:w-52">
           {project.coverArt ? (
-            <img src={project.coverArt} alt="" className="h-full w-full object-cover" />
+            <img src={project.coverArt} alt="" onError={(event) => { event.currentTarget.style.display = 'none'; }} className="h-full w-full object-cover" />
           ) : (
             <Music className="h-20 w-20 text-secondary-label" />
           )}
