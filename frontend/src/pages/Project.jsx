@@ -19,6 +19,8 @@ export default function Project({ user }) {
   const [isCoverPickerOpen, setIsCoverPickerOpen] = useState(false);
   const [shareStatus, setShareStatus] = useState('');
   const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false);
+  const [editableTitle, setEditableTitle] = useState('');
+  const [editableArtist, setEditableArtist] = useState('');
 
   const fetchWorkspace = async ({ showLoading = false } = {}) => {
     if (showLoading) setLoading(true);
@@ -28,6 +30,8 @@ export default function Project({ user }) {
       const nextProject = data.projects.find((item) => item.id === id);
       const nextTracks = data.tracks.filter((track) => track.projectId === id);
       setProject(nextProject);
+      setEditableTitle(nextProject?.title || nextProject?.name || 'Untitled project');
+      setEditableArtist(nextProject?.artist || user.name);
       setTracks(nextTracks);
     } catch (err) {
       console.error('Failed to fetch workspace', err);
@@ -47,6 +51,8 @@ export default function Project({ user }) {
           const nextProject = data.projects.find((item) => item.id === id);
           const nextTracks = data.tracks.filter((track) => track.projectId === id);
           setProject(nextProject);
+          setEditableTitle(nextProject?.title || nextProject?.name || 'Untitled project');
+          setEditableArtist(nextProject?.artist || user.name);
           setTracks(nextTracks);
         }
       } catch (err) {
@@ -62,7 +68,7 @@ export default function Project({ user }) {
     return () => {
       cancelled = true;
     };
-  }, [id, user.id]);
+  }, [id, user.id, user.name]);
 
   const handlePlay = (track) => {
     const isSameTrack = currentTrack?.id === track.id;
@@ -89,6 +95,27 @@ export default function Project({ user }) {
 
   const handleCoverSelect = (newCoverUrl) => {
     setProject((prev) => ({ ...prev, coverArt: newCoverUrl }));
+  };
+
+  const saveProjectMetadata = async () => {
+    const nextTitle = editableTitle.trim() || 'Untitled project';
+    const nextArtist = editableArtist.trim() || user.name;
+    setEditableTitle(nextTitle);
+    setEditableArtist(nextArtist);
+    setProject((prev) => prev ? { ...prev, title: nextTitle, name: nextTitle, artist: nextArtist } : prev);
+
+    try {
+      const res = await fetch(`${apiUrl}/api/projects/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, title: nextTitle, artist: nextArtist })
+      });
+      const savedProject = await res.json();
+      if (!res.ok) throw new Error(savedProject.error || 'Could not update project.');
+      setProject(savedProject);
+    } catch (err) {
+      console.error('Failed to save project metadata', err);
+    }
   };
 
   const handleDeleteProject = async () => {
@@ -126,7 +153,7 @@ export default function Project({ user }) {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = `${project.name || 'project'}-export.json`;
+    anchor.download = `${project.title || project.name || 'project'}-export.json`;
     anchor.click();
     URL.revokeObjectURL(url);
     setIsProjectMenuOpen(false);
@@ -196,7 +223,7 @@ export default function Project({ user }) {
       <main className="mx-auto grid max-w-6xl gap-8 px-4 sm:px-6 md:grid-cols-[minmax(16rem,30rem)_minmax(20rem,1fr)] md:gap-12 md:px-10 md:pt-10 lg:px-14">
         <section className="flex justify-center md:justify-start">
           <div className="group relative aspect-square w-full max-w-[24rem] overflow-hidden rounded-[1.2rem] bg-[linear-gradient(135deg,#b7ff63_0%,#d6c18e_45%,#d84f93_100%)] shadow-2xl md:max-w-[30rem]">
-            {project.coverArt && <img src={project.coverArt} alt={project.name} className="h-full w-full object-cover" />}
+            {project.coverArt && <img src={project.coverArt} alt={project.title || project.name} className="h-full w-full object-cover" />}
             <button
               type="button"
               className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
@@ -210,11 +237,29 @@ export default function Project({ user }) {
 
         <section className="pt-1">
           <div className="mb-6 flex items-start justify-between gap-4 sm:mb-8">
-            <div className="min-w-0">
-              <h1 className="text-3xl font-semibold tracking-normal text-secondary-label sm:text-4xl md:text-5xl">{project.name}</h1>
+            <div className="min-w-0 flex-1">
+              <input
+                value={editableTitle}
+                onChange={(event) => setEditableTitle(event.target.value)}
+                onBlur={saveProjectMetadata}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') event.currentTarget.blur();
+                }}
+                className="w-full bg-transparent text-3xl font-semibold tracking-normal text-primary-label outline-none sm:text-4xl md:text-5xl"
+                aria-label="Project title"
+              />
               <p className="mt-2 flex flex-wrap items-center gap-2 text-base text-secondary-label sm:text-lg">
                 <Lock className="h-4 w-4 fill-current sm:h-5 sm:w-5" />
-                <span>{user.name}</span>
+                <input
+                  value={editableArtist}
+                  onChange={(event) => setEditableArtist(event.target.value)}
+                  onBlur={saveProjectMetadata}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') event.currentTarget.blur();
+                  }}
+                  className="min-w-0 max-w-[13rem] bg-transparent text-secondary-label outline-none sm:max-w-[18rem]"
+                  aria-label="Project artist"
+                />
                 <span>•</span>
                 <span>{tracks.length} track{tracks.length !== 1 ? 's' : ''}</span>
                 <span>•</span>
@@ -272,7 +317,7 @@ export default function Project({ user }) {
         return (
           <AudioPlayer
             track={currentTrack}
-            projectName={project.name}
+            projectName={project.title || project.name}
             isPlaying={isPlaying}
             hasNext={hasNext}
             hasPrev={hasPrev}

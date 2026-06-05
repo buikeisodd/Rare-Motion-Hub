@@ -109,9 +109,16 @@ const requireUserId = (req, res) => {
 };
 const makeId = () => `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
 const publicUser = (user) => user ? { id: user.id, name: user.name, avatarUrl: user.avatarUrl || null } : null;
+const defaultTitleFor = (type) => type === 'folder' ? 'Untitled folder' : 'Untitled project';
+const ownerNameFor = (db, userId) => db.users.find((user) => user.id === userId)?.name || 'Unknown artist';
+const normalizeLibraryItem = (item, db, type) => {
+  const title = item.title || item.name || defaultTitleFor(type);
+  const artist = item.artist || ownerNameFor(db, item.userId);
+  return { ...item, title, name: title, artist };
+};
 const getProjectBundle = (db, project) => ({
   type: 'project',
-  project,
+  project: normalizeLibraryItem(project, db, 'project'),
   owner: publicUser(db.users.find((user) => user.id === project.userId)),
   tracks: db.tracks.filter((track) => track.projectId === project.id)
 });
@@ -206,6 +213,13 @@ app.post('/api/auth', (req, res) => {
 });
 
 // --- USERS ---
+app.get('/api/users/:id', (req, res) => {
+  const db = ensureDBShape(readDB());
+  const user = db.users.find((item) => item.id === req.params.id);
+  if (!user) return res.status(404).json({ error: 'User not found.' });
+  res.json({ user });
+});
+
 app.put('/api/users/:id', (req, res) => {
   const { name } = req.body;
   const db = ensureDBShape(readDB());
@@ -215,7 +229,7 @@ app.put('/api/users/:id', (req, res) => {
   const nextName = name?.trim();
   if (!nextName) return res.status(400).json({ error: 'Username is required.' });
 
-  db.users[userIndex] = { ...db.users[userIndex], name: nextName };
+  db.users[userIndex] = { ...db.users[userIndex], name: nextName, updatedAt: new Date().toISOString() };
   writeDB(db);
   res.json({ user: db.users[userIndex] });
 });
@@ -231,6 +245,8 @@ app.post('/api/users/:id/avatar', uploadAvatar.single('avatar'), (req, res) => {
 
   moveFileToUserDir(req.file, avatarDir, req.params.id);
   db.users[userIndex].avatarUrl = `${BASE_URL}/avatars/${req.params.id}/${req.file.filename}`;
+  db.users[userIndex].avatarUpdatedAt = new Date().toISOString();
+  db.users[userIndex].updatedAt = db.users[userIndex].avatarUpdatedAt;
   writeDB(db);
   res.json({ user: db.users[userIndex] });
 });
@@ -263,8 +279,8 @@ app.get('/api/workspace', (req, res) => {
   if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
 
   res.json({
-    folders: db.folders.filter((folder) => folder.userId === userId),
-    projects: db.projects.filter((project) => project.userId === userId),
+    folders: db.folders.filter((folder) => folder.userId === userId).map((folder) => normalizeLibraryItem(folder, db, 'folder')),
+    projects: db.projects.filter((project) => project.userId === userId).map((project) => normalizeLibraryItem(project, db, 'project')),
     tracks: db.tracks.filter((track) => track.userId === userId || track.uploader?.id === userId),
     coverArts: db.coverArts.filter((cover) => cover.userId === userId),
     notifications: db.notifications.filter((notification) => notification.userId === userId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
@@ -287,9 +303,9 @@ app.get('/api/share/folder/:id', (req, res) => {
   const projectIds = projects.map((project) => project.id);
   res.json({
     type: 'folder',
-    folder,
+    folder: normalizeLibraryItem(folder, db, 'folder'),
     owner: publicUser(db.users.find((user) => user.id === folder.userId)),
-    projects,
+    projects: projects.map((project) => normalizeLibraryItem(project, db, 'project')),
     tracks: db.tracks.filter((track) => projectIds.includes(track.projectId))
   });
 });
@@ -421,26 +437,58 @@ app.post('/api/listen', (req, res) => {
 
 // --- FOLDERS ---
 app.post('/api/folders', (req, res) => {
-  const { name, userId } = req.body;
-  const db = readDB();
+  const { name, title, artist, userId } = req.body;
+  const db = ensureDBShape(readDB());
+  const ownerName = ownerNameFor(db, userId);
   if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
-  const newFolder = { id: Date.now().toString(), name, userId, createdAt: new Date().toISOString() };
+  const nextTitle = (title || name || '').trim() || defaultTitleFor('folder');
+  const newFolder = {
+    id: makeId(),
+    name: nextTitle,
+    title: nextTitle,
+    artist: artist?.trim() || ownerName,
+    userId,
+    createdAt: new Date().toISOString()
+  };
   db.folders.push(newFolder);
   writeDB(db);
   res.json(newFolder);
 });
 
+app.put('/api/folders/:id', (req, res) => {
+  const { userId, title, name, artist } = req.body;
+  const db = ensureDBShape(readDB());
+  const folderIndex = db.folders.findIndex((folder) => folder.id === req.params.id && folder.userId === userId);
+  if (folderIndex === -1) return res.status(404).json({ error: 'Folder not found' });
+
+  const nextTitle = (title ?? name ?? db.folders[folderIndex].title ?? db.folders[folderIndex].name ?? '').trim() || defaultTitleFor('folder');
+  const nextArtist = (artist ?? db.folders[folderIndex].artist ?? '').trim() || ownerNameFor(db, userId);
+  db.folders[folderIndex] = {
+    ...db.folders[folderIndex],
+    name: nextTitle,
+    title: nextTitle,
+    artist: nextArtist,
+    updatedAt: new Date().toISOString()
+  };
+  writeDB(db);
+  res.json(normalizeLibraryItem(db.folders[folderIndex], db, 'folder'));
+});
+
 // --- PROJECTS ---
 app.post('/api/projects', (req, res) => {
-  const { name, userId, folderId } = req.body;
-  const db = readDB();
+  const { name, title, artist, userId, folderId } = req.body;
+  const db = ensureDBShape(readDB());
+  const ownerName = ownerNameFor(db, userId);
   if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
   if (folderId && !db.folders.some((folder) => folder.id === folderId && folder.userId === userId)) {
     return res.status(404).json({ error: 'Folder not found' });
   }
+  const nextTitle = (title || name || '').trim() || defaultTitleFor('project');
   const newProject = { 
-    id: Date.now().toString(), 
-    name, 
+    id: makeId(),
+    name: nextTitle,
+    title: nextTitle,
+    artist: artist?.trim() || ownerName,
     userId, 
     folderId: folderId || null,
     coverArt: null,
@@ -449,6 +497,25 @@ app.post('/api/projects', (req, res) => {
   db.projects.push(newProject);
   writeDB(db);
   res.json(newProject);
+});
+
+app.put('/api/projects/:id', (req, res) => {
+  const { userId, title, name, artist } = req.body;
+  const db = ensureDBShape(readDB());
+  const projectIndex = db.projects.findIndex((project) => project.id === req.params.id && project.userId === userId);
+  if (projectIndex === -1) return res.status(404).json({ error: 'Project not found' });
+
+  const nextTitle = (title ?? name ?? db.projects[projectIndex].title ?? db.projects[projectIndex].name ?? '').trim() || defaultTitleFor('project');
+  const nextArtist = (artist ?? db.projects[projectIndex].artist ?? '').trim() || ownerNameFor(db, userId);
+  db.projects[projectIndex] = {
+    ...db.projects[projectIndex],
+    name: nextTitle,
+    title: nextTitle,
+    artist: nextArtist,
+    updatedAt: new Date().toISOString()
+  };
+  writeDB(db);
+  res.json(normalizeLibraryItem(db.projects[projectIndex], db, 'project'));
 });
 
 app.put('/api/projects/:id/move', (req, res) => {

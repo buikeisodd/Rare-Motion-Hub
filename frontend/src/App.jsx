@@ -78,6 +78,30 @@ function App() {
     return storedUser ? JSON.parse(storedUser) : null;
   });
   const [justAuthenticated, setJustAuthenticated] = useState(false);
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+
+    async function refreshUser() {
+      try {
+        const res = await fetch(`${apiUrl}/api/users/${user.id}`);
+        const data = await res.json();
+        if (!cancelled && res.ok && data.user) {
+          setUser(data.user);
+          localStorage.setItem('user', JSON.stringify(data.user));
+        }
+      } catch (err) {
+        console.error('Failed to refresh user profile', err);
+      }
+    }
+
+    refreshUser();
+    return () => {
+      cancelled = true;
+    };
+  }, [apiUrl, user?.id]);
 
   const handleLogin = (userData) => {
     setUser(userData);

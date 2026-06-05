@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Bell, Circle, Disc3, Edit3, FolderPlus, LogOut, MessageSquare, MoreHorizontal, Music, Palette, Play, Plus, Search, Trash2, UploadCloud, Video, X } from 'lucide-react';
+import { Bell, Circle, Disc3, Edit3, Folder, FolderPlus, LogOut, MessageSquare, MoreHorizontal, Music, Palette, Play, Plus, Search, Trash2, UploadCloud, Video, X } from 'lucide-react';
 import ChatInbox from '../components/ChatInbox';
 
 function LibraryProject({ project, tracks }) {
   const projectTracks = tracks.filter((track) => track.projectId === project.id);
   const leadTrack = projectTracks[0];
-  const title = leadTrack?.title || project.name;
-  const artist = leadTrack?.artist || leadTrack?.producer || project.name;
+  const title = project.title || project.name || 'Untitled project';
+  const artist = project.artist || leadTrack?.artist || leadTrack?.producer || 'Unknown artist';
 
   return (
     <Link to={`/project/${project.id}`} className="group block w-full max-w-[15rem]">
@@ -47,6 +47,58 @@ function LibraryProject({ project, tracks }) {
   );
 }
 
+function LibraryFolder({ folder, onSave }) {
+  const [title, setTitle] = useState(folder.title || folder.name || 'Untitled folder');
+  const [artist, setArtist] = useState(folder.artist || 'Unknown artist');
+
+  const save = (next = {}) => {
+    const nextTitle = (next.title ?? title).trim() || 'Untitled folder';
+    const nextArtist = (next.artist ?? artist).trim() || 'Unknown artist';
+    setTitle(nextTitle);
+    setArtist(nextArtist);
+    onSave(folder.id, { title: nextTitle, artist: nextArtist });
+  };
+
+  const stop = (event) => event.stopPropagation();
+
+  return (
+    <div className="group block w-full max-w-[15rem]">
+      <div className="relative grid aspect-square place-items-center overflow-hidden rounded-[1.1rem] bg-shading sm:rounded-[1.25rem]">
+        <Folder className="h-20 w-20 text-secondary-label transition-transform duration-500 group-hover:scale-105" />
+      </div>
+      <div className="mt-4 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <input
+            value={title}
+            onClick={stop}
+            onChange={(event) => setTitle(event.target.value)}
+            onBlur={() => save()}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') event.currentTarget.blur();
+            }}
+            className="w-full bg-transparent text-base font-semibold leading-tight tracking-normal text-primary-label outline-none sm:text-lg"
+            aria-label="Folder title"
+          />
+          <input
+            value={artist}
+            onClick={stop}
+            onChange={(event) => setArtist(event.target.value)}
+            onBlur={() => save()}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') event.currentTarget.blur();
+            }}
+            className="mt-1 w-full bg-transparent text-base text-secondary-label outline-none sm:text-lg"
+            aria-label="Folder artist"
+          />
+        </div>
+        <span className="mt-8 shrink-0 text-primary-label opacity-90 transition-opacity group-hover:opacity-100" aria-hidden="true">
+          <MoreHorizontal className="h-6 w-6" />
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function DiscArtwork({ className = '' }) {
   return (
     <div className={`relative overflow-hidden bg-[#eeeeee] text-[#777777] shadow-2xl ${className}`}>
@@ -60,8 +112,12 @@ function DiscArtwork({ className = '' }) {
 }
 
 function ProfileAvatar({ user, size = 'h-11 w-11', className = '' }) {
-  if (user.avatarUrl) {
-    return <img src={user.avatarUrl} alt="" className={`${size} ${className} shrink-0 rounded-full object-cover shadow-lg`} />;
+  const [failedSrc, setFailedSrc] = useState('');
+
+  if (user.avatarUrl && failedSrc !== user.avatarUrl) {
+    const separator = user.avatarUrl.includes('?') ? '&' : '?';
+    const src = `${user.avatarUrl}${separator}v=${encodeURIComponent(user.updatedAt || user.avatarUpdatedAt || '')}`;
+    return <img src={src} alt="" onError={() => setFailedSrc(user.avatarUrl)} className={`${size} ${className} shrink-0 rounded-full object-cover shadow-lg`} />;
   }
 
   return (
@@ -205,7 +261,7 @@ function EditProfileModal({ user, onClose, onSave, saving, error }) {
 }
 
 export default function Dashboard({ user, onLogout, onUserUpdate }) {
-  const [workspace, setWorkspace] = useState({ projects: [], tracks: [], notifications: [] });
+  const [workspace, setWorkspace] = useState({ folders: [], projects: [], tracks: [], notifications: [] });
   const [loading, setLoading] = useState(true);
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -228,6 +284,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
         const data = await res.json();
         if (!cancelled) {
           setWorkspace({
+            folders: data.folders || [],
             projects: data.projects || [],
             tracks: data.tracks || [],
             notifications: data.notifications || [],
@@ -252,25 +309,21 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
   }, [theme]);
 
   const createFolder = async () => {
-    const name = prompt('Enter folder name:');
-    if (!name) return;
-
-    await fetch(`${apiUrl}/api/folders`, {
+    const res = await fetch(`${apiUrl}/api/folders`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, userId: user.id })
+      body: JSON.stringify({ userId: user.id })
     });
+    const newFolder = await res.json();
+    setWorkspace((prev) => ({ ...prev, folders: [...prev.folders, newFolder] }));
     setIsAddMenuOpen(false);
   };
 
-  const createProject = async (defaultName = '') => {
-    const name = prompt('Enter project name:', defaultName);
-    if (!name) return null;
-
+  const createProject = async () => {
     const res = await fetch(`${apiUrl}/api/projects`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, userId: user.id })
+      body: JSON.stringify({ userId: user.id })
     });
     const newProject = await res.json();
     setWorkspace((prev) => ({ ...prev, projects: [...prev.projects, newProject] }));
@@ -279,8 +332,30 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
   };
 
   const createAudioProject = async () => {
-    const newProject = await createProject('Untitled audio');
+    const newProject = await createProject();
     if (newProject?.id) navigate(`/project/${newProject.id}`);
+  };
+
+  const saveFolderMetadata = async (folderId, payload) => {
+    setWorkspace((prev) => ({
+      ...prev,
+      folders: prev.folders.map((folder) => folder.id === folderId ? { ...folder, ...payload, name: payload.title || folder.name } : folder)
+    }));
+    try {
+      const res = await fetch(`${apiUrl}/api/folders/${folderId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, ...payload })
+      });
+      const savedFolder = await res.json();
+      if (!res.ok) throw new Error(savedFolder.error || 'Could not update folder.');
+      setWorkspace((prev) => ({
+        ...prev,
+        folders: prev.folders.map((folder) => folder.id === folderId ? savedFolder : folder)
+      }));
+    } catch (err) {
+      console.error('Failed to save folder metadata', err);
+    }
   };
 
   const showComingSoon = (label) => {
@@ -380,7 +455,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
       </header>
 
       <main className="mx-auto flex min-h-[calc(100vh-14rem)] max-w-4xl items-center justify-center py-10 sm:min-h-[calc(100vh-16rem)]">
-        {workspace.projects.length === 0 ? (
+        {workspace.projects.length === 0 && workspace.folders.length === 0 ? (
           <div className="text-center">
             <Disc3 className="mx-auto mb-5 h-12 w-12 text-secondary-label" />
             <h1 className="text-2xl font-semibold">No projects yet</h1>
@@ -388,6 +463,9 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
           </div>
         ) : (
           <div className="grid w-full grid-cols-2 justify-items-center gap-x-4 gap-y-10 sm:gap-x-8 sm:gap-y-12 md:grid-cols-3">
+            {workspace.folders.map((folder) => (
+              <LibraryFolder key={folder.id} folder={folder} onSave={saveFolderMetadata} />
+            ))}
             {workspace.projects.map((project) => (
               <LibraryProject key={project.id} project={project} tracks={workspace.tracks} />
             ))}
