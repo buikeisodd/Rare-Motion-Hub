@@ -136,7 +136,7 @@ function NotificationsMenu({ notifications }) {
       ) : (
         <div className="max-h-96 space-y-2 overflow-y-auto">
           {notifications.map((notification) => {
-            const text = notification.type === 'message'
+            const text = notification.type === 'message' || notification.type === 'call'
               ? notification.message
               : `${notification.actor?.name || 'Someone'} listened to ${notification.track?.title || notification.project?.name || notification.folder?.name || 'your shared item'}`;
             return (

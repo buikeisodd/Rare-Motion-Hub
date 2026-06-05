@@ -1,8 +1,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, CheckCheck, Copy, Forward, MessageCircle, Mic, MicOff, MonitorUp, Paperclip, PhoneOff, Pin, PinOff, Reply, Send, Smile, Trash2, Users, Video, VideoOff, Volume2, X } from 'lucide-react';
+import { ArrowLeft, CheckCheck, Copy, Forward, MessageCircle, Mic, MicOff, MonitorUp, Paperclip, PhoneCall, PhoneOff, Pin, PinOff, Reply, Send, Smile, Trash2, Users, Video, VideoOff, Volume2, X } from 'lucide-react';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 const emojis = ['😀', '😂', '😍', '🥹', '🔥', '🙏', '❤️', '🎧', '🎵', '✅', '😭', '😤', '🤝', '✨', '💿', '🚀'];
+
+function requestDesktopNotificationPermission() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default') Notification.requestPermission().catch(() => {});
+}
+
+function showDesktopNotification(title, options = {}) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const notification = new Notification(title, { icon: '/vite.svg', ...options });
+  window.setTimeout(() => notification.close(), 6000);
+}
 
 function ProfileAvatar({ user, size = 'h-10 w-10', isGroup = false }) {
   if (isGroup) {
@@ -57,7 +68,7 @@ function ConvoItem({ convo, isActive, onClick }) {
   );
 }
 
-function GroupStreamPanel({ currentUser, participants }) {
+function GroupStreamPanel({ currentUser, participants, activeCall, onJoinCall, onLeaveCall }) {
   const [joined, setJoined] = useState(false);
   const [micOn, setMicOn] = useState(false);
   const [cameraOn, setCameraOn] = useState(false);
@@ -80,6 +91,7 @@ function GroupStreamPanel({ currentUser, participants }) {
 
   const joinVoice = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    await onJoinCall?.();
     setLocalStream(stream);
     setJoined(true);
     setMicOn(true);
@@ -101,6 +113,7 @@ function GroupStreamPanel({ currentUser, participants }) {
       return;
     }
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+    await onJoinCall?.();
     setLocalStream(stream);
     setJoined(true);
     setMicOn(true);
@@ -116,6 +129,7 @@ function GroupStreamPanel({ currentUser, participants }) {
       return;
     }
     const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+    await onJoinCall?.();
     setLocalStream(stream);
     setJoined(true);
     setScreenOn(true);
@@ -129,10 +143,25 @@ function GroupStreamPanel({ currentUser, participants }) {
     setMicOn(false);
     setCameraOn(false);
     setScreenOn(false);
+    onLeaveCall?.();
   };
+
+  const otherCallers = activeCall?.participants?.filter((participant) => participant.id !== currentUser.id) || [];
+  const isInActiveCall = activeCall?.participants?.some((participant) => participant.id === currentUser.id);
 
   return (
     <div className="border-b border-border bg-[#111111] p-3">
+      {activeCall && !joined && !isInActiveCall && (
+        <button onClick={joinVoice} className="mb-3 flex w-full items-center gap-3 rounded-2xl border border-green-400/30 bg-green-400/10 px-3 py-3 text-left transition-colors hover:bg-green-400/15">
+          <span className="grid h-9 w-9 place-items-center rounded-xl bg-green-400 text-black">
+            <PhoneCall className="h-4 w-4" />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-sm font-bold text-primary-label">{activeCall.startedBy?.name || otherCallers[0]?.name || 'Someone'} is on a group call</span>
+            <span className="block truncate text-[11px] text-secondary-label">{otherCallers.map((participant) => participant.name).join(', ') || 'Tap to join the call'}</span>
+          </span>
+        </button>
+      )}
       <div className="mb-3 flex items-center justify-between gap-3">
         <div>
           <p className="text-sm font-bold">Group voice channel</p>
@@ -202,7 +231,7 @@ function MessageActions({ message, onReply, onCopy, onForward, onPin, onDelete }
   );
 }
 
-function ChatWindow({ convo, currentUser, conversations, onClose }) {
+function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall, onLeaveCall, onClose }) {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(true);
@@ -376,7 +405,7 @@ function ChatWindow({ convo, currentUser, conversations, onClose }) {
         </div>
       </div>
 
-      {isGroup && <GroupStreamPanel currentUser={currentUser} participants={participants} />}
+      {isGroup && <GroupStreamPanel currentUser={currentUser} participants={participants} activeCall={activeCall} onJoinCall={onJoinCall} onLeaveCall={onLeaveCall} />}
 
       {pinned && (
         <button onClick={() => setReplyTo(pinned)} className="flex shrink-0 items-center gap-3 border-b border-border bg-shading px-4 py-2 text-left text-xs">
@@ -475,12 +504,38 @@ export default function ChatInbox({ user, isOpen, onToggle }) {
   const [conversations, setConversations] = useState([]);
   const [activeConvo, setActiveConvo] = useState(null);
   const [loadingConvos, setLoadingConvos] = useState(true);
+  const [activeCall, setActiveCall] = useState(null);
+  const lastMessageRef = useRef(new Map());
+  const lastCallRef = useRef('');
+  const didPrimeNotificationsRef = useRef(false);
 
   const fetchConvos = useCallback(async () => {
     try {
       const res = await fetch(`${apiUrl}/api/conversations?userId=${user.id}`);
       const data = await res.json();
-      setConversations(data.conversations || []);
+      const nextConversations = data.conversations || [];
+      if (didPrimeNotificationsRef.current) {
+        nextConversations.forEach((convo) => {
+          const key = convo.type === 'group' ? 'group' : convo.partner?.id;
+          const lastMessage = convo.lastMessage;
+          if (!key || !lastMessage) return;
+          const previousId = lastMessageRef.current.get(key);
+          const isIncoming = lastMessage.senderId !== user.id && lastMessage.id !== previousId;
+          if (isIncoming) {
+            const title = convo.type === 'group' ? 'New message in Group Chat' : `${lastMessage.sender?.name || convo.partner?.name || 'Someone'} sent a message`;
+            const body = lastMessage.deleted ? 'Message deleted' : lastMessage.text || (lastMessage.attachments?.length ? 'Media message' : 'New message');
+            showDesktopNotification(title, { body });
+          }
+          lastMessageRef.current.set(key, lastMessage.id);
+        });
+      } else {
+        nextConversations.forEach((convo) => {
+          const key = convo.type === 'group' ? 'group' : convo.partner?.id;
+          if (key && convo.lastMessage?.id) lastMessageRef.current.set(key, convo.lastMessage.id);
+        });
+        didPrimeNotificationsRef.current = true;
+      }
+      setConversations(nextConversations);
     } catch (err) {
       console.error('Failed to fetch conversations', err);
     } finally {
@@ -488,15 +543,68 @@ export default function ChatInbox({ user, isOpen, onToggle }) {
     }
   }, [user.id]);
 
+  const fetchActiveCall = useCallback(async () => {
+    try {
+      const res = await fetch(`${apiUrl}/api/calls/group?userId=${encodeURIComponent(user.id)}`);
+      const data = await res.json();
+      const nextCall = data.call || null;
+      const callToken = nextCall?.id || '';
+      if (nextCall && lastCallRef.current && lastCallRef.current !== callToken && nextCall.startedBy?.id !== user.id && !nextCall.participants?.some((participant) => participant.id === user.id)) {
+        showDesktopNotification('Group call started', {
+          body: `${nextCall.startedBy?.name || 'Someone'} is on a group call. Open chat to join.`
+        });
+      }
+      if (!lastCallRef.current && nextCall && nextCall.startedBy?.id !== user.id && !nextCall.participants?.some((participant) => participant.id === user.id)) {
+        showDesktopNotification('Group call started', {
+          body: `${nextCall.startedBy?.name || 'Someone'} is on a group call. Open chat to join.`
+        });
+      }
+      lastCallRef.current = callToken;
+      setActiveCall(nextCall);
+    } catch (err) {
+      console.error('Failed to fetch active call', err);
+    }
+  }, [user.id]);
+
   useEffect(() => {
-    if (!isOpen) return;
+    requestDesktopNotificationPermission();
     const firstLoad = window.setTimeout(fetchConvos, 0);
     const interval = window.setInterval(fetchConvos, 5000);
     return () => {
       window.clearTimeout(firstLoad);
       window.clearInterval(interval);
     };
-  }, [isOpen, fetchConvos]);
+  }, [fetchConvos]);
+
+  useEffect(() => {
+    const firstLoad = window.setTimeout(fetchActiveCall, 0);
+    const interval = window.setInterval(fetchActiveCall, 4000);
+    return () => {
+      window.clearTimeout(firstLoad);
+      window.clearInterval(interval);
+    };
+  }, [fetchActiveCall]);
+
+  const joinGroupCall = async () => {
+    const res = await fetch(`${apiUrl}/api/calls/group/join`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: user.id })
+    });
+    const data = await res.json();
+    setActiveCall(data.call || null);
+    return data.call;
+  };
+
+  const leaveGroupCall = async () => {
+    const res = await fetch(`${apiUrl}/api/calls/group/leave`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: user.id })
+    });
+    const data = await res.json();
+    setActiveCall(data.call || null);
+  };
 
   const handleCloseChat = () => {
     setActiveConvo(null);
@@ -531,7 +639,7 @@ export default function ChatInbox({ user, isOpen, onToggle }) {
           </div>
           {activeConvo && (
             <div className="flex flex-1 flex-col overflow-hidden">
-              <ChatWindow convo={activeConvo} currentUser={user} conversations={conversations} onClose={handleCloseChat} />
+              <ChatWindow convo={activeConvo} currentUser={user} conversations={conversations} activeCall={activeCall} onJoinCall={joinGroupCall} onLeaveCall={leaveGroupCall} onClose={handleCloseChat} />
             </div>
           )}
         </div>

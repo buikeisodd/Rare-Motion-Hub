@@ -78,6 +78,7 @@ const ensureDBShape = (db) => {
   db.notifications ||= [];
   db.playEvents ||= [];
   db.messages ||= [];
+  db.calls ||= [];
   return db;
 };
 const userExists = (db, userId) => db.users.some((user) => user.id === userId);
@@ -162,6 +163,22 @@ const notifyMessage = (db, message) => {
       createdAt: new Date().toISOString()
     });
   });
+};
+const notifyCall = (db, call, caller) => {
+  db.users
+    .filter((user) => user.id !== caller.id)
+    .forEach((user) => {
+      db.notifications.push({
+        id: makeId(),
+        userId: user.id,
+        type: 'call',
+        actor: publicUser(caller),
+        call: { id: call.id, type: call.type },
+        message: `${caller.name} started a group call`,
+        read: false,
+        createdAt: new Date().toISOString()
+      });
+    });
 };
 
 // Multer setups
@@ -718,6 +735,13 @@ const hydrateMessage = (db, message) => {
     }
   };
 };
+const hydrateCall = (db, call) => call ? {
+  ...call,
+  startedBy: publicUser(db.users.find((user) => user.id === call.startedById)),
+  participants: (call.participantIds || [])
+    .map((id) => publicUser(db.users.find((user) => user.id === id)))
+    .filter(Boolean)
+} : null;
 const markConversationRead = (db, { userId, type, partnerId }) => {
   db.messages.forEach((message) => {
     const isVisible = type === 'group'
@@ -758,6 +782,59 @@ const createMessage = (db, { senderId, recipientId, conversationType, text = '',
     createdAt: new Date().toISOString()
   };
 };
+
+app.get('/api/calls/group', (req, res) => {
+  const db = ensureDBShape(readDB());
+  const userId = requireUserId(req, res);
+  if (!userId) return;
+  if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
+  const call = db.calls.find((item) => item.type === 'group' && item.active);
+  res.json({ call: hydrateCall(db, call) });
+});
+
+app.post('/api/calls/group/join', (req, res) => {
+  const db = ensureDBShape(readDB());
+  const { userId } = req.body;
+  const caller = db.users.find((user) => user.id === userId);
+  if (!caller) return res.status(401).json({ error: 'Unauthorized user.' });
+
+  let call = db.calls.find((item) => item.type === 'group' && item.active);
+  const isNewCall = !call;
+  if (!call) {
+    call = {
+      id: makeId(),
+      type: 'group',
+      active: true,
+      startedById: userId,
+      participantIds: [],
+      startedAt: new Date().toISOString()
+    };
+    db.calls.push(call);
+  }
+
+  if (!call.participantIds.includes(userId)) call.participantIds.push(userId);
+  call.updatedAt = new Date().toISOString();
+  if (isNewCall) notifyCall(db, call, caller);
+  writeDB(db);
+  res.json({ call: hydrateCall(db, call) });
+});
+
+app.post('/api/calls/group/leave', (req, res) => {
+  const db = ensureDBShape(readDB());
+  const { userId } = req.body;
+  if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
+  const call = db.calls.find((item) => item.type === 'group' && item.active);
+  if (!call) return res.json({ call: null });
+
+  call.participantIds = (call.participantIds || []).filter((id) => id !== userId);
+  call.updatedAt = new Date().toISOString();
+  if (call.participantIds.length === 0) {
+    call.active = false;
+    call.endedAt = new Date().toISOString();
+  }
+  writeDB(db);
+  res.json({ call: hydrateCall(db, call.active ? call : null) });
+});
 
 // Get all users (for chat contacts)
 app.get('/api/users', (req, res) => {
