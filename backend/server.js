@@ -18,14 +18,58 @@ const dbPath = path.join(__dirname, 'db.json');
 const uploadDir = path.join(__dirname, 'uploads');
 const coverDir = path.join(__dirname, 'covers');
 const avatarDir = path.join(__dirname, 'avatars');
+const chatDir = path.join(uploadDir, 'chat');
+const JSONBIN_BASE_URL = 'https://api.jsonbin.io/v3';
+const JSONBIN_BIN_ID = process.env.JSONBIN_BIN_ID;
+const JSONBIN_MASTER_KEY = process.env.JSONBIN_MASTER_KEY || process.env.JSONBIN_API_KEY;
+const JSONBIN_ACCESS_KEY = process.env.JSONBIN_ACCESS_KEY;
 
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 if (!fs.existsSync(coverDir)) fs.mkdirSync(coverDir);
 if (!fs.existsSync(avatarDir)) fs.mkdirSync(avatarDir);
+if (!fs.existsSync(chatDir)) fs.mkdirSync(chatDir, { recursive: true });
 
 // Helpers
 const readDB = () => JSON.parse(fs.readFileSync(dbPath, 'utf8'));
-const writeDB = (data) => fs.writeFileSync(dbPath, JSON.stringify(data, null, 2), 'utf8');
+const jsonBinHeaders = () => {
+  const headers = { 'Content-Type': 'application/json' };
+  if (JSONBIN_MASTER_KEY) headers['X-Master-Key'] = JSONBIN_MASTER_KEY;
+  if (JSONBIN_ACCESS_KEY) headers['X-Access-Key'] = JSONBIN_ACCESS_KEY;
+  return headers;
+};
+const isJsonBinConfigured = () => Boolean(JSONBIN_BIN_ID && (JSONBIN_MASTER_KEY || JSONBIN_ACCESS_KEY));
+const syncFromJSONBin = async () => {
+  if (!isJsonBinConfigured()) return;
+  try {
+    const res = await fetch(`${JSONBIN_BASE_URL}/b/${JSONBIN_BIN_ID}/latest`, {
+      headers: { ...jsonBinHeaders(), 'X-Bin-Meta': 'false' }
+    });
+    if (!res.ok) throw new Error(`JSONBin read failed: ${res.status}`);
+    const remoteDB = ensureDBShape(await res.json());
+    fs.writeFileSync(dbPath, JSON.stringify(remoteDB, null, 2), 'utf8');
+    console.log('Database loaded from JSONBin.io');
+  } catch (err) {
+    console.warn(`JSONBin.io read skipped: ${err.message}`);
+  }
+};
+const syncToJSONBin = async (data) => {
+  if (!isJsonBinConfigured()) return;
+  try {
+    const res = await fetch(`${JSONBIN_BASE_URL}/b/${JSONBIN_BIN_ID}`, {
+      method: 'PUT',
+      headers: jsonBinHeaders(),
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error(`JSONBin update failed: ${res.status}`);
+  } catch (err) {
+    console.warn(`JSONBin.io write skipped: ${err.message}`);
+  }
+};
+const writeDB = (data) => {
+  const shaped = ensureDBShape(data);
+  fs.writeFileSync(dbPath, JSON.stringify(shaped, null, 2), 'utf8');
+  syncToJSONBin(shaped);
+};
 const ensureDBShape = (db) => {
   db.folders ||= [];
   db.projects ||= [];
@@ -33,6 +77,7 @@ const ensureDBShape = (db) => {
   db.coverArts ||= [];
   db.notifications ||= [];
   db.playEvents ||= [];
+  db.messages ||= [];
   return db;
 };
 const userExists = (db, userId) => db.users.some((user) => user.id === userId);
@@ -107,6 +152,24 @@ const avatarStorage = multer.diskStorage({
   filename: (req, file, cb) => cb(null, 'avatar-' + Date.now() + path.extname(file.originalname))
 });
 const uploadAvatar = multer({ storage: avatarStorage });
+
+const chatStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const userId = req.body.senderId || 'unknown';
+    cb(null, ensureUserDir(chatDir, userId));
+  },
+  filename: (req, file, cb) => cb(null, 'chat-' + Date.now() + '-' + Math.round(Math.random() * 1e9) + path.extname(file.originalname))
+});
+const uploadChatMedia = multer({
+  storage: chatStorage,
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/') || file.mimetype.startsWith('audio/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only photos, videos, and voice recordings are allowed in chat.'));
+    }
+  }
+});
 
 // --- AUTH ---
 app.post('/api/auth', (req, res) => {
@@ -541,14 +604,67 @@ app.delete('/api/tracks/:id', (req, res) => {
 });
 
 // --- CHAT ---
-const ensureChatShape = (db) => {
-  db.messages ||= [];
-  return db;
+const groupParticipantIds = (db) => db.users.map((user) => user.id);
+const chatRecipientIds = (db, message) => {
+  if (message.conversationType === 'group') {
+    return groupParticipantIds(db).filter((id) => id !== message.senderId);
+  }
+  return message.recipientId ? [message.recipientId] : [];
+};
+const hydrateMessage = (db, message) => {
+  const recipients = chatRecipientIds(db, message);
+  const readBy = message.readBy || [];
+  return {
+    ...message,
+    sender: publicUser(db.users.find((user) => user.id === message.senderId)),
+    replyTo: message.replyToMessageId
+      ? db.messages.find((item) => item.id === message.replyToMessageId) || null
+      : null,
+    delivery: {
+      delivered: true,
+      read: recipients.length > 0 && recipients.every((id) => readBy.includes(id)),
+      readCount: recipients.filter((id) => readBy.includes(id)).length,
+      recipientCount: recipients.length
+    }
+  };
+};
+const markConversationRead = (db, { userId, type, partnerId }) => {
+  db.messages.forEach((message) => {
+    const isVisible = type === 'group'
+      ? message.conversationType === 'group'
+      : message.conversationType === 'dm' &&
+        ((message.senderId === userId && message.recipientId === partnerId) ||
+          (message.senderId === partnerId && message.recipientId === userId));
+
+    if (isVisible && message.senderId !== userId) {
+      message.readBy ||= [];
+      if (!message.readBy.includes(userId)) message.readBy.push(userId);
+    }
+  });
+};
+const createMessage = (db, { senderId, recipientId, conversationType, text = '', attachments = [], replyToMessageId = null, forwardedFrom = null }) => {
+  const type = conversationType || 'dm';
+  const recipients = type === 'group' ? groupParticipantIds(db).filter((id) => id !== senderId) : [recipientId].filter(Boolean);
+  return {
+    id: makeId(),
+    senderId,
+    recipientId: type === 'group' ? null : recipientId,
+    conversationType: type,
+    text: text.trim(),
+    attachments,
+    replyToMessageId,
+    forwardedFrom,
+    pinned: false,
+    deleted: false,
+    deliveredTo: recipients,
+    readBy: [],
+    createdAt: new Date().toISOString()
+  };
 };
 
 // Get all users (for chat contacts)
 app.get('/api/users', (req, res) => {
-  const db = readDB();
+  const db = ensureDBShape(readDB());
   const userId = requireUserId(req, res);
   if (!userId) return;
   if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
@@ -561,7 +677,7 @@ app.get('/api/users', (req, res) => {
 // For dm: partnerId required
 // For group: returns all group messages
 app.get('/api/messages', (req, res) => {
-  const db = ensureChatShape(ensureDBShape(readDB()));
+  const db = ensureDBShape(readDB());
   const userId = requireUserId(req, res);
   if (!userId) return;
   if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
@@ -580,43 +696,126 @@ app.get('/api/messages', (req, res) => {
     );
   }
 
-  // Hydrate sender info
-  const hydrated = msgs.map((m) => ({
-    ...m,
-    sender: publicUser(db.users.find((u) => u.id === m.senderId))
-  }));
+  markConversationRead(db, { userId, type, partnerId });
+  writeDB(db);
 
-  res.json({ messages: hydrated });
+  res.json({
+    messages: msgs.map((message) => hydrateMessage(db, message)),
+    participants: type === 'group' ? db.users.map(publicUser) : []
+  });
 });
 
 // Send a message
 app.post('/api/messages', (req, res) => {
-  const db = ensureChatShape(ensureDBShape(readDB()));
-  const { senderId, recipientId, conversationType, text } = req.body;
+  const db = ensureDBShape(readDB());
+  const { senderId, recipientId, conversationType, text, replyToMessageId } = req.body;
   if (!senderId || !text?.trim()) return res.status(400).json({ error: 'senderId and text required.' });
   if (!userExists(db, senderId)) return res.status(401).json({ error: 'Unauthorized user.' });
 
   if (conversationType === 'dm' && !recipientId) return res.status(400).json({ error: 'recipientId required for DM.' });
 
-  const msg = {
-    id: makeId(),
-    senderId,
-    recipientId: conversationType === 'group' ? null : recipientId,
-    conversationType: conversationType || 'dm',
-    text: text.trim(),
-    createdAt: new Date().toISOString()
-  };
+  const msg = createMessage(db, { senderId, recipientId, conversationType, text, replyToMessageId });
 
   db.messages.push(msg);
   writeDB(db);
 
-  const hydrated = { ...msg, sender: publicUser(db.users.find((u) => u.id === senderId)) };
-  res.json({ message: hydrated });
+  res.json({ message: hydrateMessage(db, msg) });
+});
+
+app.post('/api/messages/media', uploadChatMedia.single('media'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No media uploaded.' });
+  const db = ensureDBShape(readDB());
+  const { senderId, recipientId, conversationType, text, replyToMessageId, mediaKind } = req.body;
+  if (!senderId || !userExists(db, senderId)) {
+    removeFileIfExists(req.file.path);
+    return res.status(401).json({ error: 'Unauthorized user.' });
+  }
+  if (conversationType === 'dm' && !recipientId) return res.status(400).json({ error: 'recipientId required for DM.' });
+
+  const attachmentType = req.file.mimetype.startsWith('image/')
+    ? 'image'
+    : req.file.mimetype.startsWith('video/')
+      ? 'video'
+      : 'voice';
+  if (attachmentType === 'voice' && mediaKind !== 'voice') {
+    removeFileIfExists(req.file.path);
+    return res.status(400).json({ error: 'Only photos and videos can be shared from files.' });
+  }
+
+  const relativePath = `chat/${senderId}/${req.file.filename}`.replace(/\\/g, '/');
+  const msg = createMessage(db, {
+    senderId,
+    recipientId,
+    conversationType,
+    text: text || '',
+    replyToMessageId: replyToMessageId || null,
+    attachments: [{
+      id: makeId(),
+      type: attachmentType,
+      url: `${BASE_URL}/uploads/${relativePath}`,
+      name: req.file.originalname,
+      mimeType: req.file.mimetype,
+      size: req.file.size
+    }]
+  });
+
+  db.messages.push(msg);
+  writeDB(db);
+  res.json({ message: hydrateMessage(db, msg) });
+});
+
+app.patch('/api/messages/:id/pin', (req, res) => {
+  const db = ensureDBShape(readDB());
+  const { userId, pinned } = req.body;
+  const message = db.messages.find((item) => item.id === req.params.id);
+  if (!message) return res.status(404).json({ error: 'Message not found.' });
+  if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
+  message.pinned = Boolean(pinned);
+  message.pinnedBy = pinned ? userId : null;
+  message.pinnedAt = pinned ? new Date().toISOString() : null;
+  writeDB(db);
+  res.json({ message: hydrateMessage(db, message) });
+});
+
+app.delete('/api/messages/:id', (req, res) => {
+  const db = ensureDBShape(readDB());
+  const userId = requireUserId(req, res);
+  if (!userId) return;
+  const message = db.messages.find((item) => item.id === req.params.id);
+  if (!message) return res.status(404).json({ error: 'Message not found.' });
+  if (message.senderId !== userId) return res.status(403).json({ error: 'Only the sender can delete this message.' });
+  message.deleted = true;
+  message.text = '';
+  message.attachments = [];
+  message.deletedAt = new Date().toISOString();
+  writeDB(db);
+  res.json({ message: hydrateMessage(db, message) });
+});
+
+app.post('/api/messages/:id/forward', (req, res) => {
+  const db = ensureDBShape(readDB());
+  const { senderId, targetType, recipientId } = req.body;
+  const source = db.messages.find((item) => item.id === req.params.id);
+  if (!source) return res.status(404).json({ error: 'Message not found.' });
+  if (!userExists(db, senderId)) return res.status(401).json({ error: 'Unauthorized user.' });
+  if (targetType === 'dm' && !recipientId) return res.status(400).json({ error: 'recipientId required for DM forward.' });
+
+  const msg = createMessage(db, {
+    senderId,
+    recipientId,
+    conversationType: targetType,
+    text: source.text || '',
+    attachments: source.attachments || [],
+    forwardedFrom: { id: source.id, senderId: source.senderId }
+  });
+  db.messages.push(msg);
+  writeDB(db);
+  res.json({ message: hydrateMessage(db, msg) });
 });
 
 // Get conversation previews (last message per convo) for a user
 app.get('/api/conversations', (req, res) => {
-  const db = ensureChatShape(ensureDBShape(readDB()));
+  const db = ensureDBShape(readDB());
   const userId = requireUserId(req, res);
   if (!userId) return;
   if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
@@ -635,7 +834,7 @@ app.get('/api/conversations', (req, res) => {
     conversations.push({
       type: 'dm',
       partner: publicUser(other),
-      lastMessage: last ? { ...last, sender: publicUser(db.users.find((u) => u.id === last.senderId)) } : null,
+      lastMessage: last ? hydrateMessage(db, last) : null,
       updatedAt: last?.createdAt || null
     });
   }
@@ -646,7 +845,8 @@ app.get('/api/conversations', (req, res) => {
   conversations.push({
     type: 'group',
     partner: null,
-    lastMessage: lastGroup ? { ...lastGroup, sender: publicUser(db.users.find((u) => u.id === lastGroup.senderId)) } : null,
+    participants: db.users.map(publicUser),
+    lastMessage: lastGroup ? hydrateMessage(db, lastGroup) : null,
     updatedAt: lastGroup?.createdAt || null
   });
 
@@ -660,5 +860,7 @@ app.get('/api/conversations', (req, res) => {
   res.json({ conversations });
 });
 
-app.listen(PORT, () => console.log(`Backend server running on http://localhost:${PORT}`));
+syncFromJSONBin().finally(() => {
+  app.listen(PORT, () => console.log(`Backend server running on http://localhost:${PORT}`));
+});
 // End of server file
