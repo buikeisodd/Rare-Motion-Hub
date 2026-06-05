@@ -79,6 +79,7 @@ const ensureDBShape = (db) => {
   db.playEvents ||= [];
   db.messages ||= [];
   db.calls ||= [];
+  db.callSignals ||= [];
   return db;
 };
 const userExists = (db, userId) => db.users.some((user) => user.id === userId);
@@ -832,8 +833,47 @@ app.post('/api/calls/group/leave', (req, res) => {
     call.active = false;
     call.endedAt = new Date().toISOString();
   }
+  db.callSignals = db.callSignals.filter((signal) => signal.callId !== call.id || (signal.fromUserId !== userId && signal.toUserId !== userId));
   writeDB(db);
   res.json({ call: hydrateCall(db, call.active ? call : null) });
+});
+
+app.get('/api/calls/group/signals', (req, res) => {
+  const db = ensureDBShape(readDB());
+  const userId = requireUserId(req, res);
+  if (!userId) return;
+  if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
+  const call = db.calls.find((item) => item.type === 'group' && item.active);
+  if (!call) return res.json({ signals: [] });
+
+  const signals = db.callSignals
+    .filter((signal) => signal.callId === call.id && signal.toUserId === userId)
+    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  res.json({ signals });
+});
+
+app.post('/api/calls/group/signals', (req, res) => {
+  const db = ensureDBShape(readDB());
+  const { userId, toUserId, type, payload } = req.body;
+  if (!userExists(db, userId) || !userExists(db, toUserId)) return res.status(401).json({ error: 'Unauthorized user.' });
+  const call = db.calls.find((item) => item.type === 'group' && item.active);
+  if (!call) return res.status(404).json({ error: 'No active call.' });
+  if (!call.participantIds.includes(userId) || !call.participantIds.includes(toUserId)) {
+    return res.status(403).json({ error: 'Both users must be in the call.' });
+  }
+
+  const signal = {
+    id: makeId(),
+    callId: call.id,
+    fromUserId: userId,
+    toUserId,
+    type,
+    payload,
+    createdAt: new Date().toISOString()
+  };
+  db.callSignals.push(signal);
+  writeDB(db);
+  res.json({ signal });
 });
 
 // Get all users (for chat contacts)

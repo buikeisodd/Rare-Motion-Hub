@@ -68,14 +68,82 @@ function ConvoItem({ convo, isActive, onClick }) {
   );
 }
 
+function RemoteMedia({ stream, volume, className = '' }) {
+  const mediaRef = useRef(null);
+  const hasVideo = stream.getVideoTracks().length > 0;
+
+  useEffect(() => {
+    if (!mediaRef.current) return;
+    mediaRef.current.srcObject = stream;
+    mediaRef.current.volume = volume / 100;
+  }, [stream, volume]);
+
+  return hasVideo ? (
+    <video ref={mediaRef} autoPlay playsInline className={className} />
+  ) : (
+    <audio ref={mediaRef} autoPlay />
+  );
+}
+
 function GroupStreamPanel({ currentUser, participants, activeCall, onJoinCall, onLeaveCall }) {
   const [joined, setJoined] = useState(false);
   const [micOn, setMicOn] = useState(false);
   const [cameraOn, setCameraOn] = useState(false);
   const [screenOn, setScreenOn] = useState(false);
+  const [remoteStreams, setRemoteStreams] = useState({});
   const [participantVolumes, setParticipantVolumes] = useState({});
+  const [status, setStatus] = useState('');
   const videoRef = useRef(null);
   const streamRef = useRef(null);
+  const peersRef = useRef({});
+  const processedSignalsRef = useRef(new Set());
+  const pendingCandidatesRef = useRef({});
+
+  const sendSignal = useCallback(async (toUserId, type, payload) => {
+    await fetch(`${apiUrl}/api/calls/group/signals`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: currentUser.id, toUserId, type, payload })
+    });
+  }, [currentUser.id]);
+
+  const addLocalTracks = useCallback((pc) => {
+    const stream = streamRef.current;
+    if (!stream) return;
+    pc.getSenders().forEach((sender) => {
+      if (sender.track) pc.removeTrack(sender);
+    });
+    stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+  }, []);
+
+  const createPeer = useCallback((remoteUserId) => {
+    if (peersRef.current[remoteUserId]) return peersRef.current[remoteUserId];
+    const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+    peersRef.current[remoteUserId] = pc;
+
+    pc.onicecandidate = (event) => {
+      if (event.candidate) sendSignal(remoteUserId, 'ice', event.candidate.toJSON());
+    };
+    pc.ontrack = (event) => {
+      const [stream] = event.streams;
+      if (stream) setRemoteStreams((prev) => ({ ...prev, [remoteUserId]: stream }));
+    };
+    pc.onconnectionstatechange = () => {
+      if (['failed', 'disconnected', 'closed'].includes(pc.connectionState)) {
+        setRemoteStreams((prev) => {
+          const next = { ...prev };
+          delete next[remoteUserId];
+          return next;
+        });
+      }
+    };
+    addLocalTracks(pc);
+    return pc;
+  }, [addLocalTracks, sendSignal]);
+
+  const callParticipants = useMemo(() => activeCall?.participants || [], [activeCall]);
+  const otherCallers = callParticipants.filter((participant) => participant.id !== currentUser.id);
+  const isInActiveCall = callParticipants.some((participant) => participant.id === currentUser.id);
 
   const stopStream = () => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -87,67 +155,153 @@ function GroupStreamPanel({ currentUser, participants, activeCall, onJoinCall, o
     stopStream();
     streamRef.current = stream;
     if (videoRef.current) videoRef.current.srcObject = stream;
+    Object.values(peersRef.current).forEach(addLocalTracks);
+  };
+
+  const connectToParticipants = useCallback(async (call) => {
+    const remotes = (call?.participants || []).filter((participant) => participant.id !== currentUser.id);
+    for (const participant of remotes) {
+      const pc = createPeer(participant.id);
+      if (pc.signalingState !== 'stable') continue;
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      await sendSignal(participant.id, 'offer', pc.localDescription);
+    }
+  }, [createPeer, currentUser.id, sendSignal]);
+
+  const joinWithStream = async (stream, mode) => {
+    setStatus('Connecting...');
+    setLocalStream(stream);
+    const call = await onJoinCall?.();
+    setJoined(true);
+    setMicOn(stream.getAudioTracks().some((track) => track.enabled));
+    setCameraOn(mode === 'camera');
+    setScreenOn(mode === 'screen');
+    await connectToParticipants(call);
+    setStatus('Connected');
   };
 
   const joinVoice = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    await onJoinCall?.();
-    setLocalStream(stream);
-    setJoined(true);
-    setMicOn(true);
+    await joinWithStream(stream, 'voice');
   };
 
   const toggleMic = async () => {
     if (!joined) return joinVoice();
-    const audioTracks = streamRef.current?.getAudioTracks() || [];
-    audioTracks.forEach((track) => { track.enabled = !micOn; });
-    setMicOn((value) => !value);
+    const nextMic = !micOn;
+    streamRef.current?.getAudioTracks().forEach((track) => { track.enabled = nextMic; });
+    setMicOn(nextMic);
   };
 
   const toggleCamera = async () => {
     if (cameraOn) {
-      stopStream();
-      setCameraOn(false);
-      setScreenOn(false);
-      if (micOn) await joinVoice();
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      await joinWithStream(stream, 'voice');
       return;
     }
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
-    await onJoinCall?.();
-    setLocalStream(stream);
-    setJoined(true);
-    setMicOn(true);
-    setCameraOn(true);
-    setScreenOn(false);
+    await joinWithStream(stream, 'camera');
   };
 
   const shareScreen = async () => {
     if (screenOn) {
-      stopStream();
-      setScreenOn(false);
-      if (micOn) await joinVoice();
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      await joinWithStream(stream, 'voice');
       return;
     }
     const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-    await onJoinCall?.();
-    setLocalStream(stream);
-    setJoined(true);
-    setScreenOn(true);
-    setCameraOn(false);
     stream.getVideoTracks()[0]?.addEventListener('ended', () => setScreenOn(false));
+    await joinWithStream(stream, 'screen');
   };
 
   const leave = () => {
     stopStream();
+    Object.values(peersRef.current).forEach((pc) => pc.close());
+    peersRef.current = {};
+    processedSignalsRef.current = new Set();
+    pendingCandidatesRef.current = {};
+    setRemoteStreams({});
     setJoined(false);
     setMicOn(false);
     setCameraOn(false);
     setScreenOn(false);
+    setStatus('');
     onLeaveCall?.();
   };
 
-  const otherCallers = activeCall?.participants?.filter((participant) => participant.id !== currentUser.id) || [];
-  const isInActiveCall = activeCall?.participants?.some((participant) => participant.id === currentUser.id);
+  const handleSignal = useCallback(async (signal) => {
+    if (processedSignalsRef.current.has(signal.id)) return;
+    processedSignalsRef.current.add(signal.id);
+    const pc = createPeer(signal.fromUserId);
+
+    if (signal.type === 'offer') {
+      await pc.setRemoteDescription(new RTCSessionDescription(signal.payload));
+      const queued = pendingCandidatesRef.current[signal.fromUserId] || [];
+      for (const candidate of queued) await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      pendingCandidatesRef.current[signal.fromUserId] = [];
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      await sendSignal(signal.fromUserId, 'answer', pc.localDescription);
+    }
+
+    if (signal.type === 'answer' && pc.signalingState !== 'stable') {
+      await pc.setRemoteDescription(new RTCSessionDescription(signal.payload));
+      const queued = pendingCandidatesRef.current[signal.fromUserId] || [];
+      for (const candidate of queued) await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      pendingCandidatesRef.current[signal.fromUserId] = [];
+    }
+
+    if (signal.type === 'ice') {
+      if (pc.remoteDescription) {
+        await pc.addIceCandidate(new RTCIceCandidate(signal.payload));
+      } else {
+        pendingCandidatesRef.current[signal.fromUserId] ||= [];
+        pendingCandidatesRef.current[signal.fromUserId].push(signal.payload);
+      }
+    }
+  }, [createPeer, sendSignal]);
+
+  useEffect(() => {
+    if (!joined || !activeCall) return undefined;
+    const fetchSignals = async () => {
+      try {
+        const res = await fetch(`${apiUrl}/api/calls/group/signals?userId=${encodeURIComponent(currentUser.id)}`);
+        const data = await res.json();
+        for (const signal of data.signals || []) await handleSignal(signal);
+      } catch (err) {
+        console.error('Failed to process call signaling', err);
+      }
+    };
+    const firstLoad = window.setTimeout(fetchSignals, 0);
+    const interval = window.setInterval(fetchSignals, 1200);
+    return () => {
+      window.clearTimeout(firstLoad);
+      window.clearInterval(interval);
+    };
+  }, [activeCall, currentUser.id, handleSignal, joined]);
+
+  useEffect(() => {
+    if (!joined || !activeCall) return;
+    const activeIds = new Set(callParticipants.map((participant) => participant.id));
+    Object.keys(peersRef.current).forEach((id) => {
+      if (!activeIds.has(id)) {
+        peersRef.current[id].close();
+        delete peersRef.current[id];
+        setRemoteStreams((prev) => {
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        });
+      }
+    });
+  }, [activeCall, callParticipants, joined]);
+
+  useEffect(() => () => {
+    stopStream();
+    Object.values(peersRef.current).forEach((pc) => pc.close());
+  }, []);
+
+  const connectedParticipants = participants.filter((participant) => participant.id !== currentUser.id && remoteStreams[participant.id]);
 
   return (
     <div className="border-b border-border bg-[#111111] p-3">
@@ -162,10 +316,11 @@ function GroupStreamPanel({ currentUser, participants, activeCall, onJoinCall, o
           </span>
         </button>
       )}
+
       <div className="mb-3 flex items-center justify-between gap-3">
         <div>
           <p className="text-sm font-bold">Group voice channel</p>
-          <p className="text-[11px] text-secondary-label">{joined ? 'Connected locally' : 'Join voice, camera, or screen share'}</p>
+          <p className="text-[11px] text-secondary-label">{joined ? `${status || 'Connected'} · ${connectedParticipants.length} connected` : 'Join voice, camera, or screen share'}</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={toggleMic} className={`grid h-9 w-9 place-items-center rounded-xl ${micOn ? 'bg-green-400 text-black' : 'bg-shading'}`} aria-label="Toggle mic">
@@ -183,8 +338,32 @@ function GroupStreamPanel({ currentUser, participants, activeCall, onJoinCall, o
         </div>
       </div>
 
-      {(cameraOn || screenOn) && (
-        <video ref={videoRef} autoPlay muted playsInline className="mb-3 aspect-video w-full rounded-xl bg-black object-cover" />
+      {(joined || connectedParticipants.length > 0) && (
+        <div className="mb-3 grid gap-2 sm:grid-cols-2">
+          {joined && (
+            <div className="relative overflow-hidden rounded-xl bg-black">
+              {(cameraOn || screenOn) ? (
+                <video ref={videoRef} autoPlay muted playsInline className="aspect-video w-full object-cover" />
+              ) : (
+                <div className="grid aspect-video place-items-center bg-shading">
+                  <ProfileAvatar user={currentUser} size="h-14 w-14" />
+                </div>
+              )}
+              <span className="absolute bottom-2 left-2 rounded-full bg-black/60 px-2 py-1 text-[10px] font-bold">You</span>
+            </div>
+          )}
+          {connectedParticipants.map((participant) => (
+            <div key={participant.id} className="relative overflow-hidden rounded-xl bg-black">
+              <RemoteMedia stream={remoteStreams[participant.id]} volume={participantVolumes[participant.id] ?? 80} className="aspect-video w-full object-cover" />
+              {!remoteStreams[participant.id]?.getVideoTracks().length && (
+                <div className="absolute inset-0 grid place-items-center bg-shading">
+                  <ProfileAvatar user={participant} size="h-14 w-14" />
+                </div>
+              )}
+              <span className="absolute bottom-2 left-2 rounded-full bg-black/60 px-2 py-1 text-[10px] font-bold">{participant.name}</span>
+            </div>
+          ))}
+        </div>
       )}
 
       <div className="grid gap-2 sm:grid-cols-2">
@@ -198,7 +377,7 @@ function GroupStreamPanel({ currentUser, participants, activeCall, onJoinCall, o
               min="0"
               max="100"
               value={participantVolumes[participant.id] ?? 80}
-              onChange={(event) => setParticipantVolumes((prev) => ({ ...prev, [participant.id]: event.target.value }))}
+              onChange={(event) => setParticipantVolumes((prev) => ({ ...prev, [participant.id]: Number(event.target.value) }))}
               className="w-20 accent-white"
               aria-label={`Volume for ${participant.name}`}
             />
