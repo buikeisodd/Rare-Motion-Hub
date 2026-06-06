@@ -7,6 +7,23 @@ import CoverArtPicker from '../components/CoverArtPicker';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
+function timeAgo(dateStr) {
+  const uploaded = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now - uploaded;
+  const diffSecs = Math.floor(diffMs / 1000);
+  const diffMins = Math.floor(diffSecs / 60);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffSecs < 60) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return uploaded.toLocaleDateString();
+}
+
 export default function Project({ user }) {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -294,7 +311,7 @@ export default function Project({ user }) {
                   </div>
                   <div className="min-w-0">
                     <h3 className="truncate text-lg font-semibold text-primary-label sm:text-xl">{track.title}</h3>
-                    <p className="mt-1 text-sm text-secondary-label sm:text-base">{new Date(track.uploadedAt).toLocaleDateString() === new Date().toLocaleDateString() ? 'Now' : new Date(track.uploadedAt).toLocaleDateString()}</p>
+                    <p className="mt-1 text-sm text-secondary-label sm:text-base">{timeAgo(track.uploadedAt)}</p>
                   </div>
                   <div className="flex items-center gap-4 text-primary-label">
                     <button onClick={(event) => handleDeleteTrack(event, track.id)} className="p-2 text-secondary-label hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors opacity-0 group-hover:opacity-100" title="Delete track">
