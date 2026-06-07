@@ -171,13 +171,6 @@ export default function Folder({ user, onLogout }) {
           <StarlightLogo className="h-14 w-48 text-primary-label opacity-90 hover:opacity-100 transition-opacity" />
         </Link>
         <div className="flex shrink-0 items-center gap-3">
-          <button
-            onClick={() => setIsChatOpen((o) => !o)}
-            className="grid h-12 w-12 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight"
-            aria-label="Open messages"
-          >
-            <MessageSquare className="h-5 w-5" />
-          </button>
           
           <div className="relative">
             <button
@@ -223,7 +216,7 @@ export default function Folder({ user, onLogout }) {
         <span className="font-semibold text-primary-label">{folder?.title || folder?.name || 'Folder'}</span>
       </nav>
 
-      <div className="mt-8 mb-8 overflow-hidden">
+      <div className="mt-8 mb-12 overflow-hidden">
         <MarqueeInput
           value={editableTitle}
           onChange={(event) => setEditableTitle(event.target.value)}
@@ -232,7 +225,7 @@ export default function Folder({ user, onLogout }) {
           textClassName="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-primary-label"
           placeholder="Folder title"
         />
-        <p className="mt-3 flex items-center gap-2 text-base md:text-lg text-secondary-label">
+        <p className="mt-4 flex items-center gap-2 text-base md:text-lg text-secondary-label">
           <FolderOpen className="h-4 w-4 md:h-5 md:w-5 shrink-0" />
           <span className="min-w-0 flex-1 overflow-hidden">
             <MarqueeInput
