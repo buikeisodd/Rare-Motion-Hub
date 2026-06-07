@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { BarChart3, ChevronLeft, Download, FileText, Image as ImageIcon, Link2, Lock, MoreHorizontal, Music, Play, Plus, Search, Trash2 } from 'lucide-react';
+import { BarChart3, ChevronLeft, Download, FileText, Image as ImageIcon, Link2, Lock, MoreHorizontal, Music, Play, Plus, Trash2 } from 'lucide-react';
 import AudioPlayer from '../components/AudioPlayer';
 import UploadModal from '../components/UploadModal';
 import CoverArtPicker from '../components/CoverArtPicker';
@@ -148,20 +148,27 @@ export default function Project({ user }) {
     }
   };
 
-  const handleExport = () => {
-    const payload = {
-      project,
-      tracks,
-      exportedAt: new Date().toISOString()
-    };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = `${project.title || project.name || 'project'}-export.json`;
-    anchor.click();
-    URL.revokeObjectURL(url);
+  const handleExport = async () => {
     setIsProjectMenuOpen(false);
+    if (!tracks.length) {
+      alert('No tracks to export.');
+      return;
+    }
+    for (const track of tracks) {
+      try {
+        const res = await fetch(track.url);
+        if (!res.ok) throw new Error('Download failed');
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = `${track.title || 'track'}.wav`;
+        anchor.click();
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        console.error(`Failed to export track ${track.title}`, err);
+      }
+    }
   };
 
   const handleCopyShareLink = async () => {
@@ -187,9 +194,7 @@ export default function Project({ user }) {
           <button onClick={handleCopyShareLink} className="relative grid h-12 w-12 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Copy project link">
             <Link2 className="h-5 w-5" />
           </button>
-          <button className="grid h-12 w-12 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Search project">
-            <Search className="h-5 w-5" />
-          </button>
+
           <div className="relative">
             <button onClick={() => setIsProjectMenuOpen((open) => !open)} className="grid h-12 w-12 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Project options">
               <MoreHorizontal className="h-5 w-5" />
