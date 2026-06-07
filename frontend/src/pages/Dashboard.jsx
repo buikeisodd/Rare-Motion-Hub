@@ -7,8 +7,24 @@ import StarlightLogo from '../components/StarlightLogo';
 import ConfirmModal from '../components/ConfirmModal';
 import MarqueeInput from '../components/MarqueeInput';
 import { useAudio } from '../context/AudioContext';
-
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
+const palettes = [
+  ['#ff9a9e', '#fecfef', '#fbc2eb'],
+  ['#a18cd1', '#fbc2eb', '#e0c3fc'],
+  ['#84fab0', '#8fd3f4', '#a1c4fd'],
+  ['#ffecd2', '#fcb69f', '#ff9a9e'],
+  ['#cfd9df', '#e2ebf0', '#8fd3f4'],
+  ['#fbc2eb', '#a6c1ee', '#fccb90'],
+  ['#fdcbf1', '#fdcbf1', '#e6dee9'],
+  ['#a1c4fd', '#c2e9fb', '#e0c3fc'],
+];
+
+function gradientFor(id) {
+  const sum = String(id).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const colors = palettes[sum % palettes.length];
+  return `linear-gradient(135deg, ${colors[0]} 0%, ${colors[1]} 48%, ${colors[2]} 100%)`;
+}
 
 export function LibraryProject({ project, tracks, onDragStart, isDragging, onDelete }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -49,21 +65,23 @@ export function LibraryProject({ project, tracks, onDragStart, isDragging, onDel
       className={`relative w-full max-w-[15rem] transition-all duration-200 ${isDragging ? 'opacity-40 scale-95 rotate-1' : ''} ${isMenuOpen || isConfirmOpen ? 'z-50' : 'z-0'}`}
     >
       <Link to={`/project/${project.id}`} className="group block w-full" draggable={false}>
-        <div className="relative aspect-square overflow-hidden rounded-[1.25rem] bg-shading">
+        <div 
+          className="relative aspect-square overflow-hidden rounded-[1.25rem] bg-shading"
+          style={!project.coverArt ? { backgroundImage: gradientFor(project.id) } : undefined}
+        >
           {project.coverArt ? (
             <img src={project.coverArt} alt="" onError={(e) => { e.currentTarget.style.display = 'none'; }} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-          ) : (
-            <div className="grid h-full w-full grid-cols-2 gap-3 bg-[#242424] p-3">
+          ) : projectTracks.length > 1 ? (
+            <div className="grid h-full w-full grid-cols-2 gap-3 bg-black/20 p-3">
               {projectTracks.slice(0, 4).map((track) => (
-                <div key={track.id} className="rounded-xl bg-[radial-gradient(circle_at_50%_70%,#191919_0_24%,#3c3c3c_25%_100%)]" />
+                <div key={track.id} className="rounded-xl bg-black/30 backdrop-blur-sm" />
               ))}
-              {projectTracks.length === 0 && (
-                <div className="col-span-2 flex h-full items-center justify-center rounded-xl bg-[#303030] text-secondary-label">
-                  <Disc3 className="h-10 w-10" />
-                </div>
-              )}
             </div>
-          )}
+          ) : projectTracks.length === 0 ? (
+            <div className="flex h-full items-center justify-center bg-black/20 text-white/50">
+              <Disc3 className="h-10 w-10" />
+            </div>
+          ) : null}
           {leadTrack && (
             <span className="absolute bottom-3 right-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-shading text-primary-label backdrop-blur-md transition-transform group-hover:scale-105">
               <Play className="h-6 w-6 fill-current translate-x-0.5" />
@@ -189,11 +207,14 @@ export function LibraryFolder({ folder, projects, tracks, onSave, onDrop, onDrag
       } ${isDragOver ? 'scale-[1.03]' : ''} ${isMenuOpen || isConfirmOpen ? 'z-50' : 'z-0'}`}
     >
       <Link to={`/folder/${folder.id}`} draggable={false}>
-        <div className={`relative aspect-square overflow-hidden rounded-[1.25rem] transition-all duration-200 ${
-          isDragOver
-            ? 'ring-2 ring-green-400 shadow-[0_0_24px_4px_rgba(74,222,128,0.25)] bg-green-400/10'
-            : 'bg-shading'
-        }`}>
+        <div 
+          className={`relative aspect-square overflow-hidden rounded-[1.25rem] transition-all duration-200 ${
+            isDragOver
+              ? 'ring-2 ring-green-400 shadow-[0_0_24px_4px_rgba(74,222,128,0.25)] bg-green-400/10'
+              : 'bg-shading'
+          }`}
+          style={previewProjects.length === 0 ? { backgroundImage: gradientFor(folder.id) } : undefined}
+        >
           {previewProjects.length > 0 ? (
             <div className="grid h-full w-full grid-cols-2 gap-2 p-3">
               {previewProjects.map((p) =>
@@ -207,9 +228,10 @@ export function LibraryFolder({ folder, projects, tracks, onSave, onDrop, onDrag
                 ) : (
                   <div
                     key={p.id}
-                    className="flex h-full w-full items-center justify-center rounded-xl bg-[#303030] text-secondary-label"
+                    className="flex h-full w-full items-center justify-center rounded-xl bg-black/30 backdrop-blur-sm text-white/50"
+                    style={{ backgroundImage: gradientFor(p.id) }}
                   >
-                    <Disc3 className="h-6 w-6" />
+                    <Disc3 className="h-6 w-6 mix-blend-overlay" />
                   </div>
                 )
               )}
@@ -219,10 +241,10 @@ export function LibraryFolder({ folder, projects, tracks, onSave, onDrop, onDrag
                 ))}
             </div>
           ) : (
-            <div className="grid h-full w-full place-items-center">
+            <div className="grid h-full w-full place-items-center bg-black/10">
               {isDragOver
-                ? <FolderOpen className="h-20 w-20 text-green-400 transition-transform duration-500 group-hover:scale-105" />
-                : <Folder className="h-20 w-20 text-secondary-label transition-transform duration-500 group-hover:scale-105" />}
+                ? <FolderOpen className="h-20 w-20 text-white transition-transform duration-500 group-hover:scale-105" />
+                : <Folder className="h-20 w-20 text-white/60 transition-transform duration-500 group-hover:scale-105" />}
             </div>
           )}
         </div>
