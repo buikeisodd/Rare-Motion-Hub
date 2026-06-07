@@ -323,12 +323,13 @@ export default function Project({ user }) {
         </section>
       </main>
 
-      <button onClick={() => setIsUploadOpen(true)} className="fixed bottom-[calc(1rem+0px)] right-[calc(50vw-29rem-1rem-48px)] sm:bottom-[calc(1.5rem+0px)] z-40 hidden md:grid h-14 w-14 place-items-center rounded-full bg-primary-label text-primary-background shadow-2xl transition-transform hover:scale-105" aria-label="Add tracks">
+      {/* Desktop Add Tracks Button */}
+      <button onClick={() => setIsUploadOpen(true)} className="fixed bottom-4 right-4 sm:bottom-7 sm:right-8 lg:right-12 z-40 hidden md:grid h-14 w-14 place-items-center rounded-full bg-primary-label text-primary-background shadow-2xl transition-transform hover:scale-105" aria-label="Add tracks">
         <Plus className="h-7 w-7" />
       </button>
 
-      {/* Mobile Add Tracks Button if AudioPlayer takes space, might just use fixed bottom right */}
-      <button onClick={() => setIsUploadOpen(true)} className="fixed bottom-24 right-4 z-40 md:hidden grid h-14 w-14 place-items-center rounded-full bg-primary-label text-primary-background shadow-2xl transition-transform hover:scale-105" aria-label="Add tracks">
+      {/* Mobile Add Tracks Button */}
+      <button onClick={() => setIsUploadOpen(true)} className="fixed bottom-4 right-4 z-40 md:hidden grid h-14 w-14 place-items-center rounded-full bg-primary-label text-primary-background shadow-2xl transition-transform hover:scale-105" aria-label="Add tracks">
         <Plus className="h-7 w-7" />
       </button>
 

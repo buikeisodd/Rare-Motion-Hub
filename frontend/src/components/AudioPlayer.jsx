@@ -165,6 +165,12 @@ export default function AudioPlayer({ tracks = [], currentTrack, projectName, is
     onTrackChange(playQueue[prevIdx]);
   }, [queueIndex, playQueue, repeatMode, onTrackChange]);
 
+  // Use a ref for handleNext so it can be used in the event listener without triggering effect cleanup
+  const handleNextRef = useRef(handleNext);
+  useEffect(() => {
+    handleNextRef.current = handleNext;
+  }, [handleNext]);
+
   // Audio Event Listeners
   useEffect(() => {
     const audio = audioRef.current;
@@ -182,7 +188,7 @@ export default function AudioPlayer({ tracks = [], currentTrack, projectName, is
     const onCanPlay = () => setIsBuffering(false);
     const onWaiting = () => setIsBuffering(true);
     const onPlaying = () => setIsBuffering(false);
-    const onEnded = () => handleNext();
+    const onEnded = () => handleNextRef.current();
 
     audio.addEventListener('timeupdate', onTimeUpdate);
     audio.addEventListener('loadedmetadata', onLoadedMetadata);
@@ -201,7 +207,7 @@ export default function AudioPlayer({ tracks = [], currentTrack, projectName, is
       audio.removeEventListener('playing', onPlaying);
       audio.removeEventListener('ended', onEnded);
     };
-  }, [currentTrack?.url, handleNext]);
+  }, [currentTrack?.url]);
 
   // Handle Play/Pause
   useEffect(() => {

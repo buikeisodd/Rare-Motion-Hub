@@ -299,7 +299,7 @@ export default function Folder({ user, onLogout }) {
       </main>
 
       {/* Desktop Add Button */}
-      <div className="fixed bottom-[calc(1rem+0px)] right-[calc(50vw-29rem-1rem-48px)] sm:bottom-[calc(1.5rem+0px)] z-40 hidden md:flex flex-col items-end">
+      <div className="fixed bottom-4 right-4 sm:bottom-7 sm:right-8 lg:right-12 z-40 hidden md:flex flex-col items-end">
         <AnimatePresence>
           {isAddMenuOpen && (
             <motion.div
@@ -330,7 +330,7 @@ export default function Folder({ user, onLogout }) {
       </div>
 
       {/* Mobile Add Button */}
-      <div className="fixed bottom-24 right-4 z-40 md:hidden flex flex-col items-end">
+      <div className="fixed bottom-4 right-4 z-40 md:hidden flex flex-col items-end">
         <AnimatePresence>
           {isAddMenuOpen && (
             <motion.div
