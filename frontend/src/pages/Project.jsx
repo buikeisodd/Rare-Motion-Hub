@@ -262,8 +262,17 @@ export default function Project({ user }) {
               <button onClick={() => leadTrack ? handlePlay(leadTrack) : setIsUploadOpen(true)} className="grid h-14 w-14 place-items-center rounded-3xl bg-primary-label text-primary-background transition-transform hover:scale-105" aria-label={leadTrack ? "Play project" : "Add tracks"}>
                 <Play className="h-7 w-7 fill-current translate-x-0.5" />
               </button>
-              <p className="text-xs text-secondary-label whitespace-nowrap">
-                {tracks.length} track{tracks.length !== 1 ? 's' : ''} • {tracks.length ? '0s' : 'Now'}
+              <p className="text-sm font-medium text-secondary-label whitespace-nowrap">
+                {tracks.length} track{tracks.length !== 1 ? 's' : ''} • {
+                  (() => {
+                    const latestTrackTime = tracks.length > 0 
+                      ? Math.max(...tracks.map(t => new Date(t.uploadedAt).getTime()))
+                      : null;
+                    const projTime = new Date(project.updatedAt || project.createdAt).getTime();
+                    const lastUpdated = latestTrackTime ? Math.max(latestTrackTime, projTime) : projTime;
+                    return timeAgo(new Date(lastUpdated).toISOString());
+                  })()
+                }
               </p>
             </div>
           </div>
