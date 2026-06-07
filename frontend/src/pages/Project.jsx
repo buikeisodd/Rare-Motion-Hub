@@ -195,7 +195,10 @@ export default function Project({ user }) {
 
   return (
     <div className="relative min-h-screen bg-primary-background pb-40 animate-fade-in">
-      <header className="flex items-center justify-between px-10 py-8 lg:px-14">
+      {isProjectMenuOpen && (
+        <div className="fixed inset-0 z-40" onClick={() => setIsProjectMenuOpen(false)} />
+      )}
+      <header className="relative z-50 flex items-center justify-between px-10 py-8 lg:px-14">
         <Link to="/library" className="grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Back to library">
           <ChevronLeft className="h-7 w-7" />
         </Link>
@@ -213,21 +216,21 @@ export default function Project({ user }) {
               <MoreHorizontal className="h-6 w-6" />
             </button>
             {isProjectMenuOpen && (
-              <div className="absolute right-0 top-16 z-40 w-72 rounded-[1.25rem] border border-border bg-[#191919] p-4 shadow-2xl">
-                <button onClick={() => navigate(`/project/${id}/insights`)} className="flex w-full items-center gap-4 rounded-xl px-4 py-4 text-left text-lg font-bold hover:bg-highlight transition-colors">
+              <div className="absolute right-0 top-16 z-50 w-64 rounded-[1.25rem] border border-border panel-bg p-3 shadow-2xl">
+                <button onClick={() => navigate(`/project/${id}/insights`)} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
                   <BarChart3 className="h-6 w-6" />
                   Insights
                 </button>
-                <button onClick={() => { alert('Notes are coming soon.'); setIsProjectMenuOpen(false); }} className="flex w-full items-center gap-4 rounded-xl px-4 py-4 text-left text-lg font-bold hover:bg-highlight transition-colors">
+                <button onClick={() => { alert('Notes are coming soon.'); setIsProjectMenuOpen(false); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
                   <FileText className="h-6 w-6" />
                   Notes
                 </button>
-                <button onClick={handleExport} className="flex w-full items-center gap-4 rounded-xl px-4 py-4 text-left text-lg font-bold hover:bg-highlight transition-colors">
+                <button onClick={handleExport} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
                   <Download className="h-6 w-6" />
                   Export
                 </button>
                 <div className="my-3 border-t border-border" />
-                <button onClick={handleDeleteProject} className="flex w-full items-center gap-4 rounded-xl px-4 py-4 text-left text-lg font-bold text-red-500 hover:bg-red-500/10 transition-colors">
+                <button onClick={handleDeleteProject} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-red-500 hover:bg-red-500/10 transition-colors">
                   <Trash2 className="h-6 w-6" />
                   Delete project
                 </button>

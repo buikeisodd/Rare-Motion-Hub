@@ -124,8 +124,8 @@ function ProfileAvatar({ user, size = 'h-11 w-11', className = '' }) {
 
 function NotificationsMenu({ notifications }) {
   return (
-    <div className="absolute left-auto right-0 top-16 z-50 w-96 rounded-[1.25rem] border border-border bg-[#191919] p-4 shadow-2xl">
-      <h2 className="px-3 pb-3 text-lg font-bold">Notifications</h2>
+    <div className="absolute left-auto right-0 top-16 z-50 w-80 rounded-[1.25rem] border border-border panel-bg p-4 shadow-2xl">
+      <h2 className="px-3 pb-3 text-base font-bold text-primary-label">Notifications</h2>
       {notifications.length === 0 ? (
         <p className="px-3 py-6 text-sm text-secondary-label">No notifications yet.</p>
       ) : (
@@ -153,22 +153,22 @@ function NotificationsMenu({ notifications }) {
 
 function ProfilePanel({ user, theme, onThemeChange, onEditProfile, onLogout, onDeleteAccount }) {
   return (
-    <div className="absolute left-auto right-0 top-16 z-50 w-96 rounded-[1.25rem] border border-border bg-[#191919] p-4 shadow-2xl">
-      <div className="mb-4 flex items-center gap-4 rounded-2xl bg-shading p-4">
-        <ProfileAvatar user={user} size="h-16 w-16" />
+    <div className="absolute left-auto right-0 top-16 z-50 w-72 rounded-[1.25rem] border border-border panel-bg p-3 shadow-2xl">
+      <div className="mb-3 flex items-center gap-3 rounded-xl bg-shading p-3">
+        <ProfileAvatar user={user} size="h-12 w-12" />
         <div className="min-w-0">
-          <h2 className="truncate text-xl font-bold">{user.name}</h2>
-          <p className="truncate text-sm text-secondary-label">{user.email}</p>
+          <h2 className="truncate text-base font-bold text-primary-label">{user.name}</h2>
+          <p className="truncate text-xs text-secondary-label">{user.email}</p>
         </div>
       </div>
 
-      <button onClick={onEditProfile} className="flex w-full items-center gap-4 rounded-xl px-4 py-4 text-left text-lg font-semibold hover:bg-highlight transition-colors">
+      <button onClick={onEditProfile} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
         <Edit3 className="h-5 w-5" />
         Edit profile
       </button>
 
-      <div className="my-2 rounded-xl px-4 py-4">
-        <div className="mb-4 flex items-center gap-4 text-lg font-semibold">
+      <div className="my-1 rounded-xl px-3 py-3">
+        <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-primary-label">
           <Palette className="h-5 w-5" />
           Theme setting
         </div>
@@ -185,11 +185,11 @@ function ProfilePanel({ user, theme, onThemeChange, onEditProfile, onLogout, onD
         </div>
       </div>
 
-      <button onClick={onLogout} className="flex w-full items-center gap-4 rounded-xl px-4 py-4 text-left text-lg font-semibold hover:bg-highlight transition-colors">
+      <button onClick={onLogout} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
         <LogOut className="h-5 w-5" />
         Sign out
       </button>
-      <button onClick={onDeleteAccount} className="flex w-full items-center gap-4 rounded-xl px-4 py-4 text-left text-lg font-semibold text-red-500 hover:bg-red-500/10 transition-colors">
+      <button onClick={onDeleteAccount} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-red-500 hover:bg-red-500/10 transition-colors">
         <Trash2 className="h-5 w-5" />
         Delete Account
       </button>
@@ -210,24 +210,24 @@ function EditProfileModal({ user, onClose, onSave, saving, error }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 px-4 py-6 backdrop-blur-sm animate-fade-in">
-      <form onSubmit={handleSubmit} className="relative grid w-full max-w-[44rem] gap-8 rounded-[1.25rem] bg-[#1b1b1b] p-8 shadow-2xl grid-cols-[0.9fr_1fr]">
-        <button type="button" onClick={onClose} className="absolute right-6 top-6 grid h-12 w-12 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Close edit profile">
+      <form onSubmit={handleSubmit} className="relative grid w-full max-w-[40rem] gap-6 rounded-[1.25rem] panel-bg border border-border p-6 shadow-2xl grid-cols-[0.9fr_1fr]">
+        <button type="button" onClick={onClose} className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Close edit profile">
           <X className="h-6 w-6" />
         </button>
-        <h2 className="col-span-full pr-12 text-center text-3xl font-bold">Edit Profile</h2>
+        <h2 className="col-span-full pr-12 text-center text-xl font-bold text-primary-label">Edit Profile</h2>
 
         <section className="flex flex-col items-center justify-center">
           <DiscArtwork className="aspect-square w-full max-w-[20rem] rounded-[2.5rem]" />
         </section>
 
         <section className="flex flex-col items-center justify-center gap-6">
-          <div className="w-full max-w-[23rem]">
-            <p className="mb-4 text-lg text-secondary-label">Profile picture</p>
-            <button type="button" onClick={() => fileInputRef.current?.click()} className="relative mx-auto grid h-48 w-48 place-items-center overflow-hidden rounded-full bg-shading">
+          <div className="w-full max-w-[20rem]">
+            <p className="mb-3 text-sm text-secondary-label">Profile picture</p>
+            <button type="button" onClick={() => fileInputRef.current?.click()} className="relative mx-auto grid h-32 w-32 place-items-center overflow-hidden rounded-full bg-shading">
               {avatarPreview ? (
                 <img src={avatarPreview} alt="" className="h-full w-full object-cover" />
               ) : (
-                <ProfileAvatar user={{ name }} size="h-48 w-48 text-6xl" />
+                <ProfileAvatar user={{ name }} size="h-32 w-32 text-4xl" />
               )}
               <span className="absolute inset-0 grid place-items-center bg-black/0 text-white opacity-0 transition-opacity hover:bg-black/45 hover:opacity-100">
                 <UploadCloud className="h-9 w-9" />
@@ -236,17 +236,17 @@ function EditProfileModal({ user, onClose, onSave, saving, error }) {
             <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(event) => setAvatarFile(event.target.files?.[0] || null)} />
           </div>
 
-          <label className="w-full max-w-[23rem]">
-            <span className="mb-3 block text-center text-lg text-secondary-label">Username</span>
-            <span className="flex h-16 items-center rounded-[1.4rem] bg-[#292929] px-7">
-              <input value={name} onChange={(event) => setName(event.target.value)} className="min-w-0 flex-1 bg-transparent text-xl font-bold text-primary-label outline-none" required />
+          <label className="w-full max-w-[20rem]">
+            <span className="mb-2 block text-center text-sm text-secondary-label">Username</span>
+            <span className="flex h-12 items-center rounded-xl panel-input-bg px-4">
+              <input value={name} onChange={(event) => setName(event.target.value)} className="min-w-0 flex-1 bg-transparent text-base font-bold text-primary-label outline-none" required />
               <Edit3 className="h-5 w-5" />
             </span>
           </label>
 
           {error && <p className="max-w-[23rem] text-center text-sm text-red-400">{error}</p>}
 
-          <button type="submit" disabled={saving} className="h-14 w-full max-w-[23rem] rounded-full bg-primary-label text-lg font-bold text-primary-background disabled:opacity-60">
+          <button type="submit" disabled={saving} className="h-11 w-full max-w-[20rem] rounded-full bg-primary-label text-sm font-bold text-primary-background disabled:opacity-60">
             {saving ? 'Saving...' : 'Save profile'}
           </button>
         </section>
@@ -382,9 +382,22 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
 
   if (loading) return null;
 
+  const anyPanelOpen = isNotificationsOpen || isProfileOpen || isAddMenuOpen;
+
   return (
     <div className="min-h-screen bg-primary-background px-10 py-8 pb-28 animate-fade-in lg:px-14">
-      <header className="flex items-start justify-between gap-3">
+      {/* Invisible backdrop — click outside to close any open panel */}
+      {anyPanelOpen && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => {
+            setIsNotificationsOpen(false);
+            setIsProfileOpen(false);
+            setIsAddMenuOpen(false);
+          }}
+        />
+      )}
+      <header className="relative z-50 flex items-start justify-between gap-3">
         {/* Starlight Station logo — blends with bg in dark, black in light */}
         <Link to="/" aria-label="Starlight Station home">
           <StarlightLogo className="h-14 w-48 text-primary-label opacity-90 hover:opacity-100 transition-opacity" />
@@ -446,9 +459,9 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
         )}
       </main>
 
-      <div className="fixed inset-x-0 bottom-8 z-30 flex flex-col items-center gap-3 px-4">
+      <div className="fixed inset-x-0 bottom-8 z-50 flex flex-col items-center gap-3 px-4">
         {isAddMenuOpen && (
-          <div className="w-64 rounded-[1.2rem] bg-[#282828]/95 p-3 shadow-2xl backdrop-blur-xl animate-slide-up">
+          <div className="w-64 rounded-[1.2rem] panel-bg border border-border p-3 shadow-2xl backdrop-blur-xl animate-slide-up">
             <button onClick={createAudioProject} className="flex w-full items-center gap-5 rounded-xl px-4 py-3 text-left text-xl font-semibold hover:bg-highlight transition-colors">
               <Music className="h-6 w-6" />
               Audio
