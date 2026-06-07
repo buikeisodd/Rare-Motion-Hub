@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Bell, ChevronRight, Circle, Disc3, FolderPlus, Home, LogOut, MessageSquare, Plus, Video, X } from 'lucide-react';
+import { ArrowLeft, Bell, ChevronRight, Circle, Disc3, FolderPlus, Home, LogOut, MessageSquare, MoreHorizontal, Plus, Trash2, Video, X } from 'lucide-react';
 import { LibraryProject, LibraryFolder } from './Dashboard';
 import ChatInbox from '../components/ChatInbox';
 import StarlightLogo from '../components/StarlightLogo';
@@ -15,6 +15,7 @@ export default function Folder({ user, onLogout }) {
   const [loading, setLoading] = useState(true);
   const [draggingId, setDraggingId] = useState(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isFolderMenuOpen, setIsFolderMenuOpen] = useState(false);
   const [editableTitle, setEditableTitle] = useState('');
   const [editableArtist, setEditableArtist] = useState('');
 
@@ -124,6 +125,16 @@ export default function Folder({ user, onLogout }) {
     }
   };
 
+  const handleDeleteCurrentFolder = async () => {
+    if (!confirm('Are you sure you want to delete this folder? Projects inside it will be moved to the library root.')) return;
+    try {
+      await fetch(`${apiUrl}/api/folders/${id}?userId=${encodeURIComponent(user.id)}`, { method: 'DELETE' });
+      navigate('/library');
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
 
   if (loading) return null;
@@ -149,14 +160,33 @@ export default function Folder({ user, onLogout }) {
         <div className="flex shrink-0 items-center gap-3">
           <button
             onClick={() => setIsChatOpen((o) => !o)}
-            className="grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight"
+            className="grid h-12 w-12 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight"
             aria-label="Open messages"
           >
-            <MessageSquare className="h-6 w-6" />
+            <MessageSquare className="h-5 w-5" />
           </button>
+          
+          <div className="relative">
+            <button
+              onClick={() => setIsFolderMenuOpen((o) => !o)}
+              className="grid h-12 w-12 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight"
+              aria-label="Folder options"
+            >
+              <MoreHorizontal className="h-5 w-5" />
+            </button>
+            {isFolderMenuOpen && (
+              <div className="absolute right-0 top-14 z-50 w-48 rounded-[1rem] border border-border panel-bg p-2 shadow-2xl">
+                <button onClick={handleDeleteCurrentFolder} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-500 hover:bg-red-500/10 transition-colors">
+                  <Trash2 className="h-4 w-4" />
+                  Delete folder
+                </button>
+              </div>
+            )}
+          </div>
+
           {onLogout && (
-            <button onClick={onLogout} className="grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Log out">
-              <LogOut className="h-6 w-6" />
+            <button onClick={onLogout} className="grid h-12 w-12 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Log out">
+              <LogOut className="h-5 w-5" />
             </button>
           )}
         </div>
@@ -210,7 +240,7 @@ export default function Folder({ user, onLogout }) {
             <p className="text-secondary-label">Drag projects here or create new ones inside this folder.</p>
           </div>
         ) : (
-          <div className="grid w-full grid-cols-3 justify-items-center gap-x-8 gap-y-12">
+          <div className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 justify-items-center gap-x-6 gap-y-10 lg:gap-x-8 lg:gap-y-12">
             {folders.map((subFolder) => {
               const subProjects = projects.filter((p) => p.folderId === subFolder.id);
               return (

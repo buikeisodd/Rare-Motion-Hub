@@ -693,7 +693,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
             <p className="mt-2 text-secondary-label">Create your first library project.</p>
           </div>
         ) : (
-          <div className="grid w-full grid-cols-3 justify-items-center gap-x-8 gap-y-12">
+          <div className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 justify-items-center gap-x-6 gap-y-10 lg:gap-x-8 lg:gap-y-12">
             {workspace.folders.map((folder) => {
               const folderProjects = workspace.projects.filter((p) => p.folderId === folder.id);
               return (

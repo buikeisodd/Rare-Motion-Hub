@@ -574,6 +574,27 @@ app.put('/api/folders/:id', (req, res) => {
   res.json(normalizeLibraryItem(db.folders[folderIndex], db, 'folder'));
 });
 
+app.delete('/api/folders/:id', (req, res) => {
+  const db = ensureDBShape(readDB());
+  const userId = requireUserId(req, res);
+  if (!userId) return;
+
+  const folderIndex = db.folders.findIndex((f) => f.id === req.params.id && f.userId === userId);
+  if (folderIndex === -1) return res.status(404).json({ error: 'Folder not found' });
+
+  // Orphan children to root
+  db.folders.forEach(f => {
+    if (f.parentFolderId === req.params.id) f.parentFolderId = null;
+  });
+  db.projects.forEach(p => {
+    if (p.folderId === req.params.id) p.folderId = null;
+  });
+
+  db.folders.splice(folderIndex, 1);
+  writeDB(db);
+  res.json({ success: true });
+});
+
 // --- PROJECTS ---
 app.post('/api/projects', (req, res) => {
   const { name, title, artist, userId, folderId } = req.body;

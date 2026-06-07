@@ -174,22 +174,22 @@ export default function Project({ user }) {
       {isProjectMenuOpen && (
         <div className="fixed inset-0 z-40" onClick={() => setIsProjectMenuOpen(false)} />
       )}
-      <header className="relative z-50 flex items-center justify-between px-10 py-8 lg:px-14">
-        <Link to="/library" className="grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Back to library">
-          <ChevronLeft className="h-7 w-7" />
+      <header className="relative z-50 flex items-center justify-between px-6 py-6 lg:px-14">
+        <Link to="/library" className="grid h-12 w-12 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Back to library">
+          <ChevronLeft className="h-6 w-6" />
         </Link>
 
         <div className="flex items-center gap-3">
-          <button onClick={handleCopyShareLink} className="relative grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Copy project link">
-            <Link2 className="h-5 w-5 sm:h-6 sm:w-6" />
+          <button onClick={handleCopyShareLink} className="relative grid h-12 w-12 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Copy project link">
+            <Link2 className="h-5 w-5" />
             {shareStatus && <span className="absolute -bottom-8 rounded-full bg-primary-label px-3 py-1 text-xs font-bold text-primary-background">{shareStatus}</span>}
           </button>
-          <button className="grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Search project">
-            <Search className="h-6 w-6" />
+          <button className="grid h-12 w-12 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Search project">
+            <Search className="h-5 w-5" />
           </button>
           <div className="relative">
-            <button onClick={() => setIsProjectMenuOpen((open) => !open)} className="grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Project options">
-              <MoreHorizontal className="h-6 w-6" />
+            <button onClick={() => setIsProjectMenuOpen((open) => !open)} className="grid h-12 w-12 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Project options">
+              <MoreHorizontal className="h-5 w-5" />
             </button>
             {isProjectMenuOpen && (
               <div className="absolute right-0 top-16 z-50 w-64 rounded-[1.25rem] border border-border panel-bg p-3 shadow-2xl">
@@ -216,9 +216,9 @@ export default function Project({ user }) {
         </div>
       </header>
 
-      <main className="mx-auto grid max-w-6xl gap-12 px-10 pt-10 grid-cols-[minmax(16rem,30rem)_minmax(20rem,1fr)] lg:px-14">
-        <section className="flex justify-start">
-          <div className="group relative aspect-square w-full max-w-[30rem] overflow-hidden rounded-[1.2rem] bg-[linear-gradient(135deg,#b7ff63_0%,#d6c18e_45%,#d84f93_100%)] shadow-2xl">
+      <main className="mx-auto grid max-w-6xl gap-8 px-6 pt-6 grid-cols-1 lg:grid-cols-[minmax(16rem,24rem)_minmax(20rem,1fr)] lg:gap-12 lg:px-14 lg:pt-10">
+        <section className="flex justify-center lg:justify-start">
+          <div className="group relative aspect-square w-full max-w-[20rem] md:max-w-[24rem] overflow-hidden rounded-[1.2rem] bg-[linear-gradient(135deg,#b7ff63_0%,#d6c18e_45%,#d84f93_100%)] shadow-2xl">
             {project.coverArt && <img src={project.coverArt} alt={project.title || project.name} onError={(event) => { event.currentTarget.style.display = 'none'; }} className="h-full w-full object-cover" />}
             <button
               type="button"
@@ -241,11 +241,11 @@ export default function Project({ user }) {
                 onKeyDown={(event) => {
                   if (event.key === 'Enter') event.currentTarget.blur();
                 }}
-                className="w-full bg-transparent text-5xl font-semibold tracking-normal text-primary-label outline-none"
+                className="w-full bg-transparent text-3xl md:text-4xl lg:text-5xl font-semibold tracking-normal text-primary-label outline-none"
                 aria-label="Project title"
               />
-              <p className="mt-2 flex flex-wrap items-center gap-2 text-lg text-secondary-label">
-                <Lock className="h-5 w-5 fill-current" />
+              <p className="mt-2 flex flex-wrap items-center gap-2 text-base md:text-lg text-secondary-label">
+                <Lock className="h-4 w-4 md:h-5 md:w-5 fill-current" />
                 <input
                   value={editableArtist}
                   onChange={(event) => setEditableArtist(event.target.value)}
@@ -253,7 +253,7 @@ export default function Project({ user }) {
                   onKeyDown={(event) => {
                     if (event.key === 'Enter') event.currentTarget.blur();
                   }}
-                  className="min-w-0 max-w-xs bg-transparent text-secondary-label outline-none"
+                  className="min-w-0 max-w-[12rem] md:max-w-xs bg-transparent text-secondary-label outline-none"
                   aria-label="Project artist"
                 />
                 <span>•</span>
