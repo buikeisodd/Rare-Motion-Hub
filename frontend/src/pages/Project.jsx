@@ -39,53 +39,29 @@ export default function Project({ user }) {
   const [editableTitle, setEditableTitle] = useState('');
   const [editableArtist, setEditableArtist] = useState('');
 
-  const fetchWorkspace = async ({ showLoading = false } = {}) => {
+  const fetchProject = async ({ showLoading = false } = {}) => {
     if (showLoading) setLoading(true);
     try {
-      const res = await fetch(`${apiUrl}/api/workspace?userId=${encodeURIComponent(user.id)}`);
+      const res = await fetch(`${apiUrl}/api/projects/${id}?userId=${encodeURIComponent(user.id)}`);
       const data = await res.json();
-      const nextProject = data.projects.find((item) => item.id === id);
-      const nextTracks = data.tracks.filter((track) => track.projectId === id);
-      setProject(nextProject);
-      setEditableTitle(nextProject?.title || nextProject?.name || 'Untitled project');
-      setEditableArtist(nextProject?.artist || user.name);
-      setTracks(nextTracks);
+      if (!res.ok) throw new Error(data.error || 'Project not found');
+      setProject(data.project);
+      setEditableTitle(data.project?.title || data.project?.name || 'Untitled project');
+      setEditableArtist(data.project?.artist || user.name);
+      setTracks(data.tracks || []);
     } catch (err) {
-      console.error('Failed to fetch workspace', err);
+      console.error('Failed to fetch project', err);
+      setProject(null);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    let cancelled = false;
+    fetchProject({ showLoading: true });
+  }, [id, user.id]);
 
-    async function loadWorkspace() {
-      try {
-        const res = await fetch(`${apiUrl}/api/workspace?userId=${encodeURIComponent(user.id)}`);
-        const data = await res.json();
-        if (!cancelled) {
-          const nextProject = data.projects.find((item) => item.id === id);
-          const nextTracks = data.tracks.filter((track) => track.projectId === id);
-          setProject(nextProject);
-          setEditableTitle(nextProject?.title || nextProject?.name || 'Untitled project');
-          setEditableArtist(nextProject?.artist || user.name);
-          setTracks(nextTracks);
-        }
-      } catch (err) {
-        console.error('Failed to fetch workspace', err);
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    }
-
-    loadWorkspace();
-    return () => {
-      cancelled = true;
-    };
-  }, [id, user.id, user.name]);
+  const fetchWorkspace = fetchProject;
 
   const handlePlay = (track) => {
     const isSameTrack = currentTrack?.id === track.id;

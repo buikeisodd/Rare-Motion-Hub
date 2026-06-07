@@ -15,6 +15,8 @@ export default function Folder({ user, onLogout }) {
   const [loading, setLoading] = useState(true);
   const [draggingId, setDraggingId] = useState(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [editableTitle, setEditableTitle] = useState('');
+  const [editableArtist, setEditableArtist] = useState('');
 
   const fetchFolder = async () => {
     try {
@@ -22,6 +24,8 @@ export default function Folder({ user, onLogout }) {
       if (!res.ok) { navigate('/library'); return; }
       const json = await res.json();
       setData(json);
+      setEditableTitle(json.folder?.title || json.folder?.name || 'Folder');
+      setEditableArtist(json.folder?.artist || '');
     } catch {
       navigate('/library');
     } finally {
@@ -43,11 +47,24 @@ export default function Folder({ user, onLogout }) {
     });
     if (res.ok) {
       const saved = await res.json();
-      setData((prev) => ({
-        ...prev,
-        folders: prev.folders.map((f) => (f.id === folderId ? saved.folder || saved : f)),
-      }));
+      if (folderId === id) {
+        // Updating the current folder title
+        setData((prev) => ({ ...prev, folder: saved.folder || saved }));
+      } else {
+        setData((prev) => ({
+          ...prev,
+          folders: prev.folders.map((f) => (f.id === folderId ? saved.folder || saved : f)),
+        }));
+      }
     }
+  };
+
+  const saveCurrentFolder = async () => {
+    const nextTitle = editableTitle.trim() || 'Untitled folder';
+    const nextArtist = editableArtist.trim() || '';
+    setEditableTitle(nextTitle);
+    setEditableArtist(nextArtist);
+    await saveFolderMetadata(id, { title: nextTitle, artist: nextArtist });
   };
 
   const createProject = async () => {
@@ -145,14 +162,25 @@ export default function Folder({ user, onLogout }) {
         <span className="font-semibold text-primary-label">{folder?.title || folder?.name || 'Folder'}</span>
       </nav>
 
-      {/* Folder title */}
+      {/* Folder title - editable */}
       <div className="mt-8 mb-10">
-        <h1 className="text-4xl font-bold tracking-tight text-primary-label">
-          {folder?.title || folder?.name || 'Folder'}
-        </h1>
-        {folder?.artist && (
-          <p className="mt-1 text-lg text-secondary-label">{folder.artist}</p>
-        )}
+        <input
+          value={editableTitle}
+          onChange={(e) => setEditableTitle(e.target.value)}
+          onBlur={saveCurrentFolder}
+          onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+          className="w-full bg-transparent text-4xl font-bold tracking-tight text-primary-label outline-none"
+          aria-label="Folder title"
+        />
+        <input
+          value={editableArtist}
+          onChange={(e) => setEditableArtist(e.target.value)}
+          onBlur={saveCurrentFolder}
+          onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+          className="mt-1 w-full bg-transparent text-lg text-secondary-label outline-none"
+          placeholder="Add artist..."
+          aria-label="Folder artist"
+        />
       </div>
 
       {/* Grid */}

@@ -314,12 +314,11 @@ app.get('/api/workspace', (req, res) => {
   if (!userId) return;
   if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
 
-  // Only return root-level items (not nested inside any folder)
+  // Only return root-level folders (not nested inside any folder)
   const rootFolders = db.folders.filter((folder) => folder.userId === userId && !folder.parentFolderId);
-  const rootProjects = db.projects.filter((project) => project.userId === userId && !project.folderId);
   res.json({
     folders: rootFolders.map((folder) => normalizeLibraryItem(folder, db, 'folder')),
-    projects: rootProjects.map((project) => normalizeLibraryItem(project, db, 'project')),
+    projects: db.projects.filter((project) => project.userId === userId).map((project) => normalizeLibraryItem(project, db, 'project')),
     tracks: db.tracks.filter((track) => track.userId === userId || track.uploader?.id === userId).map(normalizeTrack),
     coverArts: db.coverArts.filter((cover) => cover.userId === userId),
     notifications: db.notifications.filter((notification) => notification.userId === userId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
@@ -658,6 +657,16 @@ app.put('/api/projects/:id/cover', (req, res) => {
   db.projects[projIndex].coverArt = coverUrl;
   writeDB(db);
   res.json(db.projects[projIndex]);
+});
+
+app.get('/api/projects/:id', (req, res) => {
+  const db = ensureDBShape(readDB());
+  const userId = requireUserId(req, res);
+  if (!userId) return;
+  const project = db.projects.find((item) => item.id === req.params.id && item.userId === userId);
+  if (!project) return res.status(404).json({ error: 'Project not found' });
+  const tracks = db.tracks.filter((track) => track.projectId === project.id).map(normalizeTrack);
+  res.json({ project: normalizeLibraryItem(project, db, 'project'), tracks });
 });
 
 app.get('/api/projects/:id/insights', (req, res) => {
