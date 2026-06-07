@@ -693,7 +693,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
 
         <div className="flex shrink-0 items-center gap-3">
           <div className="relative">
-            <button onClick={() => { setIsNotificationsOpen((open) => !open); setIsProfileOpen(false); }} className="relative grid h-14 w-14 place-items-center rounded-3xl bg-primary-label text-primary-background transition-transform hover:scale-105" aria-label="Notifications">
+            <button onClick={() => { setIsNotificationsOpen((open) => !open); setIsProfileOpen(false); setIsAddMenuOpen(false); setIsChatOpen(false); }} className="relative grid h-14 w-14 place-items-center rounded-3xl bg-primary-label text-primary-background transition-transform hover:scale-105" aria-label="Notifications">
               <Bell className="h-6 w-6 fill-current" />
               {workspace.notifications.length > 0 && <span className="absolute right-4 top-4 h-2 w-2 rounded-full bg-blue-500" />}
             </button>
@@ -701,7 +701,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
           </div>
 
           <div className="relative">
-            <button onClick={() => { setIsProfileOpen((open) => !open); setIsNotificationsOpen(false); }} className="grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label={`Open ${user.name} profile`}>
+            <button onClick={() => { setIsProfileOpen((open) => !open); setIsNotificationsOpen(false); setIsAddMenuOpen(false); setIsChatOpen(false); }} className="grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label={`Open ${user.name} profile`}>
               <ProfileAvatar user={user} size="h-8 w-8" />
             </button>
             {isProfileOpen && (
@@ -788,7 +788,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
         )}
 
         <button
-          onClick={() => setIsAddMenuOpen((open) => !open)}
+          onClick={() => { setIsAddMenuOpen((open) => !open); setIsProfileOpen(false); setIsNotificationsOpen(false); setIsChatOpen(false); }}
           className="inline-flex h-16 min-w-48 items-center justify-center gap-3 rounded-full bg-shading px-7 text-xl font-semibold text-primary-label shadow-2xl backdrop-blur-md transition-transform hover:scale-[1.02]"
         >
           {isAddMenuOpen ? <X className="h-6 w-6" /> : <Plus className="h-6 w-6" />}

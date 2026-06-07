@@ -3,7 +3,7 @@ import { Loader2, Mail } from 'lucide-react';
 import StarlightLogo from '../components/StarlightLogo';
 
 export default function Login({ onLogin }) {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(() => localStorage.getItem('lastEmail') || '');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -22,6 +22,7 @@ export default function Login({ onLogin }) {
       const data = await res.json();
 
       if (res.ok) {
+        localStorage.setItem('lastEmail', email);
         onLogin(data.user);
       } else {
         setError(data.error || 'Login failed');

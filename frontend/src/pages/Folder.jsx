@@ -174,7 +174,7 @@ export default function Folder({ user, onLogout }) {
           
           <div className="relative">
             <button
-              onClick={() => setIsFolderMenuOpen((o) => !o)}
+              onClick={() => { setIsFolderMenuOpen((o) => !o); setIsAddMenuOpen(false); }}
               className="grid h-12 w-12 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight"
               aria-label="Folder options"
             >
@@ -295,7 +295,7 @@ export default function Folder({ user, onLogout }) {
           </div>
         )}
         <button
-          onClick={() => setIsAddMenuOpen((o) => !o)}
+          onClick={() => { setIsAddMenuOpen((o) => !o); setIsFolderMenuOpen(false); }}
           className="inline-flex h-16 min-w-48 items-center justify-center gap-3 rounded-full bg-shading px-7 text-xl font-semibold text-primary-label shadow-2xl backdrop-blur-md transition-transform hover:scale-[1.02]"
         >
           {isAddMenuOpen ? <X className="h-6 w-6" /> : <Plus className="h-6 w-6" />}
