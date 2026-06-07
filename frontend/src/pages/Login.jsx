@@ -39,13 +39,13 @@ export default function Login({ onLogin }) {
       <StarlightLogo className="h-14 w-52 text-primary-label opacity-90" />
 
       <div className="mx-auto flex min-h-[calc(100vh-8rem)] w-full max-w-3xl flex-col items-center justify-center animate-fade-in">
-        <StarlightLogo className="mb-14 h-36 w-[28rem] text-primary-label" />
+        <StarlightLogo className="mb-8 h-28 w-96 text-primary-label" />
 
-        <h1 className="max-w-xl text-center text-5xl font-semibold leading-tight tracking-normal mb-9">
+        <h1 className="max-w-md text-center text-3xl font-semibold leading-tight tracking-normal mb-7">
           A sacred place for your work-in-progress music
         </h1>
 
-        <form onSubmit={handleSubmit} className="w-full max-w-lg space-y-5">
+        <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-3">
           <label className="relative block">
             <Mail className="absolute left-8 top-1/2 h-5 w-5 -translate-y-1/2 text-secondary-label" />
             <input
@@ -53,7 +53,7 @@ export default function Login({ onLogin }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Email address"
-              className="h-20 w-full rounded-full bg-shading border border-border pl-16 pr-8 text-center text-lg font-semibold text-primary-label placeholder:text-secondary-label focus:outline-none focus:ring-2 focus:ring-primary-label/20 transition-all"
+              className="h-12 w-full rounded-full bg-shading border border-border pl-14 pr-8 text-center text-base font-semibold text-primary-label placeholder:text-secondary-label focus:outline-none focus:ring-2 focus:ring-primary-label/20 transition-all"
               required
             />
           </label>
@@ -67,7 +67,7 @@ export default function Login({ onLogin }) {
           <button
             type="submit"
             disabled={loading}
-            className="flex h-20 w-full items-center justify-center rounded-full bg-primary-label text-lg font-semibold text-primary-background transition-transform hover:scale-[1.01] disabled:opacity-70"
+            className="flex h-12 w-full items-center justify-center rounded-full bg-primary-label text-base font-semibold text-primary-background transition-transform hover:scale-[1.01] disabled:opacity-70"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Continue with email'}
           </button>
