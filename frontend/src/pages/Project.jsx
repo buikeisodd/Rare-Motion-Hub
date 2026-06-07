@@ -114,10 +114,12 @@ export default function Project({ user }) {
   const handleDeleteProject = async () => {
     if (!confirm('Are you sure you want to delete this project?')) return;
     try {
-      await fetch(`${apiUrl}/api/projects/${id}?userId=${encodeURIComponent(user.id)}`, { method: 'DELETE' });
+      const res = await fetch(`${apiUrl}/api/projects/${id}?userId=${encodeURIComponent(user.id)}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed to delete project');
       navigate('/library');
     } catch (err) {
-      console.error('Failed to delete project', err);
+      alert(err.message);
+      console.error(err);
     }
   };
 

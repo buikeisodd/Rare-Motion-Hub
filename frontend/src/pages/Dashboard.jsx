@@ -497,18 +497,20 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
   const deleteItem = async (itemId, itemType) => {
     if (itemType === 'project') {
       try {
-        await fetch(`${apiUrl}/api/projects/${itemId}?userId=${encodeURIComponent(user.id)}`, { method: 'DELETE' });
+        const res = await fetch(`${apiUrl}/api/projects/${itemId}?userId=${encodeURIComponent(user.id)}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error((await res.json()).error || 'Failed to delete project');
         setWorkspace((prev) => ({ ...prev, projects: prev.projects.filter((p) => p.id !== itemId) }));
-      } catch (err) { console.error(err); }
+      } catch (err) { alert(err.message); console.error(err); }
     } else if (itemType === 'folder') {
       try {
-        await fetch(`${apiUrl}/api/folders/${itemId}?userId=${encodeURIComponent(user.id)}`, { method: 'DELETE' });
+        const res = await fetch(`${apiUrl}/api/folders/${itemId}?userId=${encodeURIComponent(user.id)}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error((await res.json()).error || 'Failed to delete folder');
         setWorkspace((prev) => ({
           ...prev,
           folders: prev.folders.filter((f) => f.id !== itemId),
           projects: prev.projects.map((p) => p.folderId === itemId ? { ...p, folderId: null } : p)
         }));
-      } catch (err) { console.error(err); }
+      } catch (err) { alert(err.message); console.error(err); }
     }
   };
 

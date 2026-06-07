@@ -78,7 +78,7 @@ const syncToJSONBin = async (data) => {
 const writeDB = (data) => {
   const shaped = ensureDBShape(data);
   fs.writeFileSync(dbPath, JSON.stringify(shaped, null, 2), 'utf8');
-  syncToJSONBin(shaped);
+  return syncToJSONBin(shaped);
 };
 const ensureDBShape = (db) => {
   db.folders ||= [];
@@ -574,7 +574,7 @@ app.put('/api/folders/:id', (req, res) => {
   res.json(normalizeLibraryItem(db.folders[folderIndex], db, 'folder'));
 });
 
-app.delete('/api/folders/:id', (req, res) => {
+app.delete('/api/folders/:id', async (req, res) => {
   const db = ensureDBShape(readDB());
   const userId = requireUserId(req, res);
   if (!userId) return;
@@ -591,7 +591,7 @@ app.delete('/api/folders/:id', (req, res) => {
   });
 
   db.folders.splice(folderIndex, 1);
-  writeDB(db);
+  await writeDB(db);
   res.json({ success: true });
 });
 
@@ -653,7 +653,7 @@ app.put('/api/projects/:id/move', (req, res) => {
   res.json(db.projects[projIndex]);
 });
 
-app.delete('/api/projects/:id', (req, res) => {
+app.delete('/api/projects/:id', async (req, res) => {
   const db = readDB();
   const userId = requireUserId(req, res);
   if (!userId) return;
@@ -662,7 +662,7 @@ app.delete('/api/projects/:id', (req, res) => {
 
   db.projects = db.projects.filter(p => p.id !== req.params.id);
   db.tracks = db.tracks.filter(t => !(t.projectId === req.params.id && (t.userId === userId || t.uploader?.id === userId)));
-  writeDB(db);
+  await writeDB(db);
   res.json({ success: true });
 });
 
