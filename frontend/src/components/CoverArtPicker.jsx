@@ -138,7 +138,7 @@ export default function CoverArtPicker({ isOpen, onClose, onSelect, projectId, u
                   onClick={() => handleSelect(cover.url)}
                   className="aspect-square relative group rounded-xl overflow-hidden cursor-pointer border border-border hover:ring-2 hover:ring-primary-label transition-all"
                 >
-                  <img src={cover.url} className="w-full h-full object-cover" alt="Cover" />
+                  <img src={cover.url} onError={(event) => { event.currentTarget.style.display = 'none'; }} className="w-full h-full object-cover" alt="Cover" />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                     <ImageIcon className="w-8 h-8 text-white" />
                   </div>

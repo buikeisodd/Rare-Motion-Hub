@@ -10,6 +10,11 @@ const BASE_URL = process.env.BASE_URL || process.env.RENDER_EXTERNAL_URL || 'htt
 
 app.use(cors());
 app.use(express.json());
+app.use((req, res, next) => {
+  res.setHeader('Accept-Ranges', 'bytes');
+  res.setHeader('Access-Control-Expose-Headers', 'Accept-Ranges, Content-Length, Content-Range, Content-Type');
+  next();
+});
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/covers', express.static(path.join(__dirname, 'covers')));
 app.use('/avatars', express.static(path.join(__dirname, 'avatars')));
@@ -18,14 +23,58 @@ const dbPath = path.join(__dirname, 'db.json');
 const uploadDir = path.join(__dirname, 'uploads');
 const coverDir = path.join(__dirname, 'covers');
 const avatarDir = path.join(__dirname, 'avatars');
+const chatDir = path.join(uploadDir, 'chat');
+const JSONBIN_BASE_URL = 'https://api.jsonbin.io/v3';
+const JSONBIN_BIN_ID = process.env.JSONBIN_BIN_ID;
+const JSONBIN_MASTER_KEY = process.env.JSONBIN_MASTER_KEY || process.env.JSONBIN_API_KEY;
+const JSONBIN_ACCESS_KEY = process.env.JSONBIN_ACCESS_KEY;
 
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 if (!fs.existsSync(coverDir)) fs.mkdirSync(coverDir);
 if (!fs.existsSync(avatarDir)) fs.mkdirSync(avatarDir);
+if (!fs.existsSync(chatDir)) fs.mkdirSync(chatDir, { recursive: true });
 
 // Helpers
 const readDB = () => JSON.parse(fs.readFileSync(dbPath, 'utf8'));
-const writeDB = (data) => fs.writeFileSync(dbPath, JSON.stringify(data, null, 2), 'utf8');
+const jsonBinHeaders = () => {
+  const headers = { 'Content-Type': 'application/json' };
+  if (JSONBIN_MASTER_KEY) headers['X-Master-Key'] = JSONBIN_MASTER_KEY;
+  if (JSONBIN_ACCESS_KEY) headers['X-Access-Key'] = JSONBIN_ACCESS_KEY;
+  return headers;
+};
+const isJsonBinConfigured = () => Boolean(JSONBIN_BIN_ID && (JSONBIN_MASTER_KEY || JSONBIN_ACCESS_KEY));
+const syncFromJSONBin = async () => {
+  if (!isJsonBinConfigured()) return;
+  try {
+    const res = await fetch(`${JSONBIN_BASE_URL}/b/${JSONBIN_BIN_ID}/latest`, {
+      headers: { ...jsonBinHeaders(), 'X-Bin-Meta': 'false' }
+    });
+    if (!res.ok) throw new Error(`JSONBin read failed: ${res.status}`);
+    const remoteDB = ensureDBShape(await res.json());
+    fs.writeFileSync(dbPath, JSON.stringify(remoteDB, null, 2), 'utf8');
+    console.log('Database loaded from JSONBin.io');
+  } catch (err) {
+    console.warn(`JSONBin.io read skipped: ${err.message}`);
+  }
+};
+const syncToJSONBin = async (data) => {
+  if (!isJsonBinConfigured()) return;
+  try {
+    const res = await fetch(`${JSONBIN_BASE_URL}/b/${JSONBIN_BIN_ID}`, {
+      method: 'PUT',
+      headers: jsonBinHeaders(),
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error(`JSONBin update failed: ${res.status}`);
+  } catch (err) {
+    console.warn(`JSONBin.io write skipped: ${err.message}`);
+  }
+};
+const writeDB = (data) => {
+  const shaped = ensureDBShape(data);
+  fs.writeFileSync(dbPath, JSON.stringify(shaped, null, 2), 'utf8');
+  syncToJSONBin(shaped);
+};
 const ensureDBShape = (db) => {
   db.folders ||= [];
   db.projects ||= [];
@@ -33,6 +82,9 @@ const ensureDBShape = (db) => {
   db.coverArts ||= [];
   db.notifications ||= [];
   db.playEvents ||= [];
+  db.messages ||= [];
+  db.calls ||= [];
+  db.callSignals ||= [];
   return db;
 };
 const userExists = (db, userId) => db.users.some((user) => user.id === userId);
@@ -54,6 +106,10 @@ const removeFileIfExists = (filePath) => {
 const removeDirIfExists = (dirPath) => {
   if (dirPath && fs.existsSync(dirPath)) fs.rmSync(dirPath, { recursive: true, force: true });
 };
+const fileToDataUrl = (file) => {
+  const buffer = fs.readFileSync(file.path);
+  return `data:${file.mimetype};base64,${buffer.toString('base64')}`;
+};
 const requireUserId = (req, res) => {
   const userId = (req.query.userId || req.body.userId || '').toString();
   if (!userId) {
@@ -64,11 +120,22 @@ const requireUserId = (req, res) => {
 };
 const makeId = () => `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
 const publicUser = (user) => user ? { id: user.id, name: user.name, avatarUrl: user.avatarUrl || null } : null;
+const defaultTitleFor = (type) => type === 'folder' ? 'Untitled folder' : 'Untitled project';
+const ownerNameFor = (db, userId) => db.users.find((user) => user.id === userId)?.name || 'Unknown artist';
+const normalizeLibraryItem = (item, db, type) => {
+  const title = item.title || item.name || defaultTitleFor(type);
+  const artist = item.artist || ownerNameFor(db, item.userId);
+  return { ...item, title, name: title, artist };
+};
+const normalizeTrack = (track) => ({
+  ...track,
+  url: track.filename ? `${BASE_URL}/api/media/tracks/${track.id}` : track.url
+});
 const getProjectBundle = (db, project) => ({
   type: 'project',
-  project,
+  project: normalizeLibraryItem(project, db, 'project'),
   owner: publicUser(db.users.find((user) => user.id === project.userId)),
-  tracks: db.tracks.filter((track) => track.projectId === project.id)
+  tracks: db.tracks.filter((track) => track.projectId === project.id).map(normalizeTrack)
 });
 const notifyListen = (db, { ownerId, actorId, project, folder, track }) => {
   if (!ownerId || !actorId || ownerId === actorId) return;
@@ -87,6 +154,45 @@ const notifyListen = (db, { ownerId, actorId, project, folder, track }) => {
     read: false,
     createdAt: new Date().toISOString()
   });
+};
+const notifyMessage = (db, message) => {
+  const sender = db.users.find((user) => user.id === message.senderId);
+  if (!sender) return;
+
+  chatRecipientIds(db, message).forEach((recipientId) => {
+    db.notifications.push({
+      id: makeId(),
+      userId: recipientId,
+      type: 'message',
+      actor: publicUser(sender),
+      chat: {
+        type: message.conversationType,
+        partnerId: message.conversationType === 'dm' ? message.senderId : null
+      },
+      message: message.conversationType === 'group'
+        ? `${sender.name} sent a message in Group Chat`
+        : `${sender.name} sent you a message`,
+      preview: message.text || (message.attachments?.length ? 'Media message' : ''),
+      read: false,
+      createdAt: new Date().toISOString()
+    });
+  });
+};
+const notifyCall = (db, call, caller) => {
+  db.users
+    .filter((user) => user.id !== caller.id)
+    .forEach((user) => {
+      db.notifications.push({
+        id: makeId(),
+        userId: user.id,
+        type: 'call',
+        actor: publicUser(caller),
+        call: { id: call.id, type: call.type },
+        message: `${caller.name} started a group call`,
+        read: false,
+        createdAt: new Date().toISOString()
+      });
+    });
 };
 
 // Multer setups
@@ -108,6 +214,24 @@ const avatarStorage = multer.diskStorage({
 });
 const uploadAvatar = multer({ storage: avatarStorage });
 
+const chatStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const userId = req.body.senderId || 'unknown';
+    cb(null, ensureUserDir(chatDir, userId));
+  },
+  filename: (req, file, cb) => cb(null, 'chat-' + Date.now() + '-' + Math.round(Math.random() * 1e9) + path.extname(file.originalname))
+});
+const uploadChatMedia = multer({
+  storage: chatStorage,
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/') || file.mimetype.startsWith('audio/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only photos, videos, and voice recordings are allowed in chat.'));
+    }
+  }
+});
+
 // --- AUTH ---
 app.post('/api/auth', (req, res) => {
   const email = req.body.email?.trim();
@@ -120,6 +244,13 @@ app.post('/api/auth', (req, res) => {
 });
 
 // --- USERS ---
+app.get('/api/users/:id', (req, res) => {
+  const db = ensureDBShape(readDB());
+  const user = db.users.find((item) => item.id === req.params.id);
+  if (!user) return res.status(404).json({ error: 'User not found.' });
+  res.json({ user });
+});
+
 app.put('/api/users/:id', (req, res) => {
   const { name } = req.body;
   const db = ensureDBShape(readDB());
@@ -129,7 +260,7 @@ app.put('/api/users/:id', (req, res) => {
   const nextName = name?.trim();
   if (!nextName) return res.status(400).json({ error: 'Username is required.' });
 
-  db.users[userIndex] = { ...db.users[userIndex], name: nextName };
+  db.users[userIndex] = { ...db.users[userIndex], name: nextName, updatedAt: new Date().toISOString() };
   writeDB(db);
   res.json({ user: db.users[userIndex] });
 });
@@ -145,6 +276,8 @@ app.post('/api/users/:id/avatar', uploadAvatar.single('avatar'), (req, res) => {
 
   moveFileToUserDir(req.file, avatarDir, req.params.id);
   db.users[userIndex].avatarUrl = `${BASE_URL}/avatars/${req.params.id}/${req.file.filename}`;
+  db.users[userIndex].avatarUpdatedAt = new Date().toISOString();
+  db.users[userIndex].updatedAt = db.users[userIndex].avatarUpdatedAt;
   writeDB(db);
   res.json({ user: db.users[userIndex] });
 });
@@ -177,9 +310,9 @@ app.get('/api/workspace', (req, res) => {
   if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
 
   res.json({
-    folders: db.folders.filter((folder) => folder.userId === userId),
-    projects: db.projects.filter((project) => project.userId === userId),
-    tracks: db.tracks.filter((track) => track.userId === userId || track.uploader?.id === userId),
+    folders: db.folders.filter((folder) => folder.userId === userId).map((folder) => normalizeLibraryItem(folder, db, 'folder')),
+    projects: db.projects.filter((project) => project.userId === userId).map((project) => normalizeLibraryItem(project, db, 'project')),
+    tracks: db.tracks.filter((track) => track.userId === userId || track.uploader?.id === userId).map(normalizeTrack),
     coverArts: db.coverArts.filter((cover) => cover.userId === userId),
     notifications: db.notifications.filter((notification) => notification.userId === userId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
   });
@@ -201,10 +334,10 @@ app.get('/api/share/folder/:id', (req, res) => {
   const projectIds = projects.map((project) => project.id);
   res.json({
     type: 'folder',
-    folder,
+    folder: normalizeLibraryItem(folder, db, 'folder'),
     owner: publicUser(db.users.find((user) => user.id === folder.userId)),
-    projects,
-    tracks: db.tracks.filter((track) => projectIds.includes(track.projectId))
+    projects: projects.map((project) => normalizeLibraryItem(project, db, 'project')),
+    tracks: db.tracks.filter((track) => projectIds.includes(track.projectId)).map(normalizeTrack)
   });
 });
 
@@ -335,26 +468,58 @@ app.post('/api/listen', (req, res) => {
 
 // --- FOLDERS ---
 app.post('/api/folders', (req, res) => {
-  const { name, userId } = req.body;
-  const db = readDB();
+  const { name, title, artist, userId } = req.body;
+  const db = ensureDBShape(readDB());
+  const ownerName = ownerNameFor(db, userId);
   if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
-  const newFolder = { id: Date.now().toString(), name, userId, createdAt: new Date().toISOString() };
+  const nextTitle = (title || name || '').trim() || defaultTitleFor('folder');
+  const newFolder = {
+    id: makeId(),
+    name: nextTitle,
+    title: nextTitle,
+    artist: artist?.trim() || ownerName,
+    userId,
+    createdAt: new Date().toISOString()
+  };
   db.folders.push(newFolder);
   writeDB(db);
   res.json(newFolder);
 });
 
+app.put('/api/folders/:id', (req, res) => {
+  const { userId, title, name, artist } = req.body;
+  const db = ensureDBShape(readDB());
+  const folderIndex = db.folders.findIndex((folder) => folder.id === req.params.id && folder.userId === userId);
+  if (folderIndex === -1) return res.status(404).json({ error: 'Folder not found' });
+
+  const nextTitle = (title ?? name ?? db.folders[folderIndex].title ?? db.folders[folderIndex].name ?? '').trim() || defaultTitleFor('folder');
+  const nextArtist = (artist ?? db.folders[folderIndex].artist ?? '').trim() || ownerNameFor(db, userId);
+  db.folders[folderIndex] = {
+    ...db.folders[folderIndex],
+    name: nextTitle,
+    title: nextTitle,
+    artist: nextArtist,
+    updatedAt: new Date().toISOString()
+  };
+  writeDB(db);
+  res.json(normalizeLibraryItem(db.folders[folderIndex], db, 'folder'));
+});
+
 // --- PROJECTS ---
 app.post('/api/projects', (req, res) => {
-  const { name, userId, folderId } = req.body;
-  const db = readDB();
+  const { name, title, artist, userId, folderId } = req.body;
+  const db = ensureDBShape(readDB());
+  const ownerName = ownerNameFor(db, userId);
   if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
   if (folderId && !db.folders.some((folder) => folder.id === folderId && folder.userId === userId)) {
     return res.status(404).json({ error: 'Folder not found' });
   }
+  const nextTitle = (title || name || '').trim() || defaultTitleFor('project');
   const newProject = { 
-    id: Date.now().toString(), 
-    name, 
+    id: makeId(),
+    name: nextTitle,
+    title: nextTitle,
+    artist: artist?.trim() || ownerName,
     userId, 
     folderId: folderId || null,
     coverArt: null,
@@ -363,6 +528,25 @@ app.post('/api/projects', (req, res) => {
   db.projects.push(newProject);
   writeDB(db);
   res.json(newProject);
+});
+
+app.put('/api/projects/:id', (req, res) => {
+  const { userId, title, name, artist } = req.body;
+  const db = ensureDBShape(readDB());
+  const projectIndex = db.projects.findIndex((project) => project.id === req.params.id && project.userId === userId);
+  if (projectIndex === -1) return res.status(404).json({ error: 'Project not found' });
+
+  const nextTitle = (title ?? name ?? db.projects[projectIndex].title ?? db.projects[projectIndex].name ?? '').trim() || defaultTitleFor('project');
+  const nextArtist = (artist ?? db.projects[projectIndex].artist ?? '').trim() || ownerNameFor(db, userId);
+  db.projects[projectIndex] = {
+    ...db.projects[projectIndex],
+    name: nextTitle,
+    title: nextTitle,
+    artist: nextArtist,
+    updatedAt: new Date().toISOString()
+  };
+  writeDB(db);
+  res.json(normalizeLibraryItem(db.projects[projectIndex], db, 'project'));
 });
 
 app.put('/api/projects/:id/move', (req, res) => {
@@ -473,9 +657,9 @@ app.post('/api/upload-cover', uploadCover.single('cover'), (req, res) => {
     return res.status(401).json({ error: 'Unauthorized user.' });
   }
 
-  moveFileToUserDir(req.file, coverDir, userId);
-  const url = `${BASE_URL}/covers/${userId}/${req.file.filename}`;
-  const newCover = { id: Date.now().toString(), userId, url, uploadedAt: new Date().toISOString() };
+  const url = fileToDataUrl(req.file);
+  removeFileIfExists(req.file.path);
+  const newCover = { id: Date.now().toString(), userId, url, mimeType: req.file.mimetype, uploadedAt: new Date().toISOString() };
   db.coverArts.push(newCover);
   writeDB(db);
   res.json(newCover);
@@ -510,15 +694,18 @@ app.post('/api/upload', uploadTrack.single('track'), (req, res) => {
   
   moveFileToUserDir(req.file, uploadDir, userId);
   
+  const trackId = Date.now().toString();
   const newTrack = {
-    id: Date.now().toString(),
+    id: trackId,
     userId,
     projectId: projectId || null,
     title: title || req.file.originalname,
     artist: artist || '',
     producer: producer || '',
     filename: req.file.filename,
-    url: `${BASE_URL}/uploads/${userId}/${req.file.filename}`,
+    mimeType: req.file.mimetype,
+    size: req.file.size,
+    url: `${BASE_URL}/api/media/tracks/${trackId}`,
     uploader: { id: uploader.id, name: uploader.name },
     uploadedAt: new Date().toISOString()
   };
@@ -540,15 +727,211 @@ app.delete('/api/tracks/:id', (req, res) => {
   res.json({ success: true });
 });
 
+app.get('/api/media/tracks/:id', (req, res) => {
+  const db = ensureDBShape(readDB());
+  const track = db.tracks.find((item) => item.id === req.params.id);
+  if (!track) return res.status(404).json({ error: 'Track not found' });
+
+  const mediaOwnerId = track.sourceUserId || track.uploader?.id || track.userId;
+  const filePath = path.join(uploadDir, mediaOwnerId, track.filename);
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Track media file not found' });
+
+  const stat = fs.statSync(filePath);
+  const fileSize = stat.size;
+  const contentType = track.mimeType || 'audio/mpeg';
+  const range = req.headers.range;
+
+  res.setHeader('Content-Type', contentType);
+  res.setHeader('Accept-Ranges', 'bytes');
+  res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+
+  if (!range) {
+    res.setHeader('Content-Length', fileSize);
+    return fs.createReadStream(filePath).pipe(res);
+  }
+
+  const parts = range.replace(/bytes=/, '').split('-');
+  const start = parseInt(parts[0], 10);
+  const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+  if (Number.isNaN(start) || Number.isNaN(end) || start >= fileSize || end >= fileSize) {
+    res.setHeader('Content-Range', `bytes */${fileSize}`);
+    return res.status(416).end();
+  }
+
+  res.status(206);
+  res.setHeader('Content-Range', `bytes ${start}-${end}/${fileSize}`);
+  res.setHeader('Content-Length', end - start + 1);
+  fs.createReadStream(filePath, { start, end }).pipe(res);
+});
+
 // --- CHAT ---
-const ensureChatShape = (db) => {
-  db.messages ||= [];
-  return db;
+const groupParticipantIds = (db) => db.users.map((user) => user.id);
+const chatRecipientIds = (db, message) => {
+  if (message.conversationType === 'group') {
+    return groupParticipantIds(db).filter((id) => id !== message.senderId);
+  }
+  return message.recipientId ? [message.recipientId] : [];
 };
+const hydrateMessage = (db, message) => {
+  const recipients = chatRecipientIds(db, message);
+  const readBy = message.readBy || [];
+  return {
+    ...message,
+    sender: publicUser(db.users.find((user) => user.id === message.senderId)),
+    replyTo: message.replyToMessageId
+      ? db.messages.find((item) => item.id === message.replyToMessageId) || null
+      : null,
+    delivery: {
+      delivered: true,
+      read: recipients.length > 0 && recipients.every((id) => readBy.includes(id)),
+      readCount: recipients.filter((id) => readBy.includes(id)).length,
+      recipientCount: recipients.length
+    }
+  };
+};
+const hydrateCall = (db, call) => call ? {
+  ...call,
+  startedBy: publicUser(db.users.find((user) => user.id === call.startedById)),
+  participants: (call.participantIds || [])
+    .map((id) => publicUser(db.users.find((user) => user.id === id)))
+    .filter(Boolean)
+} : null;
+const markConversationRead = (db, { userId, type, partnerId }) => {
+  db.messages.forEach((message) => {
+    const isVisible = type === 'group'
+      ? message.conversationType === 'group'
+      : message.conversationType === 'dm' &&
+        ((message.senderId === userId && message.recipientId === partnerId) ||
+          (message.senderId === partnerId && message.recipientId === userId));
+
+    if (isVisible && message.senderId !== userId) {
+      message.readBy ||= [];
+      if (!message.readBy.includes(userId)) message.readBy.push(userId);
+    }
+  });
+  db.notifications.forEach((notification) => {
+    const isChatNotification = notification.type === 'message' && notification.userId === userId &&
+      (type === 'group'
+        ? notification.chat?.type === 'group'
+        : notification.chat?.type === 'dm' && notification.actor?.id === partnerId);
+    if (isChatNotification) notification.read = true;
+  });
+};
+const createMessage = (db, { senderId, recipientId, conversationType, text = '', attachments = [], replyToMessageId = null, forwardedFrom = null }) => {
+  const type = conversationType || 'dm';
+  const recipients = type === 'group' ? groupParticipantIds(db).filter((id) => id !== senderId) : [recipientId].filter(Boolean);
+  return {
+    id: makeId(),
+    senderId,
+    recipientId: type === 'group' ? null : recipientId,
+    conversationType: type,
+    text: text.trim(),
+    attachments,
+    replyToMessageId,
+    forwardedFrom,
+    pinned: false,
+    deleted: false,
+    deliveredTo: recipients,
+    readBy: [],
+    createdAt: new Date().toISOString()
+  };
+};
+
+app.get('/api/calls/group', (req, res) => {
+  const db = ensureDBShape(readDB());
+  const userId = requireUserId(req, res);
+  if (!userId) return;
+  if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
+  const call = db.calls.find((item) => item.type === 'group' && item.active);
+  res.json({ call: hydrateCall(db, call) });
+});
+
+app.post('/api/calls/group/join', (req, res) => {
+  const db = ensureDBShape(readDB());
+  const { userId } = req.body;
+  const caller = db.users.find((user) => user.id === userId);
+  if (!caller) return res.status(401).json({ error: 'Unauthorized user.' });
+
+  let call = db.calls.find((item) => item.type === 'group' && item.active);
+  const isNewCall = !call;
+  if (!call) {
+    call = {
+      id: makeId(),
+      type: 'group',
+      active: true,
+      startedById: userId,
+      participantIds: [],
+      startedAt: new Date().toISOString()
+    };
+    db.calls.push(call);
+  }
+
+  if (!call.participantIds.includes(userId)) call.participantIds.push(userId);
+  call.updatedAt = new Date().toISOString();
+  if (isNewCall) notifyCall(db, call, caller);
+  writeDB(db);
+  res.json({ call: hydrateCall(db, call) });
+});
+
+app.post('/api/calls/group/leave', (req, res) => {
+  const db = ensureDBShape(readDB());
+  const { userId } = req.body;
+  if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
+  const call = db.calls.find((item) => item.type === 'group' && item.active);
+  if (!call) return res.json({ call: null });
+
+  call.participantIds = (call.participantIds || []).filter((id) => id !== userId);
+  call.updatedAt = new Date().toISOString();
+  if (call.participantIds.length === 0) {
+    call.active = false;
+    call.endedAt = new Date().toISOString();
+  }
+  db.callSignals = db.callSignals.filter((signal) => signal.callId !== call.id || (signal.fromUserId !== userId && signal.toUserId !== userId));
+  writeDB(db);
+  res.json({ call: hydrateCall(db, call.active ? call : null) });
+});
+
+app.get('/api/calls/group/signals', (req, res) => {
+  const db = ensureDBShape(readDB());
+  const userId = requireUserId(req, res);
+  if (!userId) return;
+  if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
+  const call = db.calls.find((item) => item.type === 'group' && item.active);
+  if (!call) return res.json({ signals: [] });
+
+  const signals = db.callSignals
+    .filter((signal) => signal.callId === call.id && signal.toUserId === userId)
+    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  res.json({ signals });
+});
+
+app.post('/api/calls/group/signals', (req, res) => {
+  const db = ensureDBShape(readDB());
+  const { userId, toUserId, type, payload } = req.body;
+  if (!userExists(db, userId) || !userExists(db, toUserId)) return res.status(401).json({ error: 'Unauthorized user.' });
+  const call = db.calls.find((item) => item.type === 'group' && item.active);
+  if (!call) return res.status(404).json({ error: 'No active call.' });
+  if (!call.participantIds.includes(userId) || !call.participantIds.includes(toUserId)) {
+    return res.status(403).json({ error: 'Both users must be in the call.' });
+  }
+
+  const signal = {
+    id: makeId(),
+    callId: call.id,
+    fromUserId: userId,
+    toUserId,
+    type,
+    payload,
+    createdAt: new Date().toISOString()
+  };
+  db.callSignals.push(signal);
+  writeDB(db);
+  res.json({ signal });
+});
 
 // Get all users (for chat contacts)
 app.get('/api/users', (req, res) => {
-  const db = readDB();
+  const db = ensureDBShape(readDB());
   const userId = requireUserId(req, res);
   if (!userId) return;
   if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
@@ -561,7 +944,7 @@ app.get('/api/users', (req, res) => {
 // For dm: partnerId required
 // For group: returns all group messages
 app.get('/api/messages', (req, res) => {
-  const db = ensureChatShape(ensureDBShape(readDB()));
+  const db = ensureDBShape(readDB());
   const userId = requireUserId(req, res);
   if (!userId) return;
   if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
@@ -580,43 +963,129 @@ app.get('/api/messages', (req, res) => {
     );
   }
 
-  // Hydrate sender info
-  const hydrated = msgs.map((m) => ({
-    ...m,
-    sender: publicUser(db.users.find((u) => u.id === m.senderId))
-  }));
+  markConversationRead(db, { userId, type, partnerId });
+  writeDB(db);
 
-  res.json({ messages: hydrated });
+  res.json({
+    messages: msgs.map((message) => hydrateMessage(db, message)),
+    participants: type === 'group' ? db.users.map(publicUser) : []
+  });
 });
 
 // Send a message
 app.post('/api/messages', (req, res) => {
-  const db = ensureChatShape(ensureDBShape(readDB()));
-  const { senderId, recipientId, conversationType, text } = req.body;
+  const db = ensureDBShape(readDB());
+  const { senderId, recipientId, conversationType, text, replyToMessageId } = req.body;
   if (!senderId || !text?.trim()) return res.status(400).json({ error: 'senderId and text required.' });
   if (!userExists(db, senderId)) return res.status(401).json({ error: 'Unauthorized user.' });
 
   if (conversationType === 'dm' && !recipientId) return res.status(400).json({ error: 'recipientId required for DM.' });
 
-  const msg = {
-    id: makeId(),
-    senderId,
-    recipientId: conversationType === 'group' ? null : recipientId,
-    conversationType: conversationType || 'dm',
-    text: text.trim(),
-    createdAt: new Date().toISOString()
-  };
+  const msg = createMessage(db, { senderId, recipientId, conversationType, text, replyToMessageId });
 
   db.messages.push(msg);
+  notifyMessage(db, msg);
   writeDB(db);
 
-  const hydrated = { ...msg, sender: publicUser(db.users.find((u) => u.id === senderId)) };
-  res.json({ message: hydrated });
+  res.json({ message: hydrateMessage(db, msg) });
+});
+
+app.post('/api/messages/media', uploadChatMedia.single('media'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No media uploaded.' });
+  const db = ensureDBShape(readDB());
+  const { senderId, recipientId, conversationType, text, replyToMessageId, mediaKind } = req.body;
+  if (!senderId || !userExists(db, senderId)) {
+    removeFileIfExists(req.file.path);
+    return res.status(401).json({ error: 'Unauthorized user.' });
+  }
+  if (conversationType === 'dm' && !recipientId) return res.status(400).json({ error: 'recipientId required for DM.' });
+
+  const attachmentType = req.file.mimetype.startsWith('image/')
+    ? 'image'
+    : req.file.mimetype.startsWith('video/')
+      ? 'video'
+      : 'voice';
+  if (attachmentType === 'voice' && mediaKind !== 'voice') {
+    removeFileIfExists(req.file.path);
+    return res.status(400).json({ error: 'Only photos and videos can be shared from files.' });
+  }
+
+  const relativePath = `chat/${senderId}/${req.file.filename}`.replace(/\\/g, '/');
+  const msg = createMessage(db, {
+    senderId,
+    recipientId,
+    conversationType,
+    text: text || '',
+    replyToMessageId: replyToMessageId || null,
+    attachments: [{
+      id: makeId(),
+      type: attachmentType,
+      url: `${BASE_URL}/uploads/${relativePath}`,
+      name: req.file.originalname,
+      mimeType: req.file.mimetype,
+      size: req.file.size
+    }]
+  });
+
+  db.messages.push(msg);
+  notifyMessage(db, msg);
+  writeDB(db);
+  res.json({ message: hydrateMessage(db, msg) });
+});
+
+app.patch('/api/messages/:id/pin', (req, res) => {
+  const db = ensureDBShape(readDB());
+  const { userId, pinned } = req.body;
+  const message = db.messages.find((item) => item.id === req.params.id);
+  if (!message) return res.status(404).json({ error: 'Message not found.' });
+  if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
+  message.pinned = Boolean(pinned);
+  message.pinnedBy = pinned ? userId : null;
+  message.pinnedAt = pinned ? new Date().toISOString() : null;
+  writeDB(db);
+  res.json({ message: hydrateMessage(db, message) });
+});
+
+app.delete('/api/messages/:id', (req, res) => {
+  const db = ensureDBShape(readDB());
+  const userId = requireUserId(req, res);
+  if (!userId) return;
+  const message = db.messages.find((item) => item.id === req.params.id);
+  if (!message) return res.status(404).json({ error: 'Message not found.' });
+  if (message.senderId !== userId) return res.status(403).json({ error: 'Only the sender can delete this message.' });
+  message.deleted = true;
+  message.text = '';
+  message.attachments = [];
+  message.deletedAt = new Date().toISOString();
+  writeDB(db);
+  res.json({ message: hydrateMessage(db, message) });
+});
+
+app.post('/api/messages/:id/forward', (req, res) => {
+  const db = ensureDBShape(readDB());
+  const { senderId, targetType, recipientId } = req.body;
+  const source = db.messages.find((item) => item.id === req.params.id);
+  if (!source) return res.status(404).json({ error: 'Message not found.' });
+  if (!userExists(db, senderId)) return res.status(401).json({ error: 'Unauthorized user.' });
+  if (targetType === 'dm' && !recipientId) return res.status(400).json({ error: 'recipientId required for DM forward.' });
+
+  const msg = createMessage(db, {
+    senderId,
+    recipientId,
+    conversationType: targetType,
+    text: source.text || '',
+    attachments: source.attachments || [],
+    forwardedFrom: { id: source.id, senderId: source.senderId }
+  });
+  db.messages.push(msg);
+  notifyMessage(db, msg);
+  writeDB(db);
+  res.json({ message: hydrateMessage(db, msg) });
 });
 
 // Get conversation previews (last message per convo) for a user
 app.get('/api/conversations', (req, res) => {
-  const db = ensureChatShape(ensureDBShape(readDB()));
+  const db = ensureDBShape(readDB());
   const userId = requireUserId(req, res);
   if (!userId) return;
   if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
@@ -632,10 +1101,12 @@ app.get('/api/conversations', (req, res) => {
           (m.senderId === other.id && m.recipientId === userId))
     );
     const last = msgs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] || null;
+    const unreadCount = msgs.filter((message) => message.senderId === other.id && !(message.readBy || []).includes(userId)).length;
     conversations.push({
       type: 'dm',
       partner: publicUser(other),
-      lastMessage: last ? { ...last, sender: publicUser(db.users.find((u) => u.id === last.senderId)) } : null,
+      lastMessage: last ? hydrateMessage(db, last) : null,
+      unreadCount,
       updatedAt: last?.createdAt || null
     });
   }
@@ -643,10 +1114,13 @@ app.get('/api/conversations', (req, res) => {
   // Group
   const groupMsgs = db.messages.filter((m) => m.conversationType === 'group');
   const lastGroup = groupMsgs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] || null;
+  const groupUnreadCount = groupMsgs.filter((message) => message.senderId !== userId && !(message.readBy || []).includes(userId)).length;
   conversations.push({
     type: 'group',
     partner: null,
-    lastMessage: lastGroup ? { ...lastGroup, sender: publicUser(db.users.find((u) => u.id === lastGroup.senderId)) } : null,
+    participants: db.users.map(publicUser),
+    lastMessage: lastGroup ? hydrateMessage(db, lastGroup) : null,
+    unreadCount: groupUnreadCount,
     updatedAt: lastGroup?.createdAt || null
   });
 
@@ -660,5 +1134,7 @@ app.get('/api/conversations', (req, res) => {
   res.json({ conversations });
 });
 
-app.listen(PORT, () => console.log(`Backend server running on http://localhost:${PORT}`));
+syncFromJSONBin().finally(() => {
+  app.listen(PORT, () => console.log(`Backend server running on http://localhost:${PORT}`));
+});
 // End of server file

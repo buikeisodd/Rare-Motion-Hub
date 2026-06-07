@@ -8,9 +8,11 @@ export default function AudioPlayer({ track, projectName, isPlaying, onPlayPause
   const [playbackRate, setPlaybackRate] = useState(1);
   const [pitchShift, setPitchShift] = useState(0);
   const [showControls, setShowControls] = useState(false);
+  const [isBuffering, setIsBuffering] = useState(true);
   const audioRef = useRef(null);
   const onNextRef = useRef(onNext);
   const onPlayPauseRef = useRef(onPlayPause);
+  const playPromiseRef = useRef(null);
 
   useEffect(() => {
     onNextRef.current = onNext;
@@ -23,17 +25,27 @@ export default function AudioPlayer({ track, projectName, isPlaying, onPlayPause
   }, [pitchShift, playbackRate]);
 
   useEffect(() => {
-    const audio = new Audio(track.url);
-    audio.preload = 'metadata';
-    audio.crossOrigin = 'anonymous';
-    audioRef.current = audio;
+    const audio = audioRef.current;
+    if (!audio) return;
 
+    setProgress(0);
+    setDuration(0);
+    setIsBuffering(true);
+    audio.pause();
+    audio.src = track.url;
+    audio.preload = 'auto';
     const onTimeUpdate = () => setProgress(audio.currentTime);
     const onLoadedMetadata = () => setDuration(audio.duration || 0);
+    const onCanPlay = () => setIsBuffering(false);
+    const onWaiting = () => setIsBuffering(true);
+    const onPlaying = () => setIsBuffering(false);
     const onEnded = () => onNextRef.current?.();
 
     audio.addEventListener('timeupdate', onTimeUpdate);
     audio.addEventListener('loadedmetadata', onLoadedMetadata);
+    audio.addEventListener('canplay', onCanPlay);
+    audio.addEventListener('waiting', onWaiting);
+    audio.addEventListener('playing', onPlaying);
     audio.addEventListener('ended', onEnded);
     audio.load();
 
@@ -41,8 +53,10 @@ export default function AudioPlayer({ track, projectName, isPlaying, onPlayPause
       audio.pause();
       audio.removeEventListener('timeupdate', onTimeUpdate);
       audio.removeEventListener('loadedmetadata', onLoadedMetadata);
+      audio.removeEventListener('canplay', onCanPlay);
+      audio.removeEventListener('waiting', onWaiting);
+      audio.removeEventListener('playing', onPlaying);
       audio.removeEventListener('ended', onEnded);
-      audioRef.current = null;
     };
   }, [track.url]);
 
@@ -60,12 +74,12 @@ export default function AudioPlayer({ track, projectName, isPlaying, onPlayPause
     const audio = audioRef.current;
     if (!audio) return;
 
-    if (isPlaying) {
-      audio.play().catch((err) => {
+    if (isPlaying && audio.paused) {
+      playPromiseRef.current = audio.play().catch((err) => {
         console.error('Playback failed:', err);
         onPlayPauseRef.current?.();
       });
-    } else {
+    } else if (!isPlaying && !audio.paused) {
       audio.pause();
     }
   }, [isPlaying, track.url]);
@@ -93,6 +107,7 @@ export default function AudioPlayer({ track, projectName, isPlaying, onPlayPause
 
   return (
     <div className="fixed inset-x-0 bottom-4 z-50 flex justify-center px-3 sm:bottom-6 sm:px-4">
+      <audio ref={audioRef} preload="auto" playsInline />
       {showControls && (
         <div className="absolute bottom-24 w-[min(92vw,30rem)] rounded-[1.25rem] bg-[#292929]/95 p-4 shadow-2xl backdrop-blur-xl animate-slide-up sm:p-5">
           <button onClick={() => setShowControls(false)} className="absolute right-4 top-4 text-secondary-label hover:text-primary-label" aria-label="Close audio controls">
@@ -126,7 +141,7 @@ export default function AudioPlayer({ track, projectName, isPlaying, onPlayPause
           <div className="h-12 w-12 shrink-0 rounded-full bg-[linear-gradient(145deg,#b8ff65,#df5b9c)] sm:h-14 sm:w-14" />
           <div className="min-w-0">
             <h4 className="truncate text-base font-semibold">{track.title}</h4>
-            <p className="truncate text-sm text-secondary-label">{projectName || track.artist || track.uploader?.name || 'untitled project'}</p>
+            <p className="truncate text-sm text-secondary-label">{isBuffering && isPlaying ? 'Buffering...' : (projectName || track.artist || track.uploader?.name || 'untitled project')}</p>
           </div>
         </div>
 
@@ -141,7 +156,7 @@ export default function AudioPlayer({ track, projectName, isPlaying, onPlayPause
           </div>
         </div>
 
-        <input type="range" min="0" max={duration || 100} value={progress} onChange={handleSeek} className="sr-only" aria-label="Track progress" />
+        <input type="range" min="0" max={duration || 100} value={progress} onChange={handleSeek} className="col-span-2 h-1 w-full accent-white sm:hidden" aria-label="Track progress" />
 
         <div className="flex items-center justify-end gap-2 text-primary-label sm:gap-3">
           <button onClick={onPrev} disabled={!hasPrev} className="disabled:opacity-30" aria-label="Previous track">

@@ -7,6 +7,23 @@ import CoverArtPicker from '../components/CoverArtPicker';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
+function timeAgo(dateStr) {
+  const uploaded = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now - uploaded;
+  const diffSecs = Math.floor(diffMs / 1000);
+  const diffMins = Math.floor(diffSecs / 60);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffSecs < 60) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return uploaded.toLocaleDateString();
+}
+
 export default function Project({ user }) {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -19,6 +36,8 @@ export default function Project({ user }) {
   const [isCoverPickerOpen, setIsCoverPickerOpen] = useState(false);
   const [shareStatus, setShareStatus] = useState('');
   const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false);
+  const [editableTitle, setEditableTitle] = useState('');
+  const [editableArtist, setEditableArtist] = useState('');
 
   const fetchWorkspace = async ({ showLoading = false } = {}) => {
     if (showLoading) setLoading(true);
@@ -28,6 +47,8 @@ export default function Project({ user }) {
       const nextProject = data.projects.find((item) => item.id === id);
       const nextTracks = data.tracks.filter((track) => track.projectId === id);
       setProject(nextProject);
+      setEditableTitle(nextProject?.title || nextProject?.name || 'Untitled project');
+      setEditableArtist(nextProject?.artist || user.name);
       setTracks(nextTracks);
     } catch (err) {
       console.error('Failed to fetch workspace', err);
@@ -47,6 +68,8 @@ export default function Project({ user }) {
           const nextProject = data.projects.find((item) => item.id === id);
           const nextTracks = data.tracks.filter((track) => track.projectId === id);
           setProject(nextProject);
+          setEditableTitle(nextProject?.title || nextProject?.name || 'Untitled project');
+          setEditableArtist(nextProject?.artist || user.name);
           setTracks(nextTracks);
         }
       } catch (err) {
@@ -62,9 +85,10 @@ export default function Project({ user }) {
     return () => {
       cancelled = true;
     };
-  }, [id, user.id]);
+  }, [id, user.id, user.name]);
 
   const handlePlay = (track) => {
+    const isSameTrack = currentTrack?.id === track.id;
     if (currentTrack?.id === track.id) {
       setIsPlaying((playing) => !playing);
     } else {
@@ -72,11 +96,13 @@ export default function Project({ user }) {
       setIsPlaying(true);
     }
 
-    fetch(`${apiUrl}/api/listen`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: user.id, projectId: project?.id, trackId: track.id })
-    }).catch((err) => console.error('Failed to record listening activity', err));
+    if (!isSameTrack || !isPlaying) {
+      fetch(`${apiUrl}/api/listen`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, projectId: project?.id, trackId: track.id })
+      }).catch((err) => console.error('Failed to record listening activity', err));
+    }
   };
 
   const handleUploadSuccess = (newTrack) => {
@@ -86,6 +112,27 @@ export default function Project({ user }) {
 
   const handleCoverSelect = (newCoverUrl) => {
     setProject((prev) => ({ ...prev, coverArt: newCoverUrl }));
+  };
+
+  const saveProjectMetadata = async () => {
+    const nextTitle = editableTitle.trim() || 'Untitled project';
+    const nextArtist = editableArtist.trim() || user.name;
+    setEditableTitle(nextTitle);
+    setEditableArtist(nextArtist);
+    setProject((prev) => prev ? { ...prev, title: nextTitle, name: nextTitle, artist: nextArtist } : prev);
+
+    try {
+      const res = await fetch(`${apiUrl}/api/projects/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, title: nextTitle, artist: nextArtist })
+      });
+      const savedProject = await res.json();
+      if (!res.ok) throw new Error(savedProject.error || 'Could not update project.');
+      setProject(savedProject);
+    } catch (err) {
+      console.error('Failed to save project metadata', err);
+    }
   };
 
   const handleDeleteProject = async () => {
@@ -123,7 +170,7 @@ export default function Project({ user }) {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = `${project.name || 'project'}-export.json`;
+    anchor.download = `${project.title || project.name || 'project'}-export.json`;
     anchor.click();
     URL.revokeObjectURL(url);
     setIsProjectMenuOpen(false);
@@ -147,41 +194,44 @@ export default function Project({ user }) {
   const leadTrack = tracks[0];
 
   return (
-    <div className="relative min-h-screen bg-primary-background pb-36 animate-fade-in sm:pb-40">
-      <header className="flex items-center justify-between px-4 py-6 sm:px-6 sm:py-8 md:px-10 lg:px-14">
-        <Link to="/library" className="grid h-11 w-11 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:h-14 sm:w-14 sm:rounded-3xl" aria-label="Back to library">
-          <ChevronLeft className="h-6 w-6 sm:h-7 sm:w-7" />
+    <div className="relative min-h-screen bg-primary-background pb-40 animate-fade-in">
+      {isProjectMenuOpen && (
+        <div className="fixed inset-0 z-40" onClick={() => setIsProjectMenuOpen(false)} />
+      )}
+      <header className="relative z-50 flex items-center justify-between px-10 py-8 lg:px-14">
+        <Link to="/library" className="grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Back to library">
+          <ChevronLeft className="h-7 w-7" />
         </Link>
 
-        <div className="flex items-center gap-2 sm:gap-3">
-          <button onClick={handleCopyShareLink} className="relative grid h-11 w-11 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:h-14 sm:w-14 sm:rounded-3xl" aria-label="Copy project link">
+        <div className="flex items-center gap-3">
+          <button onClick={handleCopyShareLink} className="relative grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Copy project link">
             <Link2 className="h-5 w-5 sm:h-6 sm:w-6" />
             {shareStatus && <span className="absolute -bottom-8 rounded-full bg-primary-label px-3 py-1 text-xs font-bold text-primary-background">{shareStatus}</span>}
           </button>
-          <button className="hidden h-11 w-11 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:grid sm:h-14 sm:w-14 sm:rounded-3xl" aria-label="Search project">
+          <button className="grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Search project">
             <Search className="h-6 w-6" />
           </button>
           <div className="relative">
-            <button onClick={() => setIsProjectMenuOpen((open) => !open)} className="grid h-11 w-11 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:h-14 sm:w-14 sm:rounded-3xl" aria-label="Project options">
+            <button onClick={() => setIsProjectMenuOpen((open) => !open)} className="grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Project options">
               <MoreHorizontal className="h-6 w-6" />
             </button>
             {isProjectMenuOpen && (
-              <div className="absolute right-0 top-14 z-40 w-[min(18rem,86vw)] rounded-[1.25rem] border border-border bg-[#191919] p-3 shadow-2xl sm:top-16 sm:p-4">
-                <button onClick={() => navigate(`/project/${id}/insights`)} className="flex w-full items-center gap-4 rounded-xl px-4 py-3 text-left text-base font-bold hover:bg-highlight sm:py-4 sm:text-lg">
-                  <BarChart3 className="h-5 w-5 sm:h-6 sm:w-6" />
+              <div className="absolute right-0 top-16 z-50 w-64 rounded-[1.25rem] border border-border panel-bg p-3 shadow-2xl">
+                <button onClick={() => navigate(`/project/${id}/insights`)} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
+                  <BarChart3 className="h-6 w-6" />
                   Insights
                 </button>
-                <button onClick={() => { alert('Notes are coming soon.'); setIsProjectMenuOpen(false); }} className="flex w-full items-center gap-4 rounded-xl px-4 py-3 text-left text-base font-bold hover:bg-highlight sm:py-4 sm:text-lg">
-                  <FileText className="h-5 w-5 sm:h-6 sm:w-6" />
+                <button onClick={() => { alert('Notes are coming soon.'); setIsProjectMenuOpen(false); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
+                  <FileText className="h-6 w-6" />
                   Notes
                 </button>
-                <button onClick={handleExport} className="flex w-full items-center gap-4 rounded-xl px-4 py-3 text-left text-base font-bold hover:bg-highlight sm:py-4 sm:text-lg">
-                  <Download className="h-5 w-5 sm:h-6 sm:w-6" />
+                <button onClick={handleExport} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
+                  <Download className="h-6 w-6" />
                   Export
                 </button>
                 <div className="my-3 border-t border-border" />
-                <button onClick={handleDeleteProject} className="flex w-full items-center gap-4 rounded-xl px-4 py-3 text-left text-base font-bold text-red-500 hover:bg-red-500/10 sm:py-4 sm:text-lg">
-                  <Trash2 className="h-5 w-5 sm:h-6 sm:w-6" />
+                <button onClick={handleDeleteProject} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-red-500 hover:bg-red-500/10 transition-colors">
+                  <Trash2 className="h-6 w-6" />
                   Delete project
                 </button>
               </div>
@@ -190,10 +240,10 @@ export default function Project({ user }) {
         </div>
       </header>
 
-      <main className="mx-auto grid max-w-6xl gap-8 px-4 sm:px-6 md:grid-cols-[minmax(16rem,30rem)_minmax(20rem,1fr)] md:gap-12 md:px-10 md:pt-10 lg:px-14">
-        <section className="flex justify-center md:justify-start">
-          <div className="group relative aspect-square w-full max-w-[24rem] overflow-hidden rounded-[1.2rem] bg-[linear-gradient(135deg,#b7ff63_0%,#d6c18e_45%,#d84f93_100%)] shadow-2xl md:max-w-[30rem]">
-            {project.coverArt && <img src={project.coverArt} alt={project.name} className="h-full w-full object-cover" />}
+      <main className="mx-auto grid max-w-6xl gap-12 px-10 pt-10 grid-cols-[minmax(16rem,30rem)_minmax(20rem,1fr)] lg:px-14">
+        <section className="flex justify-start">
+          <div className="group relative aspect-square w-full max-w-[30rem] overflow-hidden rounded-[1.2rem] bg-[linear-gradient(135deg,#b7ff63_0%,#d6c18e_45%,#d84f93_100%)] shadow-2xl">
+            {project.coverArt && <img src={project.coverArt} alt={project.title || project.name} onError={(event) => { event.currentTarget.style.display = 'none'; }} className="h-full w-full object-cover" />}
             <button
               type="button"
               className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
@@ -206,31 +256,49 @@ export default function Project({ user }) {
         </section>
 
         <section className="pt-1">
-          <div className="mb-6 flex items-start justify-between gap-4 sm:mb-8">
-            <div className="min-w-0">
-              <h1 className="text-3xl font-semibold tracking-normal text-secondary-label sm:text-4xl md:text-5xl">{project.name}</h1>
-              <p className="mt-2 flex flex-wrap items-center gap-2 text-base text-secondary-label sm:text-lg">
-                <Lock className="h-4 w-4 fill-current sm:h-5 sm:w-5" />
-                <span>{user.name}</span>
+          <div className="mb-8 flex items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <input
+                value={editableTitle}
+                onChange={(event) => setEditableTitle(event.target.value)}
+                onBlur={saveProjectMetadata}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') event.currentTarget.blur();
+                }}
+                className="w-full bg-transparent text-5xl font-semibold tracking-normal text-primary-label outline-none"
+                aria-label="Project title"
+              />
+              <p className="mt-2 flex flex-wrap items-center gap-2 text-lg text-secondary-label">
+                <Lock className="h-5 w-5 fill-current" />
+                <input
+                  value={editableArtist}
+                  onChange={(event) => setEditableArtist(event.target.value)}
+                  onBlur={saveProjectMetadata}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') event.currentTarget.blur();
+                  }}
+                  className="min-w-0 max-w-xs bg-transparent text-secondary-label outline-none"
+                  aria-label="Project artist"
+                />
                 <span>•</span>
                 <span>{tracks.length} track{tracks.length !== 1 ? 's' : ''}</span>
                 <span>•</span>
                 <span>{tracks.length ? '0s' : 'Now'}</span>
               </p>
             </div>
-            <button onClick={() => leadTrack ? handlePlay(leadTrack) : setIsUploadOpen(true)} className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-primary-label text-primary-background transition-transform hover:scale-105 sm:h-14 sm:w-14 sm:rounded-3xl" aria-label={leadTrack ? 'Play project' : 'Add tracks'}>
-              <Play className="h-6 w-6 fill-current translate-x-0.5 sm:h-7 sm:w-7" />
+            <button onClick={() => leadTrack ? handlePlay(leadTrack) : setIsUploadOpen(true)} className="grid h-14 w-14 shrink-0 place-items-center rounded-3xl bg-primary-label text-primary-background transition-transform hover:scale-105" aria-label={leadTrack ? "Play project" : "Add tracks"}>
+              <Play className="h-7 w-7 fill-current translate-x-0.5" />
             </button>
           </div>
 
-          <button onClick={() => setIsUploadOpen(true)} className="mb-7 flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-shading py-4 text-lg font-semibold text-primary-label transition-colors hover:bg-highlight sm:mb-9 sm:text-xl">
-            <Plus className="h-5 w-5 sm:h-6 sm:w-6" />
+          <button onClick={() => setIsUploadOpen(true)} className="mb-9 flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-shading py-4 text-xl font-semibold text-primary-label transition-colors hover:bg-highlight">
+            <Plus className="h-6 w-6" />
             Add tracks
           </button>
 
           <div className="space-y-2">
             {tracks.length === 0 ? (
-              <div className="flex flex-col items-center rounded-2xl border border-dashed border-border bg-shading/50 p-8 text-center sm:p-10">
+              <div className="flex flex-col items-center rounded-2xl border border-dashed border-border bg-shading/50 p-10 text-center">
                 <Music className="w-12 h-12 text-secondary-label mb-4" />
                 <h3 className="text-lg font-medium mb-1">No tracks yet</h3>
                 <p className="text-secondary-label text-sm mb-6">Upload a work-in-progress audio file.</p>
@@ -240,13 +308,13 @@ export default function Project({ user }) {
               </div>
             ) : (
               tracks.map((track, index) => (
-                <div key={track.id} onClick={() => handlePlay(track)} className={`group grid cursor-pointer grid-cols-[1.5rem_1fr_auto] items-center gap-3 rounded-2xl px-2 py-3 transition-all sm:grid-cols-[2rem_1fr_auto] sm:gap-4 sm:px-3 sm:py-4 ${currentTrack?.id === track.id ? 'bg-highlight' : 'hover:bg-shading'}`}>
-                  <div className="text-center text-base text-secondary-label sm:text-xl">
+                <div key={track.id} onClick={() => handlePlay(track)} className={`group grid cursor-pointer grid-cols-[2rem_1fr_auto] items-center gap-4 rounded-2xl px-3 py-4 transition-all ${currentTrack?.id === track.id ? 'bg-highlight' : 'hover:bg-shading'}`}>
+                  <div className="text-center text-xl text-secondary-label">
                     {currentTrack?.id === track.id && isPlaying ? <Play className="mx-auto h-5 w-5 fill-current text-primary-label" /> : index + 1}
                   </div>
                   <div className="min-w-0">
-                    <h3 className="truncate text-lg font-semibold text-primary-label sm:text-xl">{track.title}</h3>
-                    <p className="mt-1 text-sm text-secondary-label sm:text-base">{new Date(track.uploadedAt).toLocaleDateString() === new Date().toLocaleDateString() ? 'Now' : new Date(track.uploadedAt).toLocaleDateString()}</p>
+                    <h3 className="truncate text-xl font-semibold text-primary-label">{track.title}</h3>
+                    <p className="mt-1 text-base text-secondary-label">{timeAgo(track.uploadedAt)}</p>
                   </div>
                   <div className="flex items-center gap-4 text-primary-label">
                     <button onClick={(event) => handleDeleteTrack(event, track.id)} className="p-2 text-secondary-label hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors opacity-0 group-hover:opacity-100" title="Delete track">
@@ -269,7 +337,7 @@ export default function Project({ user }) {
         return (
           <AudioPlayer
             track={currentTrack}
-            projectName={project.name}
+            projectName={project.title || project.name}
             isPlaying={isPlaying}
             hasNext={hasNext}
             hasPrev={hasPrev}

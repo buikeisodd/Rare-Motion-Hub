@@ -7,22 +7,26 @@
     --color-primary-background: 0 0 0;
     --color-primary-label: 255 255 255;
     --color-secondary-label: 163 163 163;
-    --color-shading: 255 255 255;
-    --color-border: 255 255 255;
-    --color-highlight: 255 255 255;
+    --color-shading: 38 38 38;
+    --color-border: 60 60 60;
+    --color-highlight: 55 55 55;
+    --color-panel-bg: 25 25 25;
+    --color-panel-input-bg: 41 41 41;
   }
 
   :root.theme-light {
-    --color-primary-background: 239 239 236;
-    --color-primary-label: 18 18 18;
-    --color-secondary-label: 102 102 102;
-    --color-shading: 255 255 255;
-    --color-border: 0 0 0;
-    --color-highlight: 0 0 0;
+    --color-primary-background: 245 245 242;
+    --color-primary-label: 15 15 15;
+    --color-secondary-label: 90 90 90;
+    --color-shading: 228 228 225;
+    --color-border: 190 190 188;
+    --color-highlight: 210 210 207;
+    --color-panel-bg: 255 255 255;
+    --color-panel-input-bg: 235 235 232;
   }
 
   body {
-    @apply bg-primary-background text-primary-label font-sans antialiased selection:bg-highlight selection:text-white;
+    @apply bg-primary-background text-primary-label font-sans antialiased;
   }
 
   html,
@@ -40,17 +44,31 @@
 
 @layer utilities {
   .glass {
-    @apply bg-shading backdrop-blur-md border border-border;
+    backdrop-filter: blur(12px);
+    background-color: rgb(var(--color-shading) / 0.8);
+    border: 1px solid rgb(var(--color-border));
   }
-  
+
   .glass-hover {
-    @apply transition-colors duration-300 hover:bg-highlight;
+    transition: background-color 200ms;
   }
-  
+
+  .glass-hover:hover {
+    background-color: rgb(var(--color-highlight));
+  }
+
+  .panel-bg {
+    background-color: rgb(var(--color-panel-bg));
+  }
+
+  .panel-input-bg {
+    background-color: rgb(var(--color-panel-input-bg));
+  }
+
   .hide-scrollbar::-webkit-scrollbar {
     display: none;
   }
-  
+
   .hide-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;

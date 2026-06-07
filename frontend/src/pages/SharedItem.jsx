@@ -51,6 +51,7 @@ export default function SharedItem({ user }) {
   const itemName = sharedItem?.project?.name || sharedItem?.folder?.name || 'Shared item';
 
   const handlePlay = (track) => {
+    const isSameTrack = currentTrack?.id === track.id;
     if (currentTrack?.id === track.id) {
       setIsPlaying((playing) => !playing);
     } else {
@@ -58,16 +59,18 @@ export default function SharedItem({ user }) {
       setIsPlaying(true);
     }
 
-    fetch(`${apiUrl}/api/listen`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userId: user.id,
-        projectId: track.projectId || sharedItem?.project?.id,
-        folderId: sharedItem?.folder?.id,
-        trackId: track.id
-      })
-    }).catch((err) => console.error('Failed to record listening activity', err));
+    if (!isSameTrack || !isPlaying) {
+      fetch(`${apiUrl}/api/listen`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          projectId: track.projectId || sharedItem?.project?.id,
+          folderId: sharedItem?.folder?.id,
+          trackId: track.id
+        })
+      }).catch((err) => console.error('Failed to record listening activity', err));
+    }
   };
 
   const handleSave = async () => {
@@ -114,7 +117,7 @@ export default function SharedItem({ user }) {
         <section className="flex justify-center md:justify-start">
           <div className="grid aspect-square w-full max-w-[24rem] place-items-center overflow-hidden rounded-[1.25rem] bg-shading shadow-2xl md:max-w-[28rem]">
             {sharedItem.project?.coverArt ? (
-              <img src={sharedItem.project.coverArt} alt="" className="h-full w-full object-cover" />
+              <img src={sharedItem.project.coverArt} alt="" onError={(event) => { event.currentTarget.style.display = 'none'; }} className="h-full w-full object-cover" />
             ) : type === 'folder' ? (
               <Folder className="h-20 w-20 text-secondary-label sm:h-24 sm:w-24" />
             ) : (
