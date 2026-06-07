@@ -4,6 +4,7 @@ import { BarChart3, ChevronLeft, Download, FileText, Image as ImageIcon, Link2, 
 import AudioPlayer from '../components/AudioPlayer';
 import UploadModal from '../components/UploadModal';
 import CoverArtPicker from '../components/CoverArtPicker';
+import ConfirmModal from '../components/ConfirmModal';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -34,6 +35,7 @@ export default function Project({ user }) {
   const [loading, setLoading] = useState(true);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isCoverPickerOpen, setIsCoverPickerOpen] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [shareStatus, setShareStatus] = useState('');
   const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false);
   const [editableTitle, setEditableTitle] = useState('');
@@ -111,8 +113,13 @@ export default function Project({ user }) {
     }
   };
 
-  const handleDeleteProject = async () => {
-    if (!confirm('Are you sure you want to delete this project?')) return;
+  const handleDeleteClick = (e) => {
+    setIsProjectMenuOpen(false);
+    setIsConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    setIsConfirmOpen(false);
     try {
       const res = await fetch(`${apiUrl}/api/projects/${id}?userId=${encodeURIComponent(user.id)}`, { method: 'DELETE' });
       if (!res.ok) throw new Error((await res.json()).error || 'Failed to delete project');
@@ -208,7 +215,7 @@ export default function Project({ user }) {
                   Export
                 </button>
                 <div className="my-3 border-t border-border" />
-                <button onClick={handleDeleteProject} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-red-500 hover:bg-red-500/10 transition-colors">
+                <button onClick={handleDeleteClick} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-red-500 hover:bg-red-500/10 transition-colors">
                   <Trash2 className="h-6 w-6" />
                   Delete project
                 </button>

@@ -4,6 +4,7 @@ import { ArrowLeft, Bell, ChevronRight, Circle, Disc3, FolderPlus, Home, LogOut,
 import { LibraryProject, LibraryFolder } from './Dashboard';
 import ChatInbox from '../components/ChatInbox';
 import StarlightLogo from '../components/StarlightLogo';
+import ConfirmModal from '../components/ConfirmModal';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -127,12 +128,21 @@ export default function Folder({ user, onLogout }) {
     }
   };
 
-  const handleDeleteCurrentFolder = async () => {
-    if (!confirm('Are you sure you want to delete this folder? Projects inside it will be moved to the library root.')) return;
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+
+  const handleDeleteClick = (e) => {
+    setIsFolderMenuOpen(false);
+    setIsConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    setIsConfirmOpen(false);
     try {
-      await fetch(`${apiUrl}/api/folders/${id}?userId=${encodeURIComponent(user.id)}`, { method: 'DELETE' });
+      const res = await fetch(`${apiUrl}/api/folders/${id}?userId=${encodeURIComponent(user.id)}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed to delete folder');
       navigate('/library');
     } catch (err) {
+      alert(err.message);
       console.error(err);
     }
   };
@@ -178,7 +188,7 @@ export default function Folder({ user, onLogout }) {
             </button>
             {isFolderMenuOpen && (
               <div className="absolute right-0 top-14 z-50 w-48 rounded-[1rem] border border-border panel-bg p-2 shadow-2xl">
-                <button onClick={handleDeleteCurrentFolder} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-500 hover:bg-red-500/10 transition-colors">
+                <button onClick={handleDeleteClick} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-500 hover:bg-red-500/10 transition-colors">
                   <Trash2 className="h-4 w-4" />
                   Delete folder
                 </button>
@@ -297,6 +307,15 @@ export default function Folder({ user, onLogout }) {
       </div>
 
       <ChatInbox user={user} isOpen={isChatOpen} onToggle={() => setIsChatOpen((o) => !o)} />
+      
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={confirmDelete}
+        title="Delete folder?"
+        message="Are you sure you want to delete this folder? Projects inside it will be moved to the library root."
+        confirmText="Delete"
+      />
     </div>
   );
 }

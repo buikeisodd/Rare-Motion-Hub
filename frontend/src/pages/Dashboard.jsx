@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Bell, ChevronRight, Circle, Disc3, Edit3, Folder, FolderOpen, FolderPlus, LogOut, MessageSquare, MoreHorizontal, Music, Palette, Play, Plus, Trash2, UploadCloud, Video, X } from 'lucide-react';
 import ChatInbox from '../components/ChatInbox';
 import StarlightLogo from '../components/StarlightLogo';
+import ConfirmModal from '../components/ConfirmModal';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -13,13 +14,18 @@ export function LibraryProject({ project, tracks, onDragStart, isDragging, onDel
   const title = project.title || project.name || 'Untitled project';
   const artist = project.artist || leadTrack?.artist || leadTrack?.producer || 'Unknown artist';
 
-  const handleDelete = (e) => {
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+
+  const handleDeleteClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
     setIsMenuOpen(false);
-    if (confirm('Are you sure you want to delete this project?')) {
-      onDelete?.(project.id, 'project');
-    }
+    setIsConfirmOpen(true);
+  };
+
+  const confirmDelete = () => {
+    setIsConfirmOpen(false);
+    onDelete?.(project.id, 'project');
   };
 
   const handleQueue = (e) => {
@@ -37,7 +43,7 @@ export function LibraryProject({ project, tracks, onDragStart, isDragging, onDel
         e.dataTransfer.setData('itemType', 'project');
         onDragStart?.();
       }}
-      className={`relative w-full max-w-[15rem] transition-all duration-200 ${isDragging ? 'opacity-40 scale-95 rotate-1' : ''}`}
+      className={`relative w-full max-w-[15rem] transition-all duration-200 ${isDragging ? 'opacity-40 scale-95 rotate-1' : ''} ${isMenuOpen || isConfirmOpen ? 'z-50' : 'z-0'}`}
     >
       <Link to={`/project/${project.id}`} className="group block w-full" draggable={false}>
         <div className="relative aspect-square overflow-hidden rounded-[1.25rem] bg-shading">
@@ -83,13 +89,21 @@ export function LibraryProject({ project, tracks, onDragStart, isDragging, onDel
               <Plus className="h-4 w-4" />
               Add to queue
             </button>
-            <button onClick={handleDelete} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-500 hover:bg-red-500/10 transition-colors">
+            <button onClick={handleDeleteClick} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-500 hover:bg-red-500/10 transition-colors">
               <Trash2 className="h-4 w-4" />
               Delete project
             </button>
           </div>
         </>
       )}
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={confirmDelete}
+        title="Delete project?"
+        message="Are you sure you want to delete this project? This action cannot be undone."
+        confirmText="Delete"
+      />
     </div>
   );
 }
@@ -123,13 +137,18 @@ export function LibraryFolder({ folder, projects, tracks, onSave, onDrop, onDrag
     if (itemId && itemId !== folder.id) onDrop?.(itemId, itemType, folder.id);
   };
 
-  const handleDelete = (e) => {
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+
+  const handleDeleteClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
     setIsMenuOpen(false);
-    if (confirm('Are you sure you want to delete this folder? Projects inside it will be moved to the library root.')) {
-      onDelete?.(folder.id, 'folder');
-    }
+    setIsConfirmOpen(true);
+  };
+
+  const confirmDelete = () => {
+    setIsConfirmOpen(false);
+    onDelete?.(folder.id, 'folder');
   };
 
   const handleQueue = (e) => {
@@ -152,7 +171,7 @@ export function LibraryFolder({ folder, projects, tracks, onSave, onDrop, onDrag
       onDrop={handleDrop}
       className={`relative group w-full max-w-[15rem] transition-all duration-200 ${
         isDragging ? 'opacity-40 scale-95 rotate-1' : ''
-      } ${isDragOver ? 'scale-[1.03]' : ''}`}
+      } ${isDragOver ? 'scale-[1.03]' : ''} ${isMenuOpen || isConfirmOpen ? 'z-50' : 'z-0'}`}
     >
       <Link to={`/folder/${folder.id}`} draggable={false}>
         <div className={`relative aspect-square overflow-hidden rounded-[1.25rem] transition-all duration-200 ${
@@ -230,13 +249,21 @@ export function LibraryFolder({ folder, projects, tracks, onSave, onDrop, onDrag
               <Plus className="h-4 w-4" />
               Add to queue
             </button>
-            <button onClick={handleDelete} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-500 hover:bg-red-500/10 transition-colors">
+            <button onClick={handleDeleteClick} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-500 hover:bg-red-500/10 transition-colors">
               <Trash2 className="h-4 w-4" />
               Delete folder
             </button>
           </div>
         </>
       )}
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={confirmDelete}
+        title="Delete folder?"
+        message="Are you sure you want to delete this folder? Projects inside it will be moved to the library root."
+        confirmText="Delete"
+      />
     </div>
   );
 }
