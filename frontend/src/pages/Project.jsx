@@ -333,34 +333,19 @@ export default function Project({ user }) {
         </section>
       </main>
 
-      {currentTrack && (() => {
-        const idx = tracks.findIndex((track) => track.id === currentTrack.id);
-        const hasNext = idx !== -1 && idx < tracks.length - 1;
-        const hasPrev = idx > 0;
-
-        return (
-          <AudioPlayer
-            track={currentTrack}
-            projectName={project.title || project.name}
-            isPlaying={isPlaying}
-            hasNext={hasNext}
-            hasPrev={hasPrev}
-            onPlayPause={() => setIsPlaying((playing) => !playing)}
-            onNext={() => {
-              if (hasNext) {
-                setCurrentTrack(tracks[idx + 1]);
-                setIsPlaying(true);
-              }
-            }}
-            onPrev={() => {
-              if (hasPrev) {
-                setCurrentTrack(tracks[idx - 1]);
-                setIsPlaying(true);
-              }
-            }}
-          />
-        );
-      })()}
+      {currentTrack && (
+        <AudioPlayer
+          tracks={tracks}
+          currentTrack={currentTrack}
+          projectName={project.title || project.name}
+          isPlaying={isPlaying}
+          onPlayPause={(playing) => setIsPlaying(playing)}
+          onTrackChange={(track) => {
+            setCurrentTrack(track);
+            setIsPlaying(true);
+          }}
+        />
+      )}
 
       <UploadModal
         isOpen={isUploadOpen}

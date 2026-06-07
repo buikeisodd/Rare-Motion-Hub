@@ -186,23 +186,14 @@ export default function SharedItem({ user, isLink }) {
 
       {currentTrack && (
         <AudioPlayer
-          track={currentTrack}
+          tracks={tracks}
+          currentTrack={currentTrack}
           projectName={itemName}
           isPlaying={isPlaying}
-          hasNext={hasNext}
-          hasPrev={hasPrev}
-          onPlayPause={() => setIsPlaying((playing) => !playing)}
-          onNext={() => {
-            if (hasNext) {
-              setCurrentTrack(tracks[trackIndex + 1]);
-              setIsPlaying(true);
-            }
-          }}
-          onPrev={() => {
-            if (hasPrev) {
-              setCurrentTrack(tracks[trackIndex - 1]);
-              setIsPlaying(true);
-            }
+          onPlayPause={(playing) => setIsPlaying(playing)}
+          onTrackChange={(track) => {
+            setCurrentTrack(track);
+            setIsPlaying(true);
           }}
         />
       )}
