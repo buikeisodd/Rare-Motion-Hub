@@ -9,6 +9,8 @@ ffmpeg.setFfmpegPath(ffmpegPath);
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+const conversionJobs = {};
 const BASE_URL = process.env.BASE_URL || process.env.RENDER_EXTERNAL_URL || 'https://rare-motion-hub.onrender.com';
 
 app.use(cors());
@@ -781,13 +783,22 @@ app.post('/api/convert', uploadTrack.single('video'), (req, res) => {
   const newFilename = Date.now() + '-' + Math.round(Math.random() * 1e9) + '.wav';
   const userDir = ensureUserDir(uploadDir, userId);
   const outputPath = path.join(userDir, newFilename);
+  const jobId = makeId();
+  conversionJobs[jobId] = { progress: 0, done: false, error: null };
+  res.json({ jobId });
 
   ffmpeg(req.file.path)
     .noVideo()
     .audioCodec('pcm_s16le')
     .audioFrequency(44100)
+    .on('progress', (progress) => {
+      if (progress.percent) {
+        conversionJobs[jobId].progress = Math.round(progress.percent);
+      }
+    })
     .on('end', () => {
       removeFileIfExists(req.file.path);
+      const currentDb = readDB();
       const projectId = makeId();
       const newProject = {
         id: projectId,
@@ -799,7 +810,7 @@ app.post('/api/convert', uploadTrack.single('video'), (req, res) => {
         coverArt: null,
         createdAt: new Date().toISOString()
       };
-      db.projects.push(newProject);
+      currentDb.projects.push(newProject);
 
       const trackId = makeId();
       const newTrack = {
@@ -816,17 +827,59 @@ app.post('/api/convert', uploadTrack.single('video'), (req, res) => {
         uploader: { id: uploader.id, name: uploader.name },
         uploadedAt: new Date().toISOString()
       };
-      db.tracks.push(newTrack);
+      currentDb.tracks.push(newTrack);
       
-      writeDB(db);
-      res.json({ project: newProject, track: newTrack });
+      writeDB(currentDb);
+      conversionJobs[jobId].done = true;
+      conversionJobs[jobId].project = newProject;
+      conversionJobs[jobId].track = newTrack;
+      setTimeout(() => delete conversionJobs[jobId], 60000); // cleanup
     })
     .on('error', (err) => {
       console.error('ffmpeg error:', err);
       removeFileIfExists(req.file.path);
-      res.status(500).json({ error: 'Conversion failed' });
+      conversionJobs[jobId].error = 'Conversion failed';
+      setTimeout(() => delete conversionJobs[jobId], 60000); // cleanup
     })
     .save(outputPath);
+});
+
+app.get('/api/convert/status/:jobId', (req, res) => {
+  const { jobId } = req.params;
+  
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+
+  const sendEvent = (data) => res.write(`data: ${JSON.stringify(data)}\n\n`);
+
+  const job = conversionJobs[jobId];
+  if (!job) {
+    sendEvent({ error: 'Job not found' });
+    return res.end();
+  }
+
+  const interval = setInterval(() => {
+    const currentJob = conversionJobs[jobId];
+    if (!currentJob) {
+      clearInterval(interval);
+      return res.end();
+    }
+    
+    if (currentJob.error) {
+      sendEvent({ error: currentJob.error });
+      clearInterval(interval);
+      res.end();
+    } else if (currentJob.done) {
+      sendEvent({ done: true, progress: 100, project: currentJob.project, track: currentJob.track });
+      clearInterval(interval);
+      res.end();
+    } else {
+      sendEvent({ progress: currentJob.progress });
+    }
+  }, 500);
+
+  req.on('close', () => clearInterval(interval));
 });
 
 // --- CHAT ---

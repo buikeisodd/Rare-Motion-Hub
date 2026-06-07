@@ -268,12 +268,12 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileError, setProfileError] = useState('');
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
-  const [isConverting, setIsConverting] = useState(false);
+  const [conversionProgress, setConversionProgress] = useState(null);
   const convertInputRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch(`${apiUrl}/api/workspace/${user.id}`)
+    fetch(`${apiUrl}/api/workspace?userId=${user.id}`)
       .then((res) => res.json())
       .then((data) => { setWorkspace(data); setLoading(false); })
       .catch(() => setLoading(false));
@@ -297,16 +297,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
     }
   };
 
-  const createAudioProject = async () => {
-    setIsAddMenuOpen(false);
-    const res = await fetch(`${apiUrl}/api/projects`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: user.id, title: 'Untitled project', artist: user.name }),
-    });
-    const data = await res.json();
-    if (res.ok) navigate(`/project/${data.project.id}`);
-  };
+
 
   const createProject = async () => {
     setIsAddMenuOpen(false);
@@ -316,7 +307,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
       body: JSON.stringify({ userId: user.id, title: 'Untitled project', artist: user.name }),
     });
     const data = await res.json();
-    if (res.ok) navigate(`/project/${data.project.id}`);
+    if (res.ok) navigate(`/project/${data.id}`);
   };
 
   const createFolder = async () => {
@@ -327,7 +318,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
       body: JSON.stringify({ userId: user.id, title: 'Untitled folder', artist: user.name }),
     });
     const data = await res.json();
-    if (res.ok) setWorkspace((prev) => ({ ...prev, folders: [data.folder, ...prev.folders] }));
+    if (res.ok) setWorkspace((prev) => ({ ...prev, folders: [data, ...prev.folders] }));
   };
 
   const handleConvert = async (event) => {
@@ -335,7 +326,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
     if (!file) return;
     
     setIsAddMenuOpen(false);
-    setIsConverting(true);
+    setConversionProgress(0);
     
     const formData = new FormData();
     formData.append('video', file);
@@ -347,15 +338,32 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
         body: formData,
       });
       const data = await res.json();
-      if (res.ok) {
-        navigate(`/project/${data.project.id}`);
-      } else {
-        alert(data.error || 'Conversion failed');
-      }
+      if (!res.ok) throw new Error(data.error);
+
+      const eventSource = new EventSource(`${apiUrl}/api/convert/status/${data.jobId}`);
+      eventSource.onmessage = (e) => {
+        const parsed = JSON.parse(e.data);
+        if (parsed.error) {
+          eventSource.close();
+          setConversionProgress(null);
+          alert(parsed.error);
+        } else if (parsed.done) {
+          eventSource.close();
+          setConversionProgress(null);
+          navigate(`/project/${parsed.project.id}`);
+        } else {
+          setConversionProgress(parsed.progress || 0);
+        }
+      };
+      eventSource.onerror = () => {
+        eventSource.close();
+        setConversionProgress(null);
+        alert('Lost connection to server during conversion.');
+      };
     } catch (err) {
-      alert(err.message);
+      setConversionProgress(null);
+      alert('Upload failed: ' + err.message);
     } finally {
-      setIsConverting(false);
       if (convertInputRef.current) convertInputRef.current.value = '';
     }
   };
@@ -418,6 +426,23 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
 
   return (
     <div className="min-h-screen bg-primary-background px-10 py-8 pb-28 animate-fade-in lg:px-14">
+      {conversionProgress !== null && (
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="w-80 rounded-3xl border border-border bg-shading p-8 shadow-2xl">
+            <Video className="mx-auto mb-4 h-12 w-12 animate-pulse text-green-400" />
+            <h3 className="mb-2 text-center text-xl font-bold text-primary-label">Converting Video</h3>
+            <p className="mb-6 text-center text-sm text-secondary-label">Extracting high-quality audio...</p>
+            <div className="h-3 w-full overflow-hidden rounded-full bg-black">
+              <div 
+                className="h-full rounded-full bg-green-400 transition-all duration-300 ease-out"
+                style={{ width: `${Math.max(5, conversionProgress)}%` }}
+              />
+            </div>
+            <p className="mt-3 text-center text-xs font-bold text-primary-label">{conversionProgress}%</p>
+          </div>
+        </div>
+      )}
+
       {/* Invisible backdrop — click outside to close any open panel */}
       {anyPanelOpen && (
         <div
@@ -491,13 +516,10 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
       <div className="fixed inset-x-0 bottom-8 z-50 flex flex-col items-center gap-3 px-4">
         {isAddMenuOpen && (
           <div className="w-64 rounded-[1.2rem] panel-bg border border-border p-3 shadow-2xl backdrop-blur-xl animate-slide-up">
-            <button onClick={createAudioProject} className="flex w-full items-center gap-5 rounded-xl px-4 py-3 text-left text-xl font-semibold hover:bg-highlight transition-colors">
-              <Music className="h-6 w-6" />
-              Audio
-            </button>
-            <button onClick={() => convertInputRef.current?.click()} disabled={isConverting} className="flex w-full items-center gap-5 rounded-xl px-4 py-3 text-left text-xl font-semibold hover:bg-highlight transition-colors disabled:opacity-50">
+
+            <button onClick={() => convertInputRef.current?.click()} disabled={conversionProgress !== null} className="flex w-full items-center gap-5 rounded-xl px-4 py-3 text-left text-xl font-semibold hover:bg-highlight transition-colors disabled:opacity-50">
               <Video className="h-6 w-6" />
-              {isConverting ? 'Converting...' : 'Convert'}
+              {conversionProgress !== null ? 'Converting...' : 'Convert'}
             </button>
             <button onClick={() => showComingSoon('Record')} className="flex w-full items-center gap-5 rounded-xl px-4 py-3 text-left text-xl font-semibold hover:bg-highlight transition-colors">
               <Circle className="h-6 w-6 fill-red-500 text-red-500" />
