@@ -43,9 +43,7 @@ function WelcomeBack({ user, onDone }) {
       <StarlightLogo className="h-14 w-48 text-primary-label opacity-90" />
       <main className="flex-1 flex items-center justify-center">
         <div className="w-full max-w-xl text-center animate-welcome-rise">
-          <div className="mx-auto mb-10 h-44 w-44 rounded-[2rem] bg-shading border border-border overflow-hidden shadow-2xl animate-record-float">
-            <div className="h-full w-full rounded-full border-[18px] border-[#2b2b2b] bg-[radial-gradient(circle_at_50%_50%,#161616_0_7%,transparent_8%),conic-gradient(from_35deg,#f7fbf1,#ff9bdf,#f5fff4,#f4a2dc,#f7fbf1)] animate-spin-slow" />
-          </div>
+          <StarlightLogo className="mx-auto mb-10 h-32 w-80 text-primary-label opacity-90 animate-record-float" />
           <p className="text-secondary-label text-sm font-medium uppercase tracking-[0.28em] mb-4">Welcome back</p>
           <h1 className="text-5xl font-semibold tracking-normal mb-8">{user.name}</h1>
           <Link
@@ -77,9 +75,7 @@ function WelcomeAnimation({ user, onDone }) {
       <StarlightLogo className="h-14 w-48 text-primary-label opacity-90" />
       <main className="flex-1 flex items-center justify-center">
         <div className="text-center animate-welcome-rise">
-          <div className="mx-auto mb-8 h-36 w-36 rounded-[1.75rem] bg-shading border border-border overflow-hidden shadow-2xl animate-record-float">
-            <div className="h-full w-full rounded-full border-[15px] border-[#2b2b2b] bg-[radial-gradient(circle_at_50%_50%,#161616_0_7%,transparent_8%),conic-gradient(from_35deg,#f7fbf1,#ff9bdf,#f5fff4,#f4a2dc,#f7fbf1)] animate-spin-slow" />
-          </div>
+          <StarlightLogo className="mx-auto mb-8 h-28 w-72 text-primary-label opacity-90 animate-record-float" />
           <p className="text-secondary-label text-sm font-medium uppercase tracking-[0.28em] mb-3">Welcome back</p>
           <h1 className="text-4xl font-semibold tracking-normal">{user.name}</h1>
         </div>

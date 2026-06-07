@@ -210,46 +210,46 @@ function EditProfileModal({ user, onClose, onSave, saving, error }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 px-4 py-6 backdrop-blur-sm animate-fade-in">
-      <form onSubmit={handleSubmit} className="relative grid w-full max-w-[40rem] gap-6 rounded-[1.25rem] panel-bg border border-border p-6 shadow-2xl grid-cols-[0.9fr_1fr]">
+      <form onSubmit={handleSubmit} className="relative flex flex-col items-center w-full max-w-sm gap-5 rounded-[1.25rem] panel-bg border border-border p-6 shadow-2xl">
         <button type="button" onClick={onClose} className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Close edit profile">
-          <X className="h-6 w-6" />
+          <X className="h-5 w-5" />
         </button>
-        <h2 className="col-span-full pr-12 text-center text-xl font-bold text-primary-label">Edit Profile</h2>
 
-        <section className="flex flex-col items-center justify-center">
-          <DiscArtwork className="aspect-square w-full max-w-[20rem] rounded-[2.5rem]" />
-        </section>
+        <h2 className="text-lg font-bold text-primary-label">Edit Profile</h2>
 
-        <section className="flex flex-col items-center justify-center gap-6">
-          <div className="w-full max-w-[20rem]">
-            <p className="mb-3 text-sm text-secondary-label">Profile picture</p>
-            <button type="button" onClick={() => fileInputRef.current?.click()} className="relative mx-auto grid h-32 w-32 place-items-center overflow-hidden rounded-full bg-shading">
-              {avatarPreview ? (
-                <img src={avatarPreview} alt="" className="h-full w-full object-cover" />
-              ) : (
-                <ProfileAvatar user={{ name }} size="h-32 w-32 text-4xl" />
-              )}
-              <span className="absolute inset-0 grid place-items-center bg-black/0 text-white opacity-0 transition-opacity hover:bg-black/45 hover:opacity-100">
-                <UploadCloud className="h-9 w-9" />
-              </span>
-            </button>
-            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(event) => setAvatarFile(event.target.files?.[0] || null)} />
-          </div>
+        {/* Starlight Station logo replaces disc */}
+        <StarlightLogo className="h-16 w-52 text-primary-label opacity-80" />
 
-          <label className="w-full max-w-[20rem]">
-            <span className="mb-2 block text-center text-sm text-secondary-label">Username</span>
-            <span className="flex h-12 items-center rounded-xl panel-input-bg px-4">
-              <input value={name} onChange={(event) => setName(event.target.value)} className="min-w-0 flex-1 bg-transparent text-base font-bold text-primary-label outline-none" required />
-              <Edit3 className="h-5 w-5" />
+        {/* Avatar with label directly below it */}
+        <div className="flex flex-col items-center gap-2">
+          <button type="button" onClick={() => fileInputRef.current?.click()} className="relative grid h-24 w-24 place-items-center overflow-hidden rounded-full bg-shading">
+            {avatarPreview ? (
+              <img src={avatarPreview} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <ProfileAvatar user={{ name }} size="h-24 w-24 text-3xl" />
+            )}
+            <span className="absolute inset-0 grid place-items-center bg-black/0 text-white opacity-0 transition-opacity hover:bg-black/40 hover:opacity-100">
+              <UploadCloud className="h-7 w-7" />
             </span>
-          </label>
-
-          {error && <p className="max-w-[23rem] text-center text-sm text-red-400">{error}</p>}
-
-          <button type="submit" disabled={saving} className="h-11 w-full max-w-[20rem] rounded-full bg-primary-label text-sm font-bold text-primary-background disabled:opacity-60">
-            {saving ? 'Saving...' : 'Save profile'}
           </button>
-        </section>
+          <p className="text-xs text-secondary-label">Profile picture</p>
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(event) => setAvatarFile(event.target.files?.[0] || null)} />
+        </div>
+
+        {/* Username field */}
+        <label className="w-full">
+          <span className="mb-2 block text-center text-xs text-secondary-label">Username</span>
+          <span className="flex h-11 items-center rounded-xl panel-input-bg px-4">
+            <input value={name} onChange={(event) => setName(event.target.value)} className="min-w-0 flex-1 bg-transparent text-sm font-bold text-primary-label outline-none" required />
+            <Edit3 className="h-4 w-4 text-secondary-label" />
+          </span>
+        </label>
+
+        {error && <p className="text-center text-xs text-red-400">{error}</p>}
+
+        <button type="submit" disabled={saving} className="h-11 w-full rounded-full bg-primary-label text-sm font-bold text-primary-background disabled:opacity-60">
+          {saving ? 'Saving...' : 'Save profile'}
+        </button>
       </form>
     </div>
   );
