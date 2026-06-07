@@ -1,8 +1,8 @@
-// Starlight Station logo — blends with background in dark mode, black text in light mode
+// Starlight Station logo — SVG text, scales without quality loss
 export default function StarlightLogo({ className = '' }) {
   return (
     <svg
-      viewBox="0 0 320 72"
+      viewBox="0 0 260 80"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
       aria-label="Starlight Station"
@@ -10,25 +10,25 @@ export default function StarlightLogo({ className = '' }) {
     >
       <text
         x="50%"
-        y="38"
+        y="36"
         textAnchor="middle"
-        fontFamily="'Georgia', 'Times New Roman', serif"
-        fontSize="28"
+        fontFamily="Georgia, 'Times New Roman', serif"
+        fontSize="34"
         fontWeight="400"
         fontStyle="italic"
-        letterSpacing="1.5"
+        letterSpacing="2"
       >
         Starlight
       </text>
       <text
         x="50%"
-        y="66"
+        y="72"
         textAnchor="middle"
-        fontFamily="'Georgia', 'Times New Roman', serif"
-        fontSize="28"
+        fontFamily="Georgia, 'Times New Roman', serif"
+        fontSize="34"
         fontWeight="400"
         fontStyle="italic"
-        letterSpacing="1.5"
+        letterSpacing="2"
       >
         Station
       </text>

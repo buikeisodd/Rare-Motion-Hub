@@ -431,7 +431,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
           <button className="grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Search library">
             <Search className="h-6 w-6" />
           </button>
-          <button onClick={() => setIsChatOpen((open) => !(open))} className="grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Open messages">
+          <button onClick={() => { setIsChatOpen((open) => !open); setIsProfileOpen(false); setIsNotificationsOpen(false); setIsAddMenuOpen(false); }} className="grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Open messages">
             <MessageSquare className="h-6 w-6" />
           </button>
           <button onClick={onLogout} className="grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Log out">

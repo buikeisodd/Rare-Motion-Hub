@@ -37,7 +37,7 @@ export default function Login({ onLogin }) {
   return (
     <div className="min-h-screen bg-primary-background px-20 py-12 relative overflow-hidden">
       {/* Logo — blends with dark bg, black in light mode */}
-      <StarlightLogo className="h-14 w-52 text-primary-label opacity-90" />
+      <StarlightLogo className="h-24 w-80 text-primary-label opacity-90" />
 
       <div className="mx-auto flex min-h-[calc(100vh-8rem)] w-full max-w-3xl flex-col items-center justify-center animate-fade-in">
         <div className="mb-14 h-56 w-56 overflow-hidden rounded-[3rem] bg-shading border border-border shadow-2xl">
