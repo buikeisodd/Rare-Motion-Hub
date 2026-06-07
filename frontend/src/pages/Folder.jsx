@@ -223,34 +223,32 @@ export default function Folder({ user, onLogout }) {
         <span className="font-semibold text-primary-label">{folder?.title || folder?.name || 'Folder'}</span>
       </nav>
 
-          <div className="mb-8 flex items-start justify-between gap-4">
-            <div className="min-w-0 flex-1 overflow-hidden">
-              <MarqueeInput
-                value={editableTitle}
-                onChange={(event) => setEditableTitle(event.target.value)}
-                onBlur={saveCurrentFolder}
-                className="w-full"
-                textClassName="text-3xl md:text-4xl lg:text-5xl font-semibold tracking-normal text-primary-label"
-                placeholder="Folder title"
-              />
-              <p className="mt-2 flex flex-wrap items-center gap-2 text-base md:text-lg text-secondary-label">
-                <FolderOpen className="h-4 w-4 md:h-5 md:w-5 shrink-0" />
-                <span className="min-w-0 max-w-[12rem] md:max-w-xs overflow-hidden">
-                  <MarqueeInput
-                    value={editableArtist}
-                    onChange={(event) => setEditableArtist(event.target.value)}
-                    onBlur={saveCurrentFolder}
-                    className="w-full"
-                    textClassName="text-secondary-label"
-                    placeholder="Folder artist"
-                  />
-                </span>
-              </p>
-            </div>
-          </div>
+      <div className="mt-8 mb-8 overflow-hidden">
+        <MarqueeInput
+          value={editableTitle}
+          onChange={(event) => setEditableTitle(event.target.value)}
+          onBlur={saveCurrentFolder}
+          className="w-full"
+          textClassName="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-primary-label"
+          placeholder="Folder title"
+        />
+        <p className="mt-3 flex items-center gap-2 text-base md:text-lg text-secondary-label">
+          <FolderOpen className="h-4 w-4 md:h-5 md:w-5 shrink-0" />
+          <span className="min-w-0 flex-1 overflow-hidden">
+            <MarqueeInput
+              value={editableArtist}
+              onChange={(event) => setEditableArtist(event.target.value)}
+              onBlur={saveCurrentFolder}
+              className="w-full"
+              textClassName="text-secondary-label"
+              placeholder="Add artist..."
+            />
+          </span>
+        </p>
+      </div>
 
       {/* Grid */}
-      <main className="mx-auto flex min-h-[calc(100vh-22rem)] max-w-4xl items-start justify-center py-4">
+      <main className="mx-auto flex min-h-[calc(100vh-22rem)] max-w-4xl items-start justify-center py-4 pb-36">
         {isEmpty ? (
           <div className="flex flex-col items-center justify-center gap-4 pt-16 text-center">
             <Disc3 className="h-12 w-12 text-secondary-label" />

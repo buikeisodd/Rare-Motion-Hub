@@ -725,7 +725,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
         </div>
       </header>
 
-      <main className="mx-auto flex min-h-[calc(100vh-16rem)] max-w-4xl items-center justify-center py-10">
+      <main className="mx-auto flex min-h-[calc(100vh-16rem)] max-w-4xl items-center justify-center py-10 pb-36">
         {workspace.projects.length === 0 && workspace.folders.length === 0 ? (
           <div className="text-center">
             <Disc3 className="mx-auto mb-5 h-12 w-12 text-secondary-label" />

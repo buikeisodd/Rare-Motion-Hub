@@ -47,13 +47,15 @@
   }
 
   @keyframes marquee {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
+    0%    { transform: translateX(0); }
+    15%   { transform: translateX(0); }        /* pause at start ~2s */
+    85%   { transform: translateX(-50%); }     /* scroll */
+    100%  { transform: translateX(-50%); }     /* pause at end ~2s */
   }
 
   .animate-fade-in { animation: fade-in 0.4s ease-out; }
   .animate-slide-up { animation: slide-up 0.4s ease-out; }
-  .animate-marquee { animation: marquee 10s linear infinite; }
+  .animate-marquee { animation: marquee 14s ease-in-out infinite; }
 }
 
 @layer utilities {
