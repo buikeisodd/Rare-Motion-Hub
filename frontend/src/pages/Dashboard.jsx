@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Bell, ChevronRight, Circle, Disc3, Edit3, Folder, FolderOpen, FolderPlus, LogOut, MessageSquare, MoreHorizontal, Music, Palette, Play, Plus, Trash2, UploadCloud, Video, X } from 'lucide-react';
-import ChatInbox from '../components/ChatInbox';
 import StarlightLogo from '../components/StarlightLogo';
 import ConfirmModal from '../components/ConfirmModal';
+import MarqueeInput from '../components/MarqueeInput';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -67,10 +67,22 @@ export function LibraryProject({ project, tracks, onDragStart, isDragging, onDel
             </span>
           )}
         </div>
-        <div className="mt-4 flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h2 className="text-lg font-semibold leading-tight tracking-normal text-primary-label line-clamp-2">{title}</h2>
-            <p className="mt-1 truncate text-lg text-secondary-label">{artist}</p>
+        <div className="mt-4 flex items-start justify-between gap-3 overflow-hidden">
+          <div className="min-w-0 flex-1">
+            <MarqueeInput
+              readOnly
+              value={title}
+              className="w-full"
+              textClassName="text-lg font-semibold leading-tight tracking-normal text-primary-label"
+              placeholder="Untitled project"
+            />
+            <MarqueeInput
+              readOnly
+              value={artist}
+              className="mt-1 w-full"
+              textClassName="text-lg text-secondary-label"
+              placeholder="Unknown artist"
+            />
           </div>
           <button
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsMenuOpen((o) => !o); }}
@@ -212,25 +224,23 @@ export function LibraryFolder({ folder, projects, tracks, onSave, onDrop, onDrag
           )}
         </div>
       </Link>
-      <div className="mt-4 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <input
+      <div className="mt-4 flex items-start justify-between gap-3 overflow-hidden">
+        <div className="min-w-0 flex-1">
+          <MarqueeInput
             value={title}
-            onClick={stop}
             onChange={(e) => setTitle(e.target.value)}
             onBlur={() => save()}
-            onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-            className="w-full bg-transparent text-lg font-semibold leading-tight tracking-normal text-primary-label outline-none"
-            aria-label="Folder title"
+            className="w-full"
+            textClassName="text-lg font-semibold leading-tight tracking-normal text-primary-label"
+            placeholder="Folder title"
           />
-          <input
+          <MarqueeInput
             value={artist}
-            onClick={stop}
             onChange={(e) => setArtist(e.target.value)}
             onBlur={() => save()}
-            onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-            className="mt-1 w-full bg-transparent text-lg text-secondary-label outline-none"
-            aria-label="Folder artist"
+            className="mt-1 w-full"
+            textClassName="text-lg text-secondary-label"
+            placeholder="Add artist..."
           />
         </div>
         <button

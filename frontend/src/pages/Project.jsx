@@ -5,6 +5,7 @@ import AudioPlayer from '../components/AudioPlayer';
 import UploadModal from '../components/UploadModal';
 import CoverArtPicker from '../components/CoverArtPicker';
 import ConfirmModal from '../components/ConfirmModal';
+import MarqueeInput from '../components/MarqueeInput';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -242,29 +243,27 @@ export default function Project({ user }) {
 
         <section className="pt-1">
           <div className="mb-8 flex items-start justify-between gap-4">
-            <div className="min-w-0 flex-1">
-              <input
+            <div className="min-w-0 flex-1 overflow-hidden">
+              <MarqueeInput
                 value={editableTitle}
                 onChange={(event) => setEditableTitle(event.target.value)}
                 onBlur={saveProjectMetadata}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') event.currentTarget.blur();
-                }}
-                className="w-full bg-transparent text-3xl md:text-4xl lg:text-5xl font-semibold tracking-normal text-primary-label outline-none"
-                aria-label="Project title"
+                className="w-full"
+                textClassName="text-3xl md:text-4xl lg:text-5xl font-semibold tracking-normal text-primary-label"
+                placeholder="Project title"
               />
               <p className="mt-2 flex flex-wrap items-center gap-2 text-base md:text-lg text-secondary-label">
-                <Lock className="h-4 w-4 md:h-5 md:w-5 fill-current" />
-                <input
-                  value={editableArtist}
-                  onChange={(event) => setEditableArtist(event.target.value)}
-                  onBlur={saveProjectMetadata}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') event.currentTarget.blur();
-                  }}
-                  className="min-w-0 max-w-[12rem] md:max-w-xs bg-transparent text-secondary-label outline-none"
-                  aria-label="Project artist"
-                />
+                <Lock className="h-4 w-4 md:h-5 md:w-5 fill-current shrink-0" />
+                <span className="min-w-0 max-w-[12rem] md:max-w-xs overflow-hidden">
+                  <MarqueeInput
+                    value={editableArtist}
+                    onChange={(event) => setEditableArtist(event.target.value)}
+                    onBlur={saveProjectMetadata}
+                    className="w-full"
+                    textClassName="text-secondary-label"
+                    placeholder="Project artist"
+                  />
+                </span>
               </p>
             </div>
             <div className="flex shrink-0 flex-col items-center gap-2">
