@@ -289,26 +289,26 @@ export default function AudioPlayer({ tracks = [], currentTrack, projectName, is
       
       {/* Settings Panel */}
       {showControls && (
-        <div className="pointer-events-auto w-[min(92vw,30rem)] mb-4 rounded-[1.25rem] bg-[#292929]/95 p-4 shadow-2xl backdrop-blur-xl animate-slide-up sm:p-5">
-          <button onClick={() => setShowControls(false)} className="absolute right-4 top-4 text-secondary-label hover:text-primary-label" aria-label="Close audio controls">
+        <div className="pointer-events-auto w-[min(92vw,30rem)] mb-4 rounded-[1.25rem] bg-[#292929]/95 p-4 shadow-2xl backdrop-blur-xl animate-slide-up sm:p-5 text-white">
+          <button onClick={() => setShowControls(false)} className="absolute right-4 top-4 text-white/60 hover:text-white" aria-label="Close audio controls">
             <X className="h-5 w-5" />
           </button>
           <div className="grid gap-6 pr-8 sm:grid-cols-2">
             <div>
-              <div className="mb-3 flex items-center justify-between text-sm font-semibold text-secondary-label">
+              <div className="mb-3 flex items-center justify-between text-sm font-semibold text-white/60">
                 <span className="flex items-center gap-2"><FastForward className="h-4 w-4" /> Speed</span>
                 <span>{playbackRate.toFixed(2)}x</span>
               </div>
               <input type="range" min="0.5" max="2" step="0.05" value={playbackRate} onChange={(e) => setPlaybackRate(parseFloat(e.target.value))} className="w-full accent-white" />
-              <button onClick={() => setPlaybackRate(1)} className="mt-2 text-xs text-secondary-label hover:text-primary-label">Reset speed</button>
+              <button onClick={() => setPlaybackRate(1)} className="mt-2 text-xs text-white/60 hover:text-white">Reset speed</button>
             </div>
             <div>
-              <div className="mb-3 flex items-center justify-between text-sm font-semibold text-secondary-label">
+              <div className="mb-3 flex items-center justify-between text-sm font-semibold text-white/60">
                 <span className="flex items-center gap-2"><Activity className="h-4 w-4" /> Pitch</span>
                 <span>{pitchShift > 0 ? '+' : ''}{pitchShift} st</span>
               </div>
               <input type="range" min="-7" max="7" step="1" value={pitchShift} onChange={(e) => setPitchShift(parseInt(e.target.value, 10))} className="w-full accent-white" />
-              <p className="mt-2 text-xs text-secondary-label">Pitch uses native playback for cleaner sound.</p>
+              <p className="mt-2 text-xs text-white/60">Pitch uses native playback for cleaner sound.</p>
             </div>
           </div>
         </div>
@@ -316,10 +316,10 @@ export default function AudioPlayer({ tracks = [], currentTrack, projectName, is
 
       {/* Queue Viewer Panel */}
       {showQueue && (
-        <div className="pointer-events-auto w-[min(92vw,30rem)] mb-4 rounded-[1.25rem] bg-[#292929]/95 p-4 shadow-2xl backdrop-blur-xl animate-slide-up max-h-80 flex flex-col sm:p-5">
+        <div className="pointer-events-auto w-[min(92vw,30rem)] mb-4 rounded-[1.25rem] bg-[#292929]/95 p-4 shadow-2xl backdrop-blur-xl animate-slide-up max-h-80 flex flex-col sm:p-5 text-white">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-bold text-primary-label">Queue</h3>
-            <button onClick={() => setShowQueue(false)} className="text-secondary-label hover:text-primary-label" aria-label="Close queue">
+            <h3 className="text-lg font-bold text-white">Queue</h3>
+            <button onClick={() => setShowQueue(false)} className="text-white/60 hover:text-white" aria-label="Close queue">
               <X className="h-5 w-5" />
             </button>
           </div>
@@ -328,7 +328,7 @@ export default function AudioPlayer({ tracks = [], currentTrack, projectName, is
               <button 
                 key={`${track.id}-${idx}`} 
                 onClick={() => onTrackChange(track)}
-                className={`w-full text-left p-2 rounded-xl transition-colors ${idx === queueIndex ? 'bg-highlight text-primary-label' : 'text-secondary-label hover:bg-shading'}`}
+                className={`w-full text-left p-2 rounded-xl transition-colors ${idx === queueIndex ? 'bg-[#3b3b3b] text-white' : 'text-white/80 hover:bg-[#333]'}`}
               >
                 <div className="truncate text-sm font-semibold">{track.title}</div>
                 <div className="truncate text-xs opacity-75">{track.artist || track.producer}</div>
@@ -339,16 +339,16 @@ export default function AudioPlayer({ tracks = [], currentTrack, projectName, is
       )}
 
       {/* Main Player Bar */}
-      <div className="pointer-events-auto grid w-[min(94vw,58rem)] grid-cols-[1fr_auto] items-center gap-x-3 gap-y-3 rounded-[1.5rem] bg-[#2b2b2b]/95 px-3 py-3 shadow-2xl backdrop-blur-xl sm:flex sm:gap-4 sm:rounded-full sm:px-4">
+      <div className="pointer-events-auto grid w-[min(94vw,58rem)] grid-cols-[1fr_auto] items-center gap-x-3 gap-y-3 rounded-[1.5rem] bg-[#2b2b2b]/95 px-3 py-3 shadow-2xl backdrop-blur-xl sm:flex sm:gap-4 sm:rounded-full sm:px-4 text-white">
         
         {/* Track Info */}
         <div className="flex min-w-0 items-center gap-3 sm:w-56 sm:gap-4">
           <div className="h-12 w-12 shrink-0 rounded-full bg-[linear-gradient(145deg,#b8ff65,#df5b9c)] sm:h-14 sm:w-14" />
           <div className="min-w-0 flex flex-col justify-center">
-            <MarqueeText text={currentTrack.title} className="text-base font-semibold w-full" />
+            <MarqueeText text={currentTrack.title} className="text-base font-semibold w-full text-white" />
             <MarqueeText 
               text={isBuffering && isPlaying ? 'Buffering...' : (projectName || currentTrack.artist || currentTrack.uploader?.name || 'untitled')} 
-              className="text-sm text-secondary-label w-full" 
+              className="text-sm text-white/60 w-full" 
             />
           </div>
         </div>
@@ -369,13 +369,13 @@ export default function AudioPlayer({ tracks = [], currentTrack, projectName, is
               return (
                 <span 
                   key={index} 
-                  className={`flex-1 rounded-full transition-colors duration-100 ${isPlayed ? 'bg-[linear-gradient(180deg,#b8ff65,#df5b9c)] opacity-90' : 'bg-primary-label/20 group-hover:bg-primary-label/30'}`} 
+                  className={`flex-1 rounded-full transition-colors duration-100 ${isPlayed ? 'bg-[linear-gradient(180deg,#b8ff65,#df5b9c)] opacity-90' : 'bg-white/20 group-hover:bg-white/30'}`} 
                   style={{ height: `${18 + ((index * 17) % 30)}px` }} 
                 />
               );
             })}
           </div>
-          <div className="shrink-0 font-mono text-sm text-primary-label">
+          <div className="shrink-0 font-mono text-sm text-white">
             {formatTime(progress)} / {formatTime(duration)}
           </div>
         </div>
@@ -396,56 +396,74 @@ export default function AudioPlayer({ tracks = [], currentTrack, projectName, is
         />
 
         {/* Controls */}
-        <div className="flex items-center justify-end gap-2 text-primary-label sm:gap-3">
+        <div className="flex items-center justify-end gap-2 text-white sm:gap-3">
           
-          <button onClick={toggleShuffle} className={`hidden md:block transition-colors ${isShuffled ? 'text-[#b8ff65]' : 'text-secondary-label hover:text-primary-label'}`} aria-label="Shuffle">
-            <Shuffle className="h-5 w-5" />
+          <button 
+            onClick={() => setShowControls(!showControls)} 
+            className={`hidden sm:grid h-10 w-10 place-items-center rounded-full transition-colors ${showControls ? 'bg-white/20' : 'hover:bg-white/10'}`}
+            title="Audio Settings"
+          >
+            <Activity className="h-5 w-5" />
           </button>
           
-          <button onClick={handlePrev} disabled={!hasPrev} className="disabled:opacity-30" aria-label="Previous track">
-            <SkipBack className="h-5 w-5 fill-current sm:h-6 sm:w-6" />
-          </button>
-          
-          <button onClick={() => onPlayPause(!isPlaying)} className="grid h-10 w-10 place-items-center rounded-full bg-primary-label text-primary-background sm:h-12 sm:w-12 transition-transform active:scale-95" aria-label={isPlaying ? 'Pause' : 'Play'}>
-            {isPlaying ? <Pause className="h-5 w-5 fill-current sm:h-6 sm:w-6" /> : <Play className="h-5 w-5 fill-current translate-x-0.5 sm:h-6 sm:w-6" />}
-          </button>
-          
-          <button onClick={handleNext} disabled={!hasNext} className="disabled:opacity-30" aria-label="Next track">
-            <SkipForward className="h-5 w-5 fill-current sm:h-6 sm:w-6" />
-          </button>
-          
-          <button onClick={toggleRepeat} className={`hidden md:block transition-colors ${repeatMode > 0 ? 'text-[#b8ff65]' : 'text-secondary-label hover:text-primary-label'}`} aria-label="Repeat">
-            {repeatMode === 2 ? <Repeat1 className="h-5 w-5" /> : <Repeat className="h-5 w-5" />}
+          <button 
+            onClick={() => setShowQueue(!showQueue)} 
+            className={`hidden sm:grid h-10 w-10 place-items-center rounded-full transition-colors ${showQueue ? 'bg-white/20' : 'hover:bg-white/10'}`}
+            title="Queue"
+          >
+            <ListMusic className="h-5 w-5" />
           </button>
 
-          <button onClick={() => { setShowQueue(!showQueue); setShowControls(false); }} className={`transition-colors ${showQueue ? 'text-primary-label' : 'text-secondary-label hover:text-primary-label'}`} aria-label="Queue">
-            <ListMusic className="h-5 w-5 sm:h-6 sm:w-6" />
+          <button onClick={toggleShuffle} className={`grid h-10 w-10 place-items-center rounded-full transition-colors ${isShuffled ? 'bg-white/20' : 'hover:bg-white/10 text-white/50 hover:text-white'}`} aria-label="Shuffle">
+            <Shuffle className="h-4 w-4" />
+          </button>
+          <button onClick={handlePrev} disabled={!hasPrev} className="grid h-10 w-10 place-items-center rounded-full hover:bg-white/10 disabled:opacity-50" aria-label="Previous">
+            <SkipBack className="h-5 w-5 fill-current" />
           </button>
           
-          <button onClick={() => { setShowControls(!showControls); setShowQueue(false); }} className={`transition-colors ${showControls ? 'text-primary-label' : 'text-secondary-label hover:text-primary-label'}`} aria-label="Audio controls">
-            <Activity className="h-5 w-5 sm:h-6 sm:w-6" />
+          <button 
+            onClick={() => onPlayPause(!isPlaying)} 
+            className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-white text-black transition-transform hover:scale-105 sm:h-14 sm:w-14" 
+            aria-label={isPlaying ? "Pause" : "Play"}
+          >
+            {isBuffering && isPlaying ? (
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-black border-t-transparent" />
+            ) : isPlaying ? (
+              <Pause className="h-6 w-6 fill-current" />
+            ) : (
+              <Play className="h-6 w-6 fill-current ml-1" />
+            )}
           </button>
           
-          <div className="flex items-center gap-2 group">
-            <button onClick={toggleMute} className="text-secondary-label hover:text-primary-label" aria-label={isMuted ? 'Unmute' : 'Mute'}>
-              {isMuted || volume === 0 ? <VolumeX className="h-5 w-5 sm:h-6 sm:w-6" /> : <Volume2 className="h-5 w-5 sm:h-6 sm:w-6" />}
+          <button onClick={handleNext} disabled={!hasNext} className="grid h-10 w-10 place-items-center rounded-full hover:bg-white/10 disabled:opacity-50" aria-label="Next">
+            <SkipForward className="h-5 w-5 fill-current" />
+          </button>
+          <button onClick={toggleRepeat} className={`grid h-10 w-10 place-items-center rounded-full transition-colors ${repeatMode > 0 ? 'bg-white/20' : 'hover:bg-white/10 text-white/50 hover:text-white'}`} aria-label="Repeat">
+            {repeatMode === 2 ? <Repeat1 className="h-4 w-4" /> : <Repeat className="h-4 w-4" />}
+          </button>
+          
+          <div className="hidden items-center gap-2 pl-2 sm:flex">
+            <button onClick={toggleMute} className="text-white/60 hover:text-white" aria-label="Mute">
+              {isMuted || volume === 0 ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
             </button>
             <input 
               type="range" 
               min="0" 
               max="1" 
-              step="0.05" 
+              step="0.01" 
               value={isMuted ? 0 : volume} 
               onChange={(e) => {
                 const val = parseFloat(e.target.value);
                 setVolume(val);
-                if (val > 0 && isMuted) setIsMuted(false);
+                if (val > 0) {
+                  setIsMuted(false);
+                  setPrevVolume(val);
+                }
               }} 
-              className="w-16 sm:w-20 h-1 accent-[#df5b9c] cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity duration-200 hidden sm:block" 
-              aria-label="Volume"
+              className="w-16 accent-white" 
+              aria-label="Volume" 
             />
           </div>
-
         </div>
       </div>
     </div>
