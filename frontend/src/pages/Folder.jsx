@@ -298,8 +298,8 @@ export default function Folder({ user, onLogout }) {
         )}
       </main>
 
-      {/* Add button */}
-      <div className="fixed inset-x-0 bottom-8 z-50 flex flex-col items-center gap-3 px-4">
+      {/* Desktop Add Button */}
+      <div className="fixed bottom-[calc(1rem+0px)] right-[calc(50vw-29rem-1rem-48px)] sm:bottom-[calc(1.5rem+0px)] z-40 hidden md:flex flex-col items-end">
         <AnimatePresence>
           {isAddMenuOpen && (
             <motion.div
@@ -307,14 +307,14 @@ export default function Folder({ user, onLogout }) {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               transition={{ duration: 0.15 }}
-              className="w-64 rounded-[1.2rem] panel-bg border border-border p-3 shadow-2xl backdrop-blur-xl origin-bottom"
+              className="w-56 mb-4 rounded-2xl panel-bg border border-border p-2 shadow-2xl backdrop-blur-xl origin-bottom-right"
             >
-              <button onClick={createSubFolder} className="flex w-full items-center gap-5 rounded-xl px-4 py-3 text-left text-xl font-semibold hover:bg-highlight transition-colors">
-                <FolderPlus className="h-6 w-6" />
+              <button onClick={createSubFolder} className="flex w-full items-center gap-4 rounded-xl px-4 py-3 text-left text-lg font-semibold hover:bg-highlight transition-colors">
+                <FolderPlus className="h-5 w-5" />
                 New Folder
               </button>
-              <button onClick={createProject} className="flex w-full items-center gap-5 rounded-xl px-4 py-3 text-left text-xl font-semibold hover:bg-highlight transition-colors">
-                <Plus className="h-6 w-6" />
+              <button onClick={createProject} className="flex w-full items-center gap-4 rounded-xl px-4 py-3 text-left text-lg font-semibold hover:bg-highlight transition-colors">
+                <Plus className="h-5 w-5" />
                 New Project
               </button>
             </motion.div>
@@ -322,10 +322,41 @@ export default function Folder({ user, onLogout }) {
         </AnimatePresence>
         <button
           onClick={() => { setIsAddMenuOpen((o) => !o); setIsFolderMenuOpen(false); }}
-          className="inline-flex h-16 min-w-48 items-center justify-center gap-3 rounded-full bg-shading px-7 text-xl font-semibold text-primary-label shadow-2xl backdrop-blur-md transition-transform hover:scale-[1.02]"
+          className="grid h-14 w-14 place-items-center rounded-full bg-primary-label text-primary-background shadow-2xl transition-transform hover:scale-105"
+          aria-label="Add"
         >
-          {isAddMenuOpen ? <X className="h-6 w-6" /> : <Plus className="h-6 w-6" />}
-          {isAddMenuOpen ? 'Close' : 'Add'}
+          {isAddMenuOpen ? <X className="h-7 w-7" /> : <Plus className="h-7 w-7" />}
+        </button>
+      </div>
+
+      {/* Mobile Add Button */}
+      <div className="fixed bottom-24 right-4 z-40 md:hidden flex flex-col items-end">
+        <AnimatePresence>
+          {isAddMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ duration: 0.15 }}
+              className="w-56 mb-4 rounded-2xl panel-bg border border-border p-2 shadow-2xl backdrop-blur-xl origin-bottom-right"
+            >
+              <button onClick={createSubFolder} className="flex w-full items-center gap-4 rounded-xl px-4 py-3 text-left text-lg font-semibold hover:bg-highlight transition-colors">
+                <FolderPlus className="h-5 w-5" />
+                New Folder
+              </button>
+              <button onClick={createProject} className="flex w-full items-center gap-4 rounded-xl px-4 py-3 text-left text-lg font-semibold hover:bg-highlight transition-colors">
+                <Plus className="h-5 w-5" />
+                New Project
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <button
+          onClick={() => { setIsAddMenuOpen((o) => !o); setIsFolderMenuOpen(false); }}
+          className="grid h-14 w-14 place-items-center rounded-full bg-primary-label text-primary-background shadow-2xl transition-transform hover:scale-105"
+          aria-label="Add"
+        >
+          {isAddMenuOpen ? <X className="h-7 w-7" /> : <Plus className="h-7 w-7" />}
         </button>
       </div>
 

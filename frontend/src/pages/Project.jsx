@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BarChart3, ChevronLeft, Download, FileText, Image as ImageIcon, Link2, Lock, MoreHorizontal, Music, Play, Plus, Shuffle, Trash2 } from 'lucide-react';
-import AudioPlayer from '../components/AudioPlayer';
 import UploadModal from '../components/UploadModal';
 import CoverArtPicker from '../components/CoverArtPicker';
 import ConfirmModal from '../components/ConfirmModal';
 import ShareLinkModal from '../components/ShareLinkModal';
 import MarqueeInput from '../components/MarqueeInput';
+import { useAudio } from '../context/AudioContext';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -33,8 +33,7 @@ export default function Project({ user }) {
   const navigate = useNavigate();
   const [project, setProject] = useState(null);
   const [tracks, setTracks] = useState([]);
-  const [currentTrack, setCurrentTrack] = useState(null);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const { currentTrack, isPlaying, playTrack } = useAudio();
   const [loading, setLoading] = useState(true);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isCoverPickerOpen, setIsCoverPickerOpen] = useState(false);
@@ -69,21 +68,12 @@ export default function Project({ user }) {
   const fetchWorkspace = fetchProject;
 
   const handlePlay = (track) => {
-    const isSameTrack = currentTrack?.id === track.id;
-    if (currentTrack?.id === track.id) {
-      setIsPlaying((playing) => !playing);
-    } else {
-      setCurrentTrack(track);
-      setIsPlaying(true);
-    }
-
-    if (!isSameTrack || !isPlaying) {
-      fetch(`${apiUrl}/api/listen`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id, projectId: project?.id, trackId: track.id })
-      }).catch((err) => console.error('Failed to record listening activity', err));
-    }
+    playTrack(track, tracks, project.title || project.name);
+    fetch(`${apiUrl}/api/listen`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: user.id, projectId: project?.id, trackId: track.id })
+    }).catch((err) => console.error('Failed to record listening activity', err));
   };
 
   const handleUploadSuccess = (newTrack) => {
@@ -300,11 +290,6 @@ export default function Project({ user }) {
             </p>
           </div>
 
-          <button onClick={() => setIsUploadOpen(true)} className="mb-8 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-shading text-sm font-semibold text-primary-label transition-colors hover:bg-highlight">
-            <Plus className="h-5 w-5" />
-            Add tracks
-          </button>
-
           <div className="space-y-2">
             {tracks.length === 0 ? (
               <div className="flex flex-col items-center rounded-2xl border border-dashed border-border bg-shading/50 p-10 text-center">
@@ -338,19 +323,14 @@ export default function Project({ user }) {
         </section>
       </main>
 
-      {currentTrack && (
-        <AudioPlayer
-          tracks={tracks}
-          currentTrack={currentTrack}
-          projectName={project.title || project.name}
-          isPlaying={isPlaying}
-          onPlayPause={(playing) => setIsPlaying(playing)}
-          onTrackChange={(track) => {
-            setCurrentTrack(track);
-            setIsPlaying(true);
-          }}
-        />
-      )}
+      <button onClick={() => setIsUploadOpen(true)} className="fixed bottom-[calc(1rem+0px)] right-[calc(50vw-29rem-1rem-48px)] sm:bottom-[calc(1.5rem+0px)] z-40 hidden md:grid h-14 w-14 place-items-center rounded-full bg-primary-label text-primary-background shadow-2xl transition-transform hover:scale-105" aria-label="Add tracks">
+        <Plus className="h-7 w-7" />
+      </button>
+
+      {/* Mobile Add Tracks Button if AudioPlayer takes space, might just use fixed bottom right */}
+      <button onClick={() => setIsUploadOpen(true)} className="fixed bottom-24 right-4 z-40 md:hidden grid h-14 w-14 place-items-center rounded-full bg-primary-label text-primary-background shadow-2xl transition-transform hover:scale-105" aria-label="Add tracks">
+        <Plus className="h-7 w-7" />
+      </button>
 
       <UploadModal
         isOpen={isUploadOpen}

@@ -8,6 +8,8 @@ import Folder from './pages/Folder';
 import SharedItem from './pages/SharedItem';
 import ProjectInsights from './pages/ProjectInsights';
 import StarlightLogo from './components/StarlightLogo';
+import { AudioProvider, useAudio } from './context/AudioContext';
+import AudioPlayer from './components/AudioPlayer';
 
 function DesktopOnly({ children }) {
   const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 1024);
@@ -123,6 +125,24 @@ function AnimatedRoutes({ user, handleLogin, handleLogout, handleUserUpdate, jus
   );
 }
 
+function GlobalAudioPlayer() {
+  const { currentTrack, tracks, projectName, isPlaying, setIsPlaying, setCurrentTrack } = useAudio();
+  if (!currentTrack) return null;
+  return (
+    <AudioPlayer
+      tracks={tracks}
+      currentTrack={currentTrack}
+      projectName={projectName}
+      isPlaying={isPlaying}
+      onPlayPause={(playing) => setIsPlaying(playing)}
+      onTrackChange={(track) => {
+        setCurrentTrack(track);
+        setIsPlaying(true);
+      }}
+    />
+  );
+}
+
 function App() {
   const [user, setUser] = useState(() => {
     const storedUser = localStorage.getItem('user');
@@ -171,16 +191,19 @@ function App() {
 
   return (
     <div className="min-h-screen bg-primary-background text-primary-label font-sans">
-      <BrowserRouter>
-        <AnimatedRoutes 
-          user={user} 
-          handleLogin={handleLogin} 
-          handleLogout={handleLogout} 
-          handleUserUpdate={handleUserUpdate}
-          justAuthenticated={justAuthenticated}
-          setJustAuthenticated={setJustAuthenticated}
-        />
-      </BrowserRouter>
+      <AudioProvider>
+        <BrowserRouter>
+          <AnimatedRoutes 
+            user={user} 
+            handleLogin={handleLogin} 
+            handleLogout={handleLogout} 
+            handleUserUpdate={handleUserUpdate}
+            justAuthenticated={justAuthenticated}
+            setJustAuthenticated={setJustAuthenticated}
+          />
+          <GlobalAudioPlayer />
+        </BrowserRouter>
+      </AudioProvider>
     </div>
   );
 }

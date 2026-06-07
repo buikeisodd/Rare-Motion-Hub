@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, Folder, Music, Play, Plus } from 'lucide-react';
-import AudioPlayer from '../components/AudioPlayer';
+import { useAudio } from '../context/AudioContext';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -24,8 +24,7 @@ export default function SharedItem({ user, isLink }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isExpired, setIsExpired] = useState(false);
-  const [currentTrack, setCurrentTrack] = useState(null);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const { currentTrack, isPlaying, playTrack } = useAudio();
 
   useEffect(() => {
     let cancelled = false;
@@ -59,26 +58,17 @@ export default function SharedItem({ user, isLink }) {
   const itemName = sharedItem?.project?.name || sharedItem?.folder?.name || 'Shared item';
 
   const handlePlay = (track) => {
-    const isSameTrack = currentTrack?.id === track.id;
-    if (currentTrack?.id === track.id) {
-      setIsPlaying((playing) => !playing);
-    } else {
-      setCurrentTrack(track);
-      setIsPlaying(true);
-    }
-
-    if (!isSameTrack || !isPlaying) {
-      fetch(`${apiUrl}/api/listen`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user?.id || null,
-          projectId: track.projectId || sharedItem?.project?.id,
-          folderId: sharedItem?.folder?.id,
-          trackId: track.id
-        })
-      }).catch((err) => console.error('Failed to record listening activity', err));
-    }
+    playTrack(track, tracks, itemName);
+    fetch(`${apiUrl}/api/listen`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: user?.id || null,
+        projectId: track.projectId || sharedItem?.project?.id,
+        folderId: sharedItem?.folder?.id,
+        trackId: track.id
+      })
+    }).catch((err) => console.error('Failed to record listening activity', err));
   };
 
   const handleSave = async () => {
@@ -184,19 +174,7 @@ export default function SharedItem({ user, isLink }) {
         </section>
       </main>
 
-      {currentTrack && (
-        <AudioPlayer
-          tracks={tracks}
-          currentTrack={currentTrack}
-          projectName={itemName}
-          isPlaying={isPlaying}
-          onPlayPause={(playing) => setIsPlaying(playing)}
-          onTrackChange={(track) => {
-            setCurrentTrack(track);
-            setIsPlaying(true);
-          }}
-        />
-      )}
+
     </div>
   );
 }
