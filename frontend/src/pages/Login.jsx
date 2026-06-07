@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Loader2, Mail } from 'lucide-react';
-import heroImage from '../assets/hero.png';
 import StarlightLogo from '../components/StarlightLogo';
 
 export default function Login({ onLogin }) {
@@ -40,9 +39,7 @@ export default function Login({ onLogin }) {
       <StarlightLogo className="h-24 w-80 text-primary-label opacity-90" />
 
       <div className="mx-auto flex min-h-[calc(100vh-8rem)] w-full max-w-3xl flex-col items-center justify-center animate-fade-in">
-        <div className="mb-14 h-56 w-56 overflow-hidden rounded-[3rem] bg-shading border border-border shadow-2xl">
-          <img src={heroImage} alt="" className="h-full w-full object-cover" />
-        </div>
+        <StarlightLogo className="mb-14 h-36 w-[28rem] text-primary-label" />
 
         <h1 className="max-w-xl text-center text-5xl font-semibold leading-tight tracking-normal mb-9">
           A sacred place for your work-in-progress music
