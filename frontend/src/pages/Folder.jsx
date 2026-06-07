@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Bell, ChevronRight, Circle, Disc3, FolderPlus, FolderOpen, Home, LogOut, MessageSquare, MoreHorizontal, Plus, Trash2, Video, X } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ArrowLeft, Bell, ChevronRight, Circle, Copy, Disc3, FolderPlus, FolderOpen, Home, LogOut, MessageSquare, MoreHorizontal, Plus, Trash2, Video, X } from 'lucide-react';
 import { LibraryProject, LibraryFolder } from './Dashboard';
 import ChatInbox from '../components/ChatInbox';
 import StarlightLogo from '../components/StarlightLogo';
@@ -160,7 +161,7 @@ export default function Folder({ user, onLogout }) {
   const isEmpty = folders.length === 0 && projects.length === 0;
 
   return (
-    <div className="min-h-screen bg-primary-background px-5 py-5 pb-28 animate-fade-in sm:px-8 sm:py-6 lg:px-14 lg:py-8">
+    <div className="min-h-screen bg-primary-background px-5 py-5 pb-28 sm:px-8 sm:py-6 lg:px-14 lg:py-8">
       {isAddMenuOpen && (
         <div className="fixed inset-0 z-40" onClick={() => setIsAddMenuOpen(false)} />
       )}
@@ -180,14 +181,30 @@ export default function Folder({ user, onLogout }) {
             >
               <MoreHorizontal className="h-5 w-5" />
             </button>
-            {isFolderMenuOpen && (
-              <div className="absolute right-0 top-14 z-50 w-48 rounded-[1rem] border border-border panel-bg p-2 shadow-2xl">
-                <button onClick={handleDeleteClick} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-500 hover:bg-red-500/10 transition-colors">
-                  <Trash2 className="h-4 w-4" />
-                  Delete folder
-                </button>
-              </div>
-            )}
+            <AnimatePresence>
+              {isFolderMenuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 top-14 z-50 w-48 rounded-[1rem] border border-border panel-bg p-2 shadow-2xl origin-top-right"
+                >
+                  <button onClick={() => {
+                    navigator.clipboard.writeText(`${window.location.origin}/shared/folder/${folder.id}`);
+                    setIsFolderMenuOpen(false);
+                    alert('Share link copied to clipboard!');
+                  }} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
+                    <Copy className="h-4 w-4" />
+                    Copy share link
+                  </button>
+                  <button onClick={handleDeleteClick} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-500 hover:bg-red-500/10 transition-colors">
+                    <Trash2 className="h-4 w-4" />
+                    Delete folder
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {onLogout && (
@@ -282,18 +299,26 @@ export default function Folder({ user, onLogout }) {
 
       {/* Add button */}
       <div className="fixed inset-x-0 bottom-8 z-50 flex flex-col items-center gap-3 px-4">
-        {isAddMenuOpen && (
-          <div className="w-64 rounded-[1.2rem] panel-bg border border-border p-3 shadow-2xl backdrop-blur-xl animate-slide-up">
-            <button onClick={createSubFolder} className="flex w-full items-center gap-5 rounded-xl px-4 py-3 text-left text-xl font-semibold hover:bg-highlight transition-colors">
-              <FolderPlus className="h-6 w-6" />
-              New Folder
-            </button>
-            <button onClick={createProject} className="flex w-full items-center gap-5 rounded-xl px-4 py-3 text-left text-xl font-semibold hover:bg-highlight transition-colors">
-              <Plus className="h-6 w-6" />
-              New Project
-            </button>
-          </div>
-        )}
+        <AnimatePresence>
+          {isAddMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ duration: 0.15 }}
+              className="w-64 rounded-[1.2rem] panel-bg border border-border p-3 shadow-2xl backdrop-blur-xl origin-bottom"
+            >
+              <button onClick={createSubFolder} className="flex w-full items-center gap-5 rounded-xl px-4 py-3 text-left text-xl font-semibold hover:bg-highlight transition-colors">
+                <FolderPlus className="h-6 w-6" />
+                New Folder
+              </button>
+              <button onClick={createProject} className="flex w-full items-center gap-5 rounded-xl px-4 py-3 text-left text-xl font-semibold hover:bg-highlight transition-colors">
+                <Plus className="h-6 w-6" />
+                New Project
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
         <button
           onClick={() => { setIsAddMenuOpen((o) => !o); setIsFolderMenuOpen(false); }}
           className="inline-flex h-16 min-w-48 items-center justify-center gap-3 rounded-full bg-shading px-7 text-xl font-semibold text-primary-label shadow-2xl backdrop-blur-md transition-transform hover:scale-[1.02]"

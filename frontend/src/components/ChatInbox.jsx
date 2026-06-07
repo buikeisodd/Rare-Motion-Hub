@@ -783,7 +783,7 @@ function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall,
   );
 }
 
-export default function ChatInbox({ user, isOpen, onToggle }) {
+export default function ChatInbox({ user, isOpen, onToggle, onConversationsChange }) {
   const [conversations, setConversations] = useState([]);
   const [activeConvo, setActiveConvo] = useState(null);
   const [loadingConvos, setLoadingConvos] = useState(true);
@@ -819,6 +819,7 @@ export default function ChatInbox({ user, isOpen, onToggle }) {
         didPrimeNotificationsRef.current = true;
       }
       setConversations(nextConversations);
+      if (onConversationsChange) onConversationsChange(nextConversations);
     } catch (err) {
       console.error('Failed to fetch conversations', err);
     } finally {

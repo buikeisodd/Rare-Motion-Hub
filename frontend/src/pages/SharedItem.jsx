@@ -102,7 +102,7 @@ export default function SharedItem({ user }) {
   const hasPrev = trackIndex > 0;
 
   return (
-    <div className="min-h-screen bg-primary-background px-4 py-6 pb-36 text-primary-label animate-fade-in sm:px-6 sm:py-8 md:px-10 lg:px-14">
+    <div className="min-h-screen bg-primary-background px-4 py-6 pb-36 text-primary-label sm:px-6 sm:py-8 md:px-10 lg:px-14">
       <header className="flex items-center justify-between">
         <Link to="/library" className="grid h-11 w-11 place-items-center rounded-2xl bg-shading transition-colors hover:bg-highlight sm:h-14 sm:w-14 sm:rounded-3xl" aria-label="Back to library">
           <ChevronLeft className="h-6 w-6 sm:h-7 sm:w-7" />

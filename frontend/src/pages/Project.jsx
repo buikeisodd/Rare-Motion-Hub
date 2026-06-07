@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import { BarChart3, ChevronLeft, Download, FileText, Image as ImageIcon, Link2, Lock, MoreHorizontal, Music, Play, Plus, Search, Trash2 } from 'lucide-react';
 import AudioPlayer from '../components/AudioPlayer';
 import UploadModal from '../components/UploadModal';
@@ -180,7 +181,7 @@ export default function Project({ user }) {
   const leadTrack = tracks[0];
 
   return (
-    <div className="relative min-h-screen bg-primary-background pb-40 animate-fade-in">
+    <div className="relative min-h-screen bg-primary-background pb-40">
       {isProjectMenuOpen && (
         <div className="fixed inset-0 z-40" onClick={() => setIsProjectMenuOpen(false)} />
       )}
@@ -201,27 +202,35 @@ export default function Project({ user }) {
             <button onClick={() => setIsProjectMenuOpen((open) => !open)} className="grid h-12 w-12 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Project options">
               <MoreHorizontal className="h-5 w-5" />
             </button>
-            {isProjectMenuOpen && (
-              <div className="absolute right-0 top-16 z-50 w-64 rounded-[1.25rem] border border-border panel-bg p-3 shadow-2xl">
-                <button onClick={() => navigate(`/project/${id}/insights`)} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
-                  <BarChart3 className="h-6 w-6" />
-                  Insights
-                </button>
-                <button onClick={() => { alert('Notes are coming soon.'); setIsProjectMenuOpen(false); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
-                  <FileText className="h-6 w-6" />
-                  Notes
-                </button>
-                <button onClick={handleExport} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
-                  <Download className="h-6 w-6" />
-                  Export
-                </button>
-                <div className="my-3 border-t border-border" />
-                <button onClick={handleDeleteClick} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-red-500 hover:bg-red-500/10 transition-colors">
-                  <Trash2 className="h-6 w-6" />
-                  Delete project
-                </button>
-              </div>
-            )}
+            <AnimatePresence>
+              {isProjectMenuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 top-16 z-50 w-64 rounded-[1.25rem] border border-border panel-bg p-3 shadow-2xl origin-top-right"
+                >
+                  <button onClick={() => navigate(`/project/${id}/insights`)} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
+                    <BarChart3 className="h-6 w-6" />
+                    Insights
+                  </button>
+                  <button onClick={() => { alert('Notes are coming soon.'); setIsProjectMenuOpen(false); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
+                    <FileText className="h-6 w-6" />
+                    Notes
+                  </button>
+                  <button onClick={handleExport} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
+                    <Download className="h-6 w-6" />
+                    Export
+                  </button>
+                  <div className="my-3 border-t border-border" />
+                  <button onClick={handleDeleteClick} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-red-500 hover:bg-red-500/10 transition-colors">
+                    <Trash2 className="h-6 w-6" />
+                    Delete project
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </header>

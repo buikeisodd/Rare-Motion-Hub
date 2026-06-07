@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Link, useNavigate, useLocation } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Project from './pages/Project';
@@ -91,6 +92,36 @@ function AuthLanding({ user, justAuthenticated, onDone }) {
   return hasSeenWelcome ? <WelcomeAnimation user={user} onDone={onDone} /> : <WelcomeBack user={user} onDone={onDone} />;
 }
 
+function AnimatedRoutes({ user, handleLogin, handleLogout, handleUserUpdate, justAuthenticated, setJustAuthenticated }) {
+  const location = useLocation();
+
+  if (!user) {
+    return (
+      <AnimatePresence mode="wait">
+        <Routes location={location} key={location.pathname}>
+          <Route path="/login" element={<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><Login onLogin={handleLogin} /></motion.div>} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </AnimatePresence>
+    );
+  }
+
+  return (
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route path="/" element={<DesktopOnly><motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><AuthLanding user={user} justAuthenticated={justAuthenticated} onDone={() => setJustAuthenticated(false)} /></motion.div></DesktopOnly>} />
+        <Route path="/login" element={<Navigate to="/" replace />} />
+        <Route path="/library" element={<DesktopOnly><motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><Dashboard user={user} onLogout={handleLogout} onUserUpdate={handleUserUpdate} /></motion.div></DesktopOnly>} />
+        <Route path="/folder/:id" element={<DesktopOnly><motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><Folder user={user} onLogout={handleLogout} /></motion.div></DesktopOnly>} />
+        <Route path="/project/:id" element={<DesktopOnly><motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><Project user={user} onLogout={handleLogout} /></motion.div></DesktopOnly>} />
+        <Route path="/project/:id/insights" element={<DesktopOnly><motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><ProjectInsights user={user} /></motion.div></DesktopOnly>} />
+        <Route path="/shared/:type/:id" element={<motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><SharedItem user={user} /></motion.div>} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </AnimatePresence>
+  );
+}
+
 function App() {
   const [user, setUser] = useState(() => {
     const storedUser = localStorage.getItem('user');
@@ -138,29 +169,18 @@ function App() {
   };
 
   return (
-    <DesktopOnly>
-      <div className="min-h-screen bg-primary-background text-primary-label font-sans">
-        <BrowserRouter>
-          {!user ? (
-            <Routes>
-              <Route path="/login" element={<Login onLogin={handleLogin} />} />
-              <Route path="*" element={<Navigate to="/login" replace />} />
-            </Routes>
-          ) : (
-            <Routes>
-              <Route path="/" element={<AuthLanding user={user} justAuthenticated={justAuthenticated} onDone={() => setJustAuthenticated(false)} />} />
-              <Route path="/login" element={<Navigate to="/" replace />} />
-              <Route path="/library" element={<Dashboard user={user} onLogout={handleLogout} onUserUpdate={handleUserUpdate} />} />
-              <Route path="/folder/:id" element={<Folder user={user} onLogout={handleLogout} />} />
-              <Route path="/project/:id" element={<Project user={user} onLogout={handleLogout} />} />
-              <Route path="/project/:id/insights" element={<ProjectInsights user={user} />} />
-              <Route path="/shared/:type/:id" element={<SharedItem user={user} />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          )}
-        </BrowserRouter>
-      </div>
-    </DesktopOnly>
+    <div className="min-h-screen bg-primary-background text-primary-label font-sans">
+      <BrowserRouter>
+        <AnimatedRoutes 
+          user={user} 
+          handleLogin={handleLogin} 
+          handleLogout={handleLogout} 
+          handleUserUpdate={handleUserUpdate}
+          justAuthenticated={justAuthenticated}
+          setJustAuthenticated={setJustAuthenticated}
+        />
+      </BrowserRouter>
+    </div>
   );
 }
 

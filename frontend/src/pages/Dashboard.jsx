@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Bell, ChevronRight, Circle, Disc3, Edit3, Folder, FolderOpen, FolderPlus, LogOut, MessageSquare, MoreHorizontal, Music, Palette, Play, Plus, Trash2, UploadCloud, Video, X } from 'lucide-react';
 import ChatInbox from '../components/ChatInbox';
 import StarlightLogo from '../components/StarlightLogo';
@@ -310,82 +311,122 @@ function ProfileAvatar({ user, size = 'h-11 w-11', className = '' }) {
   );
 }
 
-function NotificationsMenu({ notifications }) {
+function NotificationsMenu({ isOpen, notifications, conversations }) {
+  const allNotifications = [...notifications];
+
+  if (conversations) {
+    conversations.forEach((convo) => {
+      if (convo.unreadCount > 0 && convo.lastMessage) {
+        allNotifications.push({
+          id: `chat-${convo.id}`,
+          type: 'chat',
+          actor: convo.type === 'group' ? null : convo.partner,
+          message: convo.type === 'group' ? 'New message in Group Chat' : `${convo.partner?.name || 'Someone'} sent a message`,
+          preview: convo.lastMessage.text || 'Media message',
+          createdAt: convo.updatedAt,
+          read: false,
+        });
+      }
+    });
+  }
+
+  allNotifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
   return (
-    <div className="absolute left-auto right-0 top-16 z-50 w-72 rounded-[1.25rem] border border-border panel-bg p-3 shadow-2xl">
-      <h2 className="px-2 pb-2 text-sm font-bold text-primary-label">Notifications</h2>
-      {notifications.length === 0 ? (
-        <p className="px-3 py-6 text-sm text-secondary-label">No notifications yet.</p>
-      ) : (
-        <div className="max-h-96 space-y-2 overflow-y-auto">
-          {notifications.map((notification) => {
-            const text = notification.type === 'message' || notification.type === 'call'
-              ? notification.message
-              : `${notification.actor?.name || 'Someone'} listened to ${notification.track?.title || notification.project?.name || notification.folder?.name || 'your shared item'}`;
-            return (
-              <div key={notification.id} className={`flex gap-3 rounded-2xl p-3 ${notification.read ? 'bg-shading' : 'bg-primary-label/10'}`}>
-                <ProfileAvatar user={notification.actor || { name: '?' }} size="h-10 w-10" />
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-primary-label">{text}</p>
-                  {notification.preview && <p className="mt-1 truncate text-xs text-secondary-label">{notification.preview}</p>}
-                  <p className="mt-1 text-xs text-secondary-label">{new Date(notification.createdAt).toLocaleString()}</p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: -10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: -10 }}
+          transition={{ duration: 0.15 }}
+          className="absolute left-auto right-0 top-16 z-50 w-72 rounded-[1.25rem] border border-border panel-bg p-3 shadow-2xl origin-top-right"
+        >
+          <h2 className="px-2 pb-2 text-sm font-bold text-primary-label">Notifications</h2>
+          {allNotifications.length === 0 ? (
+            <p className="px-3 py-6 text-sm text-secondary-label">No notifications yet.</p>
+          ) : (
+            <div className="max-h-96 space-y-2 overflow-y-auto hide-scrollbar">
+              {allNotifications.map((notification) => {
+                const text = notification.type === 'chat' || notification.type === 'message' || notification.type === 'call'
+                  ? notification.message
+                  : `${notification.actor?.name || 'Someone'} listened to ${notification.track?.title || notification.project?.name || notification.folder?.name || 'your shared item'}`;
+                return (
+                  <div key={notification.id} className={`flex gap-3 rounded-2xl p-3 ${notification.read ? 'bg-shading' : 'bg-primary-label/10'}`}>
+                    <ProfileAvatar user={notification.actor || { name: '?' }} size="h-10 w-10" />
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-primary-label">{text}</p>
+                      {notification.preview && <p className="mt-1 truncate text-xs text-secondary-label">{notification.preview}</p>}
+                      <p className="mt-1 text-xs text-secondary-label">{new Date(notification.createdAt).toLocaleString([], { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' })}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </motion.div>
       )}
-    </div>
+    </AnimatePresence>
   );
 }
 
-function ProfilePanel({ user, theme, onThemeChange, onEditProfile, onLogout, onDeleteAccount }) {
+function ProfilePanel({ isOpen, user, theme, onThemeChange, onEditProfile, onLogout, onDeleteAccount }) {
   return (
-    <div className="absolute left-auto right-0 top-16 z-50 w-64 rounded-[1.25rem] border border-border panel-bg p-2.5 shadow-2xl">
-      <div className="mb-2 flex items-center gap-3 rounded-xl bg-shading p-2">
-        <ProfileAvatar user={user} size="h-12 w-12" />
-        <div className="min-w-0">
-          <h2 className="truncate text-base font-bold text-primary-label">{user.name}</h2>
-          <p className="truncate text-xs text-secondary-label">{user.email}</p>
-        </div>
-      </div>
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: -10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: -10 }}
+          transition={{ duration: 0.15 }}
+          className="absolute left-auto right-0 top-16 z-50 w-64 rounded-[1.25rem] border border-border panel-bg p-2.5 shadow-2xl origin-top-right"
+        >
+          <div className="mb-2 flex items-center gap-3 rounded-xl bg-shading p-2">
+            <ProfileAvatar user={user} size="h-12 w-12" />
+            <div className="min-w-0">
+              <h2 className="truncate text-base font-bold text-primary-label">{user.name}</h2>
+              <p className="truncate text-xs text-secondary-label">{user.email}</p>
+            </div>
+          </div>
 
-      <button onClick={onEditProfile} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
-        <Edit3 className="h-5 w-5" />
-        Edit profile
-      </button>
+          <button onClick={onEditProfile} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
+            <Edit3 className="h-5 w-5" />
+            Edit profile
+          </button>
 
-      <div className="my-1 rounded-xl px-3 py-3">
-        <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-primary-label">
-          <Palette className="h-5 w-5" />
-          Theme setting
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          {['dark', 'light'].map((mode) => (
-            <button
-              key={mode}
-              onClick={() => onThemeChange(mode)}
-              className={`h-11 rounded-full text-sm font-bold capitalize transition-colors ${theme === mode ? 'bg-primary-label text-primary-background' : 'bg-highlight text-primary-label hover:opacity-80'}`}
-            >
-              {mode}
-            </button>
-          ))}
-        </div>
-      </div>
+          <div className="my-1 rounded-xl px-3 py-3">
+            <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-primary-label">
+              <Palette className="h-5 w-5" />
+              Theme setting
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {['dark', 'light'].map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => onThemeChange(mode)}
+                  className={`h-11 rounded-full text-sm font-bold capitalize transition-colors ${theme === mode ? 'bg-primary-label text-primary-background' : 'bg-highlight text-primary-label hover:opacity-80'}`}
+                >
+                  {mode}
+                </button>
+              ))}
+            </div>
+          </div>
 
-      <button onClick={onLogout} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
-        <LogOut className="h-5 w-5" />
-        Sign out
-      </button>
-      <button onClick={onDeleteAccount} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-red-500 hover:bg-red-500/10 transition-colors">
-        <Trash2 className="h-5 w-5" />
-        Delete Account
-      </button>
-    </div>
+          <button onClick={onLogout} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
+            <LogOut className="h-5 w-5" />
+            Sign out
+          </button>
+          <button onClick={onDeleteAccount} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-red-500 hover:bg-red-500/10 transition-colors">
+            <Trash2 className="h-5 w-5" />
+            Delete Account
+          </button>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
-function EditProfileModal({ user, onClose, onSave, saving, error }) {
+function EditProfileModal({ isOpen, user, onClose, onSave, saving, error }) {
   const [name, setName] = useState(user.name);
   const [avatarFile, setAvatarFile] = useState(null);
   const fileInputRef = useRef(null);
@@ -397,55 +438,73 @@ function EditProfileModal({ user, onClose, onSave, saving, error }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 px-4 py-6 backdrop-blur-sm animate-fade-in">
-      <form onSubmit={handleSubmit} className="relative flex flex-col items-center w-full max-w-xs gap-4 rounded-[1.25rem] panel-bg border border-border p-5 shadow-2xl">
-        <button type="button" onClick={onClose} className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Close edit profile">
-          <X className="h-5 w-5" />
-        </button>
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/70 px-4 py-6 backdrop-blur-sm"
+        >
+          <motion.form
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            onSubmit={handleSubmit}
+            className="relative flex flex-col items-center w-full max-w-xs gap-4 rounded-[1.25rem] panel-bg border border-border p-5 shadow-2xl"
+          >
+            <button type="button" onClick={onClose} className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Close edit profile">
+              <X className="h-5 w-5" />
+            </button>
 
-        <h2 className="text-lg font-bold text-primary-label">Edit Profile</h2>
+            <h2 className="text-lg font-bold text-primary-label">Edit Profile</h2>
 
-        {/* Starlight Station logo replaces disc */}
-        <StarlightLogo className="h-16 w-52 text-primary-label opacity-80" />
+            {/* Starlight Station logo replaces disc */}
+            <StarlightLogo className="h-16 w-52 text-primary-label opacity-80" />
 
-        {/* Avatar with label directly below it */}
-        <div className="flex flex-col items-center gap-2">
-          <button type="button" onClick={() => fileInputRef.current?.click()} className="relative grid h-24 w-24 place-items-center overflow-hidden rounded-full bg-shading">
-            {avatarPreview ? (
-              <img src={avatarPreview} alt="" className="h-full w-full object-cover" />
-            ) : (
-              <ProfileAvatar user={{ name }} size="h-24 w-24 text-3xl" />
-            )}
-            <span className="absolute inset-0 grid place-items-center bg-black/0 text-white opacity-0 transition-opacity hover:bg-black/40 hover:opacity-100">
-              <UploadCloud className="h-7 w-7" />
-            </span>
-          </button>
-          <p className="text-xs text-secondary-label">Profile picture</p>
-          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(event) => setAvatarFile(event.target.files?.[0] || null)} />
-        </div>
+            {/* Avatar with label directly below it */}
+            <div className="flex flex-col items-center gap-2">
+              <button type="button" onClick={() => fileInputRef.current?.click()} className="relative grid h-24 w-24 place-items-center overflow-hidden rounded-full bg-shading">
+                {avatarPreview ? (
+                  <img src={avatarPreview} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <ProfileAvatar user={{ name }} size="h-24 w-24 text-3xl" />
+                )}
+                <span className="absolute inset-0 grid place-items-center bg-black/0 text-white opacity-0 transition-opacity hover:bg-black/40 hover:opacity-100">
+                  <UploadCloud className="h-7 w-7" />
+                </span>
+              </button>
+              <p className="text-xs text-secondary-label">Profile picture</p>
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(event) => setAvatarFile(event.target.files?.[0] || null)} />
+            </div>
 
-        {/* Username field */}
-        <label className="w-full">
-          <span className="mb-2 block text-center text-xs text-secondary-label">Username</span>
-          <span className="flex h-11 items-center rounded-xl panel-input-bg px-4">
-            <input value={name} onChange={(event) => setName(event.target.value)} className="min-w-0 flex-1 bg-transparent text-sm font-bold text-primary-label outline-none" required />
-            <Edit3 className="h-4 w-4 text-secondary-label" />
-          </span>
-        </label>
+            {/* Username field */}
+            <label className="w-full">
+              <span className="mb-2 block text-center text-xs text-secondary-label">Username</span>
+              <span className="flex h-11 items-center rounded-xl panel-input-bg px-4">
+                <input value={name} onChange={(event) => setName(event.target.value)} className="min-w-0 flex-1 bg-transparent text-sm font-bold text-primary-label outline-none" required />
+                <Edit3 className="h-4 w-4 text-secondary-label" />
+              </span>
+            </label>
 
-        {error && <p className="text-center text-xs text-red-400">{error}</p>}
+            {error && <p className="text-center text-xs text-red-400">{error}</p>}
 
-        <button type="submit" disabled={saving} className="h-11 w-full rounded-full bg-primary-label text-sm font-bold text-primary-background disabled:opacity-60">
-          {saving ? 'Saving...' : 'Save profile'}
-        </button>
-      </form>
-    </div>
+            <button type="submit" disabled={saving} className="h-11 w-full rounded-full bg-primary-label text-sm font-bold text-primary-background disabled:opacity-60">
+              {saving ? 'Saving...' : 'Save profile'}
+            </button>
+          </motion.form>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
 
 export default function Dashboard({ user, onLogout, onUserUpdate }) {
   const [workspace, setWorkspace] = useState({ folders: [], projects: [], tracks: [], notifications: [] });
+  const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -657,9 +716,12 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
   if (loading) return null;
 
   const anyPanelOpen = isNotificationsOpen || isProfileOpen || isAddMenuOpen;
+  
+  const unreadChatsCount = conversations.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
+  const totalNotifications = workspace.notifications.length + unreadChatsCount;
 
   return (
-    <div className="min-h-screen bg-primary-background px-10 py-8 pb-28 animate-fade-in lg:px-14">
+    <div className="min-h-screen bg-primary-background px-10 py-8 pb-28 lg:px-14">
       {conversionProgress !== null && (
         <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm">
           <div className="w-80 rounded-3xl border border-border bg-shading p-8 shadow-2xl">
@@ -698,25 +760,24 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
           <div className="relative">
             <button onClick={() => { setIsNotificationsOpen((open) => !open); setIsProfileOpen(false); setIsAddMenuOpen(false); setIsChatOpen(false); }} className="relative grid h-14 w-14 place-items-center rounded-3xl bg-primary-label text-primary-background transition-transform hover:scale-105" aria-label="Notifications">
               <Bell className="h-6 w-6 fill-current" />
-              {workspace.notifications.length > 0 && <span className="absolute right-4 top-4 h-2 w-2 rounded-full bg-blue-500" />}
+              {totalNotifications > 0 && <span className="absolute right-3 top-3 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-primary-background">{totalNotifications}</span>}
             </button>
-            {isNotificationsOpen && <NotificationsMenu notifications={workspace.notifications} />}
+            <NotificationsMenu isOpen={isNotificationsOpen} notifications={workspace.notifications} conversations={conversations} />
           </div>
 
           <div className="relative">
             <button onClick={() => { setIsProfileOpen((open) => !open); setIsNotificationsOpen(false); setIsAddMenuOpen(false); setIsChatOpen(false); }} className="grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label={`Open ${user.name} profile`}>
               <ProfileAvatar user={user} size="h-8 w-8" />
             </button>
-            {isProfileOpen && (
-              <ProfilePanel
-                user={user}
-                theme={theme}
-                onThemeChange={setTheme}
-                onEditProfile={() => setIsEditProfileOpen(true)}
-                onLogout={onLogout}
-                onDeleteAccount={deleteAccount}
-              />
-            )}
+            <ProfilePanel
+              isOpen={isProfileOpen}
+              user={user}
+              theme={theme}
+              onThemeChange={setTheme}
+              onEditProfile={() => setIsEditProfileOpen(true)}
+              onLogout={onLogout}
+              onDeleteAccount={deleteAccount}
+            />
           </div>
 
           <button onClick={() => { setIsChatOpen((open) => !open); setIsProfileOpen(false); setIsNotificationsOpen(false); setIsAddMenuOpen(false); }} className="grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Open messages">
@@ -768,27 +829,34 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
       </main>
 
       <div className="fixed inset-x-0 bottom-8 z-50 flex flex-col items-center gap-3 px-4">
-        {isAddMenuOpen && (
-          <div className="w-64 rounded-[1.2rem] panel-bg border border-border p-3 shadow-2xl backdrop-blur-xl animate-slide-up">
-
-            <button onClick={() => convertInputRef.current?.click()} disabled={conversionProgress !== null} className="flex w-full items-center gap-5 rounded-xl px-4 py-3 text-left text-xl font-semibold hover:bg-highlight transition-colors disabled:opacity-50">
-              <Video className="h-6 w-6" />
-              {conversionProgress !== null ? 'Converting...' : 'Convert'}
-            </button>
-            <button onClick={() => showComingSoon('Record')} className="flex w-full items-center gap-5 rounded-xl px-4 py-3 text-left text-xl font-semibold hover:bg-highlight transition-colors">
-              <Circle className="h-6 w-6 fill-red-500 text-red-500" />
-              Record
-            </button>
-            <button onClick={createFolder} className="flex w-full items-center gap-5 rounded-xl px-4 py-3 text-left text-xl font-semibold hover:bg-highlight transition-colors">
-              <FolderPlus className="h-6 w-6" />
-              New Folder
-            </button>
-            <button onClick={() => createProject()} className="flex w-full items-center gap-5 rounded-xl px-4 py-3 text-left text-xl font-semibold hover:bg-highlight transition-colors">
-              <Plus className="h-6 w-6" />
-              New Project
-            </button>
-          </div>
-        )}
+        <AnimatePresence>
+          {isAddMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ duration: 0.15 }}
+              className="w-64 rounded-[1.2rem] panel-bg border border-border p-3 shadow-2xl backdrop-blur-xl origin-bottom"
+            >
+              <button onClick={() => convertInputRef.current?.click()} disabled={conversionProgress !== null} className="flex w-full items-center gap-5 rounded-xl px-4 py-3 text-left text-xl font-semibold hover:bg-highlight transition-colors disabled:opacity-50">
+                <Video className="h-6 w-6" />
+                {conversionProgress !== null ? 'Converting...' : 'Convert'}
+              </button>
+              <button onClick={() => showComingSoon('Record')} className="flex w-full items-center gap-5 rounded-xl px-4 py-3 text-left text-xl font-semibold hover:bg-highlight transition-colors">
+                <Circle className="h-6 w-6 fill-red-500 text-red-500" />
+                Record
+              </button>
+              <button onClick={createFolder} className="flex w-full items-center gap-5 rounded-xl px-4 py-3 text-left text-xl font-semibold hover:bg-highlight transition-colors">
+                <FolderPlus className="h-6 w-6" />
+                New Folder
+              </button>
+              <button onClick={() => createProject()} className="flex w-full items-center gap-5 rounded-xl px-4 py-3 text-left text-xl font-semibold hover:bg-highlight transition-colors">
+                <Plus className="h-6 w-6" />
+                New Project
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <button
           onClick={() => { setIsAddMenuOpen((open) => !open); setIsProfileOpen(false); setIsNotificationsOpen(false); setIsChatOpen(false); }}
@@ -801,17 +869,16 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
 
       <input ref={convertInputRef} type="file" accept="video/*" className="hidden" onChange={handleConvert} />
 
-      <ChatInbox user={user} isOpen={isChatOpen} onToggle={() => setIsChatOpen((open) => !open)} />
+      <ChatInbox user={user} isOpen={isChatOpen} onToggle={() => setIsChatOpen((open) => !open)} onConversationsChange={setConversations} />
 
-      {isEditProfileOpen && (
-        <EditProfileModal
-          user={user}
-          onClose={() => setIsEditProfileOpen(false)}
-          onSave={saveProfile}
-          saving={profileSaving}
-          error={profileError}
-        />
-      )}
+      <EditProfileModal
+        isOpen={isEditProfileOpen}
+        user={user}
+        onClose={() => setIsEditProfileOpen(false)}
+        onSave={saveProfile}
+        saving={profileSaving}
+        error={profileError}
+      />
     </div>
   );
 }
