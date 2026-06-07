@@ -312,7 +312,7 @@ function GroupStreamPanel({ currentUser, participants, activeCall, onJoinCall, o
 
   const connectedParticipants = participants.filter((participant) => participant.id !== currentUser.id && remoteStreams[participant.id]);
   const callStage = (
-    <div className="fixed inset-0 z-[70] flex flex-col bg-[#050505] text-primary-label">
+    <div className="fixed inset-0 z-[70] flex flex-col bg-primary-background text-primary-label">
       <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-6">
         <div className="min-w-0">
           <p className="truncate text-base font-bold sm:text-lg">Group call</p>
@@ -395,7 +395,7 @@ function GroupStreamPanel({ currentUser, participants, activeCall, onJoinCall, o
   );
 
   return (
-    <div className="border-b border-border bg-[#111111] p-3">
+    <div className="border-b border-border bg-primary-background p-3">
       {callStageOpen && callStage}
       {activeCall && !joined && !isInActiveCall && (
         <button onClick={() => setCallStageOpen(true)} className="mb-3 flex w-full items-center gap-3 rounded-2xl border border-green-400/30 bg-green-400/10 px-3 py-3 text-left transition-colors hover:bg-green-400/15">
@@ -498,7 +498,7 @@ function MediaPreview({ attachment }) {
 
 function MessageActions({ message, onReply, onCopy, onForward, onPin, onDelete }) {
   return (
-    <div className="absolute bottom-full right-0 mb-2 hidden min-w-44 rounded-2xl border border-border bg-[#191919] p-2 shadow-2xl group-hover:block">
+    <div className="absolute bottom-full right-0 mb-2 hidden min-w-44 rounded-2xl border border-border panel-bg p-2 shadow-2xl group-hover:block">
       <button onClick={() => onReply(message)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm hover:bg-highlight"><Reply className="h-4 w-4" /> Reply</button>
       <button onClick={() => onCopy(message)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm hover:bg-highlight"><Copy className="h-4 w-4" /> Copy</button>
       <button onClick={() => onForward(message)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm hover:bg-highlight"><Forward className="h-4 w-4" /> Forward</button>
@@ -740,7 +740,7 @@ function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall,
       </div>
 
       {forwarding && (
-        <div className="border-t border-border bg-[#191919] px-4 py-3">
+        <div className="border-t border-border panel-bg px-4 py-3">
           <div className="mb-2 flex items-center justify-between text-sm font-semibold"><span>Forward to</span><button onClick={() => setForwarding(null)}><X className="h-4 w-4" /></button></div>
           <div className="grid grid-cols-2 gap-2">
             {conversations.map((target) => (
@@ -893,16 +893,15 @@ export default function ChatInbox({ user, isOpen, onToggle }) {
 
   return (
     <>
-      <div className={`fixed left-0 top-0 z-40 flex h-full flex-col border-r border-border bg-[#161616] shadow-2xl transition-all duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'}`} style={{ width: activeConvo ? '100vw' : 'min(22rem, 92vw)' }}>
+      <div className={`fixed left-0 top-0 z-[60] flex h-full w-full flex-col bg-primary-background transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex h-full overflow-hidden">
-          <div className={`flex-col border-r border-border transition-all duration-300 ${activeConvo ? 'hidden sm:flex sm:w-[22rem]' : 'flex w-full'}`}>
-            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-4">
+          <div className={`flex-col border-r border-border transition-all duration-300 ${activeConvo ? 'hidden sm:flex sm:w-[24rem]' : 'flex w-full sm:w-[24rem]'}`}>
+            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-6 py-5">
               <div className="flex flex-col">
-                <span className="text-lg font-bold tracking-tighter text-primary-label">[untitled]</span>
-                <span className="text-xs font-medium text-secondary-label">Messages</span>
+                <span className="text-xl font-bold tracking-tight text-primary-label">Messages</span>
               </div>
-              <button onClick={onToggle} className="grid h-8 w-8 place-items-center rounded-xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Close inbox">
-                <X className="h-4 w-4" />
+              <button onClick={onToggle} className="grid h-10 w-10 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Close inbox">
+                <X className="h-5 w-5" />
               </button>
             </div>
             <div className="flex-1 overflow-y-auto py-2">
@@ -917,14 +916,18 @@ export default function ChatInbox({ user, isOpen, onToggle }) {
               ))}
             </div>
           </div>
-          {activeConvo && (
-            <div className="flex flex-1 flex-col overflow-hidden">
+          {activeConvo ? (
+            <div className="flex flex-1 flex-col overflow-hidden bg-primary-background">
               <ChatWindow convo={activeConvo} currentUser={user} conversations={conversations} activeCall={activeCall} onJoinCall={joinGroupCall} onLeaveCall={leaveGroupCall} onClose={handleCloseChat} />
+            </div>
+          ) : (
+            <div className="hidden sm:flex flex-1 flex-col items-center justify-center text-secondary-label bg-primary-background">
+              <MessageCircle className="h-16 w-16 mb-4 opacity-20" />
+              <p className="text-lg">Select a conversation</p>
             </div>
           )}
         </div>
       </div>
-      {isOpen && <div className="fixed inset-0 z-30 bg-black/50 sm:hidden" onClick={onToggle} />}
     </>
   );
 }
