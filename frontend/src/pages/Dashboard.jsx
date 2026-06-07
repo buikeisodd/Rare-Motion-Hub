@@ -792,7 +792,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
           }}
         />
       )}
-      <header className="relative z-50 flex items-start justify-between gap-3">
+      <header className="sticky top-0 z-50 flex items-start justify-between gap-3 border-b border-border/60 bg-primary-background/95 pb-4 pt-2 backdrop-blur-md">
         {/* Starlight Station logo — blends with bg in dark, black in light */}
         <Link to="/" aria-label="Starlight Station home">
           <StarlightLogo className="h-14 w-48 text-primary-label opacity-90 hover:opacity-100 transition-opacity" />

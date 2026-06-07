@@ -169,7 +169,7 @@ export default function Folder({ user, onLogout }) {
       )}
 
       {/* Header */}
-      <header className="relative z-50 flex items-start justify-between gap-3">
+      <header className="sticky top-0 z-50 flex items-start justify-between gap-3 border-b border-border/60 bg-primary-background/95 pb-4 backdrop-blur-md">
         <Link to="/" aria-label="Starlight Station home">
           <StarlightLogo className="h-14 w-48 text-primary-label opacity-90 hover:opacity-100 transition-opacity" />
         </Link>

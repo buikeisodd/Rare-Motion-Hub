@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, CheckCheck, Copy, Forward, MessageCircle, Mic, MicOff, MonitorUp, Paperclip, PhoneCall, PhoneOff, Pin, PinOff, Reply, Send, Smile, Trash2, Users, Video, VideoOff, Volume2, X } from 'lucide-react';
+import { ArrowLeft, CheckCheck, Copy, Forward, MessageCircle, Mic, MicOff, MonitorUp, MoreHorizontal, Paperclip, PhoneCall, PhoneOff, Pin, PinOff, Reply, Send, Smile, Trash2, Users, Video, VideoOff, Volume2, X } from 'lucide-react';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 const emojis = ['😀', '😂', '😍', '🥹', '🔥', '🙏', '❤️', '🎧', '🎵', '✅', '😭', '😤', '🤝', '✨', '💿', '🚀'];
@@ -499,17 +499,34 @@ function MediaPreview({ attachment }) {
   return null;
 }
 
-function MessageActions({ message, onReply, onCopy, onForward, onPin, onDelete }) {
+function MessageActions({ message, isOpen, onToggle, onClose, onReply, onCopy, onForward, onPin, onDelete }) {
   return (
-    <div className="absolute bottom-full right-0 mb-2 hidden min-w-44 rounded-2xl border border-border panel-bg p-2 shadow-2xl group-hover:block">
-      <button onClick={() => onReply(message)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm hover:bg-highlight"><Reply className="h-4 w-4" /> Reply</button>
-      <button onClick={() => onCopy(message)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm hover:bg-highlight"><Copy className="h-4 w-4" /> Copy</button>
-      <button onClick={() => onForward(message)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm hover:bg-highlight"><Forward className="h-4 w-4" /> Forward</button>
-      <button onClick={() => onPin(message)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm hover:bg-highlight">
-        {message.pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
-        {message.pinned ? 'Unpin' : 'Pin'}
+    <div className="relative shrink-0 self-center">
+      <button
+        onClick={(event) => {
+          event.stopPropagation();
+          onToggle(message.id);
+        }}
+        className="grid h-7 w-7 place-items-center rounded-full text-secondary-label transition-colors hover:bg-highlight hover:text-primary-label"
+        aria-label="Message options"
+      >
+        <MoreHorizontal className="h-4 w-4" />
       </button>
-      <button onClick={() => onDelete(message)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm text-red-400 hover:bg-red-500/10"><Trash2 className="h-4 w-4" /> Delete</button>
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={onClose} />
+          <div className="absolute bottom-full right-0 z-50 mb-2 min-w-44 rounded-2xl border border-border panel-bg p-2 shadow-2xl">
+            <button onClick={() => { onReply(message); onClose(); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm hover:bg-highlight"><Reply className="h-4 w-4" /> Reply</button>
+            <button onClick={() => { onCopy(message); onClose(); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm hover:bg-highlight"><Copy className="h-4 w-4" /> Copy</button>
+            <button onClick={() => { onForward(message); onClose(); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm hover:bg-highlight"><Forward className="h-4 w-4" /> Forward</button>
+            <button onClick={() => { onPin(message); onClose(); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm hover:bg-highlight">
+              {message.pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
+              {message.pinned ? 'Unpin' : 'Pin'}
+            </button>
+            <button onClick={() => { onDelete(message); onClose(); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm text-red-400 hover:bg-red-500/10"><Trash2 className="h-4 w-4" /> Delete</button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -523,6 +540,7 @@ function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall,
   const [forwarding, setForwarding] = useState(null);
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [recording, setRecording] = useState(false);
+  const [openMessageMenuId, setOpenMessageMenuId] = useState(null);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
   const mediaInputRef = useRef(null);
@@ -714,7 +732,7 @@ function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall,
           const showSender = isGroup && !isMine;
 
           return (
-            <div key={msg.id} className={`group relative flex items-end gap-2 ${isMine ? 'justify-end' : 'justify-start'}`}>
+            <div key={msg.id} className={`relative flex items-end gap-2 ${isMine ? 'justify-end' : 'justify-start'}`}>
               {!isMine && <ProfileAvatar user={msg.sender} size="h-6 w-6" />}
               <div className={`flex max-w-[78%] flex-col ${isMine ? 'items-end' : 'items-start'}`}>
                 {showSender && <span className="mb-0.5 ml-1 text-[10px] font-semibold text-secondary-label">{msg.sender?.name}</span>}
@@ -730,6 +748,9 @@ function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall,
               </div>
               <MessageActions
                 message={msg}
+                isOpen={openMessageMenuId === msg.id}
+                onToggle={(messageId) => setOpenMessageMenuId((current) => (current === messageId ? null : messageId))}
+                onClose={() => setOpenMessageMenuId(null)}
                 onReply={setReplyTo}
                 onCopy={(message) => navigator.clipboard?.writeText(message.text || '')}
                 onForward={setForwarding}
