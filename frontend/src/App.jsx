@@ -5,6 +5,30 @@ import Dashboard from './pages/Dashboard';
 import Project from './pages/Project';
 import SharedItem from './pages/SharedItem';
 import ProjectInsights from './pages/ProjectInsights';
+import StarlightLogo from './components/StarlightLogo';
+
+function DesktopOnly({ children }) {
+  const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 1024);
+
+  useEffect(() => {
+    const check = () => setIsDesktop(window.innerWidth >= 1024);
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  if (isDesktop) return children;
+
+  return (
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center px-8 text-center">
+      <StarlightLogo className="h-16 w-56 text-white opacity-80 mb-12" />
+      <div className="mb-8 text-6xl">🖥️</div>
+      <h1 className="text-2xl font-semibold text-white mb-3">Desktop only</h1>
+      <p className="text-[#888] text-base max-w-xs leading-relaxed">
+        Starlight Station is built for desktop. Please open this on a laptop or desktop computer to continue.
+      </p>
+    </div>
+  );
+}
 
 function WelcomeBack({ user, onDone }) {
   const seenKey = `seen-welcome-${user.id}`;
@@ -16,16 +40,14 @@ function WelcomeBack({ user, onDone }) {
 
   return (
     <div className="min-h-screen bg-primary-background px-6 py-12 flex flex-col">
-      <div className="text-3xl font-bold tracking-tighter text-primary-label">[untitled]</div>
+      <StarlightLogo className="h-14 w-48 text-primary-label opacity-90" />
       <main className="flex-1 flex items-center justify-center">
         <div className="w-full max-w-xl text-center animate-welcome-rise">
           <div className="mx-auto mb-10 h-44 w-44 rounded-[2rem] bg-shading border border-border overflow-hidden shadow-2xl animate-record-float">
             <div className="h-full w-full rounded-full border-[18px] border-[#2b2b2b] bg-[radial-gradient(circle_at_50%_50%,#161616_0_7%,transparent_8%),conic-gradient(from_35deg,#f7fbf1,#ff9bdf,#f5fff4,#f4a2dc,#f7fbf1)] animate-spin-slow" />
           </div>
           <p className="text-secondary-label text-sm font-medium uppercase tracking-[0.28em] mb-4">Welcome back</p>
-          <h1 className="text-4xl md:text-5xl font-semibold tracking-normal mb-8">
-            {user.name}
-          </h1>
+          <h1 className="text-5xl font-semibold tracking-normal mb-8">{user.name}</h1>
           <Link
             to="/library"
             onClick={handleProceed}
@@ -52,7 +74,7 @@ function WelcomeAnimation({ user, onDone }) {
 
   return (
     <div className="min-h-screen bg-primary-background px-6 py-12 flex flex-col">
-      <div className="text-3xl font-bold tracking-tighter text-primary-label">[untitled]</div>
+      <StarlightLogo className="h-14 w-48 text-primary-label opacity-90" />
       <main className="flex-1 flex items-center justify-center">
         <div className="text-center animate-welcome-rise">
           <div className="mx-auto mb-8 h-36 w-36 rounded-[1.75rem] bg-shading border border-border overflow-hidden shadow-2xl animate-record-float">
@@ -98,9 +120,7 @@ function App() {
     }
 
     refreshUser();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [apiUrl, user?.id]);
 
   const handleLogin = (userData) => {
@@ -121,26 +141,28 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-primary-background text-primary-label font-sans selection:bg-highlight selection:text-white">
-      <BrowserRouter>
-        {!user ? (
-          <Routes>
-            <Route path="/login" element={<Login onLogin={handleLogin} />} />
-            <Route path="*" element={<Navigate to="/login" replace />} />
-          </Routes>
-        ) : (
-          <Routes>
-            <Route path="/" element={<AuthLanding user={user} justAuthenticated={justAuthenticated} onDone={() => setJustAuthenticated(false)} />} />
-            <Route path="/login" element={<Navigate to="/" replace />} />
-            <Route path="/library" element={<Dashboard user={user} onLogout={handleLogout} onUserUpdate={handleUserUpdate} />} />
-            <Route path="/project/:id" element={<Project user={user} onLogout={handleLogout} />} />
-            <Route path="/project/:id/insights" element={<ProjectInsights user={user} />} />
-            <Route path="/shared/:type/:id" element={<SharedItem user={user} />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        )}
-      </BrowserRouter>
-    </div>
+    <DesktopOnly>
+      <div className="min-h-screen bg-primary-background text-primary-label font-sans">
+        <BrowserRouter>
+          {!user ? (
+            <Routes>
+              <Route path="/login" element={<Login onLogin={handleLogin} />} />
+              <Route path="*" element={<Navigate to="/login" replace />} />
+            </Routes>
+          ) : (
+            <Routes>
+              <Route path="/" element={<AuthLanding user={user} justAuthenticated={justAuthenticated} onDone={() => setJustAuthenticated(false)} />} />
+              <Route path="/login" element={<Navigate to="/" replace />} />
+              <Route path="/library" element={<Dashboard user={user} onLogout={handleLogout} onUserUpdate={handleUserUpdate} />} />
+              <Route path="/project/:id" element={<Project user={user} onLogout={handleLogout} />} />
+              <Route path="/project/:id/insights" element={<ProjectInsights user={user} />} />
+              <Route path="/shared/:type/:id" element={<SharedItem user={user} />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          )}
+        </BrowserRouter>
+      </div>
+    </DesktopOnly>
   );
 }
 
