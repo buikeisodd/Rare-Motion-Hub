@@ -106,6 +106,24 @@ export default function Folder({ user, onLogout }) {
     setDraggingId(null);
   };
 
+  const deleteItem = async (itemId, itemType) => {
+    if (itemType === 'project') {
+      try {
+        await fetch(`${apiUrl}/api/projects/${itemId}?userId=${encodeURIComponent(user.id)}`, { method: 'DELETE' });
+        setData((prev) => ({ ...prev, projects: prev.projects.filter((p) => p.id !== itemId) }));
+      } catch (err) { console.error(err); }
+    } else if (itemType === 'folder') {
+      try {
+        await fetch(`${apiUrl}/api/folders/${itemId}?userId=${encodeURIComponent(user.id)}`, { method: 'DELETE' });
+        setData((prev) => ({
+          ...prev,
+          folders: prev.folders.filter((f) => f.id !== itemId),
+          projects: prev.projects.map((p) => p.folderId === itemId ? { ...p, folderId: prev.folder?.id || null } : p)
+        }));
+      } catch (err) { console.error(err); }
+    }
+  };
+
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
 
   if (loading) return null;
@@ -205,6 +223,7 @@ export default function Folder({ user, onLogout }) {
                   onDrop={moveItem}
                   onDragStart={() => setDraggingId(subFolder.id)}
                   isDragging={draggingId === subFolder.id}
+                  onDelete={deleteItem}
                 />
               );
             })}
@@ -215,6 +234,7 @@ export default function Folder({ user, onLogout }) {
                 tracks={tracks}
                 onDragStart={() => setDraggingId(project.id)}
                 isDragging={draggingId === project.id}
+                onDelete={deleteItem}
               />
             ))}
           </div>

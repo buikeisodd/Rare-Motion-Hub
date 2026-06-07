@@ -6,11 +6,28 @@ import StarlightLogo from '../components/StarlightLogo';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
-export function LibraryProject({ project, tracks, onDragStart, isDragging }) {
+export function LibraryProject({ project, tracks, onDragStart, isDragging, onDelete }) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const projectTracks = (tracks || []).filter((track) => track.projectId === project.id);
   const leadTrack = projectTracks[0];
   const title = project.title || project.name || 'Untitled project';
   const artist = project.artist || leadTrack?.artist || leadTrack?.producer || 'Unknown artist';
+
+  const handleDelete = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsMenuOpen(false);
+    if (confirm('Are you sure you want to delete this project?')) {
+      onDelete?.(project.id, 'project');
+    }
+  };
+
+  const handleQueue = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsMenuOpen(false);
+    alert('Add to queue coming soon');
+  };
 
   return (
     <div
@@ -20,7 +37,7 @@ export function LibraryProject({ project, tracks, onDragStart, isDragging }) {
         e.dataTransfer.setData('itemType', 'project');
         onDragStart?.();
       }}
-      className={`w-full max-w-[15rem] transition-all duration-200 ${isDragging ? 'opacity-40 scale-95 rotate-1' : ''}`}
+      className={`relative w-full max-w-[15rem] transition-all duration-200 ${isDragging ? 'opacity-40 scale-95 rotate-1' : ''}`}
     >
       <Link to={`/project/${project.id}`} className="group block w-full" draggable={false}>
         <div className="relative aspect-square overflow-hidden rounded-[1.25rem] bg-shading">
@@ -49,19 +66,39 @@ export function LibraryProject({ project, tracks, onDragStart, isDragging }) {
             <h2 className="text-lg font-semibold leading-tight tracking-normal text-primary-label line-clamp-2">{title}</h2>
             <p className="mt-1 truncate text-lg text-secondary-label">{artist}</p>
           </div>
-          <span className="mt-8 shrink-0 text-primary-label opacity-90 transition-opacity group-hover:opacity-100" aria-hidden="true">
+          <button
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsMenuOpen((o) => !o); }}
+            className="mt-8 shrink-0 text-primary-label opacity-90 transition-opacity hover:opacity-100 group-hover:opacity-100"
+            aria-label="Project options"
+          >
             <MoreHorizontal className="h-6 w-6" />
-          </span>
+          </button>
         </div>
       </Link>
+      {isMenuOpen && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsMenuOpen(false); }} />
+          <div className="absolute right-0 top-full mt-2 z-50 w-48 rounded-[1rem] border border-border panel-bg p-2 shadow-2xl">
+            <button onClick={handleQueue} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
+              <Plus className="h-4 w-4" />
+              Add to queue
+            </button>
+            <button onClick={handleDelete} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-500 hover:bg-red-500/10 transition-colors">
+              <Trash2 className="h-4 w-4" />
+              Delete project
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
 
-export function LibraryFolder({ folder, projects, tracks, onSave, onDrop, onDragStart, isDragging }) {
+export function LibraryFolder({ folder, projects, tracks, onSave, onDrop, onDragStart, isDragging, onDelete }) {
   const [title, setTitle] = useState(folder.title || folder.name || 'Untitled folder');
   const [artist, setArtist] = useState(folder.artist || 'Unknown artist');
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // Up to 4 preview items — projects with cover art first, then placeholders
   const previewProjects = (projects || []).slice(0, 4);
@@ -86,6 +123,22 @@ export function LibraryFolder({ folder, projects, tracks, onSave, onDrop, onDrag
     if (itemId && itemId !== folder.id) onDrop?.(itemId, itemType, folder.id);
   };
 
+  const handleDelete = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsMenuOpen(false);
+    if (confirm('Are you sure you want to delete this folder? Projects inside it will be moved to the library root.')) {
+      onDelete?.(folder.id, 'folder');
+    }
+  };
+
+  const handleQueue = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsMenuOpen(false);
+    alert('Add to queue coming soon');
+  };
+
   return (
     <div
       draggable
@@ -97,7 +150,7 @@ export function LibraryFolder({ folder, projects, tracks, onSave, onDrop, onDrag
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`group w-full max-w-[15rem] transition-all duration-200 ${
+      className={`relative group w-full max-w-[15rem] transition-all duration-200 ${
         isDragging ? 'opacity-40 scale-95 rotate-1' : ''
       } ${isDragOver ? 'scale-[1.03]' : ''}`}
     >
@@ -161,10 +214,29 @@ export function LibraryFolder({ folder, projects, tracks, onSave, onDrop, onDrag
             aria-label="Folder artist"
           />
         </div>
-        <span className="mt-8 shrink-0 text-primary-label opacity-90 transition-opacity group-hover:opacity-100" aria-hidden="true">
+        <button
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsMenuOpen((o) => !o); }}
+          className="mt-8 shrink-0 text-primary-label opacity-90 transition-opacity hover:opacity-100 group-hover:opacity-100"
+          aria-label="Folder options"
+        >
           <MoreHorizontal className="h-6 w-6" />
-        </span>
+        </button>
       </div>
+      {isMenuOpen && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsMenuOpen(false); }} />
+          <div className="absolute right-0 top-full mt-2 z-50 w-48 rounded-[1rem] border border-border panel-bg p-2 shadow-2xl">
+            <button onClick={handleQueue} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
+              <Plus className="h-4 w-4" />
+              Add to queue
+            </button>
+            <button onClick={handleDelete} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-500 hover:bg-red-500/10 transition-colors">
+              <Trash2 className="h-4 w-4" />
+              Delete folder
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -422,6 +494,24 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
     setDraggingId(null);
   };
 
+  const deleteItem = async (itemId, itemType) => {
+    if (itemType === 'project') {
+      try {
+        await fetch(`${apiUrl}/api/projects/${itemId}?userId=${encodeURIComponent(user.id)}`, { method: 'DELETE' });
+        setWorkspace((prev) => ({ ...prev, projects: prev.projects.filter((p) => p.id !== itemId) }));
+      } catch (err) { console.error(err); }
+    } else if (itemType === 'folder') {
+      try {
+        await fetch(`${apiUrl}/api/folders/${itemId}?userId=${encodeURIComponent(user.id)}`, { method: 'DELETE' });
+        setWorkspace((prev) => ({
+          ...prev,
+          folders: prev.folders.filter((f) => f.id !== itemId),
+          projects: prev.projects.map((p) => p.folderId === itemId ? { ...p, folderId: null } : p)
+        }));
+      } catch (err) { console.error(err); }
+    }
+  };
+
   const handleConvert = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -616,6 +706,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
                   onDrop={moveItem}
                   onDragStart={() => setDraggingId(folder.id)}
                   isDragging={draggingId === folder.id}
+                  onDelete={deleteItem}
                 />
               );
             })}
@@ -626,6 +717,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
                 tracks={workspace.tracks}
                 onDragStart={() => setDraggingId(project.id)}
                 isDragging={draggingId === project.id}
+                onDelete={deleteItem}
               />
             ))}
           </div>
