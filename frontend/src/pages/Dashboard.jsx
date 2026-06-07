@@ -301,16 +301,19 @@ function ProfileAvatar({ user, size = 'h-11 w-11', className = '' }) {
   }
 
   return (
-    <div className={`${size} ${className} grid shrink-0 place-items-center rounded-full bg-[linear-gradient(135deg,#f7fbf1,#ff9bdf,#62e5ff)] text-sm font-bold text-black shadow-lg`}>
-      {user.name?.slice(0, 1).toUpperCase() || 'U'}
+    <div className={`${size} ${className} relative overflow-hidden shrink-0 rounded-full shadow-lg`}>
+      <div className="absolute inset-0 bg-[linear-gradient(-45deg,#f7fbf1,#ff9bdf,#62e5ff,#a18cd1,#fbc2eb)] bg-[length:400%_400%] animate-cosmic" />
+      <div className="absolute inset-0 flex items-center justify-center font-['Georgia'] italic font-bold text-black/60 mix-blend-overlay" style={{ fontSize: '110%' }}>
+        S
+      </div>
     </div>
   );
 }
 
 function NotificationsMenu({ notifications }) {
   return (
-    <div className="absolute left-auto right-0 top-16 z-50 w-80 rounded-[1.25rem] border border-border panel-bg p-4 shadow-2xl">
-      <h2 className="px-3 pb-3 text-base font-bold text-primary-label">Notifications</h2>
+    <div className="absolute left-auto right-0 top-16 z-50 w-72 rounded-[1.25rem] border border-border panel-bg p-3 shadow-2xl">
+      <h2 className="px-2 pb-2 text-sm font-bold text-primary-label">Notifications</h2>
       {notifications.length === 0 ? (
         <p className="px-3 py-6 text-sm text-secondary-label">No notifications yet.</p>
       ) : (
@@ -338,8 +341,8 @@ function NotificationsMenu({ notifications }) {
 
 function ProfilePanel({ user, theme, onThemeChange, onEditProfile, onLogout, onDeleteAccount }) {
   return (
-    <div className="absolute left-auto right-0 top-16 z-50 w-72 rounded-[1.25rem] border border-border panel-bg p-3 shadow-2xl">
-      <div className="mb-3 flex items-center gap-3 rounded-xl bg-shading p-3">
+    <div className="absolute left-auto right-0 top-16 z-50 w-64 rounded-[1.25rem] border border-border panel-bg p-2.5 shadow-2xl">
+      <div className="mb-2 flex items-center gap-3 rounded-xl bg-shading p-2">
         <ProfileAvatar user={user} size="h-12 w-12" />
         <div className="min-w-0">
           <h2 className="truncate text-base font-bold text-primary-label">{user.name}</h2>
@@ -395,7 +398,7 @@ function EditProfileModal({ user, onClose, onSave, saving, error }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 px-4 py-6 backdrop-blur-sm animate-fade-in">
-      <form onSubmit={handleSubmit} className="relative flex flex-col items-center w-full max-w-sm gap-5 rounded-[1.25rem] panel-bg border border-border p-6 shadow-2xl">
+      <form onSubmit={handleSubmit} className="relative flex flex-col items-center w-full max-w-xs gap-4 rounded-[1.25rem] panel-bg border border-border p-5 shadow-2xl">
         <button type="button" onClick={onClose} className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Close edit profile">
           <X className="h-5 w-5" />
         </button>

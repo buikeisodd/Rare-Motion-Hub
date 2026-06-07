@@ -25,8 +25,11 @@ function ProfileAvatar({ user, size = 'h-10 w-10', isGroup = false }) {
   }
   if (user?.avatarUrl) return <img src={user.avatarUrl} alt="" className={`${size} shrink-0 rounded-full object-cover shadow`} />;
   return (
-    <div className={`${size} grid shrink-0 place-items-center rounded-full bg-[linear-gradient(135deg,#f7fbf1,#ff9bdf,#62e5ff)] text-xs font-bold text-black shadow`}>
-      {user?.name?.slice(0, 1).toUpperCase() || '?'}
+    <div className={`${size} relative overflow-hidden shrink-0 rounded-full shadow-lg`}>
+      <div className="absolute inset-0 bg-[linear-gradient(-45deg,#f7fbf1,#ff9bdf,#62e5ff,#a18cd1,#fbc2eb)] bg-[length:400%_400%] animate-cosmic" />
+      <div className="absolute inset-0 flex items-center justify-center font-['Georgia'] italic font-bold text-black/60 mix-blend-overlay" style={{ fontSize: '110%' }}>
+        S
+      </div>
     </div>
   );
 }

@@ -53,9 +53,16 @@
     100%  { transform: translateX(-50%); }     /* pause at end ~2s */
   }
 
+  @keyframes cosmic-spin {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
   .animate-fade-in { animation: fade-in 0.4s ease-out; }
   .animate-slide-up { animation: slide-up 0.4s ease-out; }
   .animate-marquee { animation: marquee 14s ease-in-out infinite; }
+  .animate-cosmic { animation: cosmic-spin 8s ease-in-out infinite; }
 }
 
 @layer utilities {
