@@ -374,6 +374,23 @@ export default function Project({ user }) {
         onRefresh={fetchWorkspace}
         projectCoverUrl={project?.coverArt}
       />
+
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={confirmDelete}
+        title="Delete project?"
+        message="Are you sure you want to delete this project? This action cannot be undone."
+        confirmText="Delete"
+      />
+
+      <ShareLinkModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        type="project"
+        targetId={id}
+        userId={user?.id}
+      />
     </div>
   );
 }
