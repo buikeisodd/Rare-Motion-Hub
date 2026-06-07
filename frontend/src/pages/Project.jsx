@@ -203,6 +203,10 @@ export default function Project({ user }) {
                   transition={{ duration: 0.15 }}
                   className="absolute right-0 top-16 z-50 w-64 rounded-[1.25rem] border border-border panel-bg p-3 shadow-2xl origin-top-right"
                 >
+                  <button onClick={() => { setIsShareModalOpen(true); setIsProjectMenuOpen(false); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
+                    <Link2 className="h-6 w-6" />
+                    Share project
+                  </button>
                   <button onClick={() => navigate(`/project/${id}/insights`)} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
                     <BarChart3 className="h-6 w-6" />
                     Insights
