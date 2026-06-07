@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, Link, useNavigate } from 'react
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Project from './pages/Project';
+import Folder from './pages/Folder';
 import SharedItem from './pages/SharedItem';
 import ProjectInsights from './pages/ProjectInsights';
 import StarlightLogo from './components/StarlightLogo';
@@ -150,6 +151,7 @@ function App() {
               <Route path="/" element={<AuthLanding user={user} justAuthenticated={justAuthenticated} onDone={() => setJustAuthenticated(false)} />} />
               <Route path="/login" element={<Navigate to="/" replace />} />
               <Route path="/library" element={<Dashboard user={user} onLogout={handleLogout} onUserUpdate={handleUserUpdate} />} />
+              <Route path="/folder/:id" element={<Folder user={user} onLogout={handleLogout} />} />
               <Route path="/project/:id" element={<Project user={user} onLogout={handleLogout} />} />
               <Route path="/project/:id/insights" element={<ProjectInsights user={user} />} />
               <Route path="/shared/:type/:id" element={<SharedItem user={user} />} />

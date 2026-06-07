@@ -1,87 +1,162 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Bell, Circle, Disc3, Edit3, Folder, FolderPlus, LogOut, MessageSquare, MoreHorizontal, Music, Palette, Play, Plus, Trash2, UploadCloud, Video, X } from 'lucide-react';
+import { Bell, ChevronRight, Circle, Disc3, Edit3, Folder, FolderOpen, FolderPlus, LogOut, MessageSquare, MoreHorizontal, Music, Palette, Play, Plus, Trash2, UploadCloud, Video, X } from 'lucide-react';
 import ChatInbox from '../components/ChatInbox';
 import StarlightLogo from '../components/StarlightLogo';
 
-function LibraryProject({ project, tracks }) {
-  const projectTracks = tracks.filter((track) => track.projectId === project.id);
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
+export function LibraryProject({ project, tracks, onDragStart, isDragging }) {
+  const projectTracks = (tracks || []).filter((track) => track.projectId === project.id);
   const leadTrack = projectTracks[0];
   const title = project.title || project.name || 'Untitled project';
   const artist = project.artist || leadTrack?.artist || leadTrack?.producer || 'Unknown artist';
 
   return (
-    <Link to={`/project/${project.id}`} className="group block w-full max-w-[15rem]">
-      <div className="relative aspect-square overflow-hidden rounded-[1.25rem] bg-shading">
-        {project.coverArt ? (
-          <img src={project.coverArt} alt="" onError={(event) => { event.currentTarget.style.display = 'none'; }} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-        ) : (
-          <div className="grid h-full w-full grid-cols-2 gap-3 bg-[#242424] p-3">
-            {projectTracks.slice(0, 4).map((track) => (
-              <div key={track.id} className="rounded-xl bg-[radial-gradient(circle_at_50%_70%,#191919_0_24%,#3c3c3c_25%_100%)]" />
-            ))}
-            {projectTracks.length === 0 && (
-              <div className="col-span-2 flex h-full items-center justify-center rounded-xl bg-[#303030] text-secondary-label">
-                <Disc3 className="h-10 w-10" />
-              </div>
-            )}
-          </div>
-        )}
-        {leadTrack && (
-          <span className="absolute bottom-3 right-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-shading text-primary-label backdrop-blur-md transition-transform group-hover:scale-105">
-            <Play className="h-6 w-6 fill-current translate-x-0.5" />
-          </span>
-        )}
-      </div>
-      <div className="mt-4 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="text-lg font-semibold leading-tight tracking-normal text-primary-label line-clamp-2">{title}</h2>
-          <p className="mt-1 truncate text-lg text-secondary-label">{artist}</p>
+    <div
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData('itemId', project.id);
+        e.dataTransfer.setData('itemType', 'project');
+        onDragStart?.();
+      }}
+      className={`w-full max-w-[15rem] transition-all duration-200 ${isDragging ? 'opacity-40 scale-95 rotate-1' : ''}`}
+    >
+      <Link to={`/project/${project.id}`} className="group block w-full" draggable={false}>
+        <div className="relative aspect-square overflow-hidden rounded-[1.25rem] bg-shading">
+          {project.coverArt ? (
+            <img src={project.coverArt} alt="" onError={(e) => { e.currentTarget.style.display = 'none'; }} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+          ) : (
+            <div className="grid h-full w-full grid-cols-2 gap-3 bg-[#242424] p-3">
+              {projectTracks.slice(0, 4).map((track) => (
+                <div key={track.id} className="rounded-xl bg-[radial-gradient(circle_at_50%_70%,#191919_0_24%,#3c3c3c_25%_100%)]" />
+              ))}
+              {projectTracks.length === 0 && (
+                <div className="col-span-2 flex h-full items-center justify-center rounded-xl bg-[#303030] text-secondary-label">
+                  <Disc3 className="h-10 w-10" />
+                </div>
+              )}
+            </div>
+          )}
+          {leadTrack && (
+            <span className="absolute bottom-3 right-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-shading text-primary-label backdrop-blur-md transition-transform group-hover:scale-105">
+              <Play className="h-6 w-6 fill-current translate-x-0.5" />
+            </span>
+          )}
         </div>
-        <span className="mt-8 shrink-0 text-primary-label opacity-90 transition-opacity group-hover:opacity-100" aria-hidden="true">
-          <MoreHorizontal className="h-6 w-6" />
-        </span>
-      </div>
-    </Link>
+        <div className="mt-4 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-lg font-semibold leading-tight tracking-normal text-primary-label line-clamp-2">{title}</h2>
+            <p className="mt-1 truncate text-lg text-secondary-label">{artist}</p>
+          </div>
+          <span className="mt-8 shrink-0 text-primary-label opacity-90 transition-opacity group-hover:opacity-100" aria-hidden="true">
+            <MoreHorizontal className="h-6 w-6" />
+          </span>
+        </div>
+      </Link>
+    </div>
   );
 }
 
-function LibraryFolder({ folder, onSave }) {
+export function LibraryFolder({ folder, projects, tracks, onSave, onDrop, onDragStart, isDragging }) {
   const [title, setTitle] = useState(folder.title || folder.name || 'Untitled folder');
   const [artist, setArtist] = useState(folder.artist || 'Unknown artist');
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  // Up to 4 preview items — projects with cover art first, then placeholders
+  const previewProjects = (projects || []).slice(0, 4);
 
   const save = (next = {}) => {
     const nextTitle = (next.title ?? title).trim() || 'Untitled folder';
     const nextArtist = (next.artist ?? artist).trim() || 'Unknown artist';
     setTitle(nextTitle);
     setArtist(nextArtist);
-    onSave(folder.id, { title: nextTitle, artist: nextArtist });
+    onSave?.(folder.id, { title: nextTitle, artist: nextArtist });
   };
 
-  const stop = (event) => event.stopPropagation();
+  const stop = (e) => e.stopPropagation();
+
+  const handleDragOver = (e) => { e.preventDefault(); setIsDragOver(true); };
+  const handleDragLeave = () => setIsDragOver(false);
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const itemId = e.dataTransfer.getData('itemId');
+    const itemType = e.dataTransfer.getData('itemType');
+    if (itemId && itemId !== folder.id) onDrop?.(itemId, itemType, folder.id);
+  };
 
   return (
-    <div className="group block w-full max-w-[15rem]">
-      <div className="relative grid aspect-square place-items-center overflow-hidden rounded-[1.25rem] bg-shading">
-        <Folder className="h-20 w-20 text-secondary-label transition-transform duration-500 group-hover:scale-105" />
-      </div>
+    <div
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData('itemId', folder.id);
+        e.dataTransfer.setData('itemType', 'folder');
+        onDragStart?.();
+      }}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      className={`group w-full max-w-[15rem] transition-all duration-200 ${
+        isDragging ? 'opacity-40 scale-95 rotate-1' : ''
+      } ${isDragOver ? 'scale-[1.03]' : ''}`}
+    >
+      <Link to={`/folder/${folder.id}`} draggable={false}>
+        <div className={`relative aspect-square overflow-hidden rounded-[1.25rem] transition-all duration-200 ${
+          isDragOver
+            ? 'ring-2 ring-green-400 shadow-[0_0_24px_4px_rgba(74,222,128,0.25)] bg-green-400/10'
+            : 'bg-shading'
+        }`}>
+          {previewProjects.length > 0 ? (
+            <div className="grid h-full w-full grid-cols-2 gap-2 p-3">
+              {previewProjects.map((p) =>
+                p.coverArt ? (
+                  <img
+                    key={p.id}
+                    src={p.coverArt}
+                    alt={p.title || p.name}
+                    className="h-full w-full rounded-xl object-cover"
+                  />
+                ) : (
+                  <div
+                    key={p.id}
+                    className="flex h-full w-full items-center justify-center rounded-xl bg-[#303030] text-secondary-label"
+                  >
+                    <Disc3 className="h-6 w-6" />
+                  </div>
+                )
+              )}
+              {previewProjects.length < 4 &&
+                Array.from({ length: 4 - previewProjects.length }).map((_, i) => (
+                  <div key={i} className="rounded-xl bg-[#242424]" />
+                ))}
+            </div>
+          ) : (
+            <div className="grid h-full w-full place-items-center">
+              {isDragOver
+                ? <FolderOpen className="h-20 w-20 text-green-400 transition-transform duration-500 group-hover:scale-105" />
+                : <Folder className="h-20 w-20 text-secondary-label transition-transform duration-500 group-hover:scale-105" />}
+            </div>
+          )}
+        </div>
+      </Link>
       <div className="mt-4 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <input
             value={title}
             onClick={stop}
-            onChange={(event) => setTitle(event.target.value)}
+            onChange={(e) => setTitle(e.target.value)}
             onBlur={() => save()}
-            onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur(); }}
+            onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
             className="w-full bg-transparent text-lg font-semibold leading-tight tracking-normal text-primary-label outline-none"
             aria-label="Folder title"
           />
           <input
             value={artist}
             onClick={stop}
-            onChange={(event) => setArtist(event.target.value)}
+            onChange={(e) => setArtist(e.target.value)}
             onBlur={() => save()}
-            onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur(); }}
+            onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
             className="mt-1 w-full bg-transparent text-lg text-secondary-label outline-none"
             aria-label="Folder artist"
           />
@@ -255,7 +330,6 @@ function EditProfileModal({ user, onClose, onSave, saving, error }) {
   );
 }
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 export default function Dashboard({ user, onLogout, onUserUpdate }) {
   const [workspace, setWorkspace] = useState({ folders: [], projects: [], tracks: [], notifications: [] });
@@ -269,6 +343,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
   const [profileError, setProfileError] = useState('');
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
   const [conversionProgress, setConversionProgress] = useState(null);
+  const [draggingId, setDraggingId] = useState(null);
   const convertInputRef = useRef(null);
   const navigate = useNavigate();
 
@@ -319,6 +394,32 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
     });
     const data = await res.json();
     if (res.ok) setWorkspace((prev) => ({ ...prev, folders: [data, ...prev.folders] }));
+  };
+
+  const moveItem = async (itemId, itemType, targetFolderId) => {
+    // Optimistically remove item from root grid
+    if (itemType === 'project') {
+      setWorkspace((prev) => ({
+        ...prev,
+        projects: prev.projects.filter((p) => p.id !== itemId)
+      }));
+      await fetch(`${apiUrl}/api/projects/${itemId}/move`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, folderId: targetFolderId }),
+      });
+    } else if (itemType === 'folder') {
+      setWorkspace((prev) => ({
+        ...prev,
+        folders: prev.folders.filter((f) => f.id !== itemId)
+      }));
+      await fetch(`${apiUrl}/api/folders/${itemId}/move`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, parentFolderId: targetFolderId }),
+      });
+    }
+    setDraggingId(null);
   };
 
   const handleConvert = async (event) => {
@@ -503,11 +604,29 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
           </div>
         ) : (
           <div className="grid w-full grid-cols-3 justify-items-center gap-x-8 gap-y-12">
-            {workspace.folders.map((folder) => (
-              <LibraryFolder key={folder.id} folder={folder} onSave={saveFolderMetadata} />
-            ))}
-            {workspace.projects.map((project) => (
-              <LibraryProject key={project.id} project={project} tracks={workspace.tracks} />
+            {workspace.folders.map((folder) => {
+              const folderProjects = workspace.projects.filter((p) => p.folderId === folder.id);
+              return (
+                <LibraryFolder
+                  key={folder.id}
+                  folder={folder}
+                  projects={folderProjects}
+                  tracks={workspace.tracks}
+                  onSave={saveFolderMetadata}
+                  onDrop={moveItem}
+                  onDragStart={() => setDraggingId(folder.id)}
+                  isDragging={draggingId === folder.id}
+                />
+              );
+            })}
+            {workspace.projects.filter((p) => !p.folderId).map((project) => (
+              <LibraryProject
+                key={project.id}
+                project={project}
+                tracks={workspace.tracks}
+                onDragStart={() => setDraggingId(project.id)}
+                isDragging={draggingId === project.id}
+              />
             ))}
           </div>
         )}

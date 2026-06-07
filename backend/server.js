@@ -314,9 +314,12 @@ app.get('/api/workspace', (req, res) => {
   if (!userId) return;
   if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
 
+  // Only return root-level items (not nested inside any folder)
+  const rootFolders = db.folders.filter((folder) => folder.userId === userId && !folder.parentFolderId);
+  const rootProjects = db.projects.filter((project) => project.userId === userId && !project.folderId);
   res.json({
-    folders: db.folders.filter((folder) => folder.userId === userId).map((folder) => normalizeLibraryItem(folder, db, 'folder')),
-    projects: db.projects.filter((project) => project.userId === userId).map((project) => normalizeLibraryItem(project, db, 'project')),
+    folders: rootFolders.map((folder) => normalizeLibraryItem(folder, db, 'folder')),
+    projects: rootProjects.map((project) => normalizeLibraryItem(project, db, 'project')),
     tracks: db.tracks.filter((track) => track.userId === userId || track.uploader?.id === userId).map(normalizeTrack),
     coverArts: db.coverArts.filter((cover) => cover.userId === userId),
     notifications: db.notifications.filter((notification) => notification.userId === userId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
@@ -472,11 +475,44 @@ app.post('/api/listen', (req, res) => {
 });
 
 // --- FOLDERS ---
+app.get('/api/folders/:id', (req, res) => {
+  const db = ensureDBShape(readDB());
+  const userId = requireUserId(req, res);
+  if (!userId) return;
+  const folder = db.folders.find((f) => f.id === req.params.id && f.userId === userId);
+  if (!folder) return res.status(404).json({ error: 'Folder not found' });
+
+  // Get all child projects and child folders (one level deep from this folder)
+  const childProjects = db.projects.filter((p) => p.folderId === folder.id && p.userId === userId);
+  const childFolders = db.folders.filter((f) => f.parentFolderId === folder.id && f.userId === userId);
+
+  // Build breadcrumb trail (walk up parentFolderId chain)
+  const breadcrumbs = [];
+  let current = folder;
+  while (current.parentFolderId) {
+    const parent = db.folders.find((f) => f.id === current.parentFolderId);
+    if (!parent) break;
+    breadcrumbs.unshift({ id: parent.id, title: parent.title || parent.name });
+    current = parent;
+  }
+
+  res.json({
+    folder: normalizeLibraryItem(folder, db, 'folder'),
+    folders: childFolders.map((f) => normalizeLibraryItem(f, db, 'folder')),
+    projects: childProjects.map((p) => normalizeLibraryItem(p, db, 'project')),
+    tracks: db.tracks.filter((t) => t.userId === userId || t.uploader?.id === userId).map(normalizeTrack),
+    breadcrumbs
+  });
+});
+
 app.post('/api/folders', (req, res) => {
-  const { name, title, artist, userId } = req.body;
+  const { name, title, artist, userId, parentFolderId } = req.body;
   const db = ensureDBShape(readDB());
   const ownerName = ownerNameFor(db, userId);
   if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
+  if (parentFolderId && !db.folders.some((f) => f.id === parentFolderId && f.userId === userId)) {
+    return res.status(404).json({ error: 'Parent folder not found' });
+  }
   const nextTitle = (title || name || '').trim() || defaultTitleFor('folder');
   const newFolder = {
     id: makeId(),
@@ -484,11 +520,40 @@ app.post('/api/folders', (req, res) => {
     title: nextTitle,
     artist: artist?.trim() || ownerName,
     userId,
+    parentFolderId: parentFolderId || null,
     createdAt: new Date().toISOString()
   };
   db.folders.push(newFolder);
   writeDB(db);
   res.json(newFolder);
+});
+
+app.put('/api/folders/:id/move', (req, res) => {
+  const { userId, parentFolderId } = req.body;
+  const db = readDB();
+  const folderIndex = db.folders.findIndex((f) => f.id === req.params.id && f.userId === userId);
+  if (folderIndex === -1) return res.status(404).json({ error: 'Folder not found' });
+
+  if (parentFolderId) {
+    if (parentFolderId === req.params.id) return res.status(400).json({ error: 'Cannot move a folder into itself' });
+    if (!db.folders.some((f) => f.id === parentFolderId && f.userId === userId)) {
+      return res.status(404).json({ error: 'Target folder not found' });
+    }
+    // Prevent cycles: check if target is a descendant of the folder being moved
+    const isDescendant = (folderId, ancestorId) => {
+      const f = db.folders.find((x) => x.id === folderId);
+      if (!f || !f.parentFolderId) return false;
+      if (f.parentFolderId === ancestorId) return true;
+      return isDescendant(f.parentFolderId, ancestorId);
+    };
+    if (isDescendant(parentFolderId, req.params.id)) {
+      return res.status(400).json({ error: 'Cannot move a folder into one of its own sub-folders' });
+    }
+  }
+
+  db.folders[folderIndex].parentFolderId = parentFolderId || null;
+  writeDB(db);
+  res.json(db.folders[folderIndex]);
 });
 
 app.put('/api/folders/:id', (req, res) => {
