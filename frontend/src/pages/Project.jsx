@@ -236,9 +236,9 @@ export default function Project({ user }) {
         </div>
       </header>
 
-      <main className="mx-auto grid max-w-6xl gap-8 px-6 pt-6 grid-cols-1 lg:grid-cols-[minmax(16rem,24rem)_minmax(20rem,1fr)] lg:gap-12 lg:px-14 lg:pt-10">
-        <section className="flex justify-center lg:justify-start">
-          <div className="group relative aspect-square w-full max-w-[20rem] md:max-w-[24rem] overflow-hidden rounded-[1.2rem] bg-[linear-gradient(135deg,#b7ff63_0%,#d6c18e_45%,#d84f93_100%)] shadow-2xl">
+      <main className="mx-auto grid max-w-5xl gap-6 px-4 pt-4 grid-cols-1 md:grid-cols-[minmax(14rem,18rem)_minmax(20rem,1fr)] md:gap-8 lg:px-10 lg:pt-8">
+        <section className="flex justify-center md:justify-start">
+          <div className="group relative aspect-square w-full max-w-[16rem] md:max-w-[18rem] overflow-hidden rounded-[1rem] bg-[linear-gradient(135deg,#b7ff63_0%,#d6c18e_45%,#d84f93_100%)] shadow-2xl">
             {project.coverArt && <img src={project.coverArt} alt={project.title || project.name} onError={(event) => { event.currentTarget.style.display = 'none'; }} className="h-full w-full object-cover" />}
             <button
               type="button"
@@ -251,37 +251,42 @@ export default function Project({ user }) {
           </div>
         </section>
 
-        <section className="pt-1">
-          <div className="mb-8 flex items-start justify-between gap-4">
-            <div className="min-w-0 flex-1 overflow-hidden">
-              <MarqueeInput
-                value={editableTitle}
-                onChange={(event) => setEditableTitle(event.target.value)}
-                onBlur={saveProjectMetadata}
-                className="w-full"
-                textClassName="text-3xl md:text-4xl lg:text-5xl font-semibold tracking-normal text-primary-label"
-                placeholder="Project title"
-              />
-              <p className="mt-2 flex flex-wrap items-center gap-2 text-base md:text-lg text-secondary-label">
-                <Lock className="h-4 w-4 md:h-5 md:w-5 fill-current shrink-0" />
-                <span className="min-w-0 max-w-[12rem] md:max-w-xs overflow-hidden">
-                  <MarqueeInput
-                    value={editableArtist}
-                    onChange={(event) => setEditableArtist(event.target.value)}
-                    onBlur={saveProjectMetadata}
-                    className="w-full"
-                    textClassName="text-secondary-label"
-                    placeholder="Project artist"
-                  />
-                </span>
-              </p>
+        <section className="pt-2">
+          <div className="mb-6 flex flex-col gap-2">
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0 flex-1 overflow-hidden">
+                <MarqueeInput
+                  value={editableTitle}
+                  onChange={(event) => setEditableTitle(event.target.value)}
+                  onBlur={saveProjectMetadata}
+                  className="w-full"
+                  textClassName="text-3xl sm:text-4xl font-bold tracking-tight text-primary-label"
+                  placeholder="Project title"
+                />
+              </div>
+              <div className="flex shrink-0 items-center gap-3">
+                <button className="text-secondary-label hover:text-primary-label transition-colors" aria-label="Shuffle project">
+                  <Shuffle className="h-5 w-5" />
+                </button>
+                <button onClick={() => leadTrack ? handlePlay(leadTrack) : setIsUploadOpen(true)} className="grid h-12 w-12 place-items-center rounded-full bg-primary-label text-primary-background transition-transform hover:scale-105" aria-label={leadTrack ? "Play project" : "Add tracks"}>
+                  <Play className="h-6 w-6 fill-current translate-x-[2px]" />
+                </button>
+              </div>
             </div>
-            <div className="flex shrink-0 flex-col items-center gap-2">
-              <button onClick={() => leadTrack ? handlePlay(leadTrack) : setIsUploadOpen(true)} className="grid h-14 w-14 place-items-center rounded-3xl bg-primary-label text-primary-background transition-transform hover:scale-105" aria-label={leadTrack ? "Play project" : "Add tracks"}>
-                <Play className="h-7 w-7 fill-current translate-x-0.5" />
-              </button>
-              <p className="text-sm font-medium text-secondary-label whitespace-nowrap">
-                {tracks.length} track{tracks.length !== 1 ? 's' : ''} • {
+
+            <p className="flex flex-wrap items-center text-sm md:text-base text-secondary-label">
+              <span className="min-w-0 max-w-[10rem] sm:max-w-[14rem] overflow-hidden mr-1">
+                <MarqueeInput
+                  value={editableArtist}
+                  onChange={(event) => setEditableArtist(event.target.value)}
+                  onBlur={saveProjectMetadata}
+                  className="w-full"
+                  textClassName="text-secondary-label font-medium"
+                  placeholder="Artist"
+                />
+              </span>
+              <span className="whitespace-nowrap font-medium">
+                • {tracks.length} track{tracks.length !== 1 ? 's' : ''} • {
                   (() => {
                     const latestTrackTime = tracks.length > 0 
                       ? Math.max(...tracks.map(t => new Date(t.uploadedAt).getTime()))
@@ -291,12 +296,12 @@ export default function Project({ user }) {
                     return timeAgo(new Date(lastUpdated).toISOString());
                   })()
                 }
-              </p>
-            </div>
+              </span>
+            </p>
           </div>
 
-          <button onClick={() => setIsUploadOpen(true)} className="mb-9 flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-shading py-4 text-xl font-semibold text-primary-label transition-colors hover:bg-highlight">
-            <Plus className="h-6 w-6" />
+          <button onClick={() => setIsUploadOpen(true)} className="mb-8 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-shading text-sm font-semibold text-primary-label transition-colors hover:bg-highlight">
+            <Plus className="h-5 w-5" />
             Add tracks
           </button>
 

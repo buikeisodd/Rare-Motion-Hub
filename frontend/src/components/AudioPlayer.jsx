@@ -420,27 +420,24 @@ export default function AudioPlayer({ tracks = [], currentTrack, projectName, is
             <Activity className="h-5 w-5 sm:h-6 sm:w-6" />
           </button>
           
-          <div className="relative flex items-center group">
+          <div className="flex items-center gap-2 group">
             <button onClick={toggleMute} className="text-secondary-label hover:text-primary-label" aria-label={isMuted ? 'Unmute' : 'Mute'}>
               {isMuted || volume === 0 ? <VolumeX className="h-5 w-5 sm:h-6 sm:w-6" /> : <Volume2 className="h-5 w-5 sm:h-6 sm:w-6" />}
             </button>
-            {/* Volume Slider - Appears on Hover */}
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex bg-[#292929] rounded-xl p-3 shadow-xl h-32 w-10 items-center justify-center animate-fade-in">
-              <input 
-                type="range" 
-                min="0" 
-                max="1" 
-                step="0.05" 
-                value={isMuted ? 0 : volume} 
-                onChange={(e) => {
-                  const val = parseFloat(e.target.value);
-                  setVolume(val);
-                  if (val > 0 && isMuted) setIsMuted(false);
-                }} 
-                className="w-24 h-1 -rotate-90 origin-center accent-[#df5b9c] cursor-pointer" 
-                aria-label="Volume"
-              />
-            </div>
+            <input 
+              type="range" 
+              min="0" 
+              max="1" 
+              step="0.05" 
+              value={isMuted ? 0 : volume} 
+              onChange={(e) => {
+                const val = parseFloat(e.target.value);
+                setVolume(val);
+                if (val > 0 && isMuted) setIsMuted(false);
+              }} 
+              className="w-16 sm:w-20 h-1 accent-[#df5b9c] cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity duration-200 hidden sm:block" 
+              aria-label="Volume"
+            />
           </div>
 
         </div>
