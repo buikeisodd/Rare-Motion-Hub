@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Bell, Circle, Disc3, Edit3, Folder, FolderPlus, LogOut, MessageSquare, MoreHorizontal, Music, Palette, Play, Plus, Search, Trash2, UploadCloud, Video, X } from 'lucide-react';
+import { Bell, Circle, Disc3, Edit3, Folder, FolderPlus, LogOut, MessageSquare, MoreHorizontal, Music, Palette, Play, Plus, Trash2, UploadCloud, Video, X } from 'lucide-react';
 import ChatInbox from '../components/ChatInbox';
 import StarlightLogo from '../components/StarlightLogo';
 
@@ -428,9 +428,6 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
             )}
           </div>
 
-          <button className="grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Search library">
-            <Search className="h-6 w-6" />
-          </button>
           <button onClick={() => { setIsChatOpen((open) => !open); setIsProfileOpen(false); setIsNotificationsOpen(false); setIsAddMenuOpen(false); }} className="grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Open messages">
             <MessageSquare className="h-6 w-6" />
           </button>
