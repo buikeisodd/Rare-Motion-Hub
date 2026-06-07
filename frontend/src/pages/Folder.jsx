@@ -160,7 +160,7 @@ export default function Folder({ user, onLogout }) {
   const isEmpty = folders.length === 0 && projects.length === 0;
 
   return (
-    <div className="min-h-screen bg-primary-background px-10 py-8 pb-28 animate-fade-in lg:px-14">
+    <div className="min-h-screen bg-primary-background px-5 py-5 pb-28 animate-fade-in sm:px-8 sm:py-6 lg:px-14 lg:py-8">
       {isAddMenuOpen && (
         <div className="fixed inset-0 z-40" onClick={() => setIsAddMenuOpen(false)} />
       )}
@@ -199,7 +199,7 @@ export default function Folder({ user, onLogout }) {
       </header>
 
       {/* Breadcrumbs */}
-      <nav className="mt-6 flex items-center gap-2 text-sm text-secondary-label" aria-label="Breadcrumb">
+      <nav className="mt-4 flex items-center gap-2 text-sm text-secondary-label" aria-label="Breadcrumb">
         <Link to="/library" className="flex items-center gap-1 hover:text-primary-label transition-colors">
           <Home className="h-4 w-4" />
           Library
@@ -216,7 +216,7 @@ export default function Folder({ user, onLogout }) {
         <span className="font-semibold text-primary-label">{folder?.title || folder?.name || 'Folder'}</span>
       </nav>
 
-      <div className="mt-8 mb-12 overflow-hidden">
+      <div className="mt-4 mb-8 overflow-hidden">
         <MarqueeInput
           value={editableTitle}
           onChange={(event) => setEditableTitle(event.target.value)}
