@@ -256,15 +256,16 @@ export default function Project({ user }) {
                   className="min-w-0 max-w-[12rem] md:max-w-xs bg-transparent text-secondary-label outline-none"
                   aria-label="Project artist"
                 />
-                <span>•</span>
-                <span>{tracks.length} track{tracks.length !== 1 ? 's' : ''}</span>
-                <span>•</span>
-                <span>{tracks.length ? '0s' : 'Now'}</span>
               </p>
             </div>
-            <button onClick={() => leadTrack ? handlePlay(leadTrack) : setIsUploadOpen(true)} className="grid h-14 w-14 shrink-0 place-items-center rounded-3xl bg-primary-label text-primary-background transition-transform hover:scale-105" aria-label={leadTrack ? "Play project" : "Add tracks"}>
-              <Play className="h-7 w-7 fill-current translate-x-0.5" />
-            </button>
+            <div className="flex shrink-0 flex-col items-center gap-2">
+              <button onClick={() => leadTrack ? handlePlay(leadTrack) : setIsUploadOpen(true)} className="grid h-14 w-14 place-items-center rounded-3xl bg-primary-label text-primary-background transition-transform hover:scale-105" aria-label={leadTrack ? "Play project" : "Add tracks"}>
+                <Play className="h-7 w-7 fill-current translate-x-0.5" />
+              </button>
+              <p className="text-xs text-secondary-label whitespace-nowrap">
+                {tracks.length} track{tracks.length !== 1 ? 's' : ''} • {tracks.length ? '0s' : 'Now'}
+              </p>
+            </div>
           </div>
 
           <button onClick={() => setIsUploadOpen(true)} className="mb-9 flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-shading py-4 text-xl font-semibold text-primary-label transition-colors hover:bg-highlight">
