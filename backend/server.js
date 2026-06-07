@@ -90,6 +90,7 @@ const ensureDBShape = (db) => {
   db.messages ||= [];
   db.calls ||= [];
   db.callSignals ||= [];
+  db.shareLinks ||= [];
   return db;
 };
 const userExists = (db, userId) => db.users.some((user) => user.id === userId);
@@ -326,6 +327,65 @@ app.get('/api/workspace', (req, res) => {
 });
 
 // --- SHARING ---
+app.post('/api/share/generate', (req, res) => {
+  const db = ensureDBShape(readDB());
+  const { type, targetId, expiresInMs } = req.body;
+  if (!['project', 'folder'].includes(type) || !targetId) {
+    return res.status(400).json({ error: 'Valid type and targetId are required.' });
+  }
+
+  const token = require('crypto').randomBytes(16).toString('hex');
+  const expiresAt = expiresInMs ? new Date(Date.now() + expiresInMs).toISOString() : null;
+
+  const shareLink = {
+    token,
+    type,
+    targetId,
+    expiresAt,
+    createdAt: new Date().toISOString()
+  };
+
+  db.shareLinks.push(shareLink);
+  writeDB(db);
+
+  res.json({ token, expiresAt });
+});
+
+app.get('/api/share/link/:token', (req, res) => {
+  const db = ensureDBShape(readDB());
+  const link = db.shareLinks.find((l) => l.token === req.params.token);
+  
+  if (!link) {
+    return res.status(404).json({ error: 'Share link not found.' });
+  }
+
+  if (link.expiresAt && Date.now() > new Date(link.expiresAt).getTime()) {
+    return res.status(410).json({ error: 'Link no longer accessible.', expired: true });
+  }
+
+  if (link.type === 'project') {
+    const project = db.projects.find((item) => item.id === link.targetId);
+    if (!project) return res.status(404).json({ error: 'Project not found.' });
+    return res.json(getProjectBundle(db, project));
+  } else if (link.type === 'folder') {
+    const folder = db.folders.find((item) => item.id === link.targetId);
+    if (!folder) return res.status(404).json({ error: 'Folder not found.' });
+    const subFolders = db.folders.filter((f) => f.folderId === folder.id);
+    const subProjects = db.projects.filter((p) => p.folderId === folder.id);
+    const tracks = db.tracks.filter((t) => subProjects.some((sp) => sp.id === t.projectId));
+    return res.json({
+      type: 'folder',
+      folder: normalizeLibraryItem(folder, db, 'folder'),
+      owner: publicUser(db.users.find((user) => user.id === folder.userId)),
+      folders: subFolders.map((f) => normalizeLibraryItem(f, db, 'folder')),
+      projects: subProjects.map((p) => normalizeLibraryItem(p, db, 'project')),
+      tracks: tracks.map(normalizeTrack)
+    });
+  }
+
+  return res.status(400).json({ error: 'Invalid link type.' });
+});
+
 app.get('/api/share/project/:id', (req, res) => {
   const db = ensureDBShape(readDB());
   const project = db.projects.find((item) => item.id === req.params.id);

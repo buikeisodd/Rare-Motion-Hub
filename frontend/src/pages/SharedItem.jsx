@@ -17,12 +17,13 @@ function OwnerAvatar({ owner }) {
   );
 }
 
-export default function SharedItem({ user }) {
-  const { type, id } = useParams();
+export default function SharedItem({ user, isLink }) {
+  const { type, id, token } = useParams();
   const navigate = useNavigate();
   const [sharedItem, setSharedItem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isExpired, setIsExpired] = useState(false);
   const [currentTrack, setCurrentTrack] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
 
@@ -31,9 +32,16 @@ export default function SharedItem({ user }) {
 
     async function loadSharedItem() {
       try {
-        const res = await fetch(`${apiUrl}/api/share/${type}/${id}`);
+        const url = isLink ? `${apiUrl}/api/share/link/${token}` : `${apiUrl}/api/share/${type}/${id}`;
+        const res = await fetch(url);
         const data = await res.json();
-        if (!cancelled) setSharedItem(res.ok ? data : null);
+        if (!cancelled) {
+          if (res.status === 410 || data.expired) {
+            setIsExpired(true);
+          } else {
+            setSharedItem(res.ok ? data : null);
+          }
+        }
       } catch (err) {
         console.error('Failed to load shared item', err);
       } finally {
@@ -45,7 +53,7 @@ export default function SharedItem({ user }) {
     return () => {
       cancelled = true;
     };
-  }, [id, type]);
+  }, [id, type, token, isLink]);
 
   const tracks = sharedItem?.tracks || [];
   const itemName = sharedItem?.project?.name || sharedItem?.folder?.name || 'Shared item';
@@ -76,7 +84,10 @@ export default function SharedItem({ user }) {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const res = await fetch(`${apiUrl}/api/share/${type}/${id}/save`, {
+      const actualType = isLink ? sharedItem?.type : type;
+      const actualId = isLink ? (sharedItem?.folder?.id || sharedItem?.project?.id) : id;
+      
+      const res = await fetch(`${apiUrl}/api/share/${actualType}/${actualId}/save`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user.id })
@@ -95,8 +106,20 @@ export default function SharedItem({ user }) {
   };
 
   if (loading) return null;
+  if (isExpired) {
+    return (
+      <div className="min-h-screen bg-primary-background flex flex-col items-center justify-center p-6 text-center">
+        <h1 className="text-3xl font-bold text-primary-label mb-4">Link no longer accessible</h1>
+        <p className="text-secondary-label text-lg max-w-md">This share link has expired and is no longer available.</p>
+        <Link to="/library" className="mt-8 rounded-full bg-primary-label px-8 py-3 text-primary-background font-semibold hover:opacity-90 transition-opacity">
+          Return to Library
+        </Link>
+      </div>
+    );
+  }
   if (!sharedItem) return <div className="mt-20 text-center text-primary-label">Shared item not found</div>;
 
+  const actualType = isLink ? sharedItem?.type : type;
   const trackIndex = currentTrack ? tracks.findIndex((track) => track.id === currentTrack.id) : -1;
   const hasNext = trackIndex !== -1 && trackIndex < tracks.length - 1;
   const hasPrev = trackIndex > 0;
@@ -118,7 +141,7 @@ export default function SharedItem({ user }) {
           <div className="grid aspect-square w-full max-w-[24rem] place-items-center overflow-hidden rounded-[1.25rem] bg-shading shadow-2xl md:max-w-[28rem]">
             {sharedItem.project?.coverArt ? (
               <img src={sharedItem.project.coverArt} alt="" onError={(event) => { event.currentTarget.style.display = 'none'; }} className="h-full w-full object-cover" />
-            ) : type === 'folder' ? (
+            ) : actualType === 'folder' ? (
               <Folder className="h-20 w-20 text-secondary-label sm:h-24 sm:w-24" />
             ) : (
               <Music className="h-20 w-20 text-secondary-label sm:h-24 sm:w-24" />
@@ -134,14 +157,14 @@ export default function SharedItem({ user }) {
             </p>
             <h1 className="text-3xl font-semibold tracking-normal sm:text-4xl md:text-5xl">{itemName}</h1>
             <p className="mt-3 text-base text-secondary-label sm:text-lg">
-              {type === 'folder' ? `${sharedItem.projects?.length || 0} project` : `${tracks.length} track`}{(type === 'folder' ? sharedItem.projects?.length : tracks.length) === 1 ? '' : 's'}
+              {actualType === 'folder' ? `${sharedItem.projects?.length || 0} project` : `${tracks.length} track`}{(actualType === 'folder' ? sharedItem.projects?.length : tracks.length) === 1 ? '' : 's'}
             </p>
           </div>
 
           <div className="space-y-2">
             {tracks.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-border bg-shading/50 p-8 text-center text-secondary-label sm:p-10">
-                No tracks in this shared {type}.
+                No tracks in this shared {actualType}.
               </div>
             ) : (
               tracks.map((track, index) => (

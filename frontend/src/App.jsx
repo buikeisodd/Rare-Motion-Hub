@@ -116,6 +116,7 @@ function AnimatedRoutes({ user, handleLogin, handleLogout, handleUserUpdate, jus
         <Route path="/project/:id" element={<DesktopOnly><motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><Project user={user} onLogout={handleLogout} /></motion.div></DesktopOnly>} />
         <Route path="/project/:id/insights" element={<DesktopOnly><motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><ProjectInsights user={user} /></motion.div></DesktopOnly>} />
         <Route path="/shared/:type/:id" element={<motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><SharedItem user={user} /></motion.div>} />
+        <Route path="/shared/link/:token" element={<motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><SharedItem user={user} isLink={true} /></motion.div>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AnimatePresence>

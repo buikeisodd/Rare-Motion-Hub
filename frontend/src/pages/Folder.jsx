@@ -6,6 +6,7 @@ import { LibraryProject, LibraryFolder } from './Dashboard';
 import ChatInbox from '../components/ChatInbox';
 import StarlightLogo from '../components/StarlightLogo';
 import ConfirmModal from '../components/ConfirmModal';
+import ShareLinkModal from '../components/ShareLinkModal';
 import MarqueeInput from '../components/MarqueeInput';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -21,6 +22,8 @@ export default function Folder({ user, onLogout }) {
   const [isFolderMenuOpen, setIsFolderMenuOpen] = useState(false);
   const [editableTitle, setEditableTitle] = useState('');
   const [editableArtist, setEditableArtist] = useState('');
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   const fetchFolder = async () => {
     try {
@@ -130,7 +133,6 @@ export default function Folder({ user, onLogout }) {
     }
   };
 
-  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
   const handleDeleteClick = (e) => {
     setIsFolderMenuOpen(false);
@@ -191,9 +193,8 @@ export default function Folder({ user, onLogout }) {
                   className="absolute right-0 top-14 z-50 w-48 rounded-[1rem] border border-border panel-bg p-2 shadow-2xl origin-top-right"
                 >
                   <button onClick={() => {
-                    navigator.clipboard.writeText(`${window.location.origin}/shared/folder/${folder.id}`);
+                    setIsShareModalOpen(true);
                     setIsFolderMenuOpen(false);
-                    alert('Share link copied to clipboard!');
                   }} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
                     <Copy className="h-4 w-4" />
                     Copy share link
@@ -337,6 +338,14 @@ export default function Folder({ user, onLogout }) {
         title="Delete folder?"
         message="Are you sure you want to delete this folder? Projects inside it will be moved to the library root."
         confirmText="Delete"
+      />
+
+      <ShareLinkModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        type="folder"
+        targetId={id}
+        userId={user?.id}
       />
     </div>
   );

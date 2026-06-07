@@ -6,6 +6,7 @@ import AudioPlayer from '../components/AudioPlayer';
 import UploadModal from '../components/UploadModal';
 import CoverArtPicker from '../components/CoverArtPicker';
 import ConfirmModal from '../components/ConfirmModal';
+import ShareLinkModal from '../components/ShareLinkModal';
 import MarqueeInput from '../components/MarqueeInput';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -38,7 +39,7 @@ export default function Project({ user }) {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isCoverPickerOpen, setIsCoverPickerOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
-  const [shareStatus, setShareStatus] = useState('');
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false);
   const [editableTitle, setEditableTitle] = useState('');
   const [editableArtist, setEditableArtist] = useState('');
@@ -164,15 +165,7 @@ export default function Project({ user }) {
   };
 
   const handleCopyShareLink = async () => {
-    const shareUrl = `${window.location.origin}/shared/project/${id}`;
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      setShareStatus('Copied');
-    } catch {
-      window.prompt('Copy project link:', shareUrl);
-      setShareStatus('Ready');
-    }
-    window.setTimeout(() => setShareStatus(''), 1600);
+    setIsShareModalOpen(true);
   };
 
   if (loading) return null;
@@ -193,7 +186,6 @@ export default function Project({ user }) {
         <div className="flex items-center gap-3">
           <button onClick={handleCopyShareLink} className="relative grid h-12 w-12 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Copy project link">
             <Link2 className="h-5 w-5" />
-            {shareStatus && <span className="absolute -bottom-8 rounded-full bg-primary-label px-3 py-1 text-xs font-bold text-primary-background">{shareStatus}</span>}
           </button>
           <button className="grid h-12 w-12 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Search project">
             <Search className="h-5 w-5" />
