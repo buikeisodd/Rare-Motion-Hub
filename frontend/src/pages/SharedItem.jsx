@@ -72,7 +72,7 @@ export default function SharedItem({ user, isLink }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: user.id,
+          userId: user?.id || null,
           projectId: track.projectId || sharedItem?.project?.id,
           folderId: sharedItem?.folder?.id,
           trackId: track.id
@@ -130,10 +130,12 @@ export default function SharedItem({ user, isLink }) {
         <Link to="/library" className="grid h-11 w-11 place-items-center rounded-2xl bg-shading transition-colors hover:bg-highlight sm:h-14 sm:w-14 sm:rounded-3xl" aria-label="Back to library">
           <ChevronLeft className="h-6 w-6 sm:h-7 sm:w-7" />
         </Link>
-        <button onClick={handleSave} disabled={saving} className="inline-flex h-12 items-center gap-2 rounded-full bg-primary-label px-5 text-sm font-bold text-primary-background disabled:opacity-60 sm:h-14 sm:gap-3 sm:px-6 sm:text-base">
-          <Plus className="h-5 w-5" />
-          {saving ? 'Saving' : 'Save to library'}
-        </button>
+        {!isLink && (
+          <button onClick={handleSave} disabled={saving} className="inline-flex h-12 items-center gap-2 rounded-full bg-primary-label px-5 text-sm font-bold text-primary-background disabled:opacity-60 sm:h-14 sm:gap-3 sm:px-6 sm:text-base">
+            <Plus className="h-5 w-5" />
+            {saving ? 'Saving' : 'Save to library'}
+          </button>
+        )}
       </header>
 
       <main className="mx-auto mt-10 grid max-w-5xl gap-8 md:grid-cols-[minmax(16rem,28rem)_1fr] md:gap-12">

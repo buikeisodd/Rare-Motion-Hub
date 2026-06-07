@@ -144,8 +144,8 @@ const getProjectBundle = (db, project) => ({
   tracks: db.tracks.filter((track) => track.projectId === project.id).map(normalizeTrack)
 });
 const notifyListen = (db, { ownerId, actorId, project, folder, track }) => {
-  if (!ownerId || !actorId || ownerId === actorId) return;
-  const actor = db.users.find((user) => user.id === actorId);
+  if (!ownerId || ownerId === actorId) return;
+  const actor = actorId ? db.users.find((user) => user.id === actorId) : { name: 'Anonymous Listener', id: 'anonymous' };
   if (!actor) return;
 
   db.notifications.push({
@@ -508,7 +508,7 @@ app.post('/api/share/folder/:id/save', (req, res) => {
 app.post('/api/listen', (req, res) => {
   const { userId, projectId, folderId, trackId } = req.body;
   const db = ensureDBShape(readDB());
-  if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
+  if (userId && !userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
 
   const project = db.projects.find((item) => item.id === projectId);
   const folder = folderId ? db.folders.find((item) => item.id === folderId) : null;
@@ -1405,6 +1405,21 @@ app.get('/api/conversations', (req, res) => {
   });
 
   res.json({ conversations });
+});
+
+app.post('/api/notifications/read', (req, res) => {
+  const db = ensureDBShape(readDB());
+  const userId = requireUserId(req, res);
+  if (!userId) return;
+
+  db.notifications.forEach((notif) => {
+    if (notif.userId === userId) {
+      notif.read = true;
+    }
+  });
+
+  writeDB(db);
+  res.json({ success: true });
 });
 
 syncFromJSONBin().finally(() => {

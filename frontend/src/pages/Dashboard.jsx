@@ -718,7 +718,25 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
   const anyPanelOpen = isNotificationsOpen || isProfileOpen || isAddMenuOpen;
   
   const unreadChatsCount = conversations.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
-  const totalNotifications = workspace.notifications.length + unreadChatsCount;
+  const unreadNotificationsCount = workspace.notifications.filter((n) => !n.read).length;
+  const totalNotifications = unreadNotificationsCount + unreadChatsCount;
+
+  const handleOpenNotifications = () => {
+    setIsNotificationsOpen((open) => !open);
+    setIsProfileOpen(false);
+    setIsAddMenuOpen(false);
+    setIsChatOpen(false);
+
+    if (!isNotificationsOpen && unreadNotificationsCount > 0) {
+      fetch(`${apiUrl}/api/notifications/read?userId=${user.id}`, { method: 'POST' })
+        .catch(err => console.error('Failed to mark notifications read', err));
+      
+      setWorkspace(prev => ({
+        ...prev,
+        notifications: prev.notifications.map(n => ({ ...n, read: true }))
+      }));
+    }
+  };
 
   return (
     <div className="min-h-screen bg-primary-background px-10 py-8 pb-28 lg:px-14">
@@ -758,7 +776,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
 
         <div className="flex shrink-0 items-center gap-3">
           <div className="relative">
-            <button onClick={() => { setIsNotificationsOpen((open) => !open); setIsProfileOpen(false); setIsAddMenuOpen(false); setIsChatOpen(false); }} className="relative grid h-14 w-14 place-items-center rounded-3xl bg-primary-label text-primary-background transition-transform hover:scale-105" aria-label="Notifications">
+            <button onClick={handleOpenNotifications} className="relative grid h-14 w-14 place-items-center rounded-3xl bg-primary-label text-primary-background transition-transform hover:scale-105" aria-label="Notifications">
               <Bell className="h-6 w-6 fill-current" />
               {totalNotifications > 0 && <span className="absolute right-3 top-3 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-primary-background">{totalNotifications}</span>}
             </button>
