@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Bell, ChevronRight, Circle, Disc3, FolderPlus, FolderOpen, Home, LogOut, MessageSquare, MoreHorizontal, Plus, Trash2, Video, X } from 'lucide-react';
 import { LibraryProject, LibraryFolder } from './Dashboard';
+import ChatInbox from '../components/ChatInbox';
 import StarlightLogo from '../components/StarlightLogo';
 import ConfirmModal from '../components/ConfirmModal';
 import MarqueeInput from '../components/MarqueeInput';
