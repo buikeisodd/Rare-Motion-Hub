@@ -268,6 +268,8 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileError, setProfileError] = useState('');
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
+  const [isConverting, setIsConverting] = useState(false);
+  const convertInputRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -326,6 +328,36 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
     });
     const data = await res.json();
     if (res.ok) setWorkspace((prev) => ({ ...prev, folders: [data.folder, ...prev.folders] }));
+  };
+
+  const handleConvert = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    setIsAddMenuOpen(false);
+    setIsConverting(true);
+    
+    const formData = new FormData();
+    formData.append('video', file);
+    formData.append('userId', user.id);
+    
+    try {
+      const res = await fetch(`${apiUrl}/api/convert`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (res.ok) {
+        navigate(`/project/${data.project.id}`);
+      } else {
+        alert(data.error || 'Conversion failed');
+      }
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setIsConverting(false);
+      if (convertInputRef.current) convertInputRef.current.value = '';
+    }
   };
 
   const showComingSoon = (feature) => {
@@ -463,9 +495,9 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
               <Music className="h-6 w-6" />
               Audio
             </button>
-            <button onClick={() => showComingSoon('Convert')} className="flex w-full items-center gap-5 rounded-xl px-4 py-3 text-left text-xl font-semibold hover:bg-highlight transition-colors">
+            <button onClick={() => convertInputRef.current?.click()} disabled={isConverting} className="flex w-full items-center gap-5 rounded-xl px-4 py-3 text-left text-xl font-semibold hover:bg-highlight transition-colors disabled:opacity-50">
               <Video className="h-6 w-6" />
-              Convert
+              {isConverting ? 'Converting...' : 'Convert'}
             </button>
             <button onClick={() => showComingSoon('Record')} className="flex w-full items-center gap-5 rounded-xl px-4 py-3 text-left text-xl font-semibold hover:bg-highlight transition-colors">
               <Circle className="h-6 w-6 fill-red-500 text-red-500" />
@@ -490,6 +522,8 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
           {isAddMenuOpen ? 'Close' : 'Add'}
         </button>
       </div>
+
+      <input ref={convertInputRef} type="file" accept="video/*" className="hidden" onChange={handleConvert} />
 
       <ChatInbox user={user} isOpen={isChatOpen} onToggle={() => setIsChatOpen((open) => !open)} />
 

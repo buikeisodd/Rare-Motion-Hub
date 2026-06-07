@@ -3,6 +3,7 @@ const cors = require('cors');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
+const ffmpeg = require('fluent-ffmpeg');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -762,6 +763,68 @@ app.get('/api/media/tracks/:id', (req, res) => {
   res.setHeader('Content-Range', `bytes ${start}-${end}/${fileSize}`);
   res.setHeader('Content-Length', end - start + 1);
   fs.createReadStream(filePath, { start, end }).pipe(res);
+});
+
+app.post('/api/convert', uploadTrack.single('video'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No video file uploaded' });
+  const { userId } = req.body;
+  const db = readDB();
+  const uploader = db.users.find(u => u.id === userId);
+  if (!uploader) {
+    removeFileIfExists(req.file.path);
+    return res.status(401).json({ error: 'Unauthorized user.' });
+  }
+
+  const originalNameNoExt = path.basename(req.file.originalname, path.extname(req.file.originalname));
+  const newFilename = Date.now() + '-' + Math.round(Math.random() * 1e9) + '.wav';
+  const userDir = ensureUserDir(uploadDir, userId);
+  const outputPath = path.join(userDir, newFilename);
+
+  ffmpeg(req.file.path)
+    .noVideo()
+    .audioCodec('pcm_s16le')
+    .audioFrequency(44100)
+    .on('end', () => {
+      removeFileIfExists(req.file.path);
+      const projectId = makeId();
+      const newProject = {
+        id: projectId,
+        name: originalNameNoExt,
+        title: originalNameNoExt,
+        artist: uploader.name,
+        userId,
+        folderId: null,
+        coverArt: null,
+        createdAt: new Date().toISOString()
+      };
+      db.projects.push(newProject);
+
+      const trackId = makeId();
+      const newTrack = {
+        id: trackId,
+        userId,
+        projectId: projectId,
+        title: originalNameNoExt,
+        artist: uploader.name,
+        producer: '',
+        filename: newFilename,
+        mimeType: 'audio/wav',
+        size: fs.statSync(outputPath).size,
+        url: `${BASE_URL}/api/media/tracks/${trackId}`,
+        uploader: { id: uploader.id, name: uploader.name },
+        uploadedAt: new Date().toISOString()
+      };
+      db.tracks.push(newTrack);
+      
+      writeDB(db);
+      res.json({ project: newProject, track: newTrack });
+    })
+    .on('error', (err) => {
+      console.error('ffmpeg error:', err);
+      removeFileIfExists(req.file.path);
+      res.status(500).json({ error: 'Conversion failed' });
+    })
+    .save(outputPath);
 });
 
 // --- CHAT ---
