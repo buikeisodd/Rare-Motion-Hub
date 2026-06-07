@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Bell, Circle, Disc3, Edit3, Folder, FolderPlus, LogOut, MessageSquare, MoreHorizontal, Music, Palette, Play, Plus, Search, Trash2, UploadCloud, Video, X } from 'lucide-react';
 import ChatInbox from '../components/ChatInbox';
+import StarlightLogo from '../components/StarlightLogo';
 
 function LibraryProject({ project, tracks }) {
   const projectTracks = tracks.filter((track) => track.projectId === project.id);
@@ -11,7 +12,7 @@ function LibraryProject({ project, tracks }) {
 
   return (
     <Link to={`/project/${project.id}`} className="group block w-full max-w-[15rem]">
-      <div className="relative aspect-square overflow-hidden rounded-[1.1rem] bg-shading sm:rounded-[1.25rem]">
+      <div className="relative aspect-square overflow-hidden rounded-[1.25rem] bg-shading">
         {project.coverArt ? (
           <img src={project.coverArt} alt="" onError={(event) => { event.currentTarget.style.display = 'none'; }} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
         ) : (
@@ -26,18 +27,16 @@ function LibraryProject({ project, tracks }) {
             )}
           </div>
         )}
-
         {leadTrack && (
-          <span className="absolute bottom-3 right-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-shading text-primary-label backdrop-blur-md transition-transform group-hover:scale-105 sm:h-14 sm:w-14">
-            <Play className="h-5 w-5 fill-current translate-x-0.5 sm:h-6 sm:w-6" />
+          <span className="absolute bottom-3 right-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-shading text-primary-label backdrop-blur-md transition-transform group-hover:scale-105">
+            <Play className="h-6 w-6 fill-current translate-x-0.5" />
           </span>
         )}
       </div>
-
       <div className="mt-4 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-base font-semibold leading-tight tracking-normal text-primary-label line-clamp-2 sm:text-lg">{title}</h2>
-          <p className="mt-1 truncate text-base text-secondary-label sm:text-lg">{artist}</p>
+          <h2 className="text-lg font-semibold leading-tight tracking-normal text-primary-label line-clamp-2">{title}</h2>
+          <p className="mt-1 truncate text-lg text-secondary-label">{artist}</p>
         </div>
         <span className="mt-8 shrink-0 text-primary-label opacity-90 transition-opacity group-hover:opacity-100" aria-hidden="true">
           <MoreHorizontal className="h-6 w-6" />
@@ -63,7 +62,7 @@ function LibraryFolder({ folder, onSave }) {
 
   return (
     <div className="group block w-full max-w-[15rem]">
-      <div className="relative grid aspect-square place-items-center overflow-hidden rounded-[1.1rem] bg-shading sm:rounded-[1.25rem]">
+      <div className="relative grid aspect-square place-items-center overflow-hidden rounded-[1.25rem] bg-shading">
         <Folder className="h-20 w-20 text-secondary-label transition-transform duration-500 group-hover:scale-105" />
       </div>
       <div className="mt-4 flex items-start justify-between gap-3">
@@ -73,10 +72,8 @@ function LibraryFolder({ folder, onSave }) {
             onClick={stop}
             onChange={(event) => setTitle(event.target.value)}
             onBlur={() => save()}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') event.currentTarget.blur();
-            }}
-            className="w-full bg-transparent text-base font-semibold leading-tight tracking-normal text-primary-label outline-none sm:text-lg"
+            onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur(); }}
+            className="w-full bg-transparent text-lg font-semibold leading-tight tracking-normal text-primary-label outline-none"
             aria-label="Folder title"
           />
           <input
@@ -84,10 +81,8 @@ function LibraryFolder({ folder, onSave }) {
             onClick={stop}
             onChange={(event) => setArtist(event.target.value)}
             onBlur={() => save()}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') event.currentTarget.blur();
-            }}
-            className="mt-1 w-full bg-transparent text-base text-secondary-label outline-none sm:text-lg"
+            onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur(); }}
+            className="mt-1 w-full bg-transparent text-lg text-secondary-label outline-none"
             aria-label="Folder artist"
           />
         </div>
@@ -129,7 +124,7 @@ function ProfileAvatar({ user, size = 'h-11 w-11', className = '' }) {
 
 function NotificationsMenu({ notifications }) {
   return (
-    <div className="fixed left-4 right-4 top-24 z-50 rounded-[1.25rem] border border-border bg-[#191919] p-3 shadow-2xl sm:absolute sm:left-auto sm:right-0 sm:top-16 sm:w-[min(24rem,90vw)] sm:p-4">
+    <div className="absolute left-auto right-0 top-16 z-50 w-96 rounded-[1.25rem] border border-border bg-[#191919] p-4 shadow-2xl">
       <h2 className="px-3 pb-3 text-lg font-bold">Notifications</h2>
       {notifications.length === 0 ? (
         <p className="px-3 py-6 text-sm text-secondary-label">No notifications yet.</p>
@@ -158,22 +153,22 @@ function NotificationsMenu({ notifications }) {
 
 function ProfilePanel({ user, theme, onThemeChange, onEditProfile, onLogout, onDeleteAccount }) {
   return (
-    <div className="fixed left-4 right-4 top-24 z-50 rounded-[1.25rem] border border-border bg-[#191919] p-3 shadow-2xl sm:absolute sm:left-auto sm:right-0 sm:top-16 sm:w-[min(24rem,90vw)] sm:p-4">
-      <div className="mb-3 flex items-center gap-3 rounded-2xl bg-shading p-3 sm:mb-4 sm:gap-4 sm:p-4">
-        <ProfileAvatar user={user} size="h-12 w-12 sm:h-16 sm:w-16" />
+    <div className="absolute left-auto right-0 top-16 z-50 w-96 rounded-[1.25rem] border border-border bg-[#191919] p-4 shadow-2xl">
+      <div className="mb-4 flex items-center gap-4 rounded-2xl bg-shading p-4">
+        <ProfileAvatar user={user} size="h-16 w-16" />
         <div className="min-w-0">
-          <h2 className="truncate text-lg font-bold sm:text-xl">{user.name}</h2>
+          <h2 className="truncate text-xl font-bold">{user.name}</h2>
           <p className="truncate text-sm text-secondary-label">{user.email}</p>
         </div>
       </div>
 
-      <button onClick={onEditProfile} className="flex w-full items-center gap-4 rounded-xl px-4 py-3 text-left text-base font-semibold hover:bg-highlight sm:py-4 sm:text-lg">
+      <button onClick={onEditProfile} className="flex w-full items-center gap-4 rounded-xl px-4 py-4 text-left text-lg font-semibold hover:bg-highlight transition-colors">
         <Edit3 className="h-5 w-5" />
         Edit profile
       </button>
 
       <div className="my-2 rounded-xl px-4 py-4">
-        <div className="mb-4 flex items-center gap-4 text-base font-semibold sm:text-lg">
+        <div className="mb-4 flex items-center gap-4 text-lg font-semibold">
           <Palette className="h-5 w-5" />
           Theme setting
         </div>
@@ -182,7 +177,7 @@ function ProfilePanel({ user, theme, onThemeChange, onEditProfile, onLogout, onD
             <button
               key={mode}
               onClick={() => onThemeChange(mode)}
-              className={`h-11 rounded-full text-sm font-bold capitalize transition-colors ${theme === mode ? 'bg-primary-label text-primary-background' : 'bg-highlight text-primary-label hover:bg-primary-label/20'}`}
+              className={`h-11 rounded-full text-sm font-bold capitalize transition-colors ${theme === mode ? 'bg-primary-label text-primary-background' : 'bg-highlight text-primary-label hover:opacity-80'}`}
             >
               {mode}
             </button>
@@ -190,11 +185,11 @@ function ProfilePanel({ user, theme, onThemeChange, onEditProfile, onLogout, onD
         </div>
       </div>
 
-      <button onClick={onLogout} className="flex w-full items-center gap-4 rounded-xl px-4 py-3 text-left text-base font-semibold hover:bg-highlight sm:py-4 sm:text-lg">
+      <button onClick={onLogout} className="flex w-full items-center gap-4 rounded-xl px-4 py-4 text-left text-lg font-semibold hover:bg-highlight transition-colors">
         <LogOut className="h-5 w-5" />
         Sign out
       </button>
-      <button onClick={onDeleteAccount} className="flex w-full items-center gap-4 rounded-xl px-4 py-3 text-left text-base font-semibold text-red-500 hover:bg-red-500/10 sm:py-4 sm:text-lg">
+      <button onClick={onDeleteAccount} className="flex w-full items-center gap-4 rounded-xl px-4 py-4 text-left text-lg font-semibold text-red-500 hover:bg-red-500/10 transition-colors">
         <Trash2 className="h-5 w-5" />
         Delete Account
       </button>
@@ -215,24 +210,24 @@ function EditProfileModal({ user, onClose, onSave, saving, error }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 px-4 py-6 backdrop-blur-sm animate-fade-in">
-      <form onSubmit={handleSubmit} className="relative grid w-full max-w-[44rem] gap-6 rounded-[1.25rem] bg-[#1b1b1b] p-5 shadow-2xl sm:gap-8 sm:p-8 md:grid-cols-[0.9fr_1fr]">
-        <button type="button" onClick={onClose} className="absolute right-4 top-4 grid h-11 w-11 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:right-6 sm:top-6 sm:h-12 sm:w-12" aria-label="Close edit profile">
+      <form onSubmit={handleSubmit} className="relative grid w-full max-w-[44rem] gap-8 rounded-[1.25rem] bg-[#1b1b1b] p-8 shadow-2xl grid-cols-[0.9fr_1fr]">
+        <button type="button" onClick={onClose} className="absolute right-6 top-6 grid h-12 w-12 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Close edit profile">
           <X className="h-6 w-6" />
         </button>
-        <h2 className="col-span-full pr-12 text-center text-2xl font-bold sm:text-3xl">Edit Profile</h2>
+        <h2 className="col-span-full pr-12 text-center text-3xl font-bold">Edit Profile</h2>
 
         <section className="flex flex-col items-center justify-center">
-          <DiscArtwork className="aspect-square w-full max-w-[14rem] rounded-[2rem] sm:max-w-[18rem] md:max-w-[20rem] md:rounded-[2.5rem]" />
+          <DiscArtwork className="aspect-square w-full max-w-[20rem] rounded-[2.5rem]" />
         </section>
 
-        <section className="flex flex-col items-center justify-center gap-5 sm:gap-6">
+        <section className="flex flex-col items-center justify-center gap-6">
           <div className="w-full max-w-[23rem]">
-            <p className="mb-4 text-base text-secondary-label sm:text-lg">Profile picture</p>
-            <button type="button" onClick={() => fileInputRef.current?.click()} className="relative mx-auto grid h-36 w-36 place-items-center overflow-hidden rounded-full bg-shading sm:h-48 sm:w-48">
+            <p className="mb-4 text-lg text-secondary-label">Profile picture</p>
+            <button type="button" onClick={() => fileInputRef.current?.click()} className="relative mx-auto grid h-48 w-48 place-items-center overflow-hidden rounded-full bg-shading">
               {avatarPreview ? (
                 <img src={avatarPreview} alt="" className="h-full w-full object-cover" />
               ) : (
-                <ProfileAvatar user={{ name }} size="h-36 w-36 text-5xl sm:h-48 sm:w-48 sm:text-6xl" />
+                <ProfileAvatar user={{ name }} size="h-48 w-48 text-6xl" />
               )}
               <span className="absolute inset-0 grid place-items-center bg-black/0 text-white opacity-0 transition-opacity hover:bg-black/45 hover:opacity-100">
                 <UploadCloud className="h-9 w-9" />
@@ -242,9 +237,9 @@ function EditProfileModal({ user, onClose, onSave, saving, error }) {
           </div>
 
           <label className="w-full max-w-[23rem]">
-            <span className="mb-3 block text-center text-base text-secondary-label sm:text-lg">Username</span>
-            <span className="flex h-14 items-center rounded-[1.1rem] bg-[#292929] px-5 sm:h-16 sm:rounded-[1.4rem] sm:px-7">
-              <input value={name} onChange={(event) => setName(event.target.value)} className="min-w-0 flex-1 bg-transparent text-lg font-bold text-primary-label outline-none sm:text-xl" required />
+            <span className="mb-3 block text-center text-lg text-secondary-label">Username</span>
+            <span className="flex h-16 items-center rounded-[1.4rem] bg-[#292929] px-7">
+              <input value={name} onChange={(event) => setName(event.target.value)} className="min-w-0 flex-1 bg-transparent text-xl font-bold text-primary-label outline-none" required />
               <Edit3 className="h-5 w-5" />
             </span>
           </label>
@@ -260,107 +255,82 @@ function EditProfileModal({ user, onClose, onSave, saving, error }) {
   );
 }
 
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
 export default function Dashboard({ user, onLogout, onUserUpdate }) {
   const [workspace, setWorkspace] = useState({ folders: [], projects: [], tracks: [], notifications: [] });
   const [loading, setLoading] = useState(true);
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
-  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileError, setProfileError] = useState('');
-  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
   const navigate = useNavigate();
 
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-
   useEffect(() => {
-    let cancelled = false;
-
-    async function loadWorkspace() {
-      try {
-        const res = await fetch(`${apiUrl}/api/workspace?userId=${encodeURIComponent(user.id)}`);
-        const data = await res.json();
-        if (!cancelled) {
-          setWorkspace({
-            folders: data.folders || [],
-            projects: data.projects || [],
-            tracks: data.tracks || [],
-            notifications: data.notifications || [],
-          });
-        }
-      } catch (err) {
-        console.error('Failed to fetch workspace', err);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    loadWorkspace();
-    return () => {
-      cancelled = true;
-    };
-  }, [apiUrl, user.id]);
+    fetch(`${apiUrl}/api/workspace/${user.id}`)
+      .then((res) => res.json())
+      .then((data) => { setWorkspace(data); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [user.id]);
 
   useEffect(() => {
     document.documentElement.classList.toggle('theme-light', theme === 'light');
     localStorage.setItem('theme', theme);
   }, [theme]);
 
-  const createFolder = async () => {
-    const res = await fetch(`${apiUrl}/api/folders`, {
-      method: 'POST',
+  const saveFolderMetadata = async (folderId, updates) => {
+    const res = await fetch(`${apiUrl}/api/folders/${folderId}`, {
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: user.id })
+      body: JSON.stringify(updates),
     });
-    const newFolder = await res.json();
-    setWorkspace((prev) => ({ ...prev, folders: [...prev.folders, newFolder] }));
-    setIsAddMenuOpen(false);
-  };
-
-  const createProject = async () => {
-    const res = await fetch(`${apiUrl}/api/projects`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: user.id })
-    });
-    const newProject = await res.json();
-    setWorkspace((prev) => ({ ...prev, projects: [...prev.projects, newProject] }));
-    setIsAddMenuOpen(false);
-    return newProject;
-  };
-
-  const createAudioProject = async () => {
-    const newProject = await createProject();
-    if (newProject?.id) navigate(`/project/${newProject.id}`);
-  };
-
-  const saveFolderMetadata = async (folderId, payload) => {
-    setWorkspace((prev) => ({
-      ...prev,
-      folders: prev.folders.map((folder) => folder.id === folderId ? { ...folder, ...payload, name: payload.title || folder.name } : folder)
-    }));
-    try {
-      const res = await fetch(`${apiUrl}/api/folders/${folderId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id, ...payload })
-      });
+    if (res.ok) {
       const savedFolder = await res.json();
       if (!res.ok) throw new Error(savedFolder.error || 'Could not update folder.');
-      setWorkspace((prev) => ({
-        ...prev,
-        folders: prev.folders.map((folder) => folder.id === folderId ? savedFolder : folder)
-      }));
-    } catch (err) {
-      console.error('Failed to save folder metadata', err);
+      setWorkspace((prev) => ({ ...prev, folders: prev.folders.map((f) => (f.id === folderId ? savedFolder.folder || savedFolder : f)) }));
     }
   };
 
-  const showComingSoon = (label) => {
-    alert(`${label} is coming soon.`);
+  const createAudioProject = async () => {
     setIsAddMenuOpen(false);
+    const res = await fetch(`${apiUrl}/api/projects`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: user.id, title: 'Untitled project', artist: user.name }),
+    });
+    const data = await res.json();
+    if (res.ok) navigate(`/project/${data.project.id}`);
+  };
+
+  const createProject = async () => {
+    setIsAddMenuOpen(false);
+    const res = await fetch(`${apiUrl}/api/projects`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: user.id, title: 'Untitled project', artist: user.name }),
+    });
+    const data = await res.json();
+    if (res.ok) navigate(`/project/${data.project.id}`);
+  };
+
+  const createFolder = async () => {
+    setIsAddMenuOpen(false);
+    const res = await fetch(`${apiUrl}/api/folders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: user.id, title: 'Untitled folder', artist: user.name }),
+    });
+    const data = await res.json();
+    if (res.ok) setWorkspace((prev) => ({ ...prev, folders: [data.folder, ...prev.folders] }));
+  };
+
+  const showComingSoon = (feature) => {
+    setIsAddMenuOpen(false);
+    alert(`${feature} is coming soon.`);
   };
 
   const saveProfile = async ({ name, avatarFile }) => {
@@ -413,22 +383,25 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
   if (loading) return null;
 
   return (
-    <div className="min-h-screen bg-primary-background px-4 py-6 pb-28 animate-fade-in sm:px-6 sm:py-8 md:px-10 lg:px-14">
+    <div className="min-h-screen bg-primary-background px-10 py-8 pb-28 animate-fade-in lg:px-14">
       <header className="flex items-start justify-between gap-3">
-        <Link to="/" className="min-w-0 truncate text-2xl font-bold tracking-tighter text-primary-label sm:text-3xl">[untitled]</Link>
+        {/* Starlight Station logo — blends with bg in dark, black in light */}
+        <Link to="/" aria-label="Starlight Station home">
+          <StarlightLogo className="h-14 w-48 text-primary-label opacity-90 hover:opacity-100 transition-opacity" />
+        </Link>
 
-        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+        <div className="flex shrink-0 items-center gap-3">
           <div className="relative">
-            <button onClick={() => { setIsNotificationsOpen((open) => !open); setIsProfileOpen(false); }} className="relative grid h-11 w-11 place-items-center rounded-2xl bg-primary-label text-primary-background transition-transform hover:scale-105 sm:h-14 sm:w-14 sm:rounded-3xl" aria-label="Notifications">
-              <Bell className="h-5 w-5 fill-current sm:h-6 sm:w-6" />
-              {workspace.notifications.length > 0 && <span className="absolute right-3 top-3 h-2 w-2 rounded-full bg-blue-500 sm:right-4 sm:top-4" />}
+            <button onClick={() => { setIsNotificationsOpen((open) => !open); setIsProfileOpen(false); }} className="relative grid h-14 w-14 place-items-center rounded-3xl bg-primary-label text-primary-background transition-transform hover:scale-105" aria-label="Notifications">
+              <Bell className="h-6 w-6 fill-current" />
+              {workspace.notifications.length > 0 && <span className="absolute right-4 top-4 h-2 w-2 rounded-full bg-blue-500" />}
             </button>
             {isNotificationsOpen && <NotificationsMenu notifications={workspace.notifications} />}
           </div>
 
           <div className="relative">
-            <button onClick={() => { setIsProfileOpen((open) => !open); setIsNotificationsOpen(false); }} className="grid h-11 w-11 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:h-14 sm:w-14 sm:rounded-3xl" aria-label={`Open ${user.name} profile`}>
-              <ProfileAvatar user={user} size="h-7 w-7 sm:h-8 sm:w-8" />
+            <button onClick={() => { setIsProfileOpen((open) => !open); setIsNotificationsOpen(false); }} className="grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label={`Open ${user.name} profile`}>
+              <ProfileAvatar user={user} size="h-8 w-8" />
             </button>
             {isProfileOpen && (
               <ProfilePanel
@@ -442,19 +415,19 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
             )}
           </div>
 
-          <button className="hidden h-11 w-11 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:grid sm:h-14 sm:w-14 sm:rounded-3xl" aria-label="Search library">
+          <button className="grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Search library">
             <Search className="h-6 w-6" />
           </button>
-          <button onClick={() => setIsChatOpen((open) => !(open))} className="grid h-11 w-11 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:h-14 sm:w-14 sm:rounded-3xl" aria-label="Open messages">
-            <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6" />
+          <button onClick={() => setIsChatOpen((open) => !(open))} className="grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Open messages">
+            <MessageSquare className="h-6 w-6" />
           </button>
-          <button onClick={onLogout} className="hidden h-11 w-11 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:grid sm:h-14 sm:w-14 sm:rounded-3xl" aria-label="Log out">
-            <LogOut className="h-5 w-5 sm:h-6 sm:w-6" />
+          <button onClick={onLogout} className="grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Log out">
+            <LogOut className="h-6 w-6" />
           </button>
         </div>
       </header>
 
-      <main className="mx-auto flex min-h-[calc(100vh-14rem)] max-w-4xl items-center justify-center py-10 sm:min-h-[calc(100vh-16rem)]">
+      <main className="mx-auto flex min-h-[calc(100vh-16rem)] max-w-4xl items-center justify-center py-10">
         {workspace.projects.length === 0 && workspace.folders.length === 0 ? (
           <div className="text-center">
             <Disc3 className="mx-auto mb-5 h-12 w-12 text-secondary-label" />
@@ -462,7 +435,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
             <p className="mt-2 text-secondary-label">Create your first library project.</p>
           </div>
         ) : (
-          <div className="grid w-full grid-cols-2 justify-items-center gap-x-4 gap-y-10 sm:gap-x-8 sm:gap-y-12 md:grid-cols-3">
+          <div className="grid w-full grid-cols-3 justify-items-center gap-x-8 gap-y-12">
             {workspace.folders.map((folder) => (
               <LibraryFolder key={folder.id} folder={folder} onSave={saveFolderMetadata} />
             ))}
@@ -473,9 +446,9 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
         )}
       </main>
 
-      <div className="fixed inset-x-0 bottom-6 z-30 flex flex-col items-center gap-3 px-4 sm:bottom-8">
+      <div className="fixed inset-x-0 bottom-8 z-30 flex flex-col items-center gap-3 px-4">
         {isAddMenuOpen && (
-          <div className="w-[min(16rem,92vw)] rounded-[1.2rem] bg-[#282828]/95 p-3 shadow-2xl backdrop-blur-xl animate-slide-up">
+          <div className="w-64 rounded-[1.2rem] bg-[#282828]/95 p-3 shadow-2xl backdrop-blur-xl animate-slide-up">
             <button onClick={createAudioProject} className="flex w-full items-center gap-5 rounded-xl px-4 py-3 text-left text-xl font-semibold hover:bg-highlight transition-colors">
               <Music className="h-6 w-6" />
               Audio
@@ -501,7 +474,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
 
         <button
           onClick={() => setIsAddMenuOpen((open) => !open)}
-          className="inline-flex h-14 min-w-40 items-center justify-center gap-3 rounded-full bg-shading px-7 text-lg font-semibold text-primary-label shadow-2xl backdrop-blur-md transition-transform hover:scale-[1.02] sm:h-16 sm:min-w-48 sm:text-xl"
+          className="inline-flex h-16 min-w-48 items-center justify-center gap-3 rounded-full bg-shading px-7 text-xl font-semibold text-primary-label shadow-2xl backdrop-blur-md transition-transform hover:scale-[1.02]"
         >
           {isAddMenuOpen ? <X className="h-6 w-6" /> : <Plus className="h-6 w-6" />}
           {isAddMenuOpen ? 'Close' : 'Add'}

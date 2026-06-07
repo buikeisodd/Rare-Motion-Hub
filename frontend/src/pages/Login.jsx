@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Loader2, Mail } from 'lucide-react';
 import heroImage from '../assets/hero.png';
+import StarlightLogo from '../components/StarlightLogo';
 
 export default function Login({ onLogin }) {
   const [email, setEmail] = useState('');
@@ -34,15 +35,16 @@ export default function Login({ onLogin }) {
   };
 
   return (
-    <div className="min-h-screen bg-primary-background px-6 py-12 md:px-20 relative overflow-hidden">
-      <div className="text-3xl font-bold tracking-tighter text-primary-label">[untitled]</div>
+    <div className="min-h-screen bg-primary-background px-20 py-12 relative overflow-hidden">
+      {/* Logo — blends with dark bg, black in light mode */}
+      <StarlightLogo className="h-14 w-52 text-primary-label opacity-90" />
 
       <div className="mx-auto flex min-h-[calc(100vh-8rem)] w-full max-w-3xl flex-col items-center justify-center animate-fade-in">
         <div className="mb-14 h-56 w-56 overflow-hidden rounded-[3rem] bg-shading border border-border shadow-2xl">
           <img src={heroImage} alt="" className="h-full w-full object-cover" />
         </div>
 
-        <h1 className="max-w-xl text-center text-4xl md:text-5xl font-semibold leading-tight tracking-normal mb-9">
+        <h1 className="max-w-xl text-center text-5xl font-semibold leading-tight tracking-normal mb-9">
           A sacred place for your work-in-progress music
         </h1>
 
@@ -54,7 +56,7 @@ export default function Login({ onLogin }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Email address"
-              className="h-20 w-full rounded-full bg-shading border border-border pl-16 pr-8 text-center text-lg font-semibold text-primary-label placeholder:text-secondary-label focus:outline-none focus:ring-2 focus:ring-white/20 transition-all"
+              className="h-20 w-full rounded-full bg-shading border border-border pl-16 pr-8 text-center text-lg font-semibold text-primary-label placeholder:text-secondary-label focus:outline-none focus:ring-2 focus:ring-primary-label/20 transition-all"
               required
             />
           </label>
@@ -75,7 +77,7 @@ export default function Login({ onLogin }) {
         </form>
 
         <p className="mt-12 max-w-md text-center text-sm text-secondary-label">
-          By continuing you confirm that this email belongs to an approved [untitled] collaborator.
+          By continuing you confirm that this email belongs to an approved Starlight Station collaborator.
         </p>
       </div>
     </div>
