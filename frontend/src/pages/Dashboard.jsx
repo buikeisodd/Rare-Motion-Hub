@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Bell, Circle, Disc3, Edit3, FolderPlus, LogOut, MessageSquare, MoreHorizontal, Music, Palette, Play, Plus, Search, Trash2, UploadCloud, Video, X } from 'lucide-react';
-import ChatInbox from '../components/ChatInbox';
+import { Bell, Circle, Disc3, Edit3, FolderPlus, LogOut, MoreHorizontal, Music, Palette, Play, Plus, Search, Trash2, UploadCloud, Video, X } from 'lucide-react';
 
 function LibraryProject({ project, tracks }) {
   const projectTracks = tracks.filter((track) => track.projectId === project.id);
@@ -212,7 +211,6 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileError, setProfileError] = useState('');
-  const [isChatOpen, setIsChatOpen] = useState(false);
   const navigate = useNavigate();
 
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -368,9 +366,6 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
           <button className="hidden h-11 w-11 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:grid sm:h-14 sm:w-14 sm:rounded-3xl" aria-label="Search library">
             <Search className="h-6 w-6" />
           </button>
-          <button onClick={() => setIsChatOpen((open) => !(open))} className="grid h-11 w-11 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:h-14 sm:w-14 sm:rounded-3xl" aria-label="Open messages">
-            <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6" />
-          </button>
           <button onClick={onLogout} className="hidden h-11 w-11 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:grid sm:h-14 sm:w-14 sm:rounded-3xl" aria-label="Log out">
             <LogOut className="h-5 w-5 sm:h-6 sm:w-6" />
           </button>
@@ -427,8 +422,6 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
           {isAddMenuOpen ? 'Close' : 'Add'}
         </button>
       </div>
-
-      <ChatInbox user={user} isOpen={isChatOpen} onToggle={() => setIsChatOpen((open) => !open)} />
 
       {isEditProfileOpen && (
         <EditProfileModal

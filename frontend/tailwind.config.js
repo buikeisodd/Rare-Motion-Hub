@@ -8,15 +8,15 @@ export default {
     extend: {
       colors: {
         primary: {
-          background: '#000000',
-          label: '#ffffff',
+          background: 'rgb(var(--color-primary-background) / <alpha-value>)',
+          label: 'rgb(var(--color-primary-label) / <alpha-value>)',
         },
         secondary: {
-          label: '#a3a3a3',
+          label: 'rgb(var(--color-secondary-label) / <alpha-value>)',
         },
-        shading: 'rgba(255, 255, 255, 0.08)',
-        border: 'rgba(255, 255, 255, 0.05)',
-        highlight: 'rgba(255, 255, 255, 0.15)',
+        shading: 'rgb(var(--color-shading) / 0.08)',
+        border: 'rgb(var(--color-border) / 0.05)',
+        highlight: 'rgb(var(--color-highlight) / 0.15)',
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'], // Fallback if local fonts fail, Inter closely matches untitled's premium feel
