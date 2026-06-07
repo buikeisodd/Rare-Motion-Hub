@@ -31,27 +31,28 @@ export default function MarqueeInput({ value, onChange, onBlur, className, place
         onChange={onChange}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
-        className={`w-full bg-transparent outline-none ${className}`}
+        // Apply both className and textClassName so font size/weight match the display span exactly
+        className={`w-full bg-transparent outline-none py-1 ${textClassName || ''} ${className}`}
         placeholder={placeholder}
         onClick={(e) => e.stopPropagation()}
-        readOnly={readOnly}
       />
     );
   }
 
   return (
-    <div 
-      ref={containerRef} 
-      className={`w-full overflow-hidden ${!readOnly ? 'cursor-text' : ''} ${className}`} 
+    <div
+      ref={containerRef}
+      // py-1 prevents tall letters (capitals, descenders like g/y) from being clipped by overflow-hidden
+      className={`w-full overflow-hidden py-1 ${!readOnly ? 'cursor-text' : ''} ${className}`}
       onClick={(e) => {
         if (!readOnly) {
-          e.preventDefault(); 
-          e.stopPropagation(); 
-          setIsEditing(true); 
+          e.preventDefault();
+          e.stopPropagation();
+          setIsEditing(true);
         }
       }}
     >
-      <div 
+      <div
         className={`flex w-fit ${isOverflowing ? 'animate-marquee hover:[animation-play-state:paused]' : ''}`}
       >
         <span ref={textRef} className={`whitespace-nowrap ${textClassName || ''} ${isOverflowing ? 'pr-8' : ''}`}>
