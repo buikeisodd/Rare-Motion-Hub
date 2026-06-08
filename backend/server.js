@@ -1279,6 +1279,19 @@ app.post('/api/tracks/:id/split-stems', (req, res) => {
   res.json({ jobId });
 
   (async () => {
+    // Simulate incremental progress while Demucs runs (25 → 88)
+    let simulatedProgress = 25;
+    const progressTimer = setInterval(() => {
+      if (stemJobs[jobId] && !stemJobs[jobId].done && !stemJobs[jobId].error) {
+        const remaining = 88 - simulatedProgress;
+        const step = Math.max(1, Math.floor(remaining * 0.12));
+        simulatedProgress = Math.min(88, simulatedProgress + step);
+        stemJobs[jobId].progress = simulatedProgress;
+      } else {
+        clearInterval(progressTimer);
+      }
+    }, 2000);
+
     try {
       stemJobs[jobId].progress = 10;
       let inputPath = sourcePath;
@@ -1291,20 +1304,52 @@ app.post('/api/tracks/:id/split-stems', (req, res) => {
 
       stemJobs[jobId].progress = 25;
       await runDemucs(inputPath, outputRoot);
+      clearInterval(progressTimer);
       stemJobs[jobId].progress = 90;
 
       const demucsOutputDir = findStemOutputDir(outputRoot);
-
       if (!demucsOutputDir) throw new Error('Stem output not found after Demucs processing.');
 
       const trackStemDir = path.join(stemsDir, userId, track.id);
       fs.mkdirSync(trackStemDir, { recursive: true });
-      const stems = ['drums', 'bass', 'other', 'vocals'].map((stem) => {
+
+      // Build stem objects and auto-create track records in the project
+      const db = ensureDBShape(readDB());
+      const project = db.projects.find(p => p.id === track.projectId);
+      const uploader = db.users.find(u => u.id === userId) || { id: userId, name: 'Unknown' };
+      const stemNames = ['drums', 'bass', 'other', 'vocals'];
+      const stems = stemNames.map((stem) => {
         const sourceFile = fs.readdirSync(demucsOutputDir).find((file) => file.startsWith(stem));
         if (!sourceFile) return null;
         const targetName = `${stem}.wav`;
         const targetPath = path.join(trackStemDir, targetName);
         fs.copyFileSync(path.join(demucsOutputDir, sourceFile), targetPath);
+
+        // Auto-add as a track in the same project
+        if (track.projectId) {
+          const stemTrackId = Date.now().toString() + '_' + stem;
+          const stemLabel = stem.charAt(0).toUpperCase() + stem.slice(1);
+          const projectTitle = project ? project.title || project.name : track.title;
+          const newTrack = {
+            id: stemTrackId,
+            userId,
+            projectId: track.projectId,
+            title: `${projectTitle} - ${stemLabel}`,
+            artist: track.artist || '',
+            producer: track.producer || '',
+            filename: targetName,
+            mimeType: 'audio/wav',
+            size: fs.statSync(targetPath).size,
+            url: `${BASE_URL}/api/media/stems/${track.id}/${targetName}?userId=${encodeURIComponent(userId)}`,
+            uploader: { id: uploader.id, name: uploader.name },
+            uploadedAt: new Date().toISOString(),
+            isStem: true,
+            stemOf: track.id,
+            stemType: stem,
+          };
+          db.tracks.push(newTrack);
+        }
+
         return {
           name: stem,
           filename: targetName,
@@ -1312,12 +1357,15 @@ app.post('/api/tracks/:id/split-stems', (req, res) => {
         };
       }).filter(Boolean);
 
+      writeDB(db);
+
       stemJobs[jobId].stems = stems;
       stemJobs[jobId].done = true;
       stemJobs[jobId].progress = 100;
       removeDirIfExists(outputRoot);
       setTimeout(() => delete stemJobs[jobId], 120000);
     } catch (err) {
+      clearInterval(progressTimer);
       console.error('Stem split failed:', err);
       stemJobs[jobId].error = err.message || 'Stem split failed';
       removeDirIfExists(outputRoot);

@@ -11,6 +11,7 @@ export function AudioProvider({ children }) {
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isBuffering, setIsBuffering] = useState(false);
+  const [repeatMode, setRepeatMode] = useState(0); // 0=off 1=all 2=one
 
   // Single audio element for the entire app lifetime — never recreated
   const audioRef = useRef(null);
@@ -63,6 +64,20 @@ export function AudioProvider({ children }) {
       audio.removeEventListener('playing',        onPlaying);
     };
   }, []);
+
+  // Repeat one — handled directly in context so it always works
+  useEffect(() => {
+    const audio = audioRef.current;
+    const onEnd = () => {
+      if (repeatMode === 2) {
+        audio.currentTime = 0;
+        audio.play().catch(() => {});
+      }
+      // repeatMode 0/1 handled by AudioPlayer's ended listener for next-track logic
+    };
+    audio.addEventListener('ended', onEnd);
+    return () => audio.removeEventListener('ended', onEnd);
+  }, [repeatMode]);
 
   const seek = useCallback((t) => {
     setProgress(t);
@@ -128,6 +143,7 @@ export function AudioProvider({ children }) {
     projectName, setProjectName,
     isPlaying, setIsPlaying,
     progress, duration, isBuffering,
+    repeatMode, setRepeatMode,
     seek, setVolume, setMuted, setPlaybackRate,
     playTrack, addToQueue, addTracksToQueue,
     queue, audioRef,

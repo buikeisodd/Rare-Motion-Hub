@@ -96,13 +96,13 @@ function SettingsPanel({ playbackRate, setRate, pitchShift, setPitch, onClose, c
 
 export default function AudioPlayer({ cardModal = false, hideCover = false, onDismiss }) {
   const { currentTrack, tracks, projectName, isPlaying, setIsPlaying, setCurrentTrack,
-          progress, duration, isBuffering, seek, setVolume, setMuted, setPlaybackRate: ctxSetRate } = useAudio();
+          progress, duration, isBuffering, seek, setVolume, setMuted, setPlaybackRate: ctxSetRate,
+          repeatMode, setRepeatMode } = useAudio();
 
   const [volume, setVolumeState] = useState(1);
   const [isMuted, setIsMutedState] = useState(false);
   const [playbackRate, setPlaybackRateState] = useState(1);
   const [pitchShift, setPitchShift] = useState(0);
-  const [repeatMode, setRepeatMode] = useState(0);
   const [isShuffled, setIsShuffled] = useState(false);
   const [playQueue, setPlayQueue] = useState([]);
   const [queueIndex, setQueueIndex] = useState(-1);
@@ -139,12 +139,12 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, onDi
     setQueueIndex(idx !== -1 ? idx : 0);
   }, [tracks, isShuffled, currentTrack?.id]);
 
-  // Handle track end
+  // Handle track end (repeat-one handled in AudioContext; this handles next-track)
   useEffect(() => {
     const audio = audioRef?.current;
     if (!audio) return;
     const onEnd = () => {
-      if (repeatMode === 2) { audio.currentTime = 0; audio.play(); return; }
+      if (repeatMode === 2) return; // context handles repeat-one
       let next = queueIndex + 1;
       if (next >= playQueue.length) { if (repeatMode === 1) next = 0; else { setIsPlaying(false); return; } }
       if (playQueue[next]) { setCurrentTrack(playQueue[next]); setIsPlaying(true); }
