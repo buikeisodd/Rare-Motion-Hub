@@ -1,2 +1,5 @@
-demucs>=4.0.0
+# CPU build keeps install size reasonable on Windows.
+--extra-index-url https://download.pytorch.org/whl/cpu
 torch
+torchaudio
+demucs>=4.0.0

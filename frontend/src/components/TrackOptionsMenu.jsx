@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   ArrowLeft, BarChart3, Download, FileAudio, FileText, Layers,
-  ListPlus, MoreHorizontal, Pencil, Play, Share2, Trash2, Upload, X
+  ListPlus, Mic, MicOff, MoreHorizontal, Pencil, Play, Share2, Trash2, Upload, X
 } from 'lucide-react';
 import ConfirmModal from './ConfirmModal';
 
@@ -25,20 +25,6 @@ function formatDuration(seconds) {
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
   return `${mins}m ${secs}s`;
-}
-
-function WaveformBars({ seed = 0, active = false, className = '' }) {
-  return (
-    <div className={`flex h-10 flex-1 items-end gap-[2px] overflow-hidden ${className}`}>
-      {Array.from({ length: 36 }).map((_, index) => (
-        <span
-          key={index}
-          className={`flex-1 rounded-full ${active ? 'bg-[linear-gradient(180deg,#b8ff65,#df5b9c)]' : 'bg-secondary-label/30'}`}
-          style={{ height: `${14 + ((index * 11 + seed) % 22)}px` }}
-        />
-      ))}
-    </div>
-  );
 }
 
 function ModalShell({ isOpen, onClose, children, className = 'max-w-3xl', zIndex = 'z-[85]' }) {
@@ -91,6 +77,7 @@ function TrackInsightsModal({ isOpen, onClose, track, userId }) {
           <>
             <p className="mb-1 truncate text-sm font-semibold">{track?.title}</p>
             <p className="mb-4 text-3xl font-light">{insights?.totalPlays ?? 0} plays</p>
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-secondary-label">Listeners</p>
             <div className="max-h-52 space-y-2 overflow-y-auto">
               {(insights?.byListener || []).length === 0 ? (
                 <p className="text-sm text-secondary-label">No listeners yet.</p>
@@ -110,24 +97,26 @@ function TrackInsightsModal({ isOpen, onClose, track, userId }) {
   );
 }
 
-function TrackNotesModal({ isOpen, onClose, track, userId, onSaved }) {
-  const [notes, setNotes] = useState('');
+function TrackRenameModal({ isOpen, onClose, track, userId, onSaved }) {
+  const [title, setTitle] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (isOpen && track) setNotes(track.notes || '');
+    if (isOpen && track) setTitle(track.title || '');
   }, [isOpen, track]);
 
   const save = async () => {
+    const nextTitle = title.trim();
+    if (!nextTitle) return;
     setSaving(true);
     try {
       const res = await fetch(`${apiUrl}/api/tracks/${track.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, notes })
+        body: JSON.stringify({ userId, title: nextTitle })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Could not save notes.');
+      if (!res.ok) throw new Error(data.error || 'Could not rename track.');
       onSaved(data.track);
       onClose();
     } catch (err) {
@@ -141,21 +130,183 @@ function TrackNotesModal({ isOpen, onClose, track, userId, onSaved }) {
     <ModalShell isOpen={isOpen} onClose={onClose} className="max-w-md" zIndex="z-[95]">
       <div className="p-5">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-primary-label">Notes</h3>
+          <h3 className="text-lg font-semibold text-primary-label">Rename</h3>
           <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-full bg-shading text-secondary-label hover:bg-highlight">
             <X className="h-4 w-4" />
           </button>
         </div>
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="w-full rounded-xl border border-border bg-shading px-3 py-2.5 text-sm text-primary-label outline-none"
+          placeholder="Track title"
+          onKeyDown={(e) => e.key === 'Enter' && save()}
+        />
+        <button onClick={save} disabled={saving || !title.trim()} className="mt-4 w-full rounded-full bg-primary-label py-2.5 text-sm font-semibold text-primary-background disabled:opacity-60">
+          {saving ? 'Saving...' : 'Save'}
+        </button>
+      </div>
+    </ModalShell>
+  );
+}
+
+function TrackNotesModal({ isOpen, onClose, track, userId, onSaved }) {
+  const [notes, setNotes] = useState('');
+  const [memos, setMemos] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [uploadingMemo, setUploadingMemo] = useState(false);
+  const recorderRef = useRef(null);
+  const chunksRef = useRef([]);
+
+  useEffect(() => {
+    if (isOpen && track) {
+      setNotes(track.notes || '');
+      setMemos(track.noteMemos || []);
+    }
+  }, [isOpen, track]);
+
+  const saveNotes = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(`${apiUrl}/api/tracks/${track.id}?userId=${encodeURIComponent(userId)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, notes })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not save notes.');
+      onSaved(data.track);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const uploadMemo = async (file) => {
+    if (!file) return;
+    setUploadingMemo(true);
+    try {
+      const formData = new FormData();
+      formData.append('memo', file);
+      formData.append('userId', userId);
+      const res = await fetch(`${apiUrl}/api/tracks/${track.id}/note-memos?userId=${encodeURIComponent(userId)}`, {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not save voice memo.');
+      setMemos(data.track.noteMemos || []);
+      onSaved(data.track);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setUploadingMemo(false);
+    }
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      chunksRef.current = [];
+      const recorder = new MediaRecorder(stream);
+      recorderRef.current = recorder;
+      recorder.ondataavailable = (event) => chunksRef.current.push(event.data);
+      recorder.onstop = () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        uploadMemo(new File([blob], `memo-${Date.now()}.webm`, { type: 'audio/webm' }));
+        setRecording(false);
+      };
+      recorder.start();
+      setRecording(true);
+    } catch (err) {
+      alert('Microphone access is required to record voice memos.');
+    }
+  };
+
+  const stopRecording = () => recorderRef.current?.stop();
+
+  const deleteMemo = async (memoId) => {
+    if (!confirm('Delete this voice memo?')) return;
+    try {
+      const res = await fetch(`${apiUrl}/api/tracks/${track.id}/note-memos/${memoId}?userId=${encodeURIComponent(userId)}`, {
+        method: 'DELETE'
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not delete voice memo.');
+      setMemos(data.track.noteMemos || []);
+      onSaved(data.track);
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <ModalShell isOpen={isOpen} onClose={onClose} className="max-w-4xl" zIndex="z-[95]">
+      <div className="flex max-h-[85vh] flex-col p-5 sm:p-6">
+        <div className="mb-4 flex shrink-0 items-center justify-between">
+          <div>
+            <h3 className="text-xl font-semibold text-primary-label">Notes</h3>
+            <p className="mt-1 text-sm text-secondary-label">{track?.title}</p>
+          </div>
+          <button onClick={onClose} className="grid h-9 w-9 place-items-center rounded-full bg-shading text-secondary-label hover:bg-highlight">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          rows={6}
-          placeholder="Add notes about this track..."
-          className="w-full resize-none rounded-xl border border-border bg-shading px-3 py-2 text-sm text-primary-label outline-none"
+          placeholder="Write lyrics, ideas, mix notes, session thoughts..."
+          className="min-h-[280px] flex-1 resize-y rounded-2xl border border-border bg-shading px-4 py-3 text-base leading-relaxed text-primary-label outline-none focus:border-secondary-label sm:min-h-[360px]"
         />
-        <button onClick={save} disabled={saving} className="mt-4 w-full rounded-full bg-primary-label py-2.5 text-sm font-semibold text-primary-background disabled:opacity-60">
-          {saving ? 'Saving...' : 'Save notes'}
-        </button>
+
+        <div className="mt-5 shrink-0">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-sm font-semibold text-primary-label">Voice memos</p>
+            <button
+              onClick={recording ? stopRecording : startRecording}
+              disabled={uploadingMemo}
+              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-colors ${recording ? 'bg-red-500 text-white' : 'bg-shading hover:bg-highlight'}`}
+            >
+              {recording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+              {uploadingMemo ? 'Saving memo...' : recording ? 'Stop recording' : 'Record memo'}
+            </button>
+          </div>
+
+          {memos.length === 0 ? (
+            <p className="rounded-2xl border border-dashed border-border bg-shading/50 px-4 py-6 text-center text-sm text-secondary-label">
+              No voice memos yet. Record quick ideas without typing.
+            </p>
+          ) : (
+            <div className="max-h-48 space-y-2 overflow-y-auto">
+              {memos.map((memo) => (
+                <div key={memo.id} className="flex items-center gap-3 rounded-2xl bg-shading px-3 py-2">
+                  <audio src={`${memo.url}?userId=${encodeURIComponent(userId)}`} controls className="min-w-0 flex-1" />
+                  <span className="hidden shrink-0 text-xs text-secondary-label sm:inline">
+                    {formatTrackDate(memo.uploadedAt)}
+                  </span>
+                  <button onClick={() => deleteMemo(memo.id)} className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-secondary-label hover:bg-highlight hover:text-red-400" aria-label="Delete voice memo">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="mt-5 flex shrink-0 justify-end gap-3">
+          <button onClick={onClose} className="rounded-full px-5 py-2.5 text-sm font-semibold text-secondary-label hover:bg-highlight">
+            Close
+          </button>
+          <button onClick={saveNotes} disabled={saving} className="rounded-full bg-primary-label px-6 py-2.5 text-sm font-semibold text-primary-background disabled:opacity-60">
+            {saving ? 'Saving...' : 'Save notes'}
+          </button>
+        </div>
       </div>
     </ModalShell>
   );
@@ -229,7 +380,8 @@ function StemSplitModal({ isOpen, onClose, track, userId }) {
     setError('');
     setProgress(5);
     try {
-      const res = await fetch(`${apiUrl}/api/tracks/${track.id}/split-stems`, {
+      const query = `userId=${encodeURIComponent(userId)}`;
+      const res = await fetch(`${apiUrl}/api/tracks/${track.id}/split-stems?${query}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId })
@@ -238,7 +390,7 @@ function StemSplitModal({ isOpen, onClose, track, userId }) {
       if (!res.ok) throw new Error(data.error || 'Could not start stem split.');
 
       await new Promise((resolve, reject) => {
-        const source = new EventSource(`${apiUrl}/api/tracks/${track.id}/split-stems/status/${data.jobId}`);
+        const source = new EventSource(`${apiUrl}/api/tracks/${track.id}/split-stems/status/${data.jobId}?${query}`);
         source.onmessage = (event) => {
           const payload = JSON.parse(event.data);
           if (payload.error) { source.close(); reject(new Error(payload.error)); }
@@ -304,14 +456,11 @@ function StemSplitModal({ isOpen, onClose, track, userId }) {
   );
 }
 
-function VersionRowMenu({ onRename, onExport, onDelete, onClose }) {
+function VersionRowMenu({ onExport, onDelete, onClose }) {
   return (
     <>
       <div className="fixed inset-0 z-[110]" onClick={onClose} />
       <div className="absolute right-0 top-full z-[111] mt-1 w-44 rounded-xl border border-border panel-bg p-1.5 shadow-2xl">
-        <button onClick={onRename} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-highlight">
-          <Pencil className="h-3.5 w-3.5" /> Rename
-        </button>
         <button onClick={onExport} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-highlight">
           <Download className="h-3.5 w-3.5" /> Export version
         </button>
@@ -322,6 +471,45 @@ function VersionRowMenu({ onRename, onExport, onDelete, onClose }) {
         )}
       </div>
     </>
+  );
+}
+
+function VersionRenameField({ label, onSave, disabled }) {
+  const [value, setValue] = useState(label);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setValue(label);
+  }, [label]);
+
+  const save = async () => {
+    const next = value.trim();
+    if (!next || next === label) return;
+    setSaving(true);
+    try {
+      await onSave(next);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="flex gap-2">
+      <input
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        disabled={disabled || saving}
+        className="min-w-0 flex-1 rounded-lg border border-border bg-primary-background/50 px-2 py-1 text-sm font-semibold outline-none focus:border-secondary-label"
+        onKeyDown={(e) => e.key === 'Enter' && save()}
+      />
+      <button
+        onClick={save}
+        disabled={disabled || saving || !value.trim() || value.trim() === label}
+        className="shrink-0 rounded-lg bg-shading px-2 py-1 text-xs font-semibold hover:bg-highlight disabled:opacity-40"
+      >
+        {saving ? '...' : 'Save'}
+      </button>
+    </div>
   );
 }
 
@@ -350,17 +538,13 @@ function TrackVersionsModal({ isOpen, onClose, onBack, track, userId, onTrackUpd
     }
   };
 
-  const handleRename = async (version) => {
-    setOpenMenuId(null);
-    const nextLabel = prompt('Rename version', version.label || track.title);
-    if (!nextLabel?.trim()) return;
-
+  const saveVersionLabel = async (version, nextLabel) => {
     try {
       if (version.isCurrent) {
         const res = await fetch(`${apiUrl}/api/tracks/${track.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, title: nextLabel.trim() })
+          body: JSON.stringify({ userId, title: nextLabel })
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
@@ -371,7 +555,7 @@ function TrackVersionsModal({ isOpen, onClose, onBack, track, userId, onTrackUpd
       const res = await fetch(`${apiUrl}/api/tracks/${track.id}/versions/${version.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, label: nextLabel.trim() })
+        body: JSON.stringify({ userId, label: nextLabel })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -436,25 +620,30 @@ function TrackVersionsModal({ isOpen, onClose, onBack, track, userId, onTrackUpd
       </div>
 
       <div className="max-h-[50vh] space-y-1 overflow-y-auto px-3 py-3">
-        {allVersions.map((version, index) => (
+        {allVersions.map((version) => (
           <div
             key={version.id}
-            className={`relative flex items-center gap-3 rounded-2xl px-3 py-3 transition-colors ${version.isCurrent ? 'bg-highlight' : 'hover:bg-shading'}`}
+            className={`relative flex items-start gap-3 rounded-2xl px-3 py-3 transition-colors ${version.isCurrent ? 'bg-highlight' : 'hover:bg-shading'}`}
           >
             <button
               onClick={() => version.isCurrent ? onPlay?.(track) : handleSwitch(version.id)}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-shading hover:bg-highlight"
+              className="mt-1 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-shading hover:bg-highlight"
               aria-label="Play version"
             >
               <Play className="h-4 w-4 fill-current" />
             </button>
             <div className="min-w-0 flex-1">
-              <div className="mb-1 flex items-center gap-2">
-                <p className="truncate text-sm font-semibold">{version.label}</p>
-                {version.isCurrent && <span className="shrink-0 rounded-full bg-primary-label px-2 py-0.5 text-[10px] font-bold text-primary-background">Current</span>}
+              <div className="mb-2 flex items-center gap-2">
+                {version.isCurrent && (
+                  <span className="shrink-0 rounded-full bg-primary-label px-2 py-0.5 text-[10px] font-bold text-primary-background">Current</span>
+                )}
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-secondary-label">Rename</span>
               </div>
-              <p className="truncate text-xs text-secondary-label">{formatTrackDate(version.uploadedAt)}</p>
-              <WaveformBars seed={index} active={version.isCurrent} className="mt-2 h-6" />
+              <VersionRenameField
+                label={version.label}
+                onSave={(nextLabel) => saveVersionLabel(version, nextLabel)}
+              />
+              <p className="mt-2 truncate text-xs text-secondary-label">{formatTrackDate(version.uploadedAt)}</p>
             </div>
             <div className="relative shrink-0">
               <button
@@ -466,7 +655,6 @@ function TrackVersionsModal({ isOpen, onClose, onBack, track, userId, onTrackUpd
               </button>
               {openMenuId === version.id && (
                 <VersionRowMenu
-                  onRename={() => handleRename(version)}
                   onExport={() => handleExport(version)}
                   onDelete={version.isCurrent ? null : () => handleDeleteVersion(version)}
                   onClose={() => setOpenMenuId(null)}
@@ -543,6 +731,7 @@ function TrackDetailsModal({
   };
 
   const actions = [
+    { id: 'rename', label: 'Rename', icon: Pencil, onClick: () => onOpenSubModal('rename') },
     { id: 'insights', label: 'Insights', icon: BarChart3, onClick: () => onOpenSubModal('insights') },
     { id: 'notes', label: 'Notes', icon: FileText, onClick: () => onOpenSubModal('notes') },
     { id: 'replace', label: 'Replace audio', icon: FileAudio, onClick: () => onOpenSubModal('replace') },
@@ -568,7 +757,6 @@ function TrackDetailsModal({
               {formatDuration(duration)}
               {track.versions?.length > 0 && ` · ${track.versions.length + 1} versions`}
             </p>
-            <WaveformBars seed={track.id?.length || 0} active className="mb-5 h-14" />
             <button
               onClick={() => setShowVersions(true)}
               className="rounded-full border border-border bg-shading px-4 py-2 text-sm font-semibold hover:bg-highlight"
@@ -668,6 +856,7 @@ export default function TrackOptionsMenu({
         onOpenSubModal={openSubModal}
       />
 
+      <TrackRenameModal isOpen={subModal === 'rename'} onClose={() => setSubModal(null)} track={track} userId={userId} onSaved={onTrackUpdate} />
       <TrackInsightsModal isOpen={subModal === 'insights'} onClose={() => setSubModal(null)} track={track} userId={userId} />
       <TrackNotesModal isOpen={subModal === 'notes'} onClose={() => setSubModal(null)} track={track} userId={userId} onSaved={onTrackUpdate} />
       <TrackReplaceModal isOpen={subModal === 'replace'} onClose={() => setSubModal(null)} track={track} userId={userId} onSaved={onTrackUpdate} />

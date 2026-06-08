@@ -343,7 +343,11 @@ export default function Project({ user }) {
                   <div className="min-w-0">
                     <h3 className="truncate text-xl font-semibold text-primary-label">{track.title}</h3>
                     <p className="mt-1 text-base text-secondary-label">{timeAgo(track.uploadedAt)}</p>
-                    {track.notes && <p className="mt-1 truncate text-xs text-secondary-label/80">{track.notes}</p>}
+                    {(track.notes || track.noteMemos?.length > 0) && (
+                      <p className="mt-1 truncate text-xs text-secondary-label/80">
+                        {track.notes || `${track.noteMemos.length} voice memo${track.noteMemos.length === 1 ? '' : 's'}`}
+                      </p>
+                    )}
                     {track.versions?.length > 0 && (
                       <p className="mt-1 text-xs text-secondary-label">{track.versions.length + 1} versions</p>
                     )}

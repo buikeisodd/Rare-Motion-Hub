@@ -1,4 +1,6 @@
 node_modules/
+backend/.venv/
+backend/stems/
 backend/uploads/
 backend/covers/
 .env

@@ -140,37 +140,71 @@ const normalizeLibraryItem = (item, db, type) => {
 const normalizeTrack = (track) => ({
   ...track,
   notes: track.notes || '',
+  noteMemos: (track.noteMemos || []).map((memo) => ({
+    ...memo,
+    url: memo.filename
+      ? `${BASE_URL}/api/media/tracks/${track.id}/note-memos/${memo.id}`
+      : memo.url
+  })),
   versions: track.versions || [],
   url: track.filename ? `${BASE_URL}/api/media/tracks/${track.id}` : track.url
 });
 const trackOwnerId = (track) => track.sourceUserId || track.uploader?.id || track.userId;
 const trackMediaPath = (track) => path.join(uploadDir, trackOwnerId(track), track.filename);
-const findOwnedTrack = (db, trackId, userId) => (
-  db.tracks.find((item) => item.id === trackId && (item.userId === userId || item.uploader?.id === userId))
-);
+const noteMemoDir = (track) => path.join(uploadDir, trackOwnerId(track), 'note-memos', track.id);
+const findAccessibleTrack = (db, trackId, userId) => {
+  const normalizedUserId = userId?.toString();
+  const track = db.tracks.find((item) => item.id?.toString() === trackId?.toString());
+  if (!track) return null;
+  const ownerIds = [track.userId, track.uploader?.id].filter(Boolean).map(String);
+  if (ownerIds.includes(normalizedUserId)) return track;
+  const project = db.projects.find((item) => item.id === track.projectId);
+  if (project && project.userId?.toString() === normalizedUserId) return track;
+  return null;
+};
+const findOwnedTrack = findAccessibleTrack;
 const removeTrackFiles = (track) => {
   removeFileIfExists(trackMediaPath(track));
   (track.versions || []).forEach((version) => {
     removeFileIfExists(path.join(uploadDir, trackOwnerId(track), version.filename));
   });
+  removeDirIfExists(noteMemoDir(track));
 };
+const demucsVenvDir = path.join(__dirname, '.venv', process.platform === 'win32' ? 'Scripts' : 'bin');
+const demucsBinary = process.env.DEMUCS_BIN || path.join(demucsVenvDir, process.platform === 'win32' ? 'demucs.exe' : 'demucs');
+const demucsPython = process.env.DEMUCS_PYTHON || path.join(demucsVenvDir, process.platform === 'win32' ? 'python.exe' : 'python');
 const runDemucs = (inputPath, outputDir) => new Promise((resolve, reject) => {
-  const args = ['-m', 'demucs', '-n', 'htdemucs', '-o', outputDir, inputPath];
-  const tryCommand = (command, index = 0) => {
-    const proc = spawn(command, args, { shell: true });
+  const demucsArgs = ['-n', 'htdemucs', '-o', outputDir, inputPath];
+  const attempts = [
+    { command: demucsBinary, args: demucsArgs },
+    { command: demucsPython, args: ['-m', 'demucs', ...demucsArgs] },
+    { command: 'python', args: ['-m', 'demucs', ...demucsArgs] },
+    { command: 'python3', args: ['-m', 'demucs', ...demucsArgs] }
+  ];
+
+  const tryCommand = (index = 0) => {
+    if (index >= attempts.length) {
+      reject(new Error('Demucs is not installed. Run: npm run setup:stems in the backend folder.'));
+      return;
+    }
+
+    const { command, args } = attempts[index];
+    if ((command.includes('.venv') || command.endsWith('demucs.exe')) && !fs.existsSync(command)) {
+      tryCommand(index + 1);
+      return;
+    }
+
+    const proc = spawn(command, args, { shell: false });
     let stderr = '';
     proc.stderr.on('data', (chunk) => { stderr += chunk.toString(); });
-    proc.on('error', () => {
-      if (index === 0) tryCommand('python3', 1);
-      else reject(new Error('Demucs is not installed. Run: pip install demucs'));
-    });
+    proc.on('error', () => tryCommand(index + 1));
     proc.on('close', (code) => {
       if (code === 0) resolve();
-      else if (index === 0) tryCommand('python3', 1);
       else reject(new Error(stderr.trim() || `Demucs failed with exit code ${code}`));
     });
   };
-  tryCommand('python');
+
+  tryCommand();
 });
 const findStemOutputDir = (root) => {
   if (!fs.existsSync(root)) return null;
@@ -265,6 +299,24 @@ const trackStorage = multer.diskStorage({
   filename: (req, file, cb) => cb(null, Date.now() + '-' + Math.round(Math.random() * 1e9) + path.extname(file.originalname))
 });
 const uploadTrack = multer({ storage: trackStorage });
+const noteMemoStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const db = readDB();
+    const track = findAccessibleTrack(db, req.params.id, req.body.userId || req.query.userId);
+    if (!track) return cb(new Error('Track not found'));
+    const dir = noteMemoDir(track);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => cb(null, `memo-${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(file.originalname) || '.webm'}`)
+});
+const uploadNoteMemo = multer({
+  storage: noteMemoStorage,
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('audio/')) cb(null, true);
+    else cb(new Error('Only audio files are allowed for voice memos.'));
+  }
+});
 
 const coverStorage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, coverDir),
@@ -951,8 +1003,10 @@ app.patch('/api/tracks/:id', (req, res) => {
   const db = readDB();
   const userId = requireUserId(req, res);
   if (!userId) return;
-  const trackIndex = db.tracks.findIndex((item) => item.id === req.params.id && (item.userId === userId || item.uploader?.id === userId));
-  if (trackIndex === -1) return res.status(404).json({ error: 'Track not found' });
+  const trackIndex = db.tracks.findIndex((item) => item.id?.toString() === req.params.id?.toString());
+  if (trackIndex === -1 || !findAccessibleTrack(db, req.params.id, userId)) {
+    return res.status(404).json({ error: 'Track not found' });
+  }
 
   const { title, notes } = req.body;
   if (title !== undefined) {
@@ -1136,16 +1190,84 @@ app.get('/api/media/tracks/:id/versions/:versionId', (req, res) => {
   fs.createReadStream(filePath).pipe(res);
 });
 
-app.post('/api/tracks/:id/split-stems', (req, res) => {
+app.post('/api/tracks/:id/note-memos', uploadNoteMemo.single('memo'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No voice memo uploaded' });
   const db = readDB();
   const userId = requireUserId(req, res);
   if (!userId) return;
 
-  const track = findOwnedTrack(db, req.params.id, userId);
+  const trackIndex = db.tracks.findIndex((item) => item.id?.toString() === req.params.id?.toString());
+  const track = trackIndex === -1 ? null : findAccessibleTrack(db, req.params.id, userId);
+  if (!track) {
+    removeFileIfExists(req.file.path);
+    return res.status(404).json({ error: 'Track not found' });
+  }
+
+  track.noteMemos ||= [];
+  const memo = {
+    id: makeId(),
+    filename: req.file.filename,
+    mimeType: req.file.mimetype,
+    size: req.file.size,
+    uploadedAt: new Date().toISOString()
+  };
+  track.noteMemos.push(memo);
+  db.tracks[trackIndex] = track;
+  writeDB(db);
+  res.json({ track: normalizeTrack(track), memo: { ...memo, url: `${BASE_URL}/api/media/tracks/${track.id}/note-memos/${memo.id}` } });
+});
+
+app.delete('/api/tracks/:id/note-memos/:memoId', (req, res) => {
+  const db = readDB();
+  const userId = requireUserId(req, res);
+  if (!userId) return;
+
+  const trackIndex = db.tracks.findIndex((item) => item.id?.toString() === req.params.id?.toString());
+  const track = trackIndex === -1 ? null : findAccessibleTrack(db, req.params.id, userId);
+  if (!track) return res.status(404).json({ error: 'Track not found' });
+
+  track.noteMemos ||= [];
+  const memo = track.noteMemos.find((item) => item.id === req.params.memoId);
+  if (!memo) return res.status(404).json({ error: 'Voice memo not found' });
+
+  removeFileIfExists(path.join(noteMemoDir(track), memo.filename));
+  track.noteMemos = track.noteMemos.filter((item) => item.id !== req.params.memoId);
+  db.tracks[trackIndex] = track;
+  writeDB(db);
+  res.json({ track: normalizeTrack(track) });
+});
+
+app.get('/api/media/tracks/:id/note-memos/:memoId', (req, res) => {
+  const db = ensureDBShape(readDB());
+  const userId = requireUserId(req, res);
+  if (!userId) return;
+
+  const track = findAccessibleTrack(db, req.params.id, userId);
+  if (!track) return res.status(404).json({ error: 'Track not found' });
+
+  const memo = (track.noteMemos || []).find((item) => item.id === req.params.memoId);
+  if (!memo) return res.status(404).json({ error: 'Voice memo not found' });
+
+  const filePath = path.join(noteMemoDir(track), memo.filename);
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Voice memo file not found' });
+
+  res.setHeader('Content-Type', memo.mimeType || 'audio/webm');
+  res.setHeader('Accept-Ranges', 'bytes');
+  fs.createReadStream(filePath).pipe(res);
+});
+
+app.post('/api/tracks/:id/split-stems', (req, res) => {
+  const db = ensureDBShape(readDB());
+  const userId = requireUserId(req, res);
+  if (!userId) return;
+
+  const track = findAccessibleTrack(db, req.params.id, userId);
   if (!track) return res.status(404).json({ error: 'Track not found' });
 
   const sourcePath = trackMediaPath(track);
-  if (!fs.existsSync(sourcePath)) return res.status(404).json({ error: 'Track media file not found' });
+  if (!fs.existsSync(sourcePath)) {
+    return res.status(404).json({ error: 'Track audio file is missing on the server. Try re-uploading this track.' });
+  }
 
   const jobId = makeId();
   const outputRoot = path.join(stemsDir, userId, track.id, jobId);
