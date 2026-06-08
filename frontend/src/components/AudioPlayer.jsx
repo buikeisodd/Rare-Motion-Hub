@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { ListMusic, Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Volume2, VolumeX, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Activity, ListMusic, Pause, Play, Repeat, Repeat1, Settings2, Shuffle, SkipBack, SkipForward, Volume2, VolumeX, X, ChevronDown, ChevronUp } from 'lucide-react';
 
 // Marquee with 2s pause at each end
 function MarqueeText({ text, className = '' }) {
@@ -91,6 +91,8 @@ export default function AudioPlayer({ tracks = [], currentTrack, projectName, is
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(1);
+  const [pitchShift, setPitchShift] = useState(0);
+  const [showSettings, setShowSettings] = useState(false);
   const [isBuffering, setIsBuffering] = useState(false);
   const [repeatMode, setRepeatMode] = useState(0);
   const [isShuffled, setIsShuffled] = useState(false);
@@ -178,7 +180,14 @@ export default function AudioPlayer({ tracks = [], currentTrack, projectName, is
   }, [isPlaying, currentTrack?.url]);
 
   useEffect(() => { if (audioRef.current) audioRef.current.volume = isMuted ? 0 : volume; }, [volume, isMuted]);
-  useEffect(() => { if (audioRef.current) audioRef.current.playbackRate = playbackRate; }, [playbackRate]);
+  useEffect(() => {
+    const audio = audioRef.current; if (!audio) return;
+    const pitchRatio = Math.pow(2, pitchShift / 12);
+    audio.playbackRate = Math.max(0.25, Math.min(3, playbackRate * pitchRatio));
+    audio.preservesPitch = pitchShift === 0;
+    audio.mozPreservesPitch = pitchShift === 0;
+    audio.webkitPreservesPitch = pitchShift === 0;
+  }, [playbackRate, pitchShift]);
 
   const seek = (t) => { setProgress(t); if (audioRef.current) audioRef.current.currentTime = t; };
   const fmt = (t) => { if (!isFinite(t)) return '0:00'; return `${Math.floor(t/60)}:${String(Math.floor(t%60)).padStart(2,'0')}`; };
@@ -199,6 +208,36 @@ export default function AudioPlayer({ tracks = [], currentTrack, projectName, is
       {showQueue && (
         <div className="absolute bottom-full right-6 mb-3 w-72">
           <QueuePanel playQueue={playQueue} queueIndex={queueIndex} onTrackChange={t => { onTrackChange(t); setShowQueue(false); }} onClose={() => setShowQueue(false)} />
+        </div>
+      )}
+
+      {/* Settings panel — pops above the bar */}
+      {showSettings && (
+        <div className="absolute bottom-full right-6 mb-3 w-72 rounded-2xl bg-[#1e1e1e] border border-white/10 p-4 shadow-2xl">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-bold text-white/60 uppercase tracking-wider">Playback settings</span>
+            <button onClick={() => setShowSettings(false)} className="text-white/40 hover:text-white"><X className="h-3.5 w-3.5" /></button>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <div className="flex justify-between text-xs text-white/50 mb-1.5">
+                <span className="flex items-center gap-1.5"><Activity className="h-3.5 w-3.5" /> Speed</span>
+                <span className="font-mono">{playbackRate.toFixed(2)}x</span>
+              </div>
+              <input type="range" min="0.5" max="2" step="0.05" value={playbackRate}
+                onChange={e => setPlaybackRate(parseFloat(e.target.value))} className="w-full accent-white" />
+              <button onClick={() => setPlaybackRate(1)} className="mt-1 text-[10px] text-white/35 hover:text-white">Reset</button>
+            </div>
+            <div>
+              <div className="flex justify-between text-xs text-white/50 mb-1.5">
+                <span className="flex items-center gap-1.5"><Settings2 className="h-3.5 w-3.5" /> Pitch</span>
+                <span className="font-mono">{pitchShift > 0 ? '+' : ''}{pitchShift} st</span>
+              </div>
+              <input type="range" min="-7" max="7" step="1" value={pitchShift}
+                onChange={e => setPitchShift(parseInt(e.target.value, 10))} className="w-full accent-white" />
+              <button onClick={() => setPitchShift(0)} className="mt-1 text-[10px] text-white/35 hover:text-white">Reset</button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -235,7 +274,10 @@ export default function AudioPlayer({ tracks = [], currentTrack, projectName, is
           <button onClick={() => setRepeatMode(m => (m + 1) % 3)} className={`h-8 w-8 grid place-items-center rounded-full transition-colors ${repeatMode > 0 ? 'text-white' : 'text-white/30 hover:text-white/60'}`}>
             {repeatMode === 2 ? <Repeat1 className="h-4 w-4" /> : <Repeat className="h-4 w-4" />}
           </button>
-          <button onClick={() => setShowQueue(q => !q)} className={`relative h-8 w-8 grid place-items-center rounded-full transition-colors ${showQueue ? 'bg-white/20 text-white' : 'text-white/30 hover:text-white/60'}`}>
+          <button onClick={() => { setShowSettings(s => !s); setShowQueue(false); }} className={`h-8 w-8 grid place-items-center rounded-full transition-colors ${showSettings ? 'bg-white/20 text-white' : 'text-white/30 hover:text-white/60'}`}>
+            <Activity className="h-4 w-4" />
+          </button>
+          <button onClick={() => { setShowQueue(q => !q); setShowSettings(false); }} className={`relative h-8 w-8 grid place-items-center rounded-full transition-colors ${showQueue ? 'bg-white/20 text-white' : 'text-white/30 hover:text-white/60'}`}>
             <ListMusic className="h-4 w-4" />
             {playQueue.length > 0 && <span className="absolute -right-0.5 -top-0.5 h-3.5 min-w-3.5 grid place-items-center rounded-full bg-white text-black text-[8px] font-bold">{playQueue.length}</span>}
           </button>
@@ -254,6 +296,34 @@ export default function AudioPlayer({ tracks = [], currentTrack, projectName, is
   return (
     <div className="w-60 select-none">
       <audio ref={audioRef} preload="auto" playsInline />
+
+      {/* Settings panel */}
+      {showSettings && (
+        <div className="mb-2 rounded-2xl bg-[#1e1e1e] border border-white/10 p-3 shadow-2xl">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] font-bold text-white/60 uppercase tracking-wider">Playback</span>
+            <button onClick={() => setShowSettings(false)} className="text-white/40 hover:text-white"><X className="h-3 w-3" /></button>
+          </div>
+          <div className="space-y-3">
+            <div>
+              <div className="flex justify-between text-[10px] text-white/50 mb-1">
+                <span className="flex items-center gap-1"><Activity className="h-3 w-3" /> Speed</span>
+                <span className="font-mono">{playbackRate.toFixed(2)}x</span>
+              </div>
+              <input type="range" min="0.5" max="2" step="0.05" value={playbackRate}
+                onChange={e => setPlaybackRate(parseFloat(e.target.value))} className="w-full accent-white" />
+            </div>
+            <div>
+              <div className="flex justify-between text-[10px] text-white/50 mb-1">
+                <span className="flex items-center gap-1"><Settings2 className="h-3 w-3" /> Pitch</span>
+                <span className="font-mono">{pitchShift > 0 ? '+' : ''}{pitchShift} st</span>
+              </div>
+              <input type="range" min="-7" max="7" step="1" value={pitchShift}
+                onChange={e => setPitchShift(parseInt(e.target.value, 10))} className="w-full accent-white" />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Queue panel */}
       {showQueue && (
@@ -318,7 +388,10 @@ export default function AudioPlayer({ tracks = [], currentTrack, projectName, is
 
           {/* Secondary row */}
           <div className="flex items-center justify-between pt-2 border-t border-white/10">
-            <button onClick={() => setShowQueue(q => !q)} className={`relative h-6 w-6 grid place-items-center rounded-full transition-colors ${showQueue ? 'text-white bg-white/20' : 'text-white/35 hover:text-white'}`}>
+            <button onClick={() => { setShowSettings(s => !s); setShowQueue(false); }} className={`h-6 w-6 grid place-items-center rounded-full transition-colors ${showSettings ? 'text-white bg-white/20' : 'text-white/35 hover:text-white'}`}>
+              <Activity className="h-3.5 w-3.5" />
+            </button>
+            <button onClick={() => { setShowQueue(q => !q); setShowSettings(false); }} className={`relative h-6 w-6 grid place-items-center rounded-full transition-colors ${showQueue ? 'text-white bg-white/20' : 'text-white/35 hover:text-white'}`}>
               <ListMusic className="h-3.5 w-3.5" />
               {playQueue.length > 0 && <span className="absolute -right-1 -top-1 h-3 min-w-3 grid place-items-center rounded-full bg-white text-black text-[7px] font-bold">{playQueue.length}</span>}
             </button>
