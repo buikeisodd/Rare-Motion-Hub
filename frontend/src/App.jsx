@@ -134,7 +134,11 @@ function GlobalAudioPlayer() {
       currentTrack={currentTrack}
       projectName={projectName}
       isPlaying={isPlaying}
-      onPlayPause={(playing) => setIsPlaying(playing)}
+      onPlayPause={(playing) => {
+        setIsPlaying(playing);
+        // If dismissing (false passed from X button), clear the track
+        if (!playing) setCurrentTrack(null);
+      }}
       onTrackChange={(track) => {
         setCurrentTrack(track);
         setIsPlaying(true);
@@ -182,6 +186,7 @@ function App() {
     setUser(null);
     setJustAuthenticated(false);
     localStorage.removeItem('user');
+    // Audio cleanup is handled by AudioContext unmounting
   };
 
   const handleUserUpdate = (nextUser) => {
@@ -191,7 +196,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-primary-background text-primary-label font-sans">
-      <AudioProvider>
+      <AudioProvider key={user?.id || "guest"}>
         <BrowserRouter>
           <AnimatedRoutes 
             user={user} 

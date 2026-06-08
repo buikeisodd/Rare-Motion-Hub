@@ -97,3 +97,17 @@
     scrollbar-width: none;
   }
 }
+
+/* Marquee with 2s pause at start and end */
+@keyframes marquee-pause {
+  0%   { transform: translateX(0); }
+  10%  { transform: translateX(0); }
+  45%  { transform: translateX(-50%); }
+  55%  { transform: translateX(-50%); }
+  90%  { transform: translateX(0); }
+  100% { transform: translateX(0); }
+}
+
+.animate-marquee-pause {
+  animation: marquee-pause 8s ease-in-out infinite;
+}

@@ -1,476 +1,326 @@
-import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import { Activity, FastForward, ListMusic, Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Volume2, VolumeX, X } from 'lucide-react';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { Activity, FastForward, ListMusic, Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Volume2, VolumeX, X, ChevronDown, ChevronUp } from 'lucide-react';
 
-// Custom Marquee Component
-const MarqueeText = ({ text, className }) => {
+// Marquee with pause: scrolls, waits 2s at start and end
+function MarqueeText({ text, className = '' }) {
   const containerRef = useRef(null);
   const textRef = useRef(null);
-  const [isOverflowing, setIsOverflowing] = useState(false);
+  const [overflow, setOverflow] = useState(false);
 
   useEffect(() => {
-    const checkOverflow = () => {
+    const check = () => {
       if (containerRef.current && textRef.current) {
-        setIsOverflowing(textRef.current.scrollWidth > containerRef.current.clientWidth);
+        setOverflow(textRef.current.scrollWidth > containerRef.current.clientWidth + 2);
       }
     };
-    checkOverflow();
-    window.addEventListener('resize', checkOverflow);
-    return () => window.removeEventListener('resize', checkOverflow);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
   }, [text]);
 
   return (
     <div ref={containerRef} className={`overflow-hidden whitespace-nowrap ${className}`}>
-      <div 
-        ref={textRef} 
-        className={`inline-block ${isOverflowing ? 'animate-marquee pr-8' : ''}`}
+      <span
+        ref={textRef}
+        className={overflow ? 'inline-block animate-marquee-pause' : 'inline-block'}
       >
         {text}
-        {isOverflowing && <span className="ml-8">{text}</span>}
-      </div>
+        {overflow && <span className="pl-12">{text}</span>}
+      </span>
     </div>
   );
-};
+}
 
 export default function AudioPlayer({ tracks = [], currentTrack, projectName, isPlaying, onPlayPause, onTrackChange }) {
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
-  const [prevVolume, setPrevVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(1);
-  const [pitchShift, setPitchShift] = useState(0);
-  const [showControls, setShowControls] = useState(false);
-  const [showQueue, setShowQueue] = useState(false);
-  const [isBuffering, setIsBuffering] = useState(true);
-
-  // Playback modes: 0 = None, 1 = All, 2 = One
+  const [isBuffering, setIsBuffering] = useState(false);
   const [repeatMode, setRepeatMode] = useState(0);
   const [isShuffled, setIsShuffled] = useState(false);
   const [playQueue, setPlayQueue] = useState([]);
   const [queueIndex, setQueueIndex] = useState(-1);
+  const [showQueue, setShowQueue] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   const audioRef = useRef(null);
   const progressBarRef = useRef(null);
 
-  // Build Queue
+  // Build queue
   const buildQueue = useCallback((sourceTracks, startTrack, shuffle) => {
-    if (!sourceTracks || sourceTracks.length === 0) {
-      setPlayQueue([]);
-      setQueueIndex(-1);
-      return;
-    }
-    
-    let newQueue = [...sourceTracks];
+    if (!sourceTracks?.length) { setPlayQueue([]); setQueueIndex(-1); return; }
+    let q = [...sourceTracks];
     if (shuffle) {
-      // Fisher-Yates shuffle
-      for (let i = newQueue.length - 1; i > 0; i--) {
+      for (let i = q.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [newQueue[i], newQueue[j]] = [newQueue[j], newQueue[i]];
+        [q[i], q[j]] = [q[j], q[i]];
       }
-      // Ensure current track is first
       if (startTrack) {
-        const idx = newQueue.findIndex(t => t.id === startTrack.id);
-        if (idx > 0) {
-          [newQueue[0], newQueue[idx]] = [newQueue[idx], newQueue[0]];
-        }
+        const idx = q.findIndex(t => t.id === startTrack.id);
+        if (idx > 0) [q[0], q[idx]] = [q[idx], q[0]];
       }
     }
-    setPlayQueue(newQueue);
-    if (startTrack) {
-      const idx = newQueue.findIndex(t => t.id === startTrack.id);
-      setQueueIndex(idx !== -1 ? idx : 0);
-    } else {
-      setQueueIndex(0);
-    }
+    setPlayQueue(q);
+    const idx = startTrack ? q.findIndex(t => t.id === startTrack.id) : 0;
+    setQueueIndex(idx !== -1 ? idx : 0);
   }, []);
 
-  // Initialize/Update Queue — stays in sync with global FIFO playlist
-  useEffect(() => {
-    buildQueue(tracks || [], currentTrack, isShuffled);
-  }, [tracks, buildQueue, isShuffled, currentTrack?.id]);
+  useEffect(() => { buildQueue(tracks, currentTrack, isShuffled); }, [tracks, buildQueue, isShuffled, currentTrack?.id]);
 
-  // Sync queueIndex when currentTrack changes externally
   useEffect(() => {
     if (currentTrack && playQueue.length > 0) {
       const idx = playQueue.findIndex(t => t.id === currentTrack.id);
-      if (idx !== -1 && idx !== queueIndex) {
-        setQueueIndex(idx);
-      }
+      if (idx !== -1 && idx !== queueIndex) setQueueIndex(idx);
     }
   }, [currentTrack, playQueue]);
 
-  // Handle Shuffle Toggle
-  const toggleShuffle = () => {
-    const newShuffle = !isShuffled;
-    setIsShuffled(newShuffle);
-    buildQueue(tracks, currentTrack, newShuffle);
-  };
-
-  // Handle Repeat Toggle
-  const toggleRepeat = () => {
-    setRepeatMode((prev) => (prev + 1) % 3);
-  };
-
-  const effectiveRate = useMemo(() => {
-    const pitchRatio = Math.pow(2, pitchShift / 12);
-    return Math.max(0.25, Math.min(3, playbackRate * pitchRatio));
-  }, [pitchShift, playbackRate]);
-
-  // Next Track Logic
   const handleNext = useCallback(() => {
     if (!playQueue.length) return;
-    
-    if (repeatMode === 2) {
-      // Repeat One
-      if (audioRef.current) {
-        audioRef.current.currentTime = 0;
-        audioRef.current.play();
-      }
-      return;
+    if (repeatMode === 2) { audioRef.current?.play(); return; }
+    let next = queueIndex + 1;
+    if (next >= playQueue.length) {
+      if (repeatMode === 1) next = 0;
+      else { onPlayPause(false); return; }
     }
-
-    let nextIdx = queueIndex + 1;
-    if (nextIdx >= playQueue.length) {
-      if (repeatMode === 1) {
-        nextIdx = 0; // Repeat All
-      } else {
-        // End of queue, stop playback
-        onPlayPause(false);
-        return;
-      }
-    }
-    onTrackChange(playQueue[nextIdx]);
+    onTrackChange(playQueue[next]);
   }, [queueIndex, playQueue, repeatMode, onTrackChange, onPlayPause]);
 
-  // Prev Track Logic
   const handlePrev = useCallback(() => {
     if (!playQueue.length) return;
-    
-    // If we're more than 3 seconds in, restart track instead of going back
-    if (audioRef.current && audioRef.current.currentTime > 3) {
-      audioRef.current.currentTime = 0;
-      return;
-    }
-
-    let prevIdx = queueIndex - 1;
-    if (prevIdx < 0) {
-      if (repeatMode === 1) {
-        prevIdx = playQueue.length - 1; // Wrap around
-      } else {
-        prevIdx = 0; // Stick to beginning
-      }
-    }
-    onTrackChange(playQueue[prevIdx]);
+    if (audioRef.current?.currentTime > 3) { audioRef.current.currentTime = 0; return; }
+    let prev = queueIndex - 1;
+    if (prev < 0) prev = repeatMode === 1 ? playQueue.length - 1 : 0;
+    onTrackChange(playQueue[prev]);
   }, [queueIndex, playQueue, repeatMode, onTrackChange]);
 
-  // Use a ref for handleNext so it can be used in the event listener without triggering effect cleanup
   const handleNextRef = useRef(handleNext);
-  useEffect(() => {
-    handleNextRef.current = handleNext;
-  }, [handleNext]);
+  useEffect(() => { handleNextRef.current = handleNext; }, [handleNext]);
 
-  // Audio Event Listeners
+  // Audio events
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || !currentTrack) return;
-
-    setProgress(0);
-    setDuration(0);
-    setIsBuffering(true);
+    setProgress(0); setDuration(0); setIsBuffering(true);
     audio.pause();
     audio.src = currentTrack.url;
-    audio.preload = 'auto';
-    
-    const onTimeUpdate = () => setProgress(audio.currentTime);
-    const onLoadedMetadata = () => setDuration(audio.duration || 0);
+    const onTime = () => setProgress(audio.currentTime);
+    const onMeta = () => setDuration(audio.duration || 0);
     const onCanPlay = () => setIsBuffering(false);
-    const onWaiting = () => setIsBuffering(true);
-    const onPlaying = () => setIsBuffering(false);
-    const onEnded = () => handleNextRef.current();
-
-    audio.addEventListener('timeupdate', onTimeUpdate);
-    audio.addEventListener('loadedmetadata', onLoadedMetadata);
+    const onWait = () => setIsBuffering(true);
+    const onPlay = () => setIsBuffering(false);
+    const onEnd = () => handleNextRef.current();
+    audio.addEventListener('timeupdate', onTime);
+    audio.addEventListener('loadedmetadata', onMeta);
     audio.addEventListener('canplay', onCanPlay);
-    audio.addEventListener('waiting', onWaiting);
-    audio.addEventListener('playing', onPlaying);
-    audio.addEventListener('ended', onEnded);
+    audio.addEventListener('waiting', onWait);
+    audio.addEventListener('playing', onPlay);
+    audio.addEventListener('ended', onEnd);
     audio.load();
-
     return () => {
       audio.pause();
-      audio.removeEventListener('timeupdate', onTimeUpdate);
-      audio.removeEventListener('loadedmetadata', onLoadedMetadata);
+      audio.removeEventListener('timeupdate', onTime);
+      audio.removeEventListener('loadedmetadata', onMeta);
       audio.removeEventListener('canplay', onCanPlay);
-      audio.removeEventListener('waiting', onWaiting);
-      audio.removeEventListener('playing', onPlaying);
-      audio.removeEventListener('ended', onEnded);
+      audio.removeEventListener('waiting', onWait);
+      audio.removeEventListener('playing', onPlay);
+      audio.removeEventListener('ended', onEnd);
     };
   }, [currentTrack?.url]);
 
-  // Handle Play/Pause
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-
-    if (isPlaying && audio.paused) {
-      audio.play().catch((err) => {
-        console.error('Playback failed:', err);
-        onPlayPause(false);
-      });
-    } else if (!isPlaying && !audio.paused) {
-      audio.pause();
-    }
+    if (isPlaying && audio.paused) audio.play().catch(() => onPlayPause(false));
+    else if (!isPlaying && !audio.paused) audio.pause();
   }, [isPlaying, currentTrack?.url]);
 
-  // Handle Playback Rate & Pitch
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    audio.playbackRate = effectiveRate;
-    audio.preservesPitch = pitchShift === 0;
-    audio.mozPreservesPitch = pitchShift === 0;
-    audio.webkitPreservesPitch = pitchShift === 0;
-  }, [effectiveRate, pitchShift]);
+  useEffect(() => { if (audioRef.current) audioRef.current.volume = isMuted ? 0 : volume; }, [volume, isMuted]);
+  useEffect(() => { if (audioRef.current) audioRef.current.playbackRate = playbackRate; }, [playbackRate]);
 
-  // Handle Volume
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = isMuted ? 0 : volume;
-    }
-  }, [volume, isMuted]);
-
-  const toggleMute = () => {
-    setIsMuted(!isMuted);
+  const fmt = (t) => {
+    if (!isFinite(t)) return '0:00';
+    const m = Math.floor(t / 60), s = Math.floor(t % 60);
+    return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
-  // Interactive Visualizer Scrubber
-  const handleProgressBarInteraction = (e) => {
+  const seek = (e) => {
     if (!progressBarRef.current || !duration) return;
     const rect = progressBarRef.current.getBoundingClientRect();
-    let percent = (e.clientX - rect.left) / rect.width;
-    percent = Math.max(0, Math.min(1, percent));
-    const newTime = percent * duration;
-    setProgress(newTime);
-    if (audioRef.current) audioRef.current.currentTime = newTime;
-  };
-
-  const handlePointerDown = (e) => {
-    progressBarRef.current.setPointerCapture(e.pointerId);
-    handleProgressBarInteraction(e);
-  };
-
-  const handlePointerMove = (e) => {
-    if (progressBarRef.current.hasPointerCapture(e.pointerId)) {
-      handleProgressBarInteraction(e);
-    }
-  };
-
-  const handlePointerUp = (e) => {
-    progressBarRef.current.releasePointerCapture(e.pointerId);
-  };
-
-  const formatTime = (time) => {
-    if (Number.isNaN(time) || !Number.isFinite(time)) return '00:00';
-    const mins = Math.floor(time / 60);
-    const secs = Math.floor(time % 60);
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const t = pct * duration;
+    setProgress(t);
+    if (audioRef.current) audioRef.current.currentTime = t;
   };
 
   if (!currentTrack) return null;
 
-  const hasNext = repeatMode === 1 || repeatMode === 2 || queueIndex < playQueue.length - 1;
-  const hasPrev = true; // Prev always active now (either restarts track or goes to prev)
+  const pct = duration ? (progress / duration) * 100 : 0;
+  const coverGradient = currentTrack.coverArt
+    ? `url(${currentTrack.coverArt})`
+    : 'linear-gradient(145deg, #b8ff65, #df5b9c)';
 
   return (
-    <div className="fixed inset-x-0 bottom-4 z-50 flex flex-col items-center justify-end px-3 sm:bottom-6 sm:px-4 pointer-events-none">
+    <div className="fixed bottom-6 right-6 z-50 w-72 select-none">
       <audio ref={audioRef} preload="auto" playsInline />
-      
-      {/* Settings Panel */}
-      {showControls && (
-        <div className="pointer-events-auto w-[min(92vw,30rem)] mb-4 rounded-[1.25rem] bg-[#292929]/95 p-4 shadow-2xl backdrop-blur-xl animate-slide-up sm:p-5 text-white">
-          <button onClick={() => setShowControls(false)} className="absolute right-4 top-4 text-white/60 hover:text-white" aria-label="Close audio controls">
-            <X className="h-5 w-5" />
-          </button>
-          <div className="grid gap-6 pr-8 sm:grid-cols-2">
-            <div>
-              <div className="mb-3 flex items-center justify-between text-sm font-semibold text-white/60">
-                <span className="flex items-center gap-2"><FastForward className="h-4 w-4" /> Speed</span>
-                <span>{playbackRate.toFixed(2)}x</span>
-              </div>
-              <input type="range" min="0.5" max="2" step="0.05" value={playbackRate} onChange={(e) => setPlaybackRate(parseFloat(e.target.value))} className="w-full accent-white" />
-              <button onClick={() => setPlaybackRate(1)} className="mt-2 text-xs text-white/60 hover:text-white">Reset speed</button>
-            </div>
-            <div>
-              <div className="mb-3 flex items-center justify-between text-sm font-semibold text-white/60">
-                <span className="flex items-center gap-2"><Activity className="h-4 w-4" /> Pitch</span>
-                <span>{pitchShift > 0 ? '+' : ''}{pitchShift} st</span>
-              </div>
-              <input type="range" min="-7" max="7" step="1" value={pitchShift} onChange={(e) => setPitchShift(parseInt(e.target.value, 10))} className="w-full accent-white" />
-              <p className="mt-2 text-xs text-white/60">Pitch uses native playback for cleaner sound.</p>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Queue Viewer Panel */}
+      {/* Queue panel */}
       {showQueue && (
-        <div className="pointer-events-auto w-[min(92vw,30rem)] mb-4 rounded-[1.25rem] bg-[#292929]/95 p-4 shadow-2xl backdrop-blur-xl animate-slide-up max-h-80 flex flex-col sm:p-5 text-white">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-bold text-white">Queue</h3>
-            <button onClick={() => setShowQueue(false)} className="text-white/60 hover:text-white" aria-label="Close queue">
-              <X className="h-5 w-5" />
-            </button>
+        <div className="mb-3 rounded-2xl bg-[#1e1e1e] border border-white/10 p-3 shadow-2xl max-h-64 flex flex-col">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-bold text-white/70 uppercase tracking-wider">Queue</span>
+            <button onClick={() => setShowQueue(false)} className="text-white/40 hover:text-white"><X className="h-4 w-4" /></button>
           </div>
-          <div className="flex-1 overflow-y-auto space-y-2 pr-2 hide-scrollbar">
-            {playQueue.length === 0 ? (
-              <p className="px-2 py-6 text-center text-sm text-white/50">Queue is empty. Add tracks or folders from your library.</p>
-            ) : (
-              playQueue.map((track, idx) => (
-                <button
-                  key={`${track.id}-${idx}`}
-                  onClick={() => onTrackChange(track)}
-                  className={`w-full text-left p-2 rounded-xl transition-colors ${idx === queueIndex ? 'bg-[#3b3b3b] text-white' : 'text-white/80 hover:bg-[#333]'}`}
-                >
-                  <div className="truncate text-sm font-semibold">{track.title}</div>
-                  <div className="truncate text-xs opacity-75">{track.artist || track.producer}</div>
-                </button>
-              ))
-            )}
+          <div className="overflow-y-auto hide-scrollbar space-y-1">
+            {playQueue.map((t, i) => (
+              <button key={t.id + i} onClick={() => onTrackChange(t)}
+                className={`w-full text-left px-2 py-1.5 rounded-lg text-xs transition-colors ${i === queueIndex ? 'bg-white/20 text-white font-semibold' : 'text-white/60 hover:bg-white/10'}`}>
+                <div className="truncate">{t.title}</div>
+                <div className="truncate opacity-60">{t.artist || t.producer}</div>
+              </button>
+            ))}
           </div>
         </div>
       )}
 
-      {/* Main Player Bar */}
-      <div className="pointer-events-auto grid w-[min(94vw,58rem)] grid-cols-[1fr_auto] items-center gap-x-3 gap-y-3 rounded-[1.5rem] bg-[#2b2b2b]/95 px-3 py-3 shadow-2xl backdrop-blur-xl sm:flex sm:gap-4 sm:rounded-full sm:px-4 text-white">
-        
-        {/* Track Info */}
-        <div className="flex min-w-0 items-center gap-3 sm:w-56 sm:gap-4">
-          <div className="h-12 w-12 shrink-0 rounded-full bg-[linear-gradient(145deg,#b8ff65,#df5b9c)] sm:h-14 sm:w-14" />
-          <div className="min-w-0 flex flex-col justify-center">
-            <MarqueeText text={currentTrack.title} className="text-base font-semibold w-full text-white" />
-            <MarqueeText 
-              text={isBuffering && isPlaying ? 'Buffering...' : (projectName || currentTrack.artist || currentTrack.uploader?.name || 'untitled')} 
-              className="text-sm text-white/60 w-full" 
-            />
+      {/* Settings panel */}
+      {showSettings && (
+        <div className="mb-3 rounded-2xl bg-[#1e1e1e] border border-white/10 p-4 shadow-2xl">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-bold text-white/70 uppercase tracking-wider">Settings</span>
+            <button onClick={() => setShowSettings(false)} className="text-white/40 hover:text-white"><X className="h-4 w-4" /></button>
+          </div>
+          <div className="space-y-3">
+            <div>
+              <div className="flex justify-between text-xs text-white/50 mb-1">
+                <span>Speed</span><span>{playbackRate.toFixed(2)}x</span>
+              </div>
+              <input type="range" min="0.5" max="2" step="0.05" value={playbackRate}
+                onChange={e => setPlaybackRate(parseFloat(e.target.value))} className="w-full accent-white" />
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setIsMuted(m => !m)} className="text-white/60 hover:text-white shrink-0">
+                {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+              </button>
+              <input type="range" min="0" max="1" step="0.01" value={isMuted ? 0 : volume}
+                onChange={e => { setVolume(parseFloat(e.target.value)); if (parseFloat(e.target.value) > 0) setIsMuted(false); }}
+                className="w-full accent-white" />
+            </div>
           </div>
         </div>
+      )}
 
-        {/* Interactive Visualizer Scrubber & Time */}
-        <div className="hidden h-14 flex-1 items-center gap-4 md:flex">
-          <div 
-            ref={progressBarRef}
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            className="flex h-12 flex-1 items-end gap-[3px] overflow-hidden cursor-pointer group"
-          >
-            {Array.from({ length: 44 }).map((_, index) => {
-              const barPercent = index / 44;
-              const currentPercent = duration ? progress / duration : 0;
-              const isPlayed = barPercent <= currentPercent;
-              return (
-                <span 
-                  key={index} 
-                  className={`flex-1 rounded-full transition-colors duration-100 ${isPlayed ? 'bg-[linear-gradient(180deg,#b8ff65,#df5b9c)] opacity-90' : 'bg-white/20 group-hover:bg-white/30'}`} 
-                  style={{ height: `${18 + ((index * 17) % 30)}px` }} 
-                />
-              );
-            })}
-          </div>
-          <div className="shrink-0 font-mono text-sm text-white">
-            {formatTime(progress)} / {formatTime(duration)}
-          </div>
-        </div>
+      {/* Main card */}
+      <div className="rounded-3xl bg-[#1c1c1e]/95 backdrop-blur-xl shadow-2xl overflow-hidden border border-white/10">
 
-        {/* Mobile Scrubber */}
-        <input 
-          type="range" 
-          min="0" 
-          max={duration || 100} 
-          value={progress} 
-          onChange={(e) => {
-            const val = parseFloat(e.target.value);
-            setProgress(val);
-            if (audioRef.current) audioRef.current.currentTime = val;
-          }} 
-          className="col-span-2 h-1 w-full accent-[#df5b9c] sm:hidden" 
-          aria-label="Track progress" 
-        />
-
-        {/* Controls */}
-        <div className="flex items-center justify-end gap-2 text-white sm:gap-3">
-          
-          <button 
-            onClick={() => setShowControls(!showControls)} 
-            className={`hidden sm:grid h-10 w-10 place-items-center rounded-full transition-colors ${showControls ? 'bg-white/20' : 'hover:bg-white/10'}`}
-            title="Audio Settings"
+        {/* Cover art — full width */}
+        {!collapsed && (
+          <div
+            className="w-full aspect-square bg-cover bg-center relative"
+            style={{ backgroundImage: coverGradient }}
           >
-            <Activity className="h-5 w-5" />
-          </button>
-          
-          <button
-            onClick={() => setShowQueue(!showQueue)}
-            className={`relative hidden sm:grid h-10 w-10 place-items-center rounded-full transition-colors ${showQueue ? 'bg-white/20' : 'hover:bg-white/10'}`}
-            title="Queue"
-            aria-label={`Queue${playQueue.length ? `, ${playQueue.length} tracks` : ''}`}
-          >
-            <ListMusic className="h-5 w-5" />
-            {playQueue.length > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-white px-1 text-[10px] font-bold text-black">
-                {playQueue.length}
-              </span>
-            )}
-          </button>
-
-          <button onClick={toggleShuffle} className={`grid h-10 w-10 place-items-center rounded-full transition-colors ${isShuffled ? 'bg-white/20' : 'hover:bg-white/10 text-white/50 hover:text-white'}`} aria-label="Shuffle">
-            <Shuffle className="h-4 w-4" />
-          </button>
-          <button onClick={handlePrev} disabled={!hasPrev} className="grid h-10 w-10 place-items-center rounded-full hover:bg-white/10 disabled:opacity-50" aria-label="Previous">
-            <SkipBack className="h-5 w-5 fill-current" />
-          </button>
-          
-          <button 
-            onClick={() => onPlayPause(!isPlaying)} 
-            className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-white text-black transition-transform hover:scale-105 sm:h-14 sm:w-14" 
-            aria-label={isPlaying ? "Pause" : "Play"}
-          >
-            {isBuffering && isPlaying ? (
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-black border-t-transparent" />
-            ) : isPlaying ? (
-              <Pause className="h-6 w-6 fill-current" />
-            ) : (
-              <Play className="h-6 w-6 fill-current ml-1" />
-            )}
-          </button>
-          
-          <button onClick={handleNext} disabled={!hasNext} className="grid h-10 w-10 place-items-center rounded-full hover:bg-white/10 disabled:opacity-50" aria-label="Next">
-            <SkipForward className="h-5 w-5 fill-current" />
-          </button>
-          <button onClick={toggleRepeat} className={`grid h-10 w-10 place-items-center rounded-full transition-colors ${repeatMode > 0 ? 'bg-white/20' : 'hover:bg-white/10 text-white/50 hover:text-white'}`} aria-label="Repeat">
-            {repeatMode === 2 ? <Repeat1 className="h-4 w-4" /> : <Repeat className="h-4 w-4" />}
-          </button>
-          
-          <div className="hidden items-center gap-2 pl-2 sm:flex">
-            <button onClick={toggleMute} className="text-white/60 hover:text-white" aria-label="Mute">
-              {isMuted || volume === 0 ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+            {/* Collapse button */}
+            <button onClick={() => setCollapsed(true)}
+              className="absolute top-3 right-3 h-7 w-7 grid place-items-center rounded-full bg-black/40 text-white/80 hover:bg-black/60 backdrop-blur-sm">
+              <ChevronDown className="h-4 w-4" />
             </button>
-            <input 
-              type="range" 
-              min="0" 
-              max="1" 
-              step="0.01" 
-              value={isMuted ? 0 : volume} 
-              onChange={(e) => {
-                const val = parseFloat(e.target.value);
-                setVolume(val);
-                if (val > 0) {
-                  setIsMuted(false);
-                  setPrevVolume(val);
-                }
-              }} 
-              className="w-16 accent-white" 
-              aria-label="Volume" 
-            />
+          </div>
+        )}
+
+        {/* Info + controls */}
+        <div className="p-4">
+          {/* Title row */}
+          <div className="flex items-start justify-between gap-2 mb-3">
+            <div className="min-w-0 flex-1">
+              <MarqueeText text={currentTrack.title} className="text-sm font-bold text-white" />
+              <MarqueeText
+                text={isBuffering && isPlaying ? 'Buffering…' : (projectName || currentTrack.artist || currentTrack.uploader?.name || 'Starlight Station')}
+                className="text-xs text-white/50 mt-0.5"
+              />
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              {collapsed && (
+                <button onClick={() => setCollapsed(false)}
+                  className="h-6 w-6 grid place-items-center rounded-full text-white/50 hover:text-white">
+                  <ChevronUp className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Progress bar */}
+          <div
+            ref={progressBarRef}
+            onClick={seek}
+            className="relative h-1 w-full rounded-full bg-white/20 cursor-pointer mb-1 group"
+          >
+            <div className="absolute inset-y-0 left-0 rounded-full bg-white transition-all" style={{ width: `${pct}%` }} />
+            <div className="absolute inset-y-0 rounded-full bg-white/0 group-hover:scale-y-150 transition-transform" style={{ left: `${pct}%`, transform: 'translateX(-50%)' }} />
+          </div>
+          <div className="flex justify-between text-[10px] text-white/40 mb-4 font-mono">
+            <span>{fmt(progress)}</span>
+            <span>-{fmt(Math.max(0, duration - progress))}</span>
+          </div>
+
+          {/* Main controls */}
+          <div className="flex items-center justify-between text-white">
+            <button onClick={() => setIsShuffled(s => { buildQueue(tracks, currentTrack, !s); return !s; })}
+              className={`h-8 w-8 grid place-items-center rounded-full transition-colors ${isShuffled ? 'text-white' : 'text-white/30 hover:text-white/70'}`}>
+              <Shuffle className="h-4 w-4" />
+            </button>
+
+            <button onClick={handlePrev} className="h-9 w-9 grid place-items-center rounded-full hover:bg-white/10">
+              <SkipBack className="h-5 w-5 fill-current" />
+            </button>
+
+            <button onClick={() => onPlayPause(!isPlaying)}
+              className="h-12 w-12 grid place-items-center rounded-full bg-white text-black hover:scale-105 transition-transform">
+              {isBuffering && isPlaying
+                ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-black border-t-transparent" />
+                : isPlaying
+                  ? <Pause className="h-5 w-5 fill-current" />
+                  : <Play className="h-5 w-5 fill-current ml-0.5" />}
+            </button>
+
+            <button onClick={handleNext} className="h-9 w-9 grid place-items-center rounded-full hover:bg-white/10">
+              <SkipForward className="h-5 w-5 fill-current" />
+            </button>
+
+            <button onClick={() => setRepeatMode(m => (m + 1) % 3)}
+              className={`h-8 w-8 grid place-items-center rounded-full transition-colors ${repeatMode > 0 ? 'text-white' : 'text-white/30 hover:text-white/70'}`}>
+              {repeatMode === 2 ? <Repeat1 className="h-4 w-4" /> : <Repeat className="h-4 w-4" />}
+            </button>
+          </div>
+
+          {/* Secondary controls */}
+          <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/10">
+            <button onClick={() => { setShowSettings(s => !s); setShowQueue(false); }}
+              className={`h-7 w-7 grid place-items-center rounded-full text-xs transition-colors ${showSettings ? 'text-white bg-white/20' : 'text-white/40 hover:text-white'}`}>
+              <FastForward className="h-3.5 w-3.5" />
+            </button>
+            <button onClick={() => { setShowQueue(q => !q); setShowSettings(false); }}
+              className={`relative h-7 w-7 grid place-items-center rounded-full transition-colors ${showQueue ? 'text-white bg-white/20' : 'text-white/40 hover:text-white'}`}>
+              <ListMusic className="h-3.5 w-3.5" />
+              {playQueue.length > 0 && (
+                <span className="absolute -right-1 -top-1 h-3.5 min-w-3.5 grid place-items-center rounded-full bg-white text-black text-[8px] font-bold px-0.5">
+                  {playQueue.length}
+                </span>
+              )}
+            </button>
+            <div className="flex items-center gap-1.5">
+              <button onClick={() => setIsMuted(m => !m)} className="text-white/40 hover:text-white">
+                {isMuted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
+              </button>
+              <input type="range" min="0" max="1" step="0.01" value={isMuted ? 0 : volume}
+                onChange={e => { setVolume(parseFloat(e.target.value)); if (parseFloat(e.target.value) > 0) setIsMuted(false); }}
+                className="w-16 accent-white h-1" />
+            </div>
+            <button onClick={() => onPlayPause(false)}
+              className="h-7 w-7 grid place-items-center rounded-full text-white/40 hover:text-red-400 transition-colors" title="Close player">
+              <X className="h-3.5 w-3.5" />
+            </button>
           </div>
         </div>
       </div>
