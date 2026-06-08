@@ -1357,34 +1357,47 @@ app.get('/api/tracks/:id/split-stems/status/:jobId', (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no'); // prevent nginx buffering
 
-  const sendEvent = (data) => res.write(`data: ${JSON.stringify(data)}\n\n`);
+  const sendEvent = (data) => {
+    try { res.write(`data: ${JSON.stringify(data)}\n\n`); } catch {}
+  };
+
+  // Send immediate ping so client knows connection is alive
+  sendEvent({ progress: 5 });
+
   const job = stemJobs[jobId];
   if (!job) {
-    sendEvent({ error: 'Job not found' });
+    sendEvent({ error: 'Job not found or already expired.' });
     return res.end();
   }
+
+  // Keepalive comment every 15s to prevent proxy/server timeouts
+  const keepalive = setInterval(() => {
+    try { res.write(': keepalive\n\n'); } catch {}
+  }, 15000);
 
   const interval = setInterval(() => {
     const currentJob = stemJobs[jobId];
     if (!currentJob) {
-      clearInterval(interval);
+      sendEvent({ error: 'Job expired.' });
+      clearInterval(interval); clearInterval(keepalive);
       return res.end();
     }
     if (currentJob.error) {
       sendEvent({ error: currentJob.error });
-      clearInterval(interval);
+      clearInterval(interval); clearInterval(keepalive);
       res.end();
     } else if (currentJob.done) {
       sendEvent({ done: true, progress: 100, stems: currentJob.stems });
-      clearInterval(interval);
+      clearInterval(interval); clearInterval(keepalive);
       res.end();
     } else {
       sendEvent({ progress: currentJob.progress });
     }
-  }, 500);
+  }, 800);
 
-  req.on('close', () => clearInterval(interval));
+  req.on('close', () => { clearInterval(interval); clearInterval(keepalive); });
 });
 
 app.get('/api/media/stems/:trackId/:filename', (req, res) => {
