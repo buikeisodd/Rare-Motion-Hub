@@ -84,12 +84,10 @@ export default function AudioPlayer({ tracks = [], currentTrack, projectName, is
     }
   }, []);
 
-  // Initialize/Update Queue
+  // Initialize/Update Queue — stays in sync with global FIFO playlist
   useEffect(() => {
-    if (tracks && tracks.length > 0) {
-      buildQueue(tracks, currentTrack, isShuffled);
-    }
-  }, [tracks]); // Only rebuild fully if tracks change
+    buildQueue(tracks || [], currentTrack, isShuffled);
+  }, [tracks, buildQueue, isShuffled, currentTrack?.id]);
 
   // Sync queueIndex when currentTrack changes externally
   useEffect(() => {
@@ -324,16 +322,20 @@ export default function AudioPlayer({ tracks = [], currentTrack, projectName, is
             </button>
           </div>
           <div className="flex-1 overflow-y-auto space-y-2 pr-2 hide-scrollbar">
-            {playQueue.map((track, idx) => (
-              <button 
-                key={`${track.id}-${idx}`} 
-                onClick={() => onTrackChange(track)}
-                className={`w-full text-left p-2 rounded-xl transition-colors ${idx === queueIndex ? 'bg-[#3b3b3b] text-white' : 'text-white/80 hover:bg-[#333]'}`}
-              >
-                <div className="truncate text-sm font-semibold">{track.title}</div>
-                <div className="truncate text-xs opacity-75">{track.artist || track.producer}</div>
-              </button>
-            ))}
+            {playQueue.length === 0 ? (
+              <p className="px-2 py-6 text-center text-sm text-white/50">Queue is empty. Add tracks or folders from your library.</p>
+            ) : (
+              playQueue.map((track, idx) => (
+                <button
+                  key={`${track.id}-${idx}`}
+                  onClick={() => onTrackChange(track)}
+                  className={`w-full text-left p-2 rounded-xl transition-colors ${idx === queueIndex ? 'bg-[#3b3b3b] text-white' : 'text-white/80 hover:bg-[#333]'}`}
+                >
+                  <div className="truncate text-sm font-semibold">{track.title}</div>
+                  <div className="truncate text-xs opacity-75">{track.artist || track.producer}</div>
+                </button>
+              ))
+            )}
           </div>
         </div>
       )}
@@ -406,12 +408,18 @@ export default function AudioPlayer({ tracks = [], currentTrack, projectName, is
             <Activity className="h-5 w-5" />
           </button>
           
-          <button 
-            onClick={() => setShowQueue(!showQueue)} 
-            className={`hidden sm:grid h-10 w-10 place-items-center rounded-full transition-colors ${showQueue ? 'bg-white/20' : 'hover:bg-white/10'}`}
+          <button
+            onClick={() => setShowQueue(!showQueue)}
+            className={`relative hidden sm:grid h-10 w-10 place-items-center rounded-full transition-colors ${showQueue ? 'bg-white/20' : 'hover:bg-white/10'}`}
             title="Queue"
+            aria-label={`Queue${playQueue.length ? `, ${playQueue.length} tracks` : ''}`}
           >
             <ListMusic className="h-5 w-5" />
+            {playQueue.length > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-white px-1 text-[10px] font-bold text-black">
+                {playQueue.length}
+              </span>
+            )}
           </button>
 
           <button onClick={toggleShuffle} className={`grid h-10 w-10 place-items-center rounded-full transition-colors ${isShuffled ? 'bg-white/20' : 'hover:bg-white/10 text-white/50 hover:text-white'}`} aria-label="Shuffle">

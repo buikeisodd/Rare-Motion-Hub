@@ -20,14 +20,43 @@ export function AudioProvider({ children }) {
     setIsPlaying(true);
   }, []);
 
-  const addToQueue = useCallback((track) => {
+  const addTracksToQueue = useCallback((tracksToAdd, { projectName: nextProjectName, autoplay = true } = {}) => {
+    const incoming = (tracksToAdd || []).filter((track) => track?.id);
+    if (!incoming.length) return;
+
+    let appended = [];
     setQueue((prev) => {
-      if (prev.some((item) => item.id === track.id)) return prev;
-      return [...prev, track];
+      const seen = new Set(prev.map((track) => track.id));
+      appended = incoming.filter((track) => !seen.has(track.id));
+      return appended.length ? [...prev, ...appended] : prev;
     });
+
+    if (!appended.length) return;
+
+    if (autoplay) {
+      setCurrentTrack((current) => {
+        if (!current) {
+          setIsPlaying(true);
+          if (nextProjectName !== undefined) {
+            setProjectName(nextProjectName);
+          }
+          return appended[0];
+        }
+        return current;
+      });
+    }
   }, []);
 
+  const addToQueue = useCallback((track) => {
+    addTracksToQueue([track], {
+      projectName: track.projectTitle || track.projectName || projectName
+    });
+  }, [addTracksToQueue, projectName]);
+
   const playbackTracks = useMemo(() => {
+    if (!queue.length) return tracks;
+    if (!tracks.length) return queue;
+
     const seen = new Set(tracks.map((track) => track.id));
     const extras = queue.filter((track) => !seen.has(track.id));
     return extras.length ? [...tracks, ...extras] : tracks;
@@ -44,6 +73,7 @@ export function AudioProvider({ children }) {
     setIsPlaying,
     playTrack,
     addToQueue,
+    addTracksToQueue,
     queue
   };
 

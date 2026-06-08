@@ -27,6 +27,7 @@ function gradientFor(id) {
 }
 
 export function LibraryProject({ project, tracks, onDragStart, isDragging, onDelete }) {
+  const { addTracksToQueue } = useAudio();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const projectTracks = (tracks || []).filter((track) => track.projectId === project.id);
   const leadTrack = projectTracks[0];
@@ -51,7 +52,11 @@ export function LibraryProject({ project, tracks, onDragStart, isDragging, onDel
     e.preventDefault();
     e.stopPropagation();
     setIsMenuOpen(false);
-    alert('Add to queue coming soon');
+    if (!projectTracks.length) {
+      alert('This project has no tracks to queue.');
+      return;
+    }
+    addTracksToQueue(projectTracks, { projectName: title });
   };
 
   return (
@@ -142,6 +147,7 @@ export function LibraryProject({ project, tracks, onDragStart, isDragging, onDel
 }
 
 export function LibraryFolder({ folder, projects, tracks, onSave, onDrop, onDragStart, isDragging, onDelete }) {
+  const { addTracksToQueue } = useAudio();
   const [title, setTitle] = useState(folder.title || folder.name || 'Untitled folder');
   const [artist, setArtist] = useState(folder.artist || 'Unknown artist');
   const [isDragOver, setIsDragOver] = useState(false);
@@ -184,11 +190,19 @@ export function LibraryFolder({ folder, projects, tracks, onSave, onDrop, onDrag
     onDelete?.(folder.id, 'folder');
   };
 
+  const folderTracks = (projects || []).flatMap((project) =>
+    (tracks || []).filter((track) => track.projectId === project.id)
+  );
+
   const handleQueue = (e) => {
     e.preventDefault();
     e.stopPropagation();
     setIsMenuOpen(false);
-    alert('Add to queue coming soon');
+    if (!folderTracks.length) {
+      alert('This folder has no tracks to queue.');
+      return;
+    }
+    addTracksToQueue(folderTracks, { projectName: title });
   };
 
   return (
