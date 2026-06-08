@@ -156,10 +156,15 @@ const findAccessibleTrack = (db, trackId, userId) => {
   const normalizedUserId = userId?.toString();
   const track = db.tracks.find((item) => item.id?.toString() === trackId?.toString());
   if (!track) return null;
-  const ownerIds = [track.userId, track.uploader?.id].filter(Boolean).map(String);
+  const ownerIds = [track.userId, track.uploader?.id, track.sourceUserId].filter(Boolean).map(String);
   if (ownerIds.includes(normalizedUserId)) return track;
   const project = db.projects.find((item) => item.id === track.projectId);
-  if (project && project.userId?.toString() === normalizedUserId) return track;
+  if (project) {
+    if (project.userId?.toString() === normalizedUserId) return track;
+    // Allow project collaborators (members array)
+    const members = (project.members || project.collaborators || []);
+    if (members.some(m => (m.id || m.userId || m)?.toString() === normalizedUserId)) return track;
+  }
   return null;
 };
 const findOwnedTrack = findAccessibleTrack;
@@ -1264,10 +1269,16 @@ app.post('/api/tracks/:id/split-stems', (req, res) => {
   if (!userId) return;
 
   const track = findAccessibleTrack(db, req.params.id, userId);
-  if (!track) return res.status(404).json({ error: 'Track not found' });
+  if (!track) {
+    const rawTrack = db.tracks.find(t => t.id?.toString() === req.params.id?.toString());
+    console.error('[stem-split] Track not found. trackId:', req.params.id, 'userId:', userId,
+      'rawTrack:', rawTrack ? JSON.stringify({ id: rawTrack.id, userId: rawTrack.userId, uploader: rawTrack.uploader, projectId: rawTrack.projectId }) : 'not in db');
+    return res.status(404).json({ error: 'Track not found' });
+  }
 
   const sourcePath = trackMediaPath(track);
   if (!fs.existsSync(sourcePath)) {
+    console.error('[stem-split] File missing at:', sourcePath);
     return res.status(404).json({ error: 'Track audio file is missing on the server. Try re-uploading this track.' });
   }
 
