@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { BarChart3, ChevronLeft, Download, FileText, Image as ImageIcon, Link2, Lock, MoreHorizontal, Music, Play, Plus, Shuffle, Trash2 } from 'lucide-react';
+import { BarChart3, ChevronLeft, Download, FileText, Image as ImageIcon, Link2, MoreHorizontal, Music, Play, Plus, Shuffle, Trash2 } from 'lucide-react';
 import UploadModal from '../components/UploadModal';
 import CoverArtPicker from '../components/CoverArtPicker';
 import ConfirmModal from '../components/ConfirmModal';
 import ShareLinkModal from '../components/ShareLinkModal';
 import MarqueeInput from '../components/MarqueeInput';
+import TrackOptionsMenu, { replaceTrackAudio, switchTrackVersion } from '../components/TrackOptionsMenu';
 import { useAudio } from '../context/AudioContext';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -33,8 +34,9 @@ export default function Project({ user }) {
   const navigate = useNavigate();
   const [project, setProject] = useState(null);
   const [tracks, setTracks] = useState([]);
-  const { currentTrack, isPlaying, playTrack } = useAudio();
+  const { currentTrack, isPlaying, playTrack, addToQueue, setCurrentTrack, setIsPlaying } = useAudio();
   const [loading, setLoading] = useState(true);
+  const [dragTrackId, setDragTrackId] = useState(null);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isCoverPickerOpen, setIsCoverPickerOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -123,11 +125,8 @@ export default function Project({ user }) {
     }
   };
 
-  const handleDeleteTrack = async (event, trackId) => {
-    event.stopPropagation();
-    if (!confirm('Are you sure you want to delete this track?')) return;
+  const handleDeleteTrack = async (trackId) => {
     try {
-      await fetch(`${apiUrl}/api/tracks/${trackId}?userId=${encodeURIComponent(user.id)}`, { method: 'DELETE' });
       setTracks((prev) => prev.filter((track) => track.id !== trackId));
       if (currentTrack?.id === trackId) {
         setIsPlaying(false);
@@ -135,6 +134,35 @@ export default function Project({ user }) {
       }
     } catch (err) {
       console.error('Failed to delete track', err);
+    }
+  };
+
+  const handleTrackUpdate = (updatedTrack) => {
+    setTracks((prev) => prev.map((track) => (track.id === updatedTrack.id ? updatedTrack : track)));
+    if (currentTrack?.id === updatedTrack.id) {
+      setCurrentTrack(updatedTrack);
+    }
+  };
+
+  const handleReplaceAudioDrop = async (track, file) => {
+    if (!file || !/\.(wav|mp3)$/i.test(file.name)) {
+      alert('Please drop a WAV or MP3 file.');
+      return;
+    }
+    try {
+      const updatedTrack = await replaceTrackAudio(track, file, user.id);
+      handleTrackUpdate(updatedTrack);
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleSwitchVersion = async (track, versionId) => {
+    try {
+      const updatedTrack = await switchTrackVersion(track, versionId, user.id);
+      handleTrackUpdate(updatedTrack);
+    } catch (err) {
+      alert(err.message);
     }
   };
 
@@ -175,7 +203,7 @@ export default function Project({ user }) {
       {isProjectMenuOpen && (
         <div className="fixed inset-0 z-40" onClick={() => setIsProjectMenuOpen(false)} />
       )}
-      <header className="relative z-50 flex items-center justify-between px-6 py-6 lg:px-14">
+      <header className="sticky top-0 z-50 flex items-center justify-between border-b border-border/60 bg-primary-background/95 px-6 py-6 backdrop-blur-md lg:px-14">
         <Link to="/library" className="grid h-12 w-12 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Back to library">
           <ChevronLeft className="h-6 w-6" />
         </Link>
@@ -302,19 +330,54 @@ export default function Project({ user }) {
               </div>
             ) : (
               tracks.map((track, index) => (
-                <div key={track.id} onClick={() => handlePlay(track)} className={`group grid cursor-pointer grid-cols-[2rem_1fr_auto] items-center gap-4 rounded-2xl px-3 py-4 transition-all ${currentTrack?.id === track.id ? 'bg-highlight' : 'hover:bg-shading'}`}>
+                <div
+                  key={track.id}
+                  onClick={() => handlePlay(track)}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    setDragTrackId(track.id);
+                  }}
+                  onDragLeave={() => setDragTrackId(null)}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setDragTrackId(null);
+                    handleReplaceAudioDrop(track, event.dataTransfer.files?.[0]);
+                  }}
+                  className={`group grid cursor-pointer grid-cols-[2rem_1fr_auto] items-center gap-4 rounded-2xl px-3 py-4 transition-all ${currentTrack?.id === track.id ? 'bg-highlight' : 'hover:bg-shading'} ${dragTrackId === track.id ? 'ring-2 ring-primary-label/40 bg-highlight' : ''}`}
+                >
                   <div className="text-center text-xl text-secondary-label">
                     {currentTrack?.id === track.id && isPlaying ? <Play className="mx-auto h-5 w-5 fill-current text-primary-label" /> : index + 1}
                   </div>
                   <div className="min-w-0">
                     <h3 className="truncate text-xl font-semibold text-primary-label">{track.title}</h3>
                     <p className="mt-1 text-base text-secondary-label">{timeAgo(track.uploadedAt)}</p>
+                    {track.notes && <p className="mt-1 truncate text-xs text-secondary-label/80">{track.notes}</p>}
+                    {track.versions?.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1.5" onClick={(event) => event.stopPropagation()}>
+                        <span className="rounded-full bg-highlight px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-label">Current</span>
+                        {track.versions.map((version, versionIndex) => (
+                          <button
+                            key={version.id}
+                            onClick={() => handleSwitchVersion(track, version.id)}
+                            className="rounded-full bg-shading px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-secondary-label hover:bg-highlight hover:text-primary-label"
+                          >
+                            {version.label || `V${versionIndex + 1}`}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center gap-4 text-primary-label">
-                    <button onClick={(event) => handleDeleteTrack(event, track.id)} className="p-2 text-secondary-label hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors opacity-0 group-hover:opacity-100" title="Delete track">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                    <MoreHorizontal className="h-6 w-6" />
+                  <div className="flex items-center gap-1 text-primary-label" onClick={(event) => event.stopPropagation()}>
+                    <TrackOptionsMenu
+                      track={track}
+                      userId={user.id}
+                      onTrackUpdate={handleTrackUpdate}
+                      onTrackDelete={handleDeleteTrack}
+                      onAddToQueue={(queuedTrack) => {
+                        addToQueue(queuedTrack);
+                      }}
+                    />
                   </div>
                 </div>
               ))

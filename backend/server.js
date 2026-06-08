@@ -3,6 +3,7 @@ const cors = require('cors');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
+const { spawn } = require('child_process');
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 ffmpeg.setFfmpegPath(ffmpegPath);
@@ -11,6 +12,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 const conversionJobs = {};
+const stemJobs = {};
 const BASE_URL = process.env.BASE_URL || process.env.RENDER_EXTERNAL_URL || 'https://rare-motion-hub.onrender.com';
 
 app.use(cors());
@@ -29,6 +31,7 @@ const uploadDir = path.join(__dirname, 'uploads');
 const coverDir = path.join(__dirname, 'covers');
 const avatarDir = path.join(__dirname, 'avatars');
 const chatDir = path.join(uploadDir, 'chat');
+const stemsDir = path.join(__dirname, 'stems');
 const JSONBIN_BASE_URL = 'https://api.jsonbin.io/v3';
 const JSONBIN_BIN_ID = process.env.JSONBIN_BIN_ID;
 const JSONBIN_MASTER_KEY = process.env.JSONBIN_MASTER_KEY || process.env.JSONBIN_API_KEY;
@@ -38,6 +41,7 @@ if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 if (!fs.existsSync(coverDir)) fs.mkdirSync(coverDir);
 if (!fs.existsSync(avatarDir)) fs.mkdirSync(avatarDir);
 if (!fs.existsSync(chatDir)) fs.mkdirSync(chatDir, { recursive: true });
+if (!fs.existsSync(stemsDir)) fs.mkdirSync(stemsDir, { recursive: true });
 
 // Helpers
 const readDB = () => JSON.parse(fs.readFileSync(dbPath, 'utf8'));
@@ -135,7 +139,61 @@ const normalizeLibraryItem = (item, db, type) => {
 };
 const normalizeTrack = (track) => ({
   ...track,
+  notes: track.notes || '',
+  versions: track.versions || [],
   url: track.filename ? `${BASE_URL}/api/media/tracks/${track.id}` : track.url
+});
+const trackOwnerId = (track) => track.sourceUserId || track.uploader?.id || track.userId;
+const trackMediaPath = (track) => path.join(uploadDir, trackOwnerId(track), track.filename);
+const findOwnedTrack = (db, trackId, userId) => (
+  db.tracks.find((item) => item.id === trackId && (item.userId === userId || item.uploader?.id === userId))
+);
+const removeTrackFiles = (track) => {
+  removeFileIfExists(trackMediaPath(track));
+  (track.versions || []).forEach((version) => {
+    removeFileIfExists(path.join(uploadDir, trackOwnerId(track), version.filename));
+  });
+};
+const runDemucs = (inputPath, outputDir) => new Promise((resolve, reject) => {
+  const args = ['-m', 'demucs', '-n', 'htdemucs', '-o', outputDir, inputPath];
+  const tryCommand = (command, index = 0) => {
+    const proc = spawn(command, args, { shell: true });
+    let stderr = '';
+    proc.stderr.on('data', (chunk) => { stderr += chunk.toString(); });
+    proc.on('error', () => {
+      if (index === 0) tryCommand('python3', 1);
+      else reject(new Error('Demucs is not installed. Run: pip install demucs'));
+    });
+    proc.on('close', (code) => {
+      if (code === 0) resolve();
+      else if (index === 0) tryCommand('python3', 1);
+      else reject(new Error(stderr.trim() || `Demucs failed with exit code ${code}`));
+    });
+  };
+  tryCommand('python');
+});
+const findStemOutputDir = (root) => {
+  if (!fs.existsSync(root)) return null;
+  for (const name of fs.readdirSync(root)) {
+    const entry = path.join(root, name);
+    if (!fs.statSync(entry).isDirectory()) continue;
+    const files = fs.readdirSync(entry);
+    if (files.some((file) => ['drums', 'bass', 'other', 'vocals'].some((stem) => file.startsWith(stem)))) {
+      return entry;
+    }
+    const nested = findStemOutputDir(entry);
+    if (nested) return nested;
+  }
+  return null;
+};
+const convertToWav = (inputPath, outputPath) => new Promise((resolve, reject) => {
+  ffmpeg(inputPath)
+    .noVideo()
+    .audioCodec('pcm_s16le')
+    .audioFrequency(44100)
+    .on('end', resolve)
+    .on('error', reject)
+    .save(outputPath);
 });
 const getProjectBundle = (db, project) => ({
   type: 'project',
@@ -879,12 +937,258 @@ app.delete('/api/tracks/:id', (req, res) => {
   const db = readDB();
   const userId = requireUserId(req, res);
   if (!userId) return;
-  const track = db.tracks.find((t) => t.id === req.params.id && (t.userId === userId || t.uploader?.id === userId));
+  const track = findOwnedTrack(db, req.params.id, userId);
   if (!track) return res.status(404).json({ error: 'Track not found' });
 
+  removeTrackFiles(track);
+  removeDirIfExists(path.join(stemsDir, userId, track.id));
   db.tracks = db.tracks.filter(t => t.id !== req.params.id);
   writeDB(db);
   res.json({ success: true });
+});
+
+app.patch('/api/tracks/:id', (req, res) => {
+  const db = readDB();
+  const userId = requireUserId(req, res);
+  if (!userId) return;
+  const trackIndex = db.tracks.findIndex((item) => item.id === req.params.id && (item.userId === userId || item.uploader?.id === userId));
+  if (trackIndex === -1) return res.status(404).json({ error: 'Track not found' });
+
+  const { title, notes } = req.body;
+  if (title !== undefined) {
+    const nextTitle = title.toString().trim();
+    if (!nextTitle) return res.status(400).json({ error: 'Track title is required.' });
+    db.tracks[trackIndex].title = nextTitle;
+  }
+  if (notes !== undefined) db.tracks[trackIndex].notes = notes.toString();
+
+  writeDB(db);
+  res.json({ track: normalizeTrack(db.tracks[trackIndex]) });
+});
+
+app.get('/api/tracks/:id/insights', (req, res) => {
+  const db = ensureDBShape(readDB());
+  const userId = requireUserId(req, res);
+  if (!userId) return;
+
+  const track = findOwnedTrack(db, req.params.id, userId);
+  if (!track) return res.status(404).json({ error: 'Track not found' });
+
+  const sourceTrackId = track.sourceTrackId || track.id;
+  const playEvents = db.playEvents.filter((event) => (
+    event.ownerId === userId &&
+    (event.sourceTrackId === sourceTrackId || event.trackId === track.id)
+  ));
+
+  const listenerMap = new Map();
+  playEvents.forEach((event) => {
+    const listener = db.users.find((item) => item.id === event.actorId);
+    const key = event.actorId || 'unknown';
+    const current = listenerMap.get(key) || {
+      id: key,
+      name: listener?.name || 'Unknown listener',
+      avatarUrl: listener?.avatarUrl || null,
+      plays: 0,
+      lastListenedAt: event.createdAt
+    };
+    current.plays += 1;
+    if (new Date(event.createdAt) > new Date(current.lastListenedAt)) current.lastListenedAt = event.createdAt;
+    listenerMap.set(key, current);
+  });
+
+  res.json({
+    track: { id: track.id, title: track.title },
+    totalPlays: playEvents.length,
+    byListener: Array.from(listenerMap.values()).sort((a, b) => b.plays - a.plays)
+  });
+});
+
+app.post('/api/tracks/:id/replace-audio', uploadTrack.single('track'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No audio file uploaded' });
+  const db = readDB();
+  const userId = requireUserId(req, res);
+  if (!userId) return;
+
+  const trackIndex = db.tracks.findIndex((item) => item.id === req.params.id && (item.userId === userId || item.uploader?.id === userId));
+  if (trackIndex === -1) {
+    removeFileIfExists(req.file.path);
+    return res.status(404).json({ error: 'Track not found' });
+  }
+
+  const track = db.tracks[trackIndex];
+  moveFileToUserDir(req.file, uploadDir, userId);
+  track.versions ||= [];
+
+  if (track.filename) {
+    track.versions.push({
+      id: makeId(),
+      filename: track.filename,
+      mimeType: track.mimeType,
+      size: track.size,
+      label: `Version ${track.versions.length + 1}`,
+      uploadedAt: track.uploadedAt || new Date().toISOString()
+    });
+  }
+
+  track.filename = req.file.filename;
+  track.mimeType = req.file.mimetype;
+  track.size = req.file.size;
+  track.uploadedAt = new Date().toISOString();
+  db.tracks[trackIndex] = track;
+  writeDB(db);
+  res.json({ track: normalizeTrack(track) });
+});
+
+app.patch('/api/tracks/:id/switch-version', (req, res) => {
+  const db = readDB();
+  const userId = requireUserId(req, res);
+  if (!userId) return;
+  const { versionId } = req.body;
+  if (!versionId) return res.status(400).json({ error: 'Version ID is required.' });
+
+  const trackIndex = db.tracks.findIndex((item) => item.id === req.params.id && (item.userId === userId || item.uploader?.id === userId));
+  if (trackIndex === -1) return res.status(404).json({ error: 'Track not found' });
+
+  const track = db.tracks[trackIndex];
+  track.versions ||= [];
+  const versionIndex = track.versions.findIndex((version) => version.id === versionId);
+  if (versionIndex === -1) return res.status(404).json({ error: 'Version not found' });
+
+  const selectedVersion = track.versions[versionIndex];
+  const currentVersion = {
+    id: makeId(),
+    filename: track.filename,
+    mimeType: track.mimeType,
+    size: track.size,
+    label: selectedVersion.label || `Version ${versionIndex + 1}`,
+    uploadedAt: track.uploadedAt || new Date().toISOString()
+  };
+
+  track.versions.splice(versionIndex, 1, currentVersion);
+  track.filename = selectedVersion.filename;
+  track.mimeType = selectedVersion.mimeType;
+  track.size = selectedVersion.size;
+  track.uploadedAt = selectedVersion.uploadedAt || track.uploadedAt;
+  db.tracks[trackIndex] = track;
+  writeDB(db);
+  res.json({ track: normalizeTrack(track) });
+});
+
+app.post('/api/tracks/:id/split-stems', (req, res) => {
+  const db = readDB();
+  const userId = requireUserId(req, res);
+  if (!userId) return;
+
+  const track = findOwnedTrack(db, req.params.id, userId);
+  if (!track) return res.status(404).json({ error: 'Track not found' });
+
+  const sourcePath = trackMediaPath(track);
+  if (!fs.existsSync(sourcePath)) return res.status(404).json({ error: 'Track media file not found' });
+
+  const jobId = makeId();
+  const outputRoot = path.join(stemsDir, userId, track.id, jobId);
+  fs.mkdirSync(outputRoot, { recursive: true });
+  stemJobs[jobId] = { progress: 5, done: false, error: null, stems: null };
+
+  res.json({ jobId });
+
+  (async () => {
+    try {
+      stemJobs[jobId].progress = 10;
+      let inputPath = sourcePath;
+      const ext = path.extname(sourcePath).toLowerCase();
+      if (ext !== '.wav') {
+        const tempWav = path.join(outputRoot, 'input.wav');
+        await convertToWav(sourcePath, tempWav);
+        inputPath = tempWav;
+      }
+
+      stemJobs[jobId].progress = 25;
+      await runDemucs(inputPath, outputRoot);
+      stemJobs[jobId].progress = 90;
+
+      const demucsOutputDir = findStemOutputDir(outputRoot);
+
+      if (!demucsOutputDir) throw new Error('Stem output not found after Demucs processing.');
+
+      const trackStemDir = path.join(stemsDir, userId, track.id);
+      fs.mkdirSync(trackStemDir, { recursive: true });
+      const stems = ['drums', 'bass', 'other', 'vocals'].map((stem) => {
+        const sourceFile = fs.readdirSync(demucsOutputDir).find((file) => file.startsWith(stem));
+        if (!sourceFile) return null;
+        const targetName = `${stem}.wav`;
+        const targetPath = path.join(trackStemDir, targetName);
+        fs.copyFileSync(path.join(demucsOutputDir, sourceFile), targetPath);
+        return {
+          name: stem,
+          filename: targetName,
+          url: `${BASE_URL}/api/media/stems/${track.id}/${targetName}?userId=${encodeURIComponent(userId)}`
+        };
+      }).filter(Boolean);
+
+      stemJobs[jobId].stems = stems;
+      stemJobs[jobId].done = true;
+      stemJobs[jobId].progress = 100;
+      removeDirIfExists(outputRoot);
+      setTimeout(() => delete stemJobs[jobId], 120000);
+    } catch (err) {
+      console.error('Stem split failed:', err);
+      stemJobs[jobId].error = err.message || 'Stem split failed';
+      removeDirIfExists(outputRoot);
+      setTimeout(() => delete stemJobs[jobId], 120000);
+    }
+  })();
+});
+
+app.get('/api/tracks/:id/split-stems/status/:jobId', (req, res) => {
+  const { jobId } = req.params;
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+
+  const sendEvent = (data) => res.write(`data: ${JSON.stringify(data)}\n\n`);
+  const job = stemJobs[jobId];
+  if (!job) {
+    sendEvent({ error: 'Job not found' });
+    return res.end();
+  }
+
+  const interval = setInterval(() => {
+    const currentJob = stemJobs[jobId];
+    if (!currentJob) {
+      clearInterval(interval);
+      return res.end();
+    }
+    if (currentJob.error) {
+      sendEvent({ error: currentJob.error });
+      clearInterval(interval);
+      res.end();
+    } else if (currentJob.done) {
+      sendEvent({ done: true, progress: 100, stems: currentJob.stems });
+      clearInterval(interval);
+      res.end();
+    } else {
+      sendEvent({ progress: currentJob.progress });
+    }
+  }, 500);
+
+  req.on('close', () => clearInterval(interval));
+});
+
+app.get('/api/media/stems/:trackId/:filename', (req, res) => {
+  const db = ensureDBShape(readDB());
+  const userId = requireUserId(req, res);
+  if (!userId) return;
+
+  const track = findOwnedTrack(db, req.params.trackId, userId);
+  if (!track) return res.status(404).json({ error: 'Track not found' });
+
+  const filePath = path.join(stemsDir, userId, track.id, req.params.filename);
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Stem file not found' });
+
+  res.setHeader('Content-Type', 'audio/wav');
+  res.setHeader('Content-Disposition', `attachment; filename="${req.params.filename}"`);
+  fs.createReadStream(filePath).pipe(res);
 });
 
 app.get('/api/media/tracks/:id', (req, res) => {
