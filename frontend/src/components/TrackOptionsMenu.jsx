@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   BarChart3, Download, FileAudio, FileText, Layers, ListPlus, MoreHorizontal,
@@ -7,6 +8,9 @@ import {
 import ConfirmModal from './ConfirmModal';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const MENU_WIDTH = 208;
+const MENU_HEIGHT = 360;
+const PLAYER_CLEARANCE = 120;
 
 function ModalShell({ isOpen, onClose, title, children }) {
   if (!isOpen) return null;
@@ -315,7 +319,33 @@ export default function TrackOptionsMenu({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [modal, setModal] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const menuRef = useRef(null);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0, openUp: false });
+  const buttonRef = useRef(null);
+
+  const updateMenuPosition = useCallback(() => {
+    if (!buttonRef.current) return;
+    const rect = buttonRef.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom - PLAYER_CLEARANCE;
+    const openUp = spaceBelow < MENU_HEIGHT;
+    const left = Math.min(Math.max(rect.right - MENU_WIDTH, 12), window.innerWidth - MENU_WIDTH - 12);
+
+    setMenuPosition({
+      top: openUp ? rect.top - 8 : rect.bottom + 8,
+      left,
+      openUp
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!isMenuOpen) return undefined;
+    updateMenuPosition();
+    window.addEventListener('resize', updateMenuPosition);
+    window.addEventListener('scroll', updateMenuPosition, true);
+    return () => {
+      window.removeEventListener('resize', updateMenuPosition);
+      window.removeEventListener('scroll', updateMenuPosition, true);
+    };
+  }, [isMenuOpen, updateMenuPosition]);
 
   const closeMenu = () => setIsMenuOpen(false);
   const openModal = (name) => {
@@ -362,40 +392,58 @@ export default function TrackOptionsMenu({
     { id: 'delete', label: 'Delete', icon: Trash2, action: () => { closeMenu(); setConfirmDelete(true); }, danger: true }
   ];
 
+  const menuPortal = isMenuOpen && createPortal(
+    <>
+      <div className="fixed inset-0 z-[80]" onClick={closeMenu} aria-hidden="true" />
+      <AnimatePresence>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: menuPosition.openUp ? 8 : -8 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: menuPosition.openUp ? 8 : -8 }}
+          transition={{ duration: 0.12 }}
+          className="fixed z-[81] w-52 max-h-[min(360px,calc(100vh-8rem))] overflow-y-auto rounded-[1rem] border border-border panel-bg p-2 shadow-2xl"
+          style={{
+            top: menuPosition.openUp ? 'auto' : menuPosition.top,
+            bottom: menuPosition.openUp ? `${window.innerHeight - menuPosition.top}px` : 'auto',
+            left: menuPosition.left
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {menuItems.map(({ id, label, icon: Icon, action, danger }) => (
+            <button
+              key={id}
+              onClick={(e) => { e.stopPropagation(); action(); }}
+              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold transition-colors ${danger ? 'text-red-500 hover:bg-red-500/10' : 'text-primary-label hover:bg-highlight'}`}
+            >
+              <Icon className="h-4 w-4" />
+              {label}
+            </button>
+          ))}
+        </motion.div>
+      </AnimatePresence>
+    </>,
+    document.body
+  );
+
   return (
     <>
-      {isMenuOpen && <div className="fixed inset-0 z-40" onClick={closeMenu} />}
-      <div className="relative" ref={menuRef}>
+      {menuPortal}
+      <div className="relative">
         <button
-          onClick={(e) => { e.stopPropagation(); setIsMenuOpen((open) => !open); }}
+          ref={buttonRef}
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsMenuOpen((open) => {
+              if (!open) updateMenuPosition();
+              return !open;
+            });
+          }}
           className="grid h-9 w-9 place-items-center rounded-full text-secondary-label transition-colors hover:bg-highlight hover:text-primary-label"
           aria-label="Track options"
+          aria-expanded={isMenuOpen}
         >
           <MoreHorizontal className="h-5 w-5" />
         </button>
-        <AnimatePresence>
-          {isMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: -8 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: -8 }}
-              transition={{ duration: 0.12 }}
-              className="absolute right-0 top-full z-50 mt-2 w-52 rounded-[1rem] border border-border panel-bg p-2 shadow-2xl origin-top-right"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {menuItems.map(({ id, label, icon: Icon, action, danger }) => (
-                <button
-                  key={id}
-                  onClick={(e) => { e.stopPropagation(); action(); }}
-                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold transition-colors ${danger ? 'text-red-500 hover:bg-red-500/10' : 'text-primary-label hover:bg-highlight'}`}
-                >
-                  <Icon className="h-4 w-4" />
-                  {label}
-                </button>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
 
       <TrackRenameModal isOpen={modal === 'rename'} onClose={() => setModal(null)} track={track} userId={userId} onSaved={onTrackUpdate} />
