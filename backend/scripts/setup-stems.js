@@ -16,12 +16,18 @@ function run(command, args, options = {}) {
 }
 
 function findSystemPython() {
-  const candidates = ['python', 'python3', 'py'];
+  const candidates = isWindows ? ['python', 'py', 'python3'] : ['python3', 'python'];
   for (const candidate of candidates) {
     const check = spawnSync(candidate, ['--version'], { stdio: 'pipe', shell: isWindows });
     if (check.status === 0) return candidate;
   }
   return null;
+}
+
+const demucsBin = path.join(venvDir, isWindows ? 'Scripts' : 'bin', isWindows ? 'demucs.exe' : 'demucs');
+if (fs.existsSync(demucsBin) && process.env.FORCE_STEM_SETUP !== '1') {
+  console.log('Stem splitter dependencies already installed.');
+  process.exit(0);
 }
 
 if (!fs.existsSync(venvDir)) {
@@ -36,9 +42,8 @@ if (!fs.existsSync(venvDir)) {
 
 console.log('Installing Demucs and PyTorch (CPU)...');
 run(pipExe, ['install', '--upgrade', 'pip'], { cwd: backendDir, shell: isWindows });
-run(pipExe, ['install', '-r', 'requirements.txt'], { cwd: backendDir, shell: isWindows });
+run(pipExe, ['install', '--no-cache-dir', '-r', 'requirements.txt'], { cwd: backendDir, shell: isWindows });
 
-const demucsBin = path.join(venvDir, isWindows ? 'Scripts' : 'bin', isWindows ? 'demucs.exe' : 'demucs');
 const verify = spawnSync(pythonExe, ['-m', 'demucs', '--help'], { stdio: 'pipe', shell: isWindows });
 if (verify.status !== 0 && !fs.existsSync(demucsBin)) {
   console.error('Demucs install verification failed.');

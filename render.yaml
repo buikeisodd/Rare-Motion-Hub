@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: rare-motion-hub-api
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install && npm run setup:stems
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 20

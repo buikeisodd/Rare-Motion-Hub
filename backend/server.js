@@ -175,11 +175,13 @@ const demucsBinary = process.env.DEMUCS_BIN || path.join(demucsVenvDir, process.
 const demucsPython = process.env.DEMUCS_PYTHON || path.join(demucsVenvDir, process.platform === 'win32' ? 'python.exe' : 'python');
 const runDemucs = (inputPath, outputDir) => new Promise((resolve, reject) => {
   const demucsArgs = ['-n', 'htdemucs', '-o', outputDir, inputPath];
+  const moduleAttempts = process.platform === 'win32'
+    ? ['python', 'python3']
+    : ['python3', 'python'];
   const attempts = [
     { command: demucsBinary, args: demucsArgs },
     { command: demucsPython, args: ['-m', 'demucs', ...demucsArgs] },
-    { command: 'python', args: ['-m', 'demucs', ...demucsArgs] },
-    { command: 'python3', args: ['-m', 'demucs', ...demucsArgs] }
+    ...moduleAttempts.map((command) => ({ command, args: ['-m', 'demucs', ...demucsArgs] }))
   ];
 
   const tryCommand = (index = 0) => {
