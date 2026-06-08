@@ -819,6 +819,7 @@ function MiniPlayer() {
         projectName={projectName}
         isPlaying={isPlaying}
         cardModal={true}
+        hideCover={true}
         onPlayPause={(playing) => { setIsPlaying(playing); }}
         onDismiss={() => { setIsPlaying(false); setCurrentTrack(null); }}
         onTrackChange={(track) => { setCurrentTrack(track); setIsPlaying(true); }}

@@ -85,7 +85,7 @@ function QueuePanel({ playQueue, queueIndex, onTrackChange, onClose }) {
   );
 }
 
-export default function AudioPlayer({ tracks = [], currentTrack, projectName, isPlaying, onPlayPause, onTrackChange, onDismiss, cardModal = false }) {
+export default function AudioPlayer({ tracks = [], currentTrack, projectName, isPlaying, onPlayPause, onTrackChange, onDismiss, cardModal = false, hideCover = false }) {
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
@@ -199,11 +199,12 @@ export default function AudioPlayer({ tracks = [], currentTrack, projectName, is
     ? { backgroundImage: `url(${currentTrack.coverArt})` }
     : { background: 'linear-gradient(145deg,#b8ff65,#df5b9c)' };
 
+  // Single shared audio element — rendered once regardless of layout
+  const audioEl = <audio ref={audioRef} preload="auto" playsInline />;
+
   // ── BOTTOM BAR (all pages except insights) ───────────────────────────
   if (!cardModal) return (
     <div className="fixed inset-x-0 bottom-0 z-50 select-none border-t border-white/10 bg-[#1c1c1e]/95 backdrop-blur-xl">
-      <audio ref={audioRef} preload="auto" playsInline />
-
       {/* Queue panel — pops above the bar */}
       {showQueue && (
         <div className="absolute bottom-full right-6 mb-3 w-72">
@@ -295,8 +296,6 @@ export default function AudioPlayer({ tracks = [], currentTrack, projectName, is
   // ── CARD MODAL (insights page + chat inbox) ──────────────────────────
   return (
     <div className="w-60 select-none">
-      <audio ref={audioRef} preload="auto" playsInline />
-
       {/* Settings panel */}
       {showSettings && (
         <div className="mb-2 rounded-2xl bg-[#1e1e1e] border border-white/10 p-3 shadow-2xl">
@@ -334,7 +333,7 @@ export default function AudioPlayer({ tracks = [], currentTrack, projectName, is
 
       <div className="rounded-2xl bg-[#1c1c1e] border border-white/10 shadow-2xl overflow-hidden">
         {/* Cover art */}
-        {!collapsed && (
+        {!hideCover && !collapsed && (
           <div className="relative w-full" style={{ paddingBottom: '100%' }}>
             <div className="absolute inset-0 bg-cover bg-center" style={coverStyle} />
             <button onClick={() => setCollapsed(true)}
@@ -351,7 +350,7 @@ export default function AudioPlayer({ tracks = [], currentTrack, projectName, is
               <MarqueeText text={currentTrack.title} className="text-xs font-bold text-white" />
               <MarqueeText text={isBuffering && isPlaying ? 'Buffering…' : (projectName || currentTrack.artist || 'Starlight Station')} className="text-[10px] text-white/50 mt-0.5" />
             </div>
-            {collapsed && (
+            {!hideCover && collapsed && (
               <button onClick={() => setCollapsed(false)} className="shrink-0 text-white/40 hover:text-white">
                 <ChevronUp className="h-3.5 w-3.5" />
               </button>
