@@ -31,7 +31,7 @@ function MarqueeText({ text, className = '' }) {
   );
 }
 
-export default function AudioPlayer({ tracks = [], currentTrack, projectName, isPlaying, onPlayPause, onTrackChange }) {
+export default function AudioPlayer({ tracks = [], currentTrack, projectName, isPlaying, onPlayPause, onTrackChange, cardModal = false }) {
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
@@ -162,6 +162,59 @@ export default function AudioPlayer({ tracks = [], currentTrack, projectName, is
     ? `url(${currentTrack.coverArt})`
     : 'linear-gradient(145deg, #b8ff65, #df5b9c)';
 
+  // Bottom bar layout (default — all pages except insights)
+  if (!cardModal) return (
+    <div className="fixed inset-x-0 bottom-0 z-50 select-none border-t border-white/10 bg-[#1c1c1e]/95 backdrop-blur-xl px-6 py-3">
+      <audio ref={audioRef} preload="auto" playsInline />
+      <div className="mx-auto flex max-w-5xl items-center gap-4">
+        {/* Cover */}
+        <div className="h-10 w-10 shrink-0 rounded-lg bg-cover bg-center" style={{ backgroundImage: coverGradient }} />
+        {/* Title */}
+        <div className="w-44 min-w-0">
+          <MarqueeText text={currentTrack.title} className="text-sm font-semibold text-white" />
+          <MarqueeText text={projectName || currentTrack.artist || 'Starlight Station'} className="text-xs text-white/50" />
+        </div>
+        {/* Progress */}
+        <div className="flex flex-1 items-center gap-3">
+          <span className="text-[10px] font-mono text-white/40 w-8 text-right">{fmt(progress)}</span>
+          <div ref={progressBarRef} onClick={seek} className="relative h-1 flex-1 cursor-pointer rounded-full bg-white/20 group">
+            <div className="absolute inset-y-0 left-0 rounded-full bg-white" style={{ width: `${pct}%` }} />
+          </div>
+          <span className="text-[10px] font-mono text-white/40 w-8">-{fmt(Math.max(0, duration - progress))}</span>
+        </div>
+        {/* Controls */}
+        <div className="flex items-center gap-2 text-white">
+          <button onClick={() => setIsShuffled(s => { buildQueue(tracks, currentTrack, !s); return !s; })}
+            className={`h-8 w-8 grid place-items-center rounded-full ${isShuffled ? 'text-white' : 'text-white/30 hover:text-white/60'}`}>
+            <Shuffle className="h-4 w-4" />
+          </button>
+          <button onClick={handlePrev} className="h-9 w-9 grid place-items-center rounded-full hover:bg-white/10">
+            <SkipBack className="h-5 w-5 fill-current" />
+          </button>
+          <button onClick={() => onPlayPause(!isPlaying)} className="h-10 w-10 grid place-items-center rounded-full bg-white text-black hover:scale-105 transition-transform">
+            {isBuffering && isPlaying
+              ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-black border-t-transparent" />
+              : isPlaying ? <Pause className="h-4 w-4 fill-current" /> : <Play className="h-4 w-4 fill-current ml-0.5" />}
+          </button>
+          <button onClick={handleNext} className="h-9 w-9 grid place-items-center rounded-full hover:bg-white/10">
+            <SkipForward className="h-5 w-5 fill-current" />
+          </button>
+          <button onClick={() => setRepeatMode(m => (m + 1) % 3)}
+            className={`h-8 w-8 grid place-items-center rounded-full ${repeatMode > 0 ? 'text-white' : 'text-white/30 hover:text-white/60'}`}>
+            {repeatMode === 2 ? <Repeat1 className="h-4 w-4" /> : <Repeat className="h-4 w-4" />}
+          </button>
+          <button onClick={() => setIsMuted(m => !m)} className="text-white/40 hover:text-white ml-2">
+            {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+          </button>
+          <input type="range" min="0" max="1" step="0.01" value={isMuted ? 0 : volume}
+            onChange={e => { setVolume(parseFloat(e.target.value)); if (parseFloat(e.target.value) > 0) setIsMuted(false); }}
+            className="w-20 accent-white h-1" />
+        </div>
+      </div>
+    </div>
+  );
+
+  // Card modal layout (insights page only)
   return (
     <div className="fixed bottom-6 right-6 z-50 w-72 select-none">
       <audio ref={audioRef} preload="auto" playsInline />

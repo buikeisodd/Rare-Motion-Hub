@@ -127,16 +127,20 @@ function AnimatedRoutes({ user, handleLogin, handleLogout, handleUserUpdate, jus
 
 function GlobalAudioPlayer() {
   const { currentTrack, tracks, projectName, isPlaying, setIsPlaying, setCurrentTrack } = useAudio();
+  const location = useLocation();
+  const isInsights = /\/project\/[^/]+\/insights/.test(location.pathname);
+
   if (!currentTrack) return null;
+
   return (
     <AudioPlayer
       tracks={tracks}
       currentTrack={currentTrack}
       projectName={projectName}
       isPlaying={isPlaying}
+      cardModal={isInsights}
       onPlayPause={(playing) => {
         setIsPlaying(playing);
-        // If dismissing (false passed from X button), clear the track
         if (!playing) setCurrentTrack(null);
       }}
       onTrackChange={(track) => {
