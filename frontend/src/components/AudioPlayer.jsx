@@ -85,7 +85,7 @@ function QueuePanel({ playQueue, queueIndex, onTrackChange, onClose }) {
   );
 }
 
-export default function AudioPlayer({ tracks = [], currentTrack, projectName, isPlaying, onPlayPause, onTrackChange, cardModal = false }) {
+export default function AudioPlayer({ tracks = [], currentTrack, projectName, isPlaying, onPlayPause, onTrackChange, onDismiss, cardModal = false }) {
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
@@ -330,7 +330,7 @@ export default function AudioPlayer({ tracks = [], currentTrack, projectName, is
                 onChange={e => { const v = parseFloat(e.target.value); setVolume(v); if (v > 0) setIsMuted(false); }}
                 className="w-14 accent-white h-1" />
             </div>
-            <button onClick={() => onPlayPause(false)} className="text-white/35 hover:text-red-400 transition-colors" title="Close">
+            <button onClick={() => onDismiss ? onDismiss() : onPlayPause(false)} className="text-white/35 hover:text-red-400 transition-colors" title="Close">
               <X className="h-3.5 w-3.5" />
             </button>
           </div>

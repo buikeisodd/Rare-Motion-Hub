@@ -141,7 +141,10 @@ function GlobalAudioPlayer() {
       cardModal={isInsights}
       onPlayPause={(playing) => {
         setIsPlaying(playing);
-        if (!playing) setCurrentTrack(null);
+      }}
+      onDismiss={() => {
+        setIsPlaying(false);
+        setCurrentTrack(null);
       }}
       onTrackChange={(track) => {
         setCurrentTrack(track);

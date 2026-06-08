@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { BarChart3, ChevronLeft, Download, FileText, Image as ImageIcon, Link2, MoreHorizontal, Music, Play, Plus, Shuffle, Trash2 } from 'lucide-react';
+import { BarChart3, ChevronLeft, Download, FileText, Image as ImageIcon, Link2, MoreHorizontal, Music, Pause, Play, Plus, Shuffle, Trash2 } from 'lucide-react';
 import UploadModal from '../components/UploadModal';
 import CoverArtPicker from '../components/CoverArtPicker';
 import ConfirmModal from '../components/ConfirmModal';
@@ -277,8 +277,23 @@ export default function Project({ user }) {
                 <button className="text-secondary-label hover:text-primary-label transition-colors" aria-label="Shuffle project">
                   <Shuffle className="h-5 w-5" />
                 </button>
-                <button onClick={() => leadTrack ? handlePlay(leadTrack) : setIsUploadOpen(true)} className="grid h-12 w-12 place-items-center rounded-full bg-primary-label text-primary-background transition-transform hover:scale-105" aria-label={leadTrack ? "Play project" : "Add tracks"}>
-                  <Play className="h-6 w-6 fill-current translate-x-[2px]" />
+                <button
+                  onClick={() => {
+                    if (!leadTrack) { setIsUploadOpen(true); return; }
+                    if (currentTrack && isPlaying) {
+                      setIsPlaying(false);
+                    } else if (currentTrack) {
+                      setIsPlaying(true);
+                    } else {
+                      handlePlay(leadTrack);
+                    }
+                  }}
+                  className="grid h-12 w-12 place-items-center rounded-full bg-primary-label text-primary-background transition-transform hover:scale-105"
+                  aria-label={isPlaying ? "Pause project" : "Play project"}
+                >
+                  {isPlaying && currentTrack
+                    ? <Pause className="h-6 w-6 fill-current" />
+                    : <Play className="h-6 w-6 fill-current translate-x-[2px]" />}
                 </button>
               </div>
             </div>
