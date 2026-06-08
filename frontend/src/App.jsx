@@ -132,7 +132,7 @@ function GlobalAudioPlayer() {
 
   if (!currentTrack) return null;
 
-  return (
+  const player = (
     <AudioPlayer
       tracks={tracks}
       currentTrack={currentTrack}
@@ -149,6 +149,15 @@ function GlobalAudioPlayer() {
       }}
     />
   );
+
+  // On insights, wrap the card modal in a fixed bottom-right container
+  if (isInsights) return (
+    <div className="fixed bottom-6 right-6 z-50">
+      {player}
+    </div>
+  );
+
+  return player;
 }
 
 function App() {

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAudio } from '../context/AudioContext';
-import { Pause, Play, SkipBack, SkipForward } from 'lucide-react';
+import AudioPlayer from './AudioPlayer';
 import { ArrowLeft, CheckCheck, Copy, Forward, MessageCircle, Mic, MicOff, MonitorUp, MoreHorizontal, Paperclip, PhoneCall, PhoneOff, Pin, PinOff, Reply, Send, Smile, Trash2, Users, Video, VideoOff, Volume2, X } from 'lucide-react';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -809,30 +809,19 @@ function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall,
 
 // Mini audio player shown in sidebar below conversations
 function MiniPlayer() {
-  const { currentTrack, isPlaying, setIsPlaying, setCurrentTrack } = useAudio();
+  const { currentTrack, tracks, projectName, isPlaying, setIsPlaying, setCurrentTrack } = useAudio();
   if (!currentTrack) return null;
-
-  const coverStyle = currentTrack.coverArt
-    ? { backgroundImage: `url(${currentTrack.coverArt})` }
-    : { background: 'linear-gradient(145deg, #b8ff65, #df5b9c)' };
-
   return (
-    <div className="shrink-0 border-t border-border px-3 py-3">
-      <div className="flex items-center gap-3 rounded-2xl bg-shading p-3">
-        <div className="h-10 w-10 shrink-0 rounded-xl bg-cover bg-center" style={coverStyle} />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-xs font-semibold text-primary-label">{currentTrack.title}</p>
-          <p className="truncate text-[10px] text-secondary-label">{currentTrack.artist || 'Starlight Station'}</p>
-        </div>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setIsPlaying(p => !p)}
-            className="h-8 w-8 grid place-items-center rounded-full bg-primary-label text-primary-background"
-          >
-            {isPlaying ? <Pause className="h-3.5 w-3.5 fill-current" /> : <Play className="h-3.5 w-3.5 fill-current ml-0.5" />}
-          </button>
-        </div>
-      </div>
+    <div className="shrink-0 border-t border-border p-3">
+      <AudioPlayer
+        tracks={tracks}
+        currentTrack={currentTrack}
+        projectName={projectName}
+        isPlaying={isPlaying}
+        cardModal={true}
+        onPlayPause={(playing) => { setIsPlaying(playing); if (!playing) setCurrentTrack(null); }}
+        onTrackChange={(track) => { setCurrentTrack(track); setIsPlaying(true); }}
+      />
     </div>
   );
 }
