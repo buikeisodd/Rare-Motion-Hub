@@ -809,20 +809,14 @@ function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall,
 
 // Mini audio player shown in sidebar below conversations
 function MiniPlayer() {
-  const { currentTrack, tracks, projectName, isPlaying, setIsPlaying, setCurrentTrack } = useAudio();
+  const { currentTrack, setCurrentTrack, setIsPlaying } = useAudio();
   if (!currentTrack) return null;
   return (
     <div className="shrink-0 border-t border-border p-3">
       <AudioPlayer
-        tracks={tracks}
-        currentTrack={currentTrack}
-        projectName={projectName}
-        isPlaying={isPlaying}
         cardModal={true}
         hideCover={true}
-        onPlayPause={(playing) => { setIsPlaying(playing); }}
         onDismiss={() => { setIsPlaying(false); setCurrentTrack(null); }}
-        onTrackChange={(track) => { setCurrentTrack(track); setIsPlaying(true); }}
       />
     </div>
   );
