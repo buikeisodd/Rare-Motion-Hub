@@ -1,31 +1,62 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  BarChart3, Download, FileAudio, FileText, Layers, ListPlus, MoreHorizontal,
-  Pencil, Trash2, Upload, X
+  ArrowLeft, BarChart3, Download, FileAudio, FileText, Layers,
+  ListPlus, MoreHorizontal, Pencil, Play, Share2, Trash2, Upload, X
 } from 'lucide-react';
 import ConfirmModal from './ConfirmModal';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-const MENU_WIDTH = 208;
-const MENU_HEIGHT = 360;
-const PLAYER_CLEARANCE = 120;
 
-function ModalShell({ isOpen, onClose, title, children }) {
-  if (!isOpen) return null;
+function formatTrackDate(dateStr) {
+  if (!dateStr) return '';
+  return new Date(dateStr).toLocaleString([], {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  });
+}
+
+function formatDuration(seconds) {
+  if (!seconds || Number.isNaN(seconds)) return '--:--';
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}m ${secs}s`;
+}
+
+function WaveformBars({ seed = 0, active = false, className = '' }) {
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
-      <div className="w-full max-w-md rounded-[1.25rem] border border-border panel-bg p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-primary-label">{title}</h3>
-          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-full bg-shading text-secondary-label hover:bg-highlight">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-        {children}
-      </div>
+    <div className={`flex h-10 flex-1 items-end gap-[2px] overflow-hidden ${className}`}>
+      {Array.from({ length: 36 }).map((_, index) => (
+        <span
+          key={index}
+          className={`flex-1 rounded-full ${active ? 'bg-[linear-gradient(180deg,#b8ff65,#df5b9c)]' : 'bg-secondary-label/30'}`}
+          style={{ height: `${14 + ((index * 11 + seed) % 22)}px` }}
+        />
+      ))}
     </div>
+  );
+}
+
+function ModalShell({ isOpen, onClose, children, className = 'max-w-3xl', zIndex = 'z-[85]' }) {
+  if (!isOpen) return null;
+  return createPortal(
+    <div className={`fixed inset-0 ${zIndex} flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm`} onClick={onClose}>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.97, y: 12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.97, y: 12 }}
+        transition={{ duration: 0.18 }}
+        className={`w-full ${className} overflow-hidden rounded-[1.5rem] border border-border panel-bg shadow-2xl`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {children}
+      </motion.div>
+    </div>,
+    document.body
   );
 }
 
@@ -46,28 +77,35 @@ function TrackInsightsModal({ isOpen, onClose, track, userId }) {
   }, [isOpen, track, userId]);
 
   return (
-    <ModalShell isOpen={isOpen} onClose={onClose} title="Track insights">
-      {loading ? (
-        <p className="text-sm text-secondary-label">Loading...</p>
-      ) : (
-        <>
-          <p className="mb-1 truncate text-sm font-semibold text-primary-label">{track?.title}</p>
-          <p className="mb-4 text-3xl font-light">{insights?.totalPlays ?? 0}</p>
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-secondary-label">Listeners</p>
-          <div className="max-h-52 space-y-2 overflow-y-auto">
-            {(insights?.byListener || []).length === 0 ? (
-              <p className="text-sm text-secondary-label">No listeners yet.</p>
-            ) : (
-              insights.byListener.map((listener) => (
-                <div key={listener.id} className="flex items-center justify-between rounded-xl bg-shading px-3 py-2 text-sm">
-                  <span className="truncate font-medium">{listener.name}</span>
-                  <span className="text-secondary-label">{listener.plays} play{listener.plays === 1 ? '' : 's'}</span>
-                </div>
-              ))
-            )}
-          </div>
-        </>
-      )}
+    <ModalShell isOpen={isOpen} onClose={onClose} className="max-w-md" zIndex="z-[95]">
+      <div className="p-5">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-primary-label">Insights</h3>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-full bg-shading text-secondary-label hover:bg-highlight">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        {loading ? (
+          <p className="text-sm text-secondary-label">Loading...</p>
+        ) : (
+          <>
+            <p className="mb-1 truncate text-sm font-semibold">{track?.title}</p>
+            <p className="mb-4 text-3xl font-light">{insights?.totalPlays ?? 0} plays</p>
+            <div className="max-h-52 space-y-2 overflow-y-auto">
+              {(insights?.byListener || []).length === 0 ? (
+                <p className="text-sm text-secondary-label">No listeners yet.</p>
+              ) : (
+                insights.byListener.map((listener) => (
+                  <div key={listener.id} className="flex items-center justify-between rounded-xl bg-shading px-3 py-2 text-sm">
+                    <span className="truncate font-medium">{listener.name}</span>
+                    <span className="text-secondary-label">{listener.plays}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </>
+        )}
+      </div>
     </ModalShell>
   );
 }
@@ -100,62 +138,25 @@ function TrackNotesModal({ isOpen, onClose, track, userId, onSaved }) {
   };
 
   return (
-    <ModalShell isOpen={isOpen} onClose={onClose} title="Track notes">
-      <textarea
-        value={notes}
-        onChange={(e) => setNotes(e.target.value)}
-        rows={6}
-        placeholder="Add notes about this track..."
-        className="w-full resize-none rounded-xl border border-border bg-shading px-3 py-2 text-sm text-primary-label outline-none focus:border-secondary-label"
-      />
-      <button onClick={save} disabled={saving} className="mt-4 w-full rounded-full bg-primary-label py-2.5 text-sm font-semibold text-primary-background disabled:opacity-60">
-        {saving ? 'Saving...' : 'Save notes'}
-      </button>
-    </ModalShell>
-  );
-}
-
-function TrackRenameModal({ isOpen, onClose, track, userId, onSaved }) {
-  const [title, setTitle] = useState('');
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (isOpen && track) setTitle(track.title || '');
-  }, [isOpen, track]);
-
-  const save = async () => {
-    const nextTitle = title.trim();
-    if (!nextTitle) return;
-    setSaving(true);
-    try {
-      const res = await fetch(`${apiUrl}/api/tracks/${track.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, title: nextTitle })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Could not rename track.');
-      onSaved(data.track);
-      onClose();
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <ModalShell isOpen={isOpen} onClose={onClose} title="Rename track">
-      <input
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        className="w-full rounded-xl border border-border bg-shading px-3 py-2.5 text-sm text-primary-label outline-none focus:border-secondary-label"
-        placeholder="Track title"
-        onKeyDown={(e) => e.key === 'Enter' && save()}
-      />
-      <button onClick={save} disabled={saving || !title.trim()} className="mt-4 w-full rounded-full bg-primary-label py-2.5 text-sm font-semibold text-primary-background disabled:opacity-60">
-        {saving ? 'Saving...' : 'Save'}
-      </button>
+    <ModalShell isOpen={isOpen} onClose={onClose} className="max-w-md" zIndex="z-[95]">
+      <div className="p-5">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-primary-label">Notes</h3>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-full bg-shading text-secondary-label hover:bg-highlight">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          rows={6}
+          placeholder="Add notes about this track..."
+          className="w-full resize-none rounded-xl border border-border bg-shading px-3 py-2 text-sm text-primary-label outline-none"
+        />
+        <button onClick={save} disabled={saving} className="mt-4 w-full rounded-full bg-primary-label py-2.5 text-sm font-semibold text-primary-background disabled:opacity-60">
+          {saving ? 'Saving...' : 'Save notes'}
+        </button>
+      </div>
     </ModalShell>
   );
 }
@@ -172,13 +173,8 @@ function TrackReplaceModal({ isOpen, onClose, track, userId, onSaved }) {
     }
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append('track', file);
-      formData.append('userId', userId);
-      const res = await fetch(`${apiUrl}/api/tracks/${track.id}/replace-audio`, { method: 'POST', body: formData });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Could not replace audio.');
-      onSaved(data.track);
+      const updatedTrack = await replaceTrackAudio(track, file, userId);
+      onSaved(updatedTrack);
       onClose();
     } catch (err) {
       alert(err.message);
@@ -188,24 +184,27 @@ function TrackReplaceModal({ isOpen, onClose, track, userId, onSaved }) {
   };
 
   return (
-    <ModalShell isOpen={isOpen} onClose={onClose} title="Replace audio">
-      <div
-        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setDragging(false);
-          uploadFile(e.dataTransfer.files?.[0]);
-        }}
-        onClick={() => inputRef.current?.click()}
-        className={`cursor-pointer rounded-2xl border-2 border-dashed px-4 py-10 text-center transition-colors ${dragging ? 'border-primary-label bg-highlight' : 'border-border bg-shading hover:bg-highlight'}`}
-      >
-        <Upload className="mx-auto mb-3 h-8 w-8 text-secondary-label" />
-        <p className="text-sm font-medium text-primary-label">Drag a WAV or MP3 here</p>
-        <p className="mt-1 text-xs text-secondary-label">Previous versions stay switchable from the track row</p>
-        {uploading && <p className="mt-3 text-xs text-secondary-label">Uploading...</p>}
+    <ModalShell isOpen={isOpen} onClose={onClose} className="max-w-md" zIndex="z-[95]">
+      <div className="p-5">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-primary-label">Replace audio</h3>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-full bg-shading text-secondary-label hover:bg-highlight">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <div
+          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={(e) => { e.preventDefault(); setDragging(false); uploadFile(e.dataTransfer.files?.[0]); }}
+          onClick={() => inputRef.current?.click()}
+          className={`cursor-pointer rounded-2xl border-2 border-dashed px-4 py-10 text-center transition-colors ${dragging ? 'border-primary-label bg-highlight' : 'border-border bg-shading hover:bg-highlight'}`}
+        >
+          <Upload className="mx-auto mb-3 h-8 w-8 text-secondary-label" />
+          <p className="text-sm font-medium">Drag a WAV or MP3 here</p>
+          {uploading && <p className="mt-3 text-xs text-secondary-label">Uploading...</p>}
+        </div>
+        <input ref={inputRef} type="file" accept=".wav,.mp3,audio/wav,audio/mpeg" className="hidden" onChange={(e) => uploadFile(e.target.files?.[0])} />
       </div>
-      <input ref={inputRef} type="file" accept=".wav,.mp3,audio/wav,audio/mpeg" className="hidden" onChange={(e) => uploadFile(e.target.files?.[0])} />
     </ModalShell>
   );
 }
@@ -242,22 +241,11 @@ function StemSplitModal({ isOpen, onClose, track, userId }) {
         const source = new EventSource(`${apiUrl}/api/tracks/${track.id}/split-stems/status/${data.jobId}`);
         source.onmessage = (event) => {
           const payload = JSON.parse(event.data);
-          if (payload.error) {
-            source.close();
-            reject(new Error(payload.error));
-          } else if (payload.done) {
-            setProgress(100);
-            setStems(payload.stems || []);
-            source.close();
-            resolve();
-          } else if (payload.progress) {
-            setProgress(payload.progress);
-          }
+          if (payload.error) { source.close(); reject(new Error(payload.error)); }
+          else if (payload.done) { setProgress(100); setStems(payload.stems || []); source.close(); resolve(); }
+          else if (payload.progress) setProgress(payload.progress);
         };
-        source.onerror = () => {
-          source.close();
-          reject(new Error('Stem split connection lost.'));
-        };
+        source.onerror = () => { source.close(); reject(new Error('Stem split connection lost.')); };
       });
     } catch (err) {
       setError(err.message);
@@ -278,83 +266,267 @@ function StemSplitModal({ isOpen, onClose, track, userId }) {
   };
 
   return (
-    <ModalShell isOpen={isOpen} onClose={onClose} title="Split stems">
-      <p className="mb-4 text-sm text-secondary-label">Uses Demucs (htdemucs) to split into drums, bass, other, and vocals.</p>
-      {!stems && !running && (
-        <button onClick={startSplit} className="w-full rounded-full bg-primary-label py-2.5 text-sm font-semibold text-primary-background">
-          Start stem split
-        </button>
-      )}
-      {running && (
-        <div>
-          <div className="h-2 overflow-hidden rounded-full bg-shading">
-            <div className="h-full rounded-full bg-primary-label transition-all" style={{ width: `${Math.max(8, progress)}%` }} />
+    <ModalShell isOpen={isOpen} onClose={onClose} className="max-w-md" zIndex="z-[95]">
+      <div className="p-5">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-primary-label">Split stems</h3>
+          <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-full bg-shading text-secondary-label hover:bg-highlight">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <p className="mb-4 text-sm text-secondary-label">Uses Demucs to split into drums, bass, other, and vocals.</p>
+        {!stems && !running && (
+          <button onClick={startSplit} className="w-full rounded-full bg-primary-label py-2.5 text-sm font-semibold text-primary-background">
+            Start stem split
+          </button>
+        )}
+        {running && (
+          <div>
+            <div className="h-2 overflow-hidden rounded-full bg-shading">
+              <div className="h-full rounded-full bg-primary-label transition-all" style={{ width: `${Math.max(8, progress)}%` }} />
+            </div>
+            <p className="mt-2 text-center text-xs text-secondary-label">{progress}%</p>
           </div>
-          <p className="mt-2 text-center text-xs text-secondary-label">{progress}%</p>
-        </div>
-      )}
-      {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
-      {stems?.length > 0 && (
-        <div className="mt-4 space-y-2">
-          {stems.map((stem) => (
-            <button key={stem.name} onClick={() => downloadStem(stem)} className="flex w-full items-center justify-between rounded-xl bg-shading px-3 py-2 text-sm hover:bg-highlight">
-              <span className="capitalize">{stem.name}</span>
-              <Download className="h-4 w-4" />
-            </button>
-          ))}
-        </div>
-      )}
+        )}
+        {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
+        {stems?.length > 0 && (
+          <div className="mt-4 space-y-2">
+            {stems.map((stem) => (
+              <button key={stem.name} onClick={() => downloadStem(stem)} className="flex w-full items-center justify-between rounded-xl bg-shading px-3 py-2 text-sm hover:bg-highlight">
+                <span className="capitalize">{stem.name}</span>
+                <Download className="h-4 w-4" />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </ModalShell>
   );
 }
 
-export default function TrackOptionsMenu({
+function VersionRowMenu({ onRename, onExport, onDelete, onClose }) {
+  return (
+    <>
+      <div className="fixed inset-0 z-[110]" onClick={onClose} />
+      <div className="absolute right-0 top-full z-[111] mt-1 w-44 rounded-xl border border-border panel-bg p-1.5 shadow-2xl">
+        <button onClick={onRename} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-highlight">
+          <Pencil className="h-3.5 w-3.5" /> Rename
+        </button>
+        <button onClick={onExport} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-highlight">
+          <Download className="h-3.5 w-3.5" /> Export version
+        </button>
+        {onDelete && (
+          <button onClick={onDelete} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-red-400 hover:bg-red-500/10">
+            <Trash2 className="h-3.5 w-3.5" /> Delete version
+          </button>
+        )}
+      </div>
+    </>
+  );
+}
+
+function TrackVersionsModal({ isOpen, onClose, onBack, track, userId, onTrackUpdate, onPlay }) {
+  const [openMenuId, setOpenMenuId] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const addVersionRef = useRef(null);
+
+  if (!isOpen || !track) return null;
+
+  const currentEntry = {
+    id: 'current',
+    label: track.title,
+    uploadedAt: track.uploadedAt,
+    isCurrent: true
+  };
+  const allVersions = [currentEntry, ...(track.versions || []).map((v, i) => ({ ...v, isCurrent: false, label: v.label || `Version ${i + 1}` }))];
+
+  const handleSwitch = async (versionId) => {
+    if (versionId === 'current') return;
+    try {
+      const updated = await switchTrackVersion(track, versionId, userId);
+      onTrackUpdate(updated);
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleRename = async (version) => {
+    setOpenMenuId(null);
+    const nextLabel = prompt('Rename version', version.label || track.title);
+    if (!nextLabel?.trim()) return;
+
+    try {
+      if (version.isCurrent) {
+        const res = await fetch(`${apiUrl}/api/tracks/${track.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, title: nextLabel.trim() })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        onTrackUpdate(data.track);
+        return;
+      }
+
+      const res = await fetch(`${apiUrl}/api/tracks/${track.id}/versions/${version.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, label: nextLabel.trim() })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      onTrackUpdate(data.track);
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleExport = async (version) => {
+    setOpenMenuId(null);
+    const url = version.isCurrent
+      ? track.url
+      : `${apiUrl}/api/media/tracks/${track.id}/versions/${version.id}?userId=${encodeURIComponent(userId)}`;
+    const res = await fetch(url);
+    if (!res.ok) { alert('Export failed'); return; }
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = blobUrl;
+    anchor.download = `${version.label || track.title}.wav`;
+    anchor.click();
+    URL.revokeObjectURL(blobUrl);
+  };
+
+  const handleDeleteVersion = async (version) => {
+    setOpenMenuId(null);
+    if (!confirm('Delete this version?')) return;
+    const res = await fetch(`${apiUrl}/api/tracks/${track.id}/versions/${version.id}?userId=${encodeURIComponent(userId)}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (!res.ok) { alert(data.error || 'Could not delete version'); return; }
+    onTrackUpdate(data.track);
+  };
+
+  const handleAddVersion = async (file) => {
+    if (!file) return;
+    setUploading(true);
+    try {
+      const updated = await replaceTrackAudio(track, file, userId);
+      onTrackUpdate(updated);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <ModalShell isOpen={isOpen} onClose={onClose} className="max-w-lg" zIndex="z-[90]">
+      <div className="flex items-center justify-between border-b border-border px-5 py-4">
+        <button onClick={onBack} className="grid h-9 w-9 place-items-center rounded-full bg-shading hover:bg-highlight" aria-label="Back">
+          <ArrowLeft className="h-4 w-4" />
+        </button>
+        <h2 className="truncate px-3 text-base font-bold">{track.title}</h2>
+        <button onClick={onClose} className="grid h-9 w-9 place-items-center rounded-full bg-shading hover:bg-highlight" aria-label="Close">
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+
+      <div className="border-b border-border px-5 py-3 text-center text-xs text-secondary-label">
+        {track.mimeType?.includes('wav') ? 'WAV' : 'MP3'} · {formatTrackDate(track.uploadedAt)}
+      </div>
+
+      <div className="max-h-[50vh] space-y-1 overflow-y-auto px-3 py-3">
+        {allVersions.map((version, index) => (
+          <div
+            key={version.id}
+            className={`relative flex items-center gap-3 rounded-2xl px-3 py-3 transition-colors ${version.isCurrent ? 'bg-highlight' : 'hover:bg-shading'}`}
+          >
+            <button
+              onClick={() => version.isCurrent ? onPlay?.(track) : handleSwitch(version.id)}
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-shading hover:bg-highlight"
+              aria-label="Play version"
+            >
+              <Play className="h-4 w-4 fill-current" />
+            </button>
+            <div className="min-w-0 flex-1">
+              <div className="mb-1 flex items-center gap-2">
+                <p className="truncate text-sm font-semibold">{version.label}</p>
+                {version.isCurrent && <span className="shrink-0 rounded-full bg-primary-label px-2 py-0.5 text-[10px] font-bold text-primary-background">Current</span>}
+              </div>
+              <p className="truncate text-xs text-secondary-label">{formatTrackDate(version.uploadedAt)}</p>
+              <WaveformBars seed={index} active={version.isCurrent} className="mt-2 h-6" />
+            </div>
+            <div className="relative shrink-0">
+              <button
+                onClick={() => setOpenMenuId((id) => (id === version.id ? null : version.id))}
+                className="grid h-8 w-8 place-items-center rounded-full hover:bg-shading"
+                aria-label="Version options"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </button>
+              {openMenuId === version.id && (
+                <VersionRowMenu
+                  onRename={() => handleRename(version)}
+                  onExport={() => handleExport(version)}
+                  onDelete={version.isCurrent ? null : () => handleDeleteVersion(version)}
+                  onClose={() => setOpenMenuId(null)}
+                />
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="space-y-2 border-t border-border p-4">
+        <button
+          onClick={() => addVersionRef.current?.click()}
+          disabled={uploading}
+          className="flex w-full items-center justify-center gap-2 rounded-full border border-border bg-shading py-3 text-sm font-semibold hover:bg-highlight disabled:opacity-60"
+        >
+          <Upload className="h-4 w-4" />
+          {uploading ? 'Uploading...' : 'Add new version'}
+        </button>
+        <button onClick={onBack} className="w-full rounded-full bg-primary-label py-3 text-sm font-bold text-primary-background">
+          Done
+        </button>
+        <input
+          ref={addVersionRef}
+          type="file"
+          accept=".wav,.mp3,audio/wav,audio/mpeg"
+          className="hidden"
+          onChange={(e) => { handleAddVersion(e.target.files?.[0]); e.target.value = ''; }}
+        />
+      </div>
+    </ModalShell>
+  );
+}
+
+function TrackDetailsModal({
+  isOpen,
+  onClose,
   track,
   userId,
   onTrackUpdate,
   onTrackDelete,
   onAddToQueue,
-  onReplaceAudioFile
+  onPlay,
+  onOpenSubModal
 }) {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [modal, setModal] = useState(null);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0, openUp: false });
-  const buttonRef = useRef(null);
+  const [showVersions, setShowVersions] = useState(false);
+  const [duration, setDuration] = useState(null);
 
-  const updateMenuPosition = useCallback(() => {
-    if (!buttonRef.current) return;
-    const rect = buttonRef.current.getBoundingClientRect();
-    const spaceBelow = window.innerHeight - rect.bottom - PLAYER_CLEARANCE;
-    const openUp = spaceBelow < MENU_HEIGHT;
-    const left = Math.min(Math.max(rect.right - MENU_WIDTH, 12), window.innerWidth - MENU_WIDTH - 12);
+  useEffect(() => {
+    if (!isOpen || !track?.url) return;
+    const audio = new Audio();
+    audio.preload = 'metadata';
+    audio.src = track.url;
+    audio.onloadedmetadata = () => setDuration(audio.duration);
+    return () => { audio.src = ''; };
+  }, [isOpen, track?.url, track?.id]);
 
-    setMenuPosition({
-      top: openUp ? rect.top - 8 : rect.bottom + 8,
-      left,
-      openUp
-    });
-  }, []);
-
-  useLayoutEffect(() => {
-    if (!isMenuOpen) return undefined;
-    updateMenuPosition();
-    window.addEventListener('resize', updateMenuPosition);
-    window.addEventListener('scroll', updateMenuPosition, true);
-    return () => {
-      window.removeEventListener('resize', updateMenuPosition);
-      window.removeEventListener('scroll', updateMenuPosition, true);
-    };
-  }, [isMenuOpen, updateMenuPosition]);
-
-  const closeMenu = () => setIsMenuOpen(false);
-  const openModal = (name) => {
-    closeMenu();
-    setModal(name);
-  };
+  if (!isOpen || !track) return null;
 
   const exportTrack = async () => {
-    closeMenu();
     try {
       const res = await fetch(track.url);
       if (!res.ok) throw new Error('Download failed');
@@ -366,12 +538,97 @@ export default function TrackOptionsMenu({
       anchor.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      alert(err.message || 'Could not export track.');
+      alert(err.message);
     }
   };
 
+  const actions = [
+    { id: 'insights', label: 'Insights', icon: BarChart3, onClick: () => onOpenSubModal('insights') },
+    { id: 'notes', label: 'Notes', icon: FileText, onClick: () => onOpenSubModal('notes') },
+    { id: 'replace', label: 'Replace audio', icon: FileAudio, onClick: () => onOpenSubModal('replace') },
+    { id: 'stems', label: 'Split stems', icon: Layers, onClick: () => onOpenSubModal('stems') },
+    { id: 'queue', label: 'Add to queue', icon: ListPlus, onClick: () => { onAddToQueue(track); onClose(); } },
+    { id: 'export', label: 'Export', icon: Download, onClick: exportTrack },
+    { id: 'delete', label: 'Delete', icon: Trash2, onClick: () => onOpenSubModal('delete'), danger: true }
+  ];
+
+  return (
+    <>
+      <ModalShell isOpen={isOpen && !showVersions} onClose={onClose} className="max-w-3xl">
+        <div className="grid md:grid-cols-[1.1fr_0.9fr]">
+          {/* Left: track details */}
+          <div className="border-b border-border p-5 md:border-b-0 md:border-r">
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <button onClick={onClose} className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-shading hover:bg-highlight" aria-label="Close">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <h2 className="mb-2 text-2xl font-bold leading-tight">{track.title}</h2>
+            <p className="mb-5 text-sm text-secondary-label">
+              {formatDuration(duration)}
+              {track.versions?.length > 0 && ` · ${track.versions.length + 1} versions`}
+            </p>
+            <WaveformBars seed={track.id?.length || 0} active className="mb-5 h-14" />
+            <button
+              onClick={() => setShowVersions(true)}
+              className="rounded-full border border-border bg-shading px-4 py-2 text-sm font-semibold hover:bg-highlight"
+            >
+              More info
+            </button>
+          </div>
+
+          {/* Right: actions */}
+          <div className="p-3">
+            <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-secondary-label">Details</p>
+            <button
+              disabled
+              className="flex w-full items-center justify-between rounded-xl px-3 py-3 text-left text-sm text-secondary-label/50"
+            >
+              <span className="flex items-center gap-3"><Share2 className="h-4 w-4" /> Share</span>
+              <span className="text-xs">Disabled</span>
+            </button>
+            {actions.map(({ id, label, icon: Icon, onClick, danger }) => (
+              <button
+                key={id}
+                onClick={onClick}
+                className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold transition-colors ${danger ? 'text-red-500 hover:bg-red-500/10' : 'text-primary-label hover:bg-highlight'}`}
+              >
+                <Icon className="h-4 w-4" />
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </ModalShell>
+
+      <TrackVersionsModal
+        isOpen={showVersions}
+        onClose={onClose}
+        onBack={() => setShowVersions(false)}
+        track={track}
+        userId={userId}
+        onTrackUpdate={onTrackUpdate}
+        onPlay={onPlay}
+      />
+    </>
+  );
+}
+
+export default function TrackOptionsMenu({
+  track,
+  userId,
+  onTrackUpdate,
+  onTrackDelete,
+  onAddToQueue,
+  onPlay
+}) {
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [subModal, setSubModal] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
   const handleDelete = async () => {
     setConfirmDelete(false);
+    setDetailsOpen(false);
     try {
       const res = await fetch(`${apiUrl}/api/tracks/${track.id}?userId=${encodeURIComponent(userId)}`, { method: 'DELETE' });
       if (!res.ok) throw new Error((await res.json()).error || 'Could not delete track.');
@@ -381,76 +638,40 @@ export default function TrackOptionsMenu({
     }
   };
 
-  const menuItems = [
-    { id: 'rename', label: 'Rename', icon: Pencil, action: () => openModal('rename') },
-    { id: 'insights', label: 'Insights', icon: BarChart3, action: () => openModal('insights') },
-    { id: 'notes', label: 'Notes', icon: FileText, action: () => openModal('notes') },
-    { id: 'replace', label: 'Replace audio', icon: FileAudio, action: () => openModal('replace') },
-    { id: 'stems', label: 'Split stems', icon: Layers, action: () => openModal('stems') },
-    { id: 'queue', label: 'Add to queue', icon: ListPlus, action: () => { closeMenu(); onAddToQueue(track); } },
-    { id: 'export', label: 'Export WAV', icon: Download, action: exportTrack },
-    { id: 'delete', label: 'Delete', icon: Trash2, action: () => { closeMenu(); setConfirmDelete(true); }, danger: true }
-  ];
-
-  const menuPortal = isMenuOpen && createPortal(
-    <>
-      <div className="fixed inset-0 z-[80]" onClick={closeMenu} aria-hidden="true" />
-      <AnimatePresence>
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: menuPosition.openUp ? 8 : -8 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: menuPosition.openUp ? 8 : -8 }}
-          transition={{ duration: 0.12 }}
-          className="fixed z-[81] w-52 max-h-[min(360px,calc(100vh-8rem))] overflow-y-auto rounded-[1rem] border border-border panel-bg p-2 shadow-2xl"
-          style={{
-            top: menuPosition.openUp ? 'auto' : menuPosition.top,
-            bottom: menuPosition.openUp ? `${window.innerHeight - menuPosition.top}px` : 'auto',
-            left: menuPosition.left
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {menuItems.map(({ id, label, icon: Icon, action, danger }) => (
-            <button
-              key={id}
-              onClick={(e) => { e.stopPropagation(); action(); }}
-              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold transition-colors ${danger ? 'text-red-500 hover:bg-red-500/10' : 'text-primary-label hover:bg-highlight'}`}
-            >
-              <Icon className="h-4 w-4" />
-              {label}
-            </button>
-          ))}
-        </motion.div>
-      </AnimatePresence>
-    </>,
-    document.body
-  );
+  const openSubModal = (name) => {
+    if (name === 'delete') {
+      setConfirmDelete(true);
+      return;
+    }
+    setSubModal(name);
+  };
 
   return (
     <>
-      {menuPortal}
-      <div className="relative">
-        <button
-          ref={buttonRef}
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsMenuOpen((open) => {
-              if (!open) updateMenuPosition();
-              return !open;
-            });
-          }}
-          className="grid h-9 w-9 place-items-center rounded-full text-secondary-label transition-colors hover:bg-highlight hover:text-primary-label"
-          aria-label="Track options"
-          aria-expanded={isMenuOpen}
-        >
-          <MoreHorizontal className="h-5 w-5" />
-        </button>
-      </div>
+      <button
+        onClick={(e) => { e.stopPropagation(); setDetailsOpen(true); }}
+        className="grid h-9 w-9 place-items-center rounded-full text-secondary-label transition-colors hover:bg-highlight hover:text-primary-label"
+        aria-label="Track options"
+      >
+        <MoreHorizontal className="h-5 w-5" />
+      </button>
 
-      <TrackRenameModal isOpen={modal === 'rename'} onClose={() => setModal(null)} track={track} userId={userId} onSaved={onTrackUpdate} />
-      <TrackInsightsModal isOpen={modal === 'insights'} onClose={() => setModal(null)} track={track} userId={userId} />
-      <TrackNotesModal isOpen={modal === 'notes'} onClose={() => setModal(null)} track={track} userId={userId} onSaved={onTrackUpdate} />
-      <TrackReplaceModal isOpen={modal === 'replace'} onClose={() => setModal(null)} track={track} userId={userId} onSaved={onTrackUpdate} />
-      <StemSplitModal isOpen={modal === 'stems'} onClose={() => setModal(null)} track={track} userId={userId} />
+      <TrackDetailsModal
+        isOpen={detailsOpen}
+        onClose={() => { setDetailsOpen(false); setSubModal(null); }}
+        track={track}
+        userId={userId}
+        onTrackUpdate={onTrackUpdate}
+        onTrackDelete={onTrackDelete}
+        onAddToQueue={onAddToQueue}
+        onPlay={onPlay}
+        onOpenSubModal={openSubModal}
+      />
+
+      <TrackInsightsModal isOpen={subModal === 'insights'} onClose={() => setSubModal(null)} track={track} userId={userId} />
+      <TrackNotesModal isOpen={subModal === 'notes'} onClose={() => setSubModal(null)} track={track} userId={userId} onSaved={onTrackUpdate} />
+      <TrackReplaceModal isOpen={subModal === 'replace'} onClose={() => setSubModal(null)} track={track} userId={userId} onSaved={onTrackUpdate} />
+      <StemSplitModal isOpen={subModal === 'stems'} onClose={() => setSubModal(null)} track={track} userId={userId} />
 
       <ConfirmModal
         isOpen={confirmDelete}
@@ -460,20 +681,6 @@ export default function TrackOptionsMenu({
         message="Are you sure you want to delete this track? This action cannot be undone."
         confirmText="Delete"
       />
-
-      {onReplaceAudioFile && (
-        <input
-          type="file"
-          accept=".wav,.mp3,audio/wav,audio/mpeg"
-          className="hidden"
-          id={`replace-audio-${track.id}`}
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) onReplaceAudioFile(track, file);
-            e.target.value = '';
-          }}
-        />
-      )}
     </>
   );
 }

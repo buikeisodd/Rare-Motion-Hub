@@ -1074,6 +1074,68 @@ app.patch('/api/tracks/:id/switch-version', (req, res) => {
   res.json({ track: normalizeTrack(track) });
 });
 
+app.delete('/api/tracks/:id/versions/:versionId', (req, res) => {
+  const db = readDB();
+  const userId = requireUserId(req, res);
+  if (!userId) return;
+
+  const trackIndex = db.tracks.findIndex((item) => item.id === req.params.id && (item.userId === userId || item.uploader?.id === userId));
+  if (trackIndex === -1) return res.status(404).json({ error: 'Track not found' });
+
+  const track = db.tracks[trackIndex];
+  track.versions ||= [];
+  const versionIndex = track.versions.findIndex((version) => version.id === req.params.versionId);
+  if (versionIndex === -1) return res.status(404).json({ error: 'Version not found' });
+
+  const [removed] = track.versions.splice(versionIndex, 1);
+  removeFileIfExists(path.join(uploadDir, trackOwnerId(track), removed.filename));
+  db.tracks[trackIndex] = track;
+  writeDB(db);
+  res.json({ track: normalizeTrack(track) });
+});
+
+app.patch('/api/tracks/:id/versions/:versionId', (req, res) => {
+  const db = readDB();
+  const userId = requireUserId(req, res);
+  if (!userId) return;
+  const { label } = req.body;
+  if (!label?.toString().trim()) return res.status(400).json({ error: 'Version label is required.' });
+
+  const trackIndex = db.tracks.findIndex((item) => item.id === req.params.id && (item.userId === userId || item.uploader?.id === userId));
+  if (trackIndex === -1) return res.status(404).json({ error: 'Track not found' });
+
+  const track = db.tracks[trackIndex];
+  track.versions ||= [];
+  const version = track.versions.find((item) => item.id === req.params.versionId);
+  if (!version) return res.status(404).json({ error: 'Version not found' });
+
+  version.label = label.toString().trim();
+  writeDB(db);
+  res.json({ track: normalizeTrack(track) });
+});
+
+app.get('/api/media/tracks/:id/versions/:versionId', (req, res) => {
+  const db = ensureDBShape(readDB());
+  const userId = requireUserId(req, res);
+  if (!userId) return;
+
+  const track = findOwnedTrack(db, req.params.id, userId);
+  if (!track) return res.status(404).json({ error: 'Track not found' });
+
+  const version = (track.versions || []).find((item) => item.id === req.params.versionId);
+  if (!version) return res.status(404).json({ error: 'Version not found' });
+
+  const filePath = path.join(uploadDir, trackOwnerId(track), version.filename);
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Version media file not found' });
+
+  const stat = fs.statSync(filePath);
+  const contentType = version.mimeType || 'audio/mpeg';
+  res.setHeader('Content-Type', contentType);
+  res.setHeader('Content-Length', stat.size);
+  res.setHeader('Accept-Ranges', 'bytes');
+  fs.createReadStream(filePath).pipe(res);
+});
+
 app.post('/api/tracks/:id/split-stems', (req, res) => {
   const db = readDB();
   const userId = requireUserId(req, res);

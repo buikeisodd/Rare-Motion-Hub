@@ -7,7 +7,7 @@ import CoverArtPicker from '../components/CoverArtPicker';
 import ConfirmModal from '../components/ConfirmModal';
 import ShareLinkModal from '../components/ShareLinkModal';
 import MarqueeInput from '../components/MarqueeInput';
-import TrackOptionsMenu, { replaceTrackAudio, switchTrackVersion } from '../components/TrackOptionsMenu';
+import TrackOptionsMenu, { replaceTrackAudio } from '../components/TrackOptionsMenu';
 import { useAudio } from '../context/AudioContext';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -151,15 +151,6 @@ export default function Project({ user }) {
     }
     try {
       const updatedTrack = await replaceTrackAudio(track, file, user.id);
-      handleTrackUpdate(updatedTrack);
-    } catch (err) {
-      alert(err.message);
-    }
-  };
-
-  const handleSwitchVersion = async (track, versionId) => {
-    try {
-      const updatedTrack = await switchTrackVersion(track, versionId, user.id);
       handleTrackUpdate(updatedTrack);
     } catch (err) {
       alert(err.message);
@@ -354,18 +345,7 @@ export default function Project({ user }) {
                     <p className="mt-1 text-base text-secondary-label">{timeAgo(track.uploadedAt)}</p>
                     {track.notes && <p className="mt-1 truncate text-xs text-secondary-label/80">{track.notes}</p>}
                     {track.versions?.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-1.5" onClick={(event) => event.stopPropagation()}>
-                        <span className="rounded-full bg-highlight px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-label">Current</span>
-                        {track.versions.map((version, versionIndex) => (
-                          <button
-                            key={version.id}
-                            onClick={() => handleSwitchVersion(track, version.id)}
-                            className="rounded-full bg-shading px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-secondary-label hover:bg-highlight hover:text-primary-label"
-                          >
-                            {version.label || `V${versionIndex + 1}`}
-                          </button>
-                        ))}
-                      </div>
+                      <p className="mt-1 text-xs text-secondary-label">{track.versions.length + 1} versions</p>
                     )}
                   </div>
                   <div className="flex items-center gap-1 text-primary-label" onClick={(event) => event.stopPropagation()}>
@@ -374,9 +354,8 @@ export default function Project({ user }) {
                       userId={user.id}
                       onTrackUpdate={handleTrackUpdate}
                       onTrackDelete={handleDeleteTrack}
-                      onAddToQueue={(queuedTrack) => {
-                        addToQueue(queuedTrack);
-                      }}
+                      onAddToQueue={(queuedTrack) => addToQueue(queuedTrack)}
+                      onPlay={handlePlay}
                     />
                   </div>
                 </div>
