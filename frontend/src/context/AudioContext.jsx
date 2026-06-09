@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useRef, useEffect } from 'react';
 
-const AudioContext = createContext(null);
+const AudioPlayerContext = createContext(null);
 
 export function AudioProvider({ children }) {
   const [currentTrack, setCurrentTrack] = useState(null);
@@ -150,14 +150,14 @@ export function AudioProvider({ children }) {
   };
 
   return (
-    <AudioContext.Provider value={value}>
+    <AudioPlayerContext.Provider value={value}>
       {children}
-    </AudioContext.Provider>
+    </AudioPlayerContext.Provider>
   );
 }
 
 export function useAudio() {
-  const ctx = useContext(AudioContext);
+  const ctx = useContext(AudioPlayerContext);
   if (!ctx) throw new Error('useAudio must be used within an AudioProvider');
   return ctx;
 }
