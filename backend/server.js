@@ -363,10 +363,25 @@ app.post('/api/auth', async (req, res) => {
   const email = req.body.email?.trim();
   if (!email) return res.status(400).json({ error: 'Email is required.' });
 
-  const db = ensureDBShape(await readDB());
-  const user = db.users.find((u) => u.email.toLowerCase() === email.toLowerCase());
-  if (user) res.json({ user });
-  else res.status(401).json({ error: 'Unauthorized email. Only specific users are allowed.' });
+  // Find existing user
+  let user = await User.findOne({ email: email.toLowerCase() }).lean();
+
+  if (!user) {
+    // Auto-create user on first login
+    const id = Date.now().toString(36) + Math.random().toString(36).slice(2);
+    const name = email.split('@')[0];
+    user = {
+      id,
+      name,
+      email: email.toLowerCase(),
+      avatarUrl: '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    await User.create(user);
+  }
+
+  res.json({ user });
 });
 
 // --- USERS ---
