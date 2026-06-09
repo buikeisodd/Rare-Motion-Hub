@@ -165,8 +165,20 @@ function GlobalAudioPlayer() {
 
 function App() {
   const [user, setUser] = useState(() => {
-    const storedUser = localStorage.getItem('user');
-    return storedUser ? JSON.parse(storedUser) : null;
+    try {
+      const storedUser = localStorage.getItem('user');
+      if (!storedUser) return null;
+      const parsed = JSON.parse(storedUser);
+      // Clear old/invalid sessions — valid IDs are alphanumeric strings, not just '1'
+      if (!parsed?.id || !parsed?.email || parsed.id === '1' || parsed.id.length < 4) {
+        localStorage.removeItem('user');
+        return null;
+      }
+      return parsed;
+    } catch {
+      localStorage.removeItem('user');
+      return null;
+    }
   });
   const [justAuthenticated, setJustAuthenticated] = useState(false);
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';

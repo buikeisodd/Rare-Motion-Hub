@@ -560,7 +560,16 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
   useEffect(() => {
     fetch(`${apiUrl}/api/workspace?userId=${user.id}`)
       .then((res) => res.json())
-      .then((data) => { setWorkspace(data); setLoading(false); })
+      .then((data) => {
+        setWorkspace({
+          folders: data.folders || [],
+          projects: data.projects || [],
+          tracks: data.tracks || [],
+          coverArts: data.coverArts || [],
+          notifications: data.notifications || [],
+        });
+        setLoading(false);
+      })
       .catch(() => setLoading(false));
   }, [user.id]);
 
