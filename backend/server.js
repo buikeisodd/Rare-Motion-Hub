@@ -312,10 +312,9 @@ const trackStorage = multer.diskStorage({
 const uploadTrack = multer({ storage: trackStorage });
 const noteMemoStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const db = ensureDBShape(await readDB());
-    const track = findAccessibleTrack(db, req.params.id, req.body.userId || req.query.userId);
-    if (!track) return cb(new Error('Track not found'));
-    const dir = noteMemoDir(track);
+    // Use trackId from URL param to build path without DB lookup
+    const trackId = req.params.id || 'unknown';
+    const dir = path.join(__dirname, 'uploads', 'memos', trackId);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     cb(null, dir);
   },
@@ -392,7 +391,7 @@ app.put('/api/users/:id', async (req, res) => {
   res.json({ user: db.users[userIndex] });
 });
 
-app.post('/api/users/:id/avatar', uploadAvatar.single('avatar'), (req, res) => {
+app.post('/api/users/:id/avatar', uploadAvatar.single('avatar'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No profile image uploaded.' });
   const db = ensureDBShape(await readDB());
   const userIndex = db.users.findIndex((user) => user.id === req.params.id);
@@ -931,7 +930,7 @@ app.get('/api/projects/:id/insights', async (req, res) => {
 });
 
 // --- COVERS ---
-app.post('/api/upload-cover', uploadCover.single('cover'), (req, res) => {
+app.post('/api/upload-cover', uploadCover.single('cover'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No image file uploaded' });
   const { userId } = req.body;
   const db = ensureDBShape(await readDB());
@@ -961,7 +960,7 @@ app.delete('/api/covers/:id', async (req, res) => {
 });
 
 // --- TRACKS ---
-app.post('/api/upload', uploadTrack.single('track'), (req, res) => {
+app.post('/api/upload', uploadTrack.single('track'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No audio file uploaded' });
   const { title, userId, projectId, artist, producer } = req.body;
   const db = ensureDBShape(await readDB());
@@ -1070,7 +1069,7 @@ app.get('/api/tracks/:id/insights', async (req, res) => {
   });
 });
 
-app.post('/api/tracks/:id/replace-audio', uploadTrack.single('track'), (req, res) => {
+app.post('/api/tracks/:id/replace-audio', uploadTrack.single('track'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No audio file uploaded' });
   const db = ensureDBShape(await readDB());
   const userId = requireUserId(req, res);
@@ -1203,7 +1202,7 @@ app.get('/api/media/tracks/:id/versions/:versionId', async (req, res) => {
   fs.createReadStream(filePath).pipe(res);
 });
 
-app.post('/api/tracks/:id/note-memos', uploadNoteMemo.single('memo'), (req, res) => {
+app.post('/api/tracks/:id/note-memos', uploadNoteMemo.single('memo'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No voice memo uploaded' });
   const db = ensureDBShape(await readDB());
   const userId = requireUserId(req, res);
@@ -1459,7 +1458,7 @@ app.get('/api/media/tracks/:id', async (req, res) => {
   fs.createReadStream(filePath, { start, end }).pipe(res);
 });
 
-app.post('/api/convert', uploadTrack.single('video'), (req, res) => {
+app.post('/api/convert', uploadTrack.single('video'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No video file uploaded' });
   const { userId } = req.body;
   const db = ensureDBShape(await readDB());
@@ -1798,7 +1797,7 @@ app.post('/api/messages', async (req, res) => {
   res.json({ message: hydrateMessage(db, msg) });
 });
 
-app.post('/api/messages/media', uploadChatMedia.single('media'), (req, res) => {
+app.post('/api/messages/media', uploadChatMedia.single('media'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No media uploaded.' });
   const db = ensureDBShape(await readDB());
   const { senderId, recipientId, conversationType, text, replyToMessageId, mediaKind } = req.body;
