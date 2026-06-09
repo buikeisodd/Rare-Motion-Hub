@@ -1956,7 +1956,5 @@ app.post('/api/notifications/read', async (req, res) => {
   res.json({ success: true });
 });
 
-syncFromJSONBin().finally(() => {
-  app.listen(PORT, () => console.log(`Backend server running on http://localhost:${PORT}`));
-});
+app.listen(PORT, () => console.log(`Backend server running on http://localhost:${PORT}`));
 // End of server file
