@@ -6,6 +6,11 @@ const path = require('path');
 const { spawn } = require('child_process');
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
+const mongoose = require('mongoose');
+const {
+  User, Project, Track, Folder, CoverArt,
+  Notification, PlayEvent, Message, Call, CallSignal, ShareLink
+} = require('./models');
 ffmpeg.setFfmpegPath(ffmpegPath);
 
 const app = express();
@@ -14,6 +19,12 @@ const PORT = process.env.PORT || 3001;
 const conversionJobs = {};
 const stemJobs = {};
 const BASE_URL = process.env.BASE_URL || process.env.RENDER_EXTERNAL_URL || 'https://rare-motion-hub.onrender.com';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://chibuikeeseagwu02_db_user:destinyboy56@cluster0.efinpoe.mongodb.net/starlight-station?appName=Cluster0';
+
+// Connect to MongoDB
+mongoose.connect(MONGODB_URI)
+  .then(() => console.log('Connected to MongoDB Atlas'))
+  .catch(err => console.error('MongoDB connection error:', err));
 
 app.use(cors());
 app.use(express.json());
@@ -26,16 +37,11 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/covers', express.static(path.join(__dirname, 'covers')));
 app.use('/avatars', express.static(path.join(__dirname, 'avatars')));
 
-const dbPath = path.join(__dirname, 'db.json');
 const uploadDir = path.join(__dirname, 'uploads');
 const coverDir = path.join(__dirname, 'covers');
 const avatarDir = path.join(__dirname, 'avatars');
 const chatDir = path.join(uploadDir, 'chat');
 const stemsDir = path.join(__dirname, 'stems');
-const JSONBIN_BASE_URL = 'https://api.jsonbin.io/v3';
-const JSONBIN_BIN_ID = process.env.JSONBIN_BIN_ID;
-const JSONBIN_MASTER_KEY = process.env.JSONBIN_MASTER_KEY || process.env.JSONBIN_API_KEY;
-const JSONBIN_ACCESS_KEY = process.env.JSONBIN_ACCESS_KEY;
 
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 if (!fs.existsSync(coverDir)) fs.mkdirSync(coverDir);
@@ -43,58 +49,56 @@ if (!fs.existsSync(avatarDir)) fs.mkdirSync(avatarDir);
 if (!fs.existsSync(chatDir)) fs.mkdirSync(chatDir, { recursive: true });
 if (!fs.existsSync(stemsDir)) fs.mkdirSync(stemsDir, { recursive: true });
 
-// Helpers
-const readDB = () => JSON.parse(fs.readFileSync(dbPath, 'utf8'));
-const jsonBinHeaders = () => {
-  const headers = { 'Content-Type': 'application/json' };
-  if (JSONBIN_MASTER_KEY) headers['X-Master-Key'] = JSONBIN_MASTER_KEY;
-  if (JSONBIN_ACCESS_KEY) headers['X-Access-Key'] = JSONBIN_ACCESS_KEY;
-  return headers;
+// ── MongoDB DB helpers — keep same interface as JSON DB so all routes work ──
+
+// readDB: loads all collections into a flat object (same shape as old db.json)
+const readDB = async () => {
+  const [users, projects, tracks, folders, coverArts, notifications, playEvents, messages, calls, callSignals, shareLinks] = await Promise.all([
+    User.find().lean(),
+    Project.find().lean(),
+    Track.find().lean(),
+    Folder.find().lean(),
+    CoverArt.find().lean(),
+    Notification.find().lean(),
+    PlayEvent.find().lean(),
+    Message.find().lean(),
+    Call.find().lean(),
+    CallSignal.find().lean(),
+    ShareLink.find().lean(),
+  ]);
+  return { users, projects, tracks, folders, coverArts, notifications, playEvents, messages, calls, callSignals, shareLinks };
 };
-const isJsonBinConfigured = () => Boolean(JSONBIN_BIN_ID && (JSONBIN_MASTER_KEY || JSONBIN_ACCESS_KEY));
-const syncFromJSONBin = async () => {
-  if (!isJsonBinConfigured()) return;
-  try {
-    const res = await fetch(`${JSONBIN_BASE_URL}/b/${JSONBIN_BIN_ID}/latest`, {
-      headers: { ...jsonBinHeaders(), 'X-Bin-Meta': 'false' }
-    });
-    if (!res.ok) throw new Error(`JSONBin read failed: ${res.status}`);
-    const remoteDB = ensureDBShape(await res.json());
-    fs.writeFileSync(dbPath, JSON.stringify(remoteDB, null, 2), 'utf8');
-    console.log('Database loaded from JSONBin.io');
-  } catch (err) {
-    console.warn(`JSONBin.io read skipped: ${err.message}`);
-  }
+
+// writeDB: diffs and upserts changed documents
+const writeDB = async (db) => {
+  const ops = [
+    ...( db.users        || [] ).map(d => User.findOneAndUpdate(        { id: d.id }, d, { upsert: true, new: true, lean: true } )),
+    ...( db.projects     || [] ).map(d => Project.findOneAndUpdate(     { id: d.id }, d, { upsert: true, new: true, lean: true } )),
+    ...( db.tracks       || [] ).map(d => Track.findOneAndUpdate(       { id: d.id }, d, { upsert: true, new: true, lean: true } )),
+    ...( db.folders      || [] ).map(d => Folder.findOneAndUpdate(      { id: d.id }, d, { upsert: true, new: true, lean: true } )),
+    ...( db.coverArts    || [] ).map(d => CoverArt.findOneAndUpdate(    { id: d.id }, d, { upsert: true, new: true, lean: true } )),
+    ...( db.notifications|| [] ).map(d => Notification.findOneAndUpdate({ id: d.id }, d, { upsert: true, new: true, lean: true } )),
+    ...( db.playEvents   || [] ).map(d => PlayEvent.findOneAndUpdate(   { id: d.id }, d, { upsert: true, new: true, lean: true } )),
+    ...( db.messages     || [] ).map(d => Message.findOneAndUpdate(     { id: d.id }, d, { upsert: true, new: true, lean: true } )),
+    ...( db.calls        || [] ).map(d => Call.findOneAndUpdate(        { id: d.id }, d, { upsert: true, new: true, lean: true } )),
+    ...( db.callSignals  || [] ).map(d => CallSignal.findOneAndUpdate(  { id: d.id }, d, { upsert: true, new: true, lean: true } )),
+    ...( db.shareLinks   || [] ).map(d => ShareLink.findOneAndUpdate(   { id: d.id }, d, { upsert: true, new: true, lean: true } )),
+  ];
+  await Promise.all(ops);
 };
-const syncToJSONBin = async (data) => {
-  if (!isJsonBinConfigured()) return;
-  try {
-    const res = await fetch(`${JSONBIN_BASE_URL}/b/${JSONBIN_BIN_ID}`, {
-      method: 'PUT',
-      headers: jsonBinHeaders(),
-      body: JSON.stringify(data)
-    });
-    if (!res.ok) throw new Error(`JSONBin update failed: ${res.status}`);
-  } catch (err) {
-    console.warn(`JSONBin.io write skipped: ${err.message}`);
-  }
-};
-const writeDB = (data) => {
-  const shaped = ensureDBShape(data);
-  fs.writeFileSync(dbPath, JSON.stringify(shaped, null, 2), 'utf8');
-  return syncToJSONBin(shaped);
-};
+
 const ensureDBShape = (db) => {
-  db.folders ||= [];
-  db.projects ||= [];
-  db.tracks ||= [];
-  db.coverArts ||= [];
+  db.users         ||= [];
+  db.folders       ||= [];
+  db.projects      ||= [];
+  db.tracks        ||= [];
+  db.coverArts     ||= [];
   db.notifications ||= [];
-  db.playEvents ||= [];
-  db.messages ||= [];
-  db.calls ||= [];
-  db.callSignals ||= [];
-  db.shareLinks ||= [];
+  db.playEvents    ||= [];
+  db.messages      ||= [];
+  db.calls         ||= [];
+  db.callSignals   ||= [];
+  db.shareLinks    ||= [];
   return db;
 };
 const userExists = (db, userId) => db.users.some((user) => user.id === userId);
@@ -308,7 +312,7 @@ const trackStorage = multer.diskStorage({
 const uploadTrack = multer({ storage: trackStorage });
 const noteMemoStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const db = readDB();
+    const db = ensureDBShape(await readDB());
     const track = findAccessibleTrack(db, req.params.id, req.body.userId || req.query.userId);
     if (!track) return cb(new Error('Track not found'));
     const dir = noteMemoDir(track);
@@ -356,27 +360,27 @@ const uploadChatMedia = multer({
 });
 
 // --- AUTH ---
-app.post('/api/auth', (req, res) => {
+app.post('/api/auth', async (req, res) => {
   const email = req.body.email?.trim();
   if (!email) return res.status(400).json({ error: 'Email is required.' });
 
-  const db = readDB();
+  const db = ensureDBShape(await readDB());
   const user = db.users.find((u) => u.email.toLowerCase() === email.toLowerCase());
   if (user) res.json({ user });
   else res.status(401).json({ error: 'Unauthorized email. Only specific users are allowed.' });
 });
 
 // --- USERS ---
-app.get('/api/users/:id', (req, res) => {
-  const db = ensureDBShape(readDB());
+app.get('/api/users/:id', async (req, res) => {
+  const db = ensureDBShape(await readDB());
   const user = db.users.find((item) => item.id === req.params.id);
   if (!user) return res.status(404).json({ error: 'User not found.' });
   res.json({ user });
 });
 
-app.put('/api/users/:id', (req, res) => {
+app.put('/api/users/:id', async (req, res) => {
   const { name } = req.body;
-  const db = ensureDBShape(readDB());
+  const db = ensureDBShape(await readDB());
   const userIndex = db.users.findIndex((user) => user.id === req.params.id);
   if (userIndex === -1) return res.status(404).json({ error: 'User not found.' });
 
@@ -384,13 +388,13 @@ app.put('/api/users/:id', (req, res) => {
   if (!nextName) return res.status(400).json({ error: 'Username is required.' });
 
   db.users[userIndex] = { ...db.users[userIndex], name: nextName, updatedAt: new Date().toISOString() };
-  writeDB(db);
+  await writeDB(db);
   res.json({ user: db.users[userIndex] });
 });
 
 app.post('/api/users/:id/avatar', uploadAvatar.single('avatar'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No profile image uploaded.' });
-  const db = ensureDBShape(readDB());
+  const db = ensureDBShape(await readDB());
   const userIndex = db.users.findIndex((user) => user.id === req.params.id);
   if (userIndex === -1) {
     removeFileIfExists(req.file.path);
@@ -401,23 +405,25 @@ app.post('/api/users/:id/avatar', uploadAvatar.single('avatar'), (req, res) => {
   db.users[userIndex].avatarUrl = `${BASE_URL}/avatars/${req.params.id}/${req.file.filename}`;
   db.users[userIndex].avatarUpdatedAt = new Date().toISOString();
   db.users[userIndex].updatedAt = db.users[userIndex].avatarUpdatedAt;
-  writeDB(db);
+  await writeDB(db);
   res.json({ user: db.users[userIndex] });
 });
 
-app.delete('/api/users/:id', (req, res) => {
-  const db = ensureDBShape(readDB());
+app.delete('/api/users/:id', async (req, res) => {
+  const db = ensureDBShape(await readDB());
   const user = db.users.find((item) => item.id === req.params.id);
   if (!user) return res.status(404).json({ error: 'User not found.' });
 
-  db.users = db.users.filter((item) => item.id !== req.params.id);
-  db.folders = db.folders.filter((folder) => folder.userId !== req.params.id);
-  db.projects = db.projects.filter((project) => project.userId !== req.params.id);
-  db.tracks = db.tracks.filter((track) => track.userId !== req.params.id && track.uploader?.id !== req.params.id);
-  db.coverArts = db.coverArts.filter((cover) => cover.userId !== req.params.id);
-  db.notifications = db.notifications.filter((notification) => notification.userId !== req.params.id && notification.actor?.id !== req.params.id);
-  db.playEvents = db.playEvents.filter((event) => event.ownerId !== req.params.id && event.actorId !== req.params.id);
-  writeDB(db);
+  const uid = req.params.id;
+  await Promise.all([
+    User.deleteOne({ id: uid }),
+    Folder.deleteMany({ userId: uid }),
+    Project.deleteMany({ userId: uid }),
+    Track.deleteMany({ $or: [{ userId: uid }, { 'uploader.id': uid }] }),
+    CoverArt.deleteMany({ userId: uid }),
+    Notification.deleteMany({ $or: [{ userId: uid }, { 'actor.id': uid }] }),
+    PlayEvent.deleteMany({ $or: [{ ownerId: uid }, { actorId: uid }] }),
+  ]);
 
   removeDirIfExists(getUserDir(uploadDir, req.params.id));
   removeDirIfExists(getUserDir(coverDir, req.params.id));
@@ -426,8 +432,8 @@ app.delete('/api/users/:id', (req, res) => {
 });
 
 // --- DATA FETCHING ---
-app.get('/api/workspace', (req, res) => {
-  const db = ensureDBShape(readDB());
+app.get('/api/workspace', async (req, res) => {
+  const db = ensureDBShape(await readDB());
   const userId = requireUserId(req, res);
   if (!userId) return;
   if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
@@ -444,8 +450,8 @@ app.get('/api/workspace', (req, res) => {
 });
 
 // --- SHARING ---
-app.post('/api/share/generate', (req, res) => {
-  const db = ensureDBShape(readDB());
+app.post('/api/share/generate', async (req, res) => {
+  const db = ensureDBShape(await readDB());
   const { type, targetId, expiresInMs } = req.body;
   if (!['project', 'folder'].includes(type) || !targetId) {
     return res.status(400).json({ error: 'Valid type and targetId are required.' });
@@ -463,13 +469,13 @@ app.post('/api/share/generate', (req, res) => {
   };
 
   db.shareLinks.push(shareLink);
-  writeDB(db);
+  await writeDB(db);
 
   res.json({ token, expiresAt });
 });
 
-app.get('/api/share/link/:token', (req, res) => {
-  const db = ensureDBShape(readDB());
+app.get('/api/share/link/:token', async (req, res) => {
+  const db = ensureDBShape(await readDB());
   const link = db.shareLinks.find((l) => l.token === req.params.token);
   
   if (!link) {
@@ -503,15 +509,15 @@ app.get('/api/share/link/:token', (req, res) => {
   return res.status(400).json({ error: 'Invalid link type.' });
 });
 
-app.get('/api/share/project/:id', (req, res) => {
-  const db = ensureDBShape(readDB());
+app.get('/api/share/project/:id', async (req, res) => {
+  const db = ensureDBShape(await readDB());
   const project = db.projects.find((item) => item.id === req.params.id);
   if (!project) return res.status(404).json({ error: 'Project not found.' });
   res.json(getProjectBundle(db, project));
 });
 
-app.get('/api/share/folder/:id', (req, res) => {
-  const db = ensureDBShape(readDB());
+app.get('/api/share/folder/:id', async (req, res) => {
+  const db = ensureDBShape(await readDB());
   const folder = db.folders.find((item) => item.id === req.params.id);
   if (!folder) return res.status(404).json({ error: 'Folder not found.' });
   const projects = db.projects.filter((project) => project.folderId === folder.id && project.userId === folder.userId);
@@ -525,9 +531,9 @@ app.get('/api/share/folder/:id', (req, res) => {
   });
 });
 
-app.post('/api/share/project/:id/save', (req, res) => {
+app.post('/api/share/project/:id/save', async (req, res) => {
   const { userId } = req.body;
-  const db = ensureDBShape(readDB());
+  const db = ensureDBShape(await readDB());
   if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
 
   const sourceProject = db.projects.find((project) => project.id === req.params.id);
@@ -561,13 +567,13 @@ app.post('/api/share/project/:id/save', (req, res) => {
     uploadedAt: new Date().toISOString()
   }));
   db.tracks.push(...copiedTracks);
-  writeDB(db);
+  await writeDB(db);
   res.json({ project: nextProject, tracks: copiedTracks });
 });
 
-app.post('/api/share/folder/:id/save', (req, res) => {
+app.post('/api/share/folder/:id/save', async (req, res) => {
   const { userId } = req.body;
-  const db = ensureDBShape(readDB());
+  const db = ensureDBShape(await readDB());
   if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
 
   const sourceFolder = db.folders.find((folder) => folder.id === req.params.id);
@@ -618,13 +624,13 @@ app.post('/api/share/folder/:id/save', (req, res) => {
       uploadedAt: new Date().toISOString()
     }));
   db.tracks.push(...copiedTracks);
-  writeDB(db);
+  await writeDB(db);
   res.json({ folder: nextFolder, projects: copiedProjects, tracks: copiedTracks });
 });
 
-app.post('/api/listen', (req, res) => {
+app.post('/api/listen', async (req, res) => {
   const { userId, projectId, folderId, trackId } = req.body;
-  const db = ensureDBShape(readDB());
+  const db = ensureDBShape(await readDB());
   if (userId && !userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
 
   const project = db.projects.find((item) => item.id === projectId);
@@ -646,13 +652,13 @@ app.post('/api/listen', (req, res) => {
     });
   }
   notifyListen(db, { ownerId, actorId: userId, project, folder, track });
-  writeDB(db);
+  await writeDB(db);
   res.json({ success: true });
 });
 
 // --- FOLDERS ---
-app.get('/api/folders/:id', (req, res) => {
-  const db = ensureDBShape(readDB());
+app.get('/api/folders/:id', async (req, res) => {
+  const db = ensureDBShape(await readDB());
   const userId = requireUserId(req, res);
   if (!userId) return;
   const folder = db.folders.find((f) => f.id === req.params.id && f.userId === userId);
@@ -681,9 +687,9 @@ app.get('/api/folders/:id', (req, res) => {
   });
 });
 
-app.post('/api/folders', (req, res) => {
+app.post('/api/folders', async (req, res) => {
   const { name, title, artist, userId, parentFolderId } = req.body;
-  const db = ensureDBShape(readDB());
+  const db = ensureDBShape(await readDB());
   const ownerName = ownerNameFor(db, userId);
   if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
   if (parentFolderId && !db.folders.some((f) => f.id === parentFolderId && f.userId === userId)) {
@@ -700,13 +706,13 @@ app.post('/api/folders', (req, res) => {
     createdAt: new Date().toISOString()
   };
   db.folders.push(newFolder);
-  writeDB(db);
+  await writeDB(db);
   res.json(newFolder);
 });
 
-app.put('/api/folders/:id/move', (req, res) => {
+app.put('/api/folders/:id/move', async (req, res) => {
   const { userId, parentFolderId } = req.body;
-  const db = readDB();
+  const db = ensureDBShape(await readDB());
   const folderIndex = db.folders.findIndex((f) => f.id === req.params.id && f.userId === userId);
   if (folderIndex === -1) return res.status(404).json({ error: 'Folder not found' });
 
@@ -728,13 +734,13 @@ app.put('/api/folders/:id/move', (req, res) => {
   }
 
   db.folders[folderIndex].parentFolderId = parentFolderId || null;
-  writeDB(db);
+  await writeDB(db);
   res.json(db.folders[folderIndex]);
 });
 
-app.put('/api/folders/:id', (req, res) => {
+app.put('/api/folders/:id', async (req, res) => {
   const { userId, title, name, artist } = req.body;
-  const db = ensureDBShape(readDB());
+  const db = ensureDBShape(await readDB());
   const folderIndex = db.folders.findIndex((folder) => folder.id === req.params.id && folder.userId === userId);
   if (folderIndex === -1) return res.status(404).json({ error: 'Folder not found' });
 
@@ -747,12 +753,12 @@ app.put('/api/folders/:id', (req, res) => {
     artist: nextArtist,
     updatedAt: new Date().toISOString()
   };
-  writeDB(db);
+  await writeDB(db);
   res.json(normalizeLibraryItem(db.folders[folderIndex], db, 'folder'));
 });
 
 app.delete('/api/folders/:id', async (req, res) => {
-  const db = ensureDBShape(readDB());
+  const db = ensureDBShape(await readDB());
   const userId = requireUserId(req, res);
   if (!userId) return;
 
@@ -773,9 +779,9 @@ app.delete('/api/folders/:id', async (req, res) => {
 });
 
 // --- PROJECTS ---
-app.post('/api/projects', (req, res) => {
+app.post('/api/projects', async (req, res) => {
   const { name, title, artist, userId, folderId } = req.body;
-  const db = ensureDBShape(readDB());
+  const db = ensureDBShape(await readDB());
   const ownerName = ownerNameFor(db, userId);
   if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
   if (folderId && !db.folders.some((folder) => folder.id === folderId && folder.userId === userId)) {
@@ -793,13 +799,13 @@ app.post('/api/projects', (req, res) => {
     createdAt: new Date().toISOString() 
   };
   db.projects.push(newProject);
-  writeDB(db);
+  await writeDB(db);
   res.json(newProject);
 });
 
-app.put('/api/projects/:id', (req, res) => {
+app.put('/api/projects/:id', async (req, res) => {
   const { userId, title, name, artist } = req.body;
-  const db = ensureDBShape(readDB());
+  const db = ensureDBShape(await readDB());
   const projectIndex = db.projects.findIndex((project) => project.id === req.params.id && project.userId === userId);
   if (projectIndex === -1) return res.status(404).json({ error: 'Project not found' });
 
@@ -812,13 +818,13 @@ app.put('/api/projects/:id', (req, res) => {
     artist: nextArtist,
     updatedAt: new Date().toISOString()
   };
-  writeDB(db);
+  await writeDB(db);
   res.json(normalizeLibraryItem(db.projects[projectIndex], db, 'project'));
 });
 
-app.put('/api/projects/:id/move', (req, res) => {
+app.put('/api/projects/:id/move', async (req, res) => {
   const { folderId, userId } = req.body;
-  const db = readDB();
+  const db = ensureDBShape(await readDB());
   const projIndex = db.projects.findIndex(p => p.id === req.params.id && p.userId === userId);
   if (projIndex === -1) return res.status(404).json({ error: 'Project not found' });
   if (folderId && !db.folders.some((folder) => folder.id === folderId && folder.userId === userId)) {
@@ -826,12 +832,12 @@ app.put('/api/projects/:id/move', (req, res) => {
   }
   
   db.projects[projIndex].folderId = folderId; // Can be null to move to root
-  writeDB(db);
+  await writeDB(db);
   res.json(db.projects[projIndex]);
 });
 
 app.delete('/api/projects/:id', async (req, res) => {
-  const db = readDB();
+  const db = ensureDBShape(await readDB());
   const userId = requireUserId(req, res);
   if (!userId) return;
   const project = db.projects.find((p) => p.id === req.params.id && p.userId === userId);
@@ -843,9 +849,9 @@ app.delete('/api/projects/:id', async (req, res) => {
   res.json({ success: true });
 });
 
-app.put('/api/projects/:id/cover', (req, res) => {
+app.put('/api/projects/:id/cover', async (req, res) => {
   const { coverUrl, userId } = req.body;
-  const db = readDB();
+  const db = ensureDBShape(await readDB());
   const projIndex = db.projects.findIndex(p => p.id === req.params.id && p.userId === userId);
   if (projIndex === -1) return res.status(404).json({ error: 'Project not found' });
   if (coverUrl && !db.coverArts.some((cover) => cover.url === coverUrl && cover.userId === userId)) {
@@ -853,12 +859,12 @@ app.put('/api/projects/:id/cover', (req, res) => {
   }
   
   db.projects[projIndex].coverArt = coverUrl;
-  writeDB(db);
+  await writeDB(db);
   res.json(db.projects[projIndex]);
 });
 
-app.get('/api/projects/:id', (req, res) => {
-  const db = ensureDBShape(readDB());
+app.get('/api/projects/:id', async (req, res) => {
+  const db = ensureDBShape(await readDB());
   const userId = requireUserId(req, res);
   if (!userId) return;
   const project = db.projects.find((item) => item.id === req.params.id && item.userId === userId);
@@ -867,8 +873,8 @@ app.get('/api/projects/:id', (req, res) => {
   res.json({ project: normalizeLibraryItem(project, db, 'project'), tracks });
 });
 
-app.get('/api/projects/:id/insights', (req, res) => {
-  const db = ensureDBShape(readDB());
+app.get('/api/projects/:id/insights', async (req, res) => {
+  const db = ensureDBShape(await readDB());
   const userId = requireUserId(req, res);
   if (!userId) return;
 
@@ -928,7 +934,7 @@ app.get('/api/projects/:id/insights', (req, res) => {
 app.post('/api/upload-cover', uploadCover.single('cover'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No image file uploaded' });
   const { userId } = req.body;
-  const db = readDB();
+  const db = ensureDBShape(await readDB());
   if (!userExists(db, userId)) {
     removeFileIfExists(req.file.path);
     return res.status(401).json({ error: 'Unauthorized user.' });
@@ -938,19 +944,19 @@ app.post('/api/upload-cover', uploadCover.single('cover'), (req, res) => {
   removeFileIfExists(req.file.path);
   const newCover = { id: Date.now().toString(), userId, url, mimeType: req.file.mimetype, uploadedAt: new Date().toISOString() };
   db.coverArts.push(newCover);
-  writeDB(db);
+  await writeDB(db);
   res.json(newCover);
 });
 
-app.delete('/api/covers/:id', (req, res) => {
-  const db = readDB();
+app.delete('/api/covers/:id', async (req, res) => {
+  const db = ensureDBShape(await readDB());
   const userId = requireUserId(req, res);
   if (!userId) return;
   const cover = db.coverArts.find((c) => c.id === req.params.id && c.userId === userId);
   if (!cover) return res.status(404).json({ error: 'Cover art not found' });
 
   db.coverArts = db.coverArts.filter(c => c.id !== req.params.id);
-  writeDB(db);
+  await writeDB(db);
   res.json({ success: true });
 });
 
@@ -958,7 +964,7 @@ app.delete('/api/covers/:id', (req, res) => {
 app.post('/api/upload', uploadTrack.single('track'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No audio file uploaded' });
   const { title, userId, projectId, artist, producer } = req.body;
-  const db = readDB();
+  const db = ensureDBShape(await readDB());
   const uploader = db.users.find(u => u.id === userId);
   if (!uploader) {
     removeFileIfExists(req.file.path);
@@ -988,12 +994,12 @@ app.post('/api/upload', uploadTrack.single('track'), (req, res) => {
   };
   
   db.tracks.push(newTrack);
-  writeDB(db);
+  await writeDB(db);
   res.json({ track: newTrack });
 });
 
-app.delete('/api/tracks/:id', (req, res) => {
-  const db = readDB();
+app.delete('/api/tracks/:id', async (req, res) => {
+  const db = ensureDBShape(await readDB());
   const userId = requireUserId(req, res);
   if (!userId) return;
   const track = findOwnedTrack(db, req.params.id, userId);
@@ -1002,12 +1008,12 @@ app.delete('/api/tracks/:id', (req, res) => {
   removeTrackFiles(track);
   removeDirIfExists(path.join(stemsDir, userId, track.id));
   db.tracks = db.tracks.filter(t => t.id !== req.params.id);
-  writeDB(db);
+  await writeDB(db);
   res.json({ success: true });
 });
 
-app.patch('/api/tracks/:id', (req, res) => {
-  const db = readDB();
+app.patch('/api/tracks/:id', async (req, res) => {
+  const db = ensureDBShape(await readDB());
   const userId = requireUserId(req, res);
   if (!userId) return;
   const trackIndex = db.tracks.findIndex((item) => item.id?.toString() === req.params.id?.toString());
@@ -1023,12 +1029,12 @@ app.patch('/api/tracks/:id', (req, res) => {
   }
   if (notes !== undefined) db.tracks[trackIndex].notes = notes.toString();
 
-  writeDB(db);
+  await writeDB(db);
   res.json({ track: normalizeTrack(db.tracks[trackIndex]) });
 });
 
-app.get('/api/tracks/:id/insights', (req, res) => {
-  const db = ensureDBShape(readDB());
+app.get('/api/tracks/:id/insights', async (req, res) => {
+  const db = ensureDBShape(await readDB());
   const userId = requireUserId(req, res);
   if (!userId) return;
 
@@ -1066,7 +1072,7 @@ app.get('/api/tracks/:id/insights', (req, res) => {
 
 app.post('/api/tracks/:id/replace-audio', uploadTrack.single('track'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No audio file uploaded' });
-  const db = readDB();
+  const db = ensureDBShape(await readDB());
   const userId = requireUserId(req, res);
   if (!userId) return;
 
@@ -1096,12 +1102,12 @@ app.post('/api/tracks/:id/replace-audio', uploadTrack.single('track'), (req, res
   track.size = req.file.size;
   track.uploadedAt = new Date().toISOString();
   db.tracks[trackIndex] = track;
-  writeDB(db);
+  await writeDB(db);
   res.json({ track: normalizeTrack(track) });
 });
 
-app.patch('/api/tracks/:id/switch-version', (req, res) => {
-  const db = readDB();
+app.patch('/api/tracks/:id/switch-version', async (req, res) => {
+  const db = ensureDBShape(await readDB());
   const userId = requireUserId(req, res);
   if (!userId) return;
   const { versionId } = req.body;
@@ -1131,12 +1137,12 @@ app.patch('/api/tracks/:id/switch-version', (req, res) => {
   track.size = selectedVersion.size;
   track.uploadedAt = selectedVersion.uploadedAt || track.uploadedAt;
   db.tracks[trackIndex] = track;
-  writeDB(db);
+  await writeDB(db);
   res.json({ track: normalizeTrack(track) });
 });
 
-app.delete('/api/tracks/:id/versions/:versionId', (req, res) => {
-  const db = readDB();
+app.delete('/api/tracks/:id/versions/:versionId', async (req, res) => {
+  const db = ensureDBShape(await readDB());
   const userId = requireUserId(req, res);
   if (!userId) return;
 
@@ -1151,12 +1157,12 @@ app.delete('/api/tracks/:id/versions/:versionId', (req, res) => {
   const [removed] = track.versions.splice(versionIndex, 1);
   removeFileIfExists(path.join(uploadDir, trackOwnerId(track), removed.filename));
   db.tracks[trackIndex] = track;
-  writeDB(db);
+  await writeDB(db);
   res.json({ track: normalizeTrack(track) });
 });
 
-app.patch('/api/tracks/:id/versions/:versionId', (req, res) => {
-  const db = readDB();
+app.patch('/api/tracks/:id/versions/:versionId', async (req, res) => {
+  const db = ensureDBShape(await readDB());
   const userId = requireUserId(req, res);
   if (!userId) return;
   const { label } = req.body;
@@ -1171,12 +1177,12 @@ app.patch('/api/tracks/:id/versions/:versionId', (req, res) => {
   if (!version) return res.status(404).json({ error: 'Version not found' });
 
   version.label = label.toString().trim();
-  writeDB(db);
+  await writeDB(db);
   res.json({ track: normalizeTrack(track) });
 });
 
-app.get('/api/media/tracks/:id/versions/:versionId', (req, res) => {
-  const db = ensureDBShape(readDB());
+app.get('/api/media/tracks/:id/versions/:versionId', async (req, res) => {
+  const db = ensureDBShape(await readDB());
   const userId = requireUserId(req, res);
   if (!userId) return;
 
@@ -1199,7 +1205,7 @@ app.get('/api/media/tracks/:id/versions/:versionId', (req, res) => {
 
 app.post('/api/tracks/:id/note-memos', uploadNoteMemo.single('memo'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No voice memo uploaded' });
-  const db = readDB();
+  const db = ensureDBShape(await readDB());
   const userId = requireUserId(req, res);
   if (!userId) return;
 
@@ -1220,12 +1226,12 @@ app.post('/api/tracks/:id/note-memos', uploadNoteMemo.single('memo'), (req, res)
   };
   track.noteMemos.push(memo);
   db.tracks[trackIndex] = track;
-  writeDB(db);
+  await writeDB(db);
   res.json({ track: normalizeTrack(track), memo: { ...memo, url: `${BASE_URL}/api/media/tracks/${track.id}/note-memos/${memo.id}` } });
 });
 
-app.delete('/api/tracks/:id/note-memos/:memoId', (req, res) => {
-  const db = readDB();
+app.delete('/api/tracks/:id/note-memos/:memoId', async (req, res) => {
+  const db = ensureDBShape(await readDB());
   const userId = requireUserId(req, res);
   if (!userId) return;
 
@@ -1240,12 +1246,12 @@ app.delete('/api/tracks/:id/note-memos/:memoId', (req, res) => {
   removeFileIfExists(path.join(noteMemoDir(track), memo.filename));
   track.noteMemos = track.noteMemos.filter((item) => item.id !== req.params.memoId);
   db.tracks[trackIndex] = track;
-  writeDB(db);
+  await writeDB(db);
   res.json({ track: normalizeTrack(track) });
 });
 
-app.get('/api/media/tracks/:id/note-memos/:memoId', (req, res) => {
-  const db = ensureDBShape(readDB());
+app.get('/api/media/tracks/:id/note-memos/:memoId', async (req, res) => {
+  const db = ensureDBShape(await readDB());
   const userId = requireUserId(req, res);
   if (!userId) return;
 
@@ -1263,8 +1269,8 @@ app.get('/api/media/tracks/:id/note-memos/:memoId', (req, res) => {
   fs.createReadStream(filePath).pipe(res);
 });
 
-app.post('/api/tracks/:id/split-stems', (req, res) => {
-  const db = ensureDBShape(readDB());
+app.post('/api/tracks/:id/split-stems', async (req, res) => {
+  const db = ensureDBShape(await readDB());
   const userId = requireUserId(req, res);
   if (!userId) return;
 
@@ -1352,7 +1358,7 @@ app.post('/api/tracks/:id/split-stems', (req, res) => {
   })();
 });
 
-app.get('/api/tracks/:id/split-stems/status/:jobId', (req, res) => {
+app.get('/api/tracks/:id/split-stems/status/:jobId', async (req, res) => {
   const { jobId } = req.params;
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
@@ -1400,8 +1406,8 @@ app.get('/api/tracks/:id/split-stems/status/:jobId', (req, res) => {
   req.on('close', () => { clearInterval(interval); clearInterval(keepalive); });
 });
 
-app.get('/api/media/stems/:trackId/:filename', (req, res) => {
-  const db = ensureDBShape(readDB());
+app.get('/api/media/stems/:trackId/:filename', async (req, res) => {
+  const db = ensureDBShape(await readDB());
   const userId = requireUserId(req, res);
   if (!userId) return;
 
@@ -1416,8 +1422,8 @@ app.get('/api/media/stems/:trackId/:filename', (req, res) => {
   fs.createReadStream(filePath).pipe(res);
 });
 
-app.get('/api/media/tracks/:id', (req, res) => {
-  const db = ensureDBShape(readDB());
+app.get('/api/media/tracks/:id', async (req, res) => {
+  const db = ensureDBShape(await readDB());
   const track = db.tracks.find((item) => item.id === req.params.id);
   if (!track) return res.status(404).json({ error: 'Track not found' });
 
@@ -1456,7 +1462,7 @@ app.get('/api/media/tracks/:id', (req, res) => {
 app.post('/api/convert', uploadTrack.single('video'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No video file uploaded' });
   const { userId } = req.body;
-  const db = readDB();
+  const db = ensureDBShape(await readDB());
   const uploader = db.users.find(u => u.id === userId);
   if (!uploader) {
     removeFileIfExists(req.file.path);
@@ -1528,7 +1534,7 @@ app.post('/api/convert', uploadTrack.single('video'), (req, res) => {
     .save(outputPath);
 });
 
-app.get('/api/convert/status/:jobId', (req, res) => {
+app.get('/api/convert/status/:jobId', async (req, res) => {
   const { jobId } = req.params;
   
   res.setHeader('Content-Type', 'text/event-stream');
@@ -1639,8 +1645,8 @@ const createMessage = (db, { senderId, recipientId, conversationType, text = '',
   };
 };
 
-app.get('/api/calls/group', (req, res) => {
-  const db = ensureDBShape(readDB());
+app.get('/api/calls/group', async (req, res) => {
+  const db = ensureDBShape(await readDB());
   const userId = requireUserId(req, res);
   if (!userId) return;
   if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
@@ -1648,8 +1654,8 @@ app.get('/api/calls/group', (req, res) => {
   res.json({ call: hydrateCall(db, call) });
 });
 
-app.post('/api/calls/group/join', (req, res) => {
-  const db = ensureDBShape(readDB());
+app.post('/api/calls/group/join', async (req, res) => {
+  const db = ensureDBShape(await readDB());
   const { userId } = req.body;
   const caller = db.users.find((user) => user.id === userId);
   if (!caller) return res.status(401).json({ error: 'Unauthorized user.' });
@@ -1671,12 +1677,12 @@ app.post('/api/calls/group/join', (req, res) => {
   if (!call.participantIds.includes(userId)) call.participantIds.push(userId);
   call.updatedAt = new Date().toISOString();
   if (isNewCall) notifyCall(db, call, caller);
-  writeDB(db);
+  await writeDB(db);
   res.json({ call: hydrateCall(db, call) });
 });
 
-app.post('/api/calls/group/leave', (req, res) => {
-  const db = ensureDBShape(readDB());
+app.post('/api/calls/group/leave', async (req, res) => {
+  const db = ensureDBShape(await readDB());
   const { userId } = req.body;
   if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
   const call = db.calls.find((item) => item.type === 'group' && item.active);
@@ -1689,12 +1695,12 @@ app.post('/api/calls/group/leave', (req, res) => {
     call.endedAt = new Date().toISOString();
   }
   db.callSignals = db.callSignals.filter((signal) => signal.callId !== call.id || (signal.fromUserId !== userId && signal.toUserId !== userId));
-  writeDB(db);
+  await writeDB(db);
   res.json({ call: hydrateCall(db, call.active ? call : null) });
 });
 
-app.get('/api/calls/group/signals', (req, res) => {
-  const db = ensureDBShape(readDB());
+app.get('/api/calls/group/signals', async (req, res) => {
+  const db = ensureDBShape(await readDB());
   const userId = requireUserId(req, res);
   if (!userId) return;
   if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
@@ -1707,8 +1713,8 @@ app.get('/api/calls/group/signals', (req, res) => {
   res.json({ signals });
 });
 
-app.post('/api/calls/group/signals', (req, res) => {
-  const db = ensureDBShape(readDB());
+app.post('/api/calls/group/signals', async (req, res) => {
+  const db = ensureDBShape(await readDB());
   const { userId, toUserId, type, payload } = req.body;
   if (!userExists(db, userId) || !userExists(db, toUserId)) return res.status(401).json({ error: 'Unauthorized user.' });
   const call = db.calls.find((item) => item.type === 'group' && item.active);
@@ -1727,13 +1733,13 @@ app.post('/api/calls/group/signals', (req, res) => {
     createdAt: new Date().toISOString()
   };
   db.callSignals.push(signal);
-  writeDB(db);
+  await writeDB(db);
   res.json({ signal });
 });
 
 // Get all users (for chat contacts)
-app.get('/api/users', (req, res) => {
-  const db = ensureDBShape(readDB());
+app.get('/api/users', async (req, res) => {
+  const db = ensureDBShape(await readDB());
   const userId = requireUserId(req, res);
   if (!userId) return;
   if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
@@ -1745,8 +1751,8 @@ app.get('/api/users', (req, res) => {
 // conversationType: 'dm' | 'group'
 // For dm: partnerId required
 // For group: returns all group messages
-app.get('/api/messages', (req, res) => {
-  const db = ensureDBShape(readDB());
+app.get('/api/messages', async (req, res) => {
+  const db = ensureDBShape(await readDB());
   const userId = requireUserId(req, res);
   if (!userId) return;
   if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
@@ -1766,7 +1772,7 @@ app.get('/api/messages', (req, res) => {
   }
 
   markConversationRead(db, { userId, type, partnerId });
-  writeDB(db);
+  await writeDB(db);
 
   res.json({
     messages: msgs.map((message) => hydrateMessage(db, message)),
@@ -1775,8 +1781,8 @@ app.get('/api/messages', (req, res) => {
 });
 
 // Send a message
-app.post('/api/messages', (req, res) => {
-  const db = ensureDBShape(readDB());
+app.post('/api/messages', async (req, res) => {
+  const db = ensureDBShape(await readDB());
   const { senderId, recipientId, conversationType, text, replyToMessageId } = req.body;
   if (!senderId || !text?.trim()) return res.status(400).json({ error: 'senderId and text required.' });
   if (!userExists(db, senderId)) return res.status(401).json({ error: 'Unauthorized user.' });
@@ -1787,14 +1793,14 @@ app.post('/api/messages', (req, res) => {
 
   db.messages.push(msg);
   notifyMessage(db, msg);
-  writeDB(db);
+  await writeDB(db);
 
   res.json({ message: hydrateMessage(db, msg) });
 });
 
 app.post('/api/messages/media', uploadChatMedia.single('media'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No media uploaded.' });
-  const db = ensureDBShape(readDB());
+  const db = ensureDBShape(await readDB());
   const { senderId, recipientId, conversationType, text, replyToMessageId, mediaKind } = req.body;
   if (!senderId || !userExists(db, senderId)) {
     removeFileIfExists(req.file.path);
@@ -1831,12 +1837,12 @@ app.post('/api/messages/media', uploadChatMedia.single('media'), (req, res) => {
 
   db.messages.push(msg);
   notifyMessage(db, msg);
-  writeDB(db);
+  await writeDB(db);
   res.json({ message: hydrateMessage(db, msg) });
 });
 
-app.patch('/api/messages/:id/pin', (req, res) => {
-  const db = ensureDBShape(readDB());
+app.patch('/api/messages/:id/pin', async (req, res) => {
+  const db = ensureDBShape(await readDB());
   const { userId, pinned } = req.body;
   const message = db.messages.find((item) => item.id === req.params.id);
   if (!message) return res.status(404).json({ error: 'Message not found.' });
@@ -1844,12 +1850,12 @@ app.patch('/api/messages/:id/pin', (req, res) => {
   message.pinned = Boolean(pinned);
   message.pinnedBy = pinned ? userId : null;
   message.pinnedAt = pinned ? new Date().toISOString() : null;
-  writeDB(db);
+  await writeDB(db);
   res.json({ message: hydrateMessage(db, message) });
 });
 
-app.delete('/api/messages/:id', (req, res) => {
-  const db = ensureDBShape(readDB());
+app.delete('/api/messages/:id', async (req, res) => {
+  const db = ensureDBShape(await readDB());
   const userId = requireUserId(req, res);
   if (!userId) return;
   const message = db.messages.find((item) => item.id === req.params.id);
@@ -1859,12 +1865,12 @@ app.delete('/api/messages/:id', (req, res) => {
   message.text = '';
   message.attachments = [];
   message.deletedAt = new Date().toISOString();
-  writeDB(db);
+  await writeDB(db);
   res.json({ message: hydrateMessage(db, message) });
 });
 
-app.post('/api/messages/:id/forward', (req, res) => {
-  const db = ensureDBShape(readDB());
+app.post('/api/messages/:id/forward', async (req, res) => {
+  const db = ensureDBShape(await readDB());
   const { senderId, targetType, recipientId } = req.body;
   const source = db.messages.find((item) => item.id === req.params.id);
   if (!source) return res.status(404).json({ error: 'Message not found.' });
@@ -1881,13 +1887,13 @@ app.post('/api/messages/:id/forward', (req, res) => {
   });
   db.messages.push(msg);
   notifyMessage(db, msg);
-  writeDB(db);
+  await writeDB(db);
   res.json({ message: hydrateMessage(db, msg) });
 });
 
 // Get conversation previews (last message per convo) for a user
-app.get('/api/conversations', (req, res) => {
-  const db = ensureDBShape(readDB());
+app.get('/api/conversations', async (req, res) => {
+  const db = ensureDBShape(await readDB());
   const userId = requireUserId(req, res);
   if (!userId) return;
   if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
@@ -1936,8 +1942,8 @@ app.get('/api/conversations', (req, res) => {
   res.json({ conversations });
 });
 
-app.post('/api/notifications/read', (req, res) => {
-  const db = ensureDBShape(readDB());
+app.post('/api/notifications/read', async (req, res) => {
+  const db = ensureDBShape(await readDB());
   const userId = requireUserId(req, res);
   if (!userId) return;
 
@@ -1947,7 +1953,7 @@ app.post('/api/notifications/read', (req, res) => {
     }
   });
 
-  writeDB(db);
+  await writeDB(db);
   res.json({ success: true });
 });
 
