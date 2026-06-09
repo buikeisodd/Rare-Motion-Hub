@@ -19,7 +19,7 @@ const PORT = process.env.PORT || 3001;
 const conversionJobs = {};
 const stemJobs = {};
 const BASE_URL = process.env.BASE_URL || process.env.RENDER_EXTERNAL_URL || 'https://rare-motion-hub.onrender.com';
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://chibuikeeseagwu02_db_user:destinyboy56@cluster0.efinpoe.mongodb.net/starlight-station?appName=Cluster0';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://chibuikeeseagwu02_db_user:4c4rkQj7HlQNlxp5@cluster0.efinpoe.mongodb.net/starlight-station?appName=Cluster0';
 
 // Connect to MongoDB
 mongoose.connect(MONGODB_URI)
