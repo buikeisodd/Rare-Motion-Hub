@@ -10,7 +10,7 @@ const UserSchema = new Schema({
   avatarUpdatedAt: String,
   updatedAt: String,
   createdAt: { type: String, default: () => new Date().toISOString() },
-}, { _id: false });
+});
 
 const ProjectSchema = new Schema({
   id: { type: String, required: true, unique: true },
@@ -26,7 +26,7 @@ const ProjectSchema = new Schema({
   exportedAt: String,
   createdAt: { type: String, default: () => new Date().toISOString() },
   updatedAt: String,
-}, { _id: false });
+});
 
 const TrackSchema = new Schema({
   id: { type: String, required: true, unique: true },
@@ -44,7 +44,7 @@ const TrackSchema = new Schema({
   isStem: Boolean,
   stemOf: String,
   stemType: String,
-}, { _id: false });
+});
 
 const FolderSchema = new Schema({
   id: { type: String, required: true, unique: true },
@@ -53,7 +53,7 @@ const FolderSchema = new Schema({
   name: String,
   artist: String,
   createdAt: { type: String, default: () => new Date().toISOString() },
-}, { _id: false });
+});
 
 const CoverArtSchema = new Schema({
   id: { type: String, required: true, unique: true },
@@ -62,7 +62,7 @@ const CoverArtSchema = new Schema({
   url: String,
   filename: String,
   createdAt: { type: String, default: () => new Date().toISOString() },
-}, { _id: false });
+});
 
 const NotificationSchema = new Schema({
   id: { type: String, required: true, unique: true },
@@ -76,7 +76,7 @@ const NotificationSchema = new Schema({
   project: { id: String, name: String },
   folder: { id: String, name: String },
   createdAt: { type: String, default: () => new Date().toISOString() },
-}, { _id: false });
+});
 
 const PlayEventSchema = new Schema({
   id: { type: String, required: true, unique: true },
@@ -84,7 +84,7 @@ const PlayEventSchema = new Schema({
   projectId: String,
   userId: String,
   playedAt: { type: String, default: () => new Date().toISOString() },
-}, { _id: false });
+});
 
 const MessageSchema = new Schema({
   id: { type: String, required: true, unique: true },
@@ -102,7 +102,7 @@ const MessageSchema = new Schema({
   forwarded: Boolean,
   createdAt: { type: String, default: () => new Date().toISOString() },
   readBy: [String],
-}, { _id: false });
+});
 
 const CallSchema = new Schema({
   id: { type: String, required: true, unique: true },
@@ -113,7 +113,7 @@ const CallSchema = new Schema({
   startedAt: String,
   endedAt: String,
   createdAt: { type: String, default: () => new Date().toISOString() },
-}, { _id: false });
+});
 
 const CallSignalSchema = new Schema({
   id: { type: String, required: true, unique: true },
@@ -123,7 +123,7 @@ const CallSignalSchema = new Schema({
   type: String,
   payload: Schema.Types.Mixed,
   createdAt: { type: String, default: () => new Date().toISOString() },
-}, { _id: false });
+});
 
 const ShareLinkSchema = new Schema({
   id: { type: String, required: true, unique: true },
@@ -132,7 +132,7 @@ const ShareLinkSchema = new Schema({
   userId: String,
   token: String,
   createdAt: { type: String, default: () => new Date().toISOString() },
-}, { _id: false });
+});
 
 module.exports = {
   User:         mongoose.model('User',         UserSchema),
