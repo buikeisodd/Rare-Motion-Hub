@@ -190,7 +190,7 @@ export default function Project({ user }) {
   const leadTrack = tracks[0];
 
   return (
-    <div className="relative min-h-screen bg-primary-background pb-40">
+    <div className="relative min-h-screen bg-primary-background pb-10">
       {isProjectMenuOpen && (
         <div className="fixed inset-0 z-40" onClick={() => setIsProjectMenuOpen(false)} />
       )}
@@ -385,7 +385,7 @@ export default function Project({ user }) {
       </main>
 
       {/* Desktop Add Tracks Button */}
-      <button onClick={() => setIsUploadOpen(true)} className="fixed bottom-28 right-8 z-50 grid h-12 w-12 place-items-center rounded-full bg-primary-label text-primary-background shadow-2xl transition-transform hover:scale-105" aria-label="Add tracks">
+      <button onClick={() => setIsUploadOpen(true)} className={`fixed bottom-6 z-50 grid h-12 w-12 place-items-center rounded-full bg-primary-label text-primary-background shadow-2xl transition-transform hover:scale-105 ${currentTrack ? "left-6" : "right-8"}`} aria-label="Add tracks">
         <Plus className="h-6 w-6" />
       </button>
 

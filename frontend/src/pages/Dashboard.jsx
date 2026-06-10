@@ -786,7 +786,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
   };
 
   return (
-    <div className="min-h-screen bg-primary-background px-8 py-6 pb-36 lg:px-12">
+    <div className="min-h-screen bg-primary-background px-8 py-6 pb-10 lg:px-12">
       {conversionProgress !== null && (
         <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm">
           <div className="w-80 rounded-3xl border border-border bg-shading p-8 shadow-2xl">
@@ -854,7 +854,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
         </div>
       </header>
 
-      <main className="mx-auto flex min-h-[calc(100vh-16rem)] max-w-4xl items-center justify-center py-10 pb-36">
+      <main className="mx-auto flex min-h-[calc(100vh-16rem)] max-w-4xl items-center justify-center py-10 pb-10">
         {workspace.projects.length === 0 && workspace.folders.length === 0 ? (
           <div className="text-center">
             <Disc3 className="mx-auto mb-5 h-12 w-12 text-secondary-label" />
@@ -893,8 +893,8 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
         )}
       </main>
 
-      {/* Single unified add button — always above audio player */}
-      <div className="fixed bottom-28 right-8 z-50 flex flex-col items-end gap-3">
+      {/* Add button — left side when track playing, centered when not */}
+      <div className={`fixed bottom-6 z-50 flex flex-col items-end gap-3 ${currentTrack ? "right-auto left-6" : "left-1/2 -translate-x-1/2"}`}>
           <AnimatePresence>
             {isAddMenuOpen && (
               <motion.div

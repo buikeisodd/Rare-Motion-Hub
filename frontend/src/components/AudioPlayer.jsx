@@ -175,50 +175,58 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, onDi
     ? { backgroundImage: `url(${currentTrack.coverArt})` }
     : { background: 'linear-gradient(145deg,#b8ff65,#df5b9c)' };
 
-  // ── BOTTOM BAR ────────────────────────────────────────────────────────
+  // ── FLOATING PILL (all pages except insights/chat) ───────────────────
   if (!cardModal) return (
-    <div className="fixed inset-x-0 bottom-0 z-50 select-none border-t border-white/10 bg-[#1c1c1e]/95 backdrop-blur-xl">
+    <div className="fixed bottom-6 right-6 z-50 select-none">
+      {/* Panels pop above */}
       {showQueue && (
-        <div className="absolute bottom-full right-6 mb-3 w-72">
+        <div className="absolute bottom-full right-0 mb-3 w-72">
           <QueuePanel playQueue={playQueue} queueIndex={queueIndex} onSelect={t => { setCurrentTrack(t); setIsPlaying(true); setShowQueue(false); }} onClose={() => setShowQueue(false)} />
         </div>
       )}
       {showSettings && (
-        <div className="absolute bottom-full right-6 mb-3 w-72">
+        <div className="absolute bottom-full right-0 mb-3 w-72">
           <SettingsPanel playbackRate={playbackRate} setRate={handleRate} pitchShift={pitchShift} setPitch={handlePitch} onClose={() => setShowSettings(false)} />
         </div>
       )}
-      <div className="mx-auto flex max-w-5xl items-center gap-4 px-6 py-3">
-        <div className="h-10 w-10 shrink-0 rounded-lg bg-cover bg-center" style={coverStyle} />
-        <div className="w-40 min-w-0 shrink-0">
-          <MarqueeText text={currentTrack.title} className="text-sm font-semibold text-white" />
-          <MarqueeText text={projectName || currentTrack.artist || 'Starlight Station'} className="text-xs text-white/50" />
+
+      {/* Compact floating pill */}
+      <div className="flex items-center gap-2 rounded-2xl bg-[#1c1c1e]/95 backdrop-blur-xl border border-white/10 shadow-2xl px-3 py-2">
+        {/* Cover art */}
+        <div className="h-9 w-9 shrink-0 rounded-lg bg-cover bg-center" style={coverStyle} />
+
+        {/* Title + progress */}
+        <div className="w-32 min-w-0">
+          <MarqueeText text={currentTrack.title} className="text-xs font-semibold text-white" />
+          <ProgressBar progress={progress} duration={duration} onSeek={seek} className="h-1 w-full mt-1.5" />
         </div>
-        <div className="flex flex-1 items-center gap-3">
-          <span className="text-[10px] font-mono text-white/40 w-8 text-right shrink-0">{fmt(progress)}</span>
-          <ProgressBar progress={progress} duration={duration} onSeek={seek} className="h-1.5 flex-1" />
-          <span className="text-[10px] font-mono text-white/40 w-10 shrink-0">-{fmt(Math.max(0, duration - progress))}</span>
+
+        {/* Core controls */}
+        <div className="flex items-center gap-1 text-white shrink-0">
+          <button onClick={handlePrev} className="h-7 w-7 grid place-items-center rounded-full hover:bg-white/10">
+            <SkipBack className="h-3.5 w-3.5 fill-current" />
+          </button>
+          <button onClick={() => setIsPlaying(p => !p)} className="h-8 w-8 grid place-items-center rounded-full bg-white text-black hover:scale-105 transition-transform">
+            {isBuffering && isPlaying
+              ? <div className="h-3 w-3 animate-spin rounded-full border-2 border-black border-t-transparent" />
+              : isPlaying ? <Pause className="h-3.5 w-3.5 fill-current" /> : <Play className="h-3.5 w-3.5 fill-current ml-0.5" />}
+          </button>
+          <button onClick={handleNext} className="h-7 w-7 grid place-items-center rounded-full hover:bg-white/10">
+            <SkipForward className="h-3.5 w-3.5 fill-current" />
+          </button>
         </div>
-        <div className="flex items-center gap-1.5 text-white shrink-0">
-          <button onClick={toggleShuffle} className={`h-8 w-8 grid place-items-center rounded-full ${isShuffled ? 'text-white' : 'text-white/30 hover:text-white/60'}`}><Shuffle className="h-4 w-4" /></button>
-          <button onClick={handlePrev} className="h-9 w-9 grid place-items-center rounded-full hover:bg-white/10"><SkipBack className="h-5 w-5 fill-current" /></button>
-          <button onClick={() => setIsPlaying(p => !p)} className="h-10 w-10 grid place-items-center rounded-full bg-white text-black hover:scale-105 transition-transform">
-            {isBuffering && isPlaying ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-black border-t-transparent" />
-              : isPlaying ? <Pause className="h-4 w-4 fill-current" /> : <Play className="h-4 w-4 fill-current ml-0.5" />}
+
+        {/* Extra controls */}
+        <div className="flex items-center gap-0.5 text-white/40 shrink-0">
+          <button onClick={() => { setShowQueue(q => !q); setShowSettings(false); }} className={`relative h-7 w-7 grid place-items-center rounded-full transition-colors ${showQueue ? 'text-white bg-white/15' : 'hover:text-white'}`}>
+            <ListMusic className="h-3.5 w-3.5" />
           </button>
-          <button onClick={handleNext} className="h-9 w-9 grid place-items-center rounded-full hover:bg-white/10"><SkipForward className="h-5 w-5 fill-current" /></button>
-          <button onClick={() => setRepeatMode(m => (m+1)%3)} className={`h-8 w-8 grid place-items-center rounded-full ${repeatMode > 0 ? 'text-white' : 'text-white/30 hover:text-white/60'}`}>
-            {repeatMode === 2 ? <Repeat1 className="h-4 w-4" /> : <Repeat className="h-4 w-4" />}
+          <button onClick={() => { setShowSettings(s => !s); setShowQueue(false); }} className={`h-7 w-7 grid place-items-center rounded-full transition-colors ${showSettings ? 'text-white bg-white/15' : 'hover:text-white'}`}>
+            <Activity className="h-3.5 w-3.5" />
           </button>
-          <button onClick={() => { setShowSettings(s => !s); setShowQueue(false); }} className={`h-8 w-8 grid place-items-center rounded-full ${showSettings ? 'bg-white/20 text-white' : 'text-white/30 hover:text-white/60'}`}><Activity className="h-4 w-4" /></button>
-          <button onClick={() => { setShowQueue(q => !q); setShowSettings(false); }} className={`relative h-8 w-8 grid place-items-center rounded-full ${showQueue ? 'bg-white/20 text-white' : 'text-white/30 hover:text-white/60'}`}>
-            <ListMusic className="h-4 w-4" />
-            {playQueue.length > 0 && <span className="absolute -right-0.5 -top-0.5 h-3.5 min-w-3.5 grid place-items-center rounded-full bg-white text-black text-[8px] font-bold">{playQueue.length}</span>}
+          <button onClick={() => onDismiss ? onDismiss() : null} className="h-7 w-7 grid place-items-center rounded-full hover:text-red-400 transition-colors">
+            <X className="h-3.5 w-3.5" />
           </button>
-          <button onClick={() => handleMute(!isMuted)} className="text-white/40 hover:text-white ml-1">
-            {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-          </button>
-          <input type="range" min="0" max="1" step="0.01" value={isMuted ? 0 : volume} onChange={e => handleVolume(parseFloat(e.target.value))} className="w-20 accent-white h-1" />
         </div>
       </div>
     </div>
