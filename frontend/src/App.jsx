@@ -24,7 +24,7 @@ function DesktopOnly({ children }) {
 
   return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-center px-8 text-center">
-      <StarlightLogo className="h-16 w-56 text-white opacity-80 mb-12" />
+      <StarlightLogo className="logo-glow h-16 w-56 text-white opacity-80 mb-12" />
       <div className="mb-8 text-6xl">🖥️</div>
       <h1 className="text-2xl font-semibold text-white mb-3">Desktop only</h1>
       <p className="text-[#888] text-base max-w-xs leading-relaxed">
@@ -44,10 +44,10 @@ function WelcomeBack({ user, onDone }) {
 
   return (
     <div className="min-h-screen bg-primary-background px-6 py-12 flex flex-col">
-      <StarlightLogo className="h-14 w-48 text-primary-label opacity-90" />
+      <StarlightLogo className="logo-glow h-14 w-48 text-primary-label opacity-90" />
       <main className="flex-1 flex items-center justify-center">
         <div className="w-full max-w-xl text-center animate-welcome-rise">
-          <StarlightLogo className="mx-auto mb-10 h-32 w-80 text-primary-label opacity-90 animate-record-float" />
+          <StarlightLogo className="logo-glow mx-auto mb-10 h-32 w-80 text-primary-label opacity-90 animate-record-float" />
           <p className="text-secondary-label text-sm font-medium uppercase tracking-[0.28em] mb-4">Welcome back</p>
           <h1 className="text-5xl font-semibold tracking-normal mb-8">{user.name}</h1>
           <Link
@@ -76,10 +76,10 @@ function WelcomeAnimation({ user, onDone }) {
 
   return (
     <div className="min-h-screen bg-primary-background px-6 py-12 flex flex-col">
-      <StarlightLogo className="h-14 w-48 text-primary-label opacity-90" />
+      <StarlightLogo className="logo-glow h-14 w-48 text-primary-label opacity-90" />
       <main className="flex-1 flex items-center justify-center">
         <div className="text-center animate-welcome-rise">
-          <StarlightLogo className="mx-auto mb-8 h-28 w-72 text-primary-label opacity-90 animate-record-float" />
+          <StarlightLogo className="logo-glow mx-auto mb-8 h-28 w-72 text-primary-label opacity-90 animate-record-float" />
           <p className="text-secondary-label text-sm font-medium uppercase tracking-[0.28em] mb-3">Welcome back</p>
           <h1 className="text-4xl font-semibold tracking-normal">{user.name}</h1>
         </div>

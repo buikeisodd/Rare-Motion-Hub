@@ -111,3 +111,13 @@
 .animate-marquee-pause {
   animation: marquee-pause 8s ease-in-out infinite;
 }
+
+/* Starlight logo glow pulse */
+@keyframes logo-glow {
+  0%, 100% { filter: drop-shadow(0 0 4px currentColor) drop-shadow(0 0 10px currentColor); opacity: 0.85; }
+  50%       { filter: drop-shadow(0 0 8px currentColor) drop-shadow(0 0 22px currentColor); opacity: 1; }
+}
+
+.logo-glow {
+  animation: logo-glow 2.8s ease-in-out infinite;
+}

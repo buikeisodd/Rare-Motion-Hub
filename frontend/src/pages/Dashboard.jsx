@@ -499,7 +499,7 @@ function EditProfileModal({ isOpen, user, onClose, onSave, saving, error }) {
             <h2 className="text-lg font-bold text-primary-label">Edit Profile</h2>
 
             {/* Starlight Station logo replaces disc */}
-            <StarlightLogo className="h-16 w-52 text-primary-label opacity-80" />
+            <StarlightLogo className="logo-glow h-16 w-52 text-primary-label opacity-80" />
 
             {/* Avatar with label directly below it */}
             <div className="flex flex-col items-center gap-2">
@@ -818,7 +818,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
       <header className="sticky top-0 z-50 flex items-start justify-between gap-3 border-b border-border/60 bg-primary-background/95 pb-4 pt-2 backdrop-blur-md">
         {/* Starlight Station logo — blends with bg in dark, black in light */}
         <Link to="/" aria-label="Starlight Station home">
-          <StarlightLogo className="h-20 w-64 text-primary-label opacity-90 hover:opacity-100 transition-opacity" />
+          <StarlightLogo className="logo-glow h-20 w-64 text-primary-label opacity-90 hover:opacity-100 transition-opacity" />
         </Link>
 
         <div className="flex shrink-0 items-center gap-3">

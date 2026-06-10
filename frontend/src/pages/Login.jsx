@@ -37,10 +37,10 @@ export default function Login({ onLogin }) {
   return (
     <div className="min-h-screen bg-primary-background px-20 py-12 relative overflow-hidden">
       {/* Logo — blends with dark bg, black in light mode */}
-      <StarlightLogo className="h-14 w-52 text-primary-label opacity-90" />
+      <StarlightLogo className="logo-glow h-14 w-52 text-primary-label opacity-90" />
 
       <div className="mx-auto flex min-h-[calc(100vh-8rem)] w-full max-w-3xl flex-col items-center justify-center animate-fade-in">
-        <StarlightLogo className="mb-8 h-28 w-96 text-primary-label" />
+        <StarlightLogo className="logo-glow mb-8 h-28 w-96 text-primary-label" />
 
         <h1 className="max-w-md text-center text-3xl font-semibold leading-tight tracking-normal mb-7">
           A sacred place for your work-in-progress music
