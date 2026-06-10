@@ -385,13 +385,8 @@ export default function Project({ user }) {
       </main>
 
       {/* Desktop Add Tracks Button */}
-      <button onClick={() => setIsUploadOpen(true)} className="fixed bottom-24 right-8 lg:right-12 z-40 grid h-12 w-12 place-items-center rounded-full bg-primary-label text-primary-background shadow-2xl transition-transform hover:scale-105" aria-label="Add tracks">
-        <Plus className="h-7 w-7" />
-      </button>
-
-      {/* Mobile Add Tracks Button */}
-      <button onClick={() => setIsUploadOpen(true)} className="fixed bottom-24 right-8 z-40 grid h-12 w-12 place-items-center rounded-full bg-primary-label text-primary-background shadow-2xl transition-transform hover:scale-105" aria-label="Add tracks">
-        <Plus className="h-7 w-7" />
+      <button onClick={() => setIsUploadOpen(true)} className="fixed bottom-28 right-8 z-50 grid h-12 w-12 place-items-center rounded-full bg-primary-label text-primary-background shadow-2xl transition-transform hover:scale-105" aria-label="Add tracks">
+        <Plus className="h-6 w-6" />
       </button>
 
       <UploadModal
