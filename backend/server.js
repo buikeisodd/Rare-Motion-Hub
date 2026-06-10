@@ -863,6 +863,13 @@ app.delete('/api/projects/:id', async (req, res) => {
   res.json({ success: true });
 });
 
+app.get('/api/covers', async (req, res) => {
+  const { projectId, userId } = req.query;
+  if (!projectId || !userId) return res.status(400).json({ error: 'projectId and userId required.' });
+  const covers = await CoverArt.find({ projectId, userId }).lean();
+  res.json({ covers: covers.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) });
+});
+
 app.put('/api/projects/:id/cover', async (req, res) => {
   const { coverUrl, userId } = req.body;
   const db = ensureDBShape(await readDB());
