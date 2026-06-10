@@ -786,7 +786,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
   };
 
   return (
-    <div className="min-h-screen bg-primary-background px-10 py-8 pb-28 lg:px-14">
+    <div className="min-h-screen bg-primary-background px-8 py-6 pb-36 lg:px-12">
       {conversionProgress !== null && (
         <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm">
           <div className="w-80 rounded-3xl border border-border bg-shading p-8 shadow-2xl">
@@ -818,13 +818,13 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
       <header className="sticky top-0 z-50 flex items-start justify-between gap-3 border-b border-border/60 bg-primary-background/95 pb-4 pt-2 backdrop-blur-md">
         {/* Starlight Station logo — blends with bg in dark, black in light */}
         <Link to="/" aria-label="Starlight Station home">
-          <StarlightLogo className="h-14 w-48 text-primary-label opacity-90 hover:opacity-100 transition-opacity" />
+          <StarlightLogo className="h-20 w-64 text-primary-label opacity-90 hover:opacity-100 transition-opacity" />
         </Link>
 
         <div className="flex shrink-0 items-center gap-3">
           <div className="relative">
-            <button onClick={handleOpenNotifications} className="relative grid h-14 w-14 place-items-center rounded-3xl bg-primary-label text-primary-background transition-transform hover:scale-105" aria-label="Notifications">
-              <Bell className="h-6 w-6 fill-current" />
+            <button onClick={handleOpenNotifications} className="relative grid h-11 w-11 place-items-center rounded-2xl bg-primary-label text-primary-background transition-transform hover:scale-105" aria-label="Notifications">
+              <Bell className="h-5 w-5 fill-current" />
               {totalNotifications > 0 && <span className="absolute right-3 top-3 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-primary-background">{totalNotifications}</span>}
             </button>
             <NotificationsMenu isOpen={isNotificationsOpen} notifications={workspace.notifications} conversations={conversations} />
@@ -974,7 +974,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
           </div>
         </>
       ) : (
-        <div className="fixed inset-x-0 bottom-8 z-50 flex flex-col items-center gap-3 px-4">
+        <div className="fixed inset-x-0 bottom-24 z-50 flex flex-col items-center gap-3 px-4">
           <AnimatePresence>
             {isAddMenuOpen && (
               <motion.div

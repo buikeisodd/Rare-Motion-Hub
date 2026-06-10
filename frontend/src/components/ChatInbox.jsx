@@ -45,7 +45,7 @@ function MessageTicks({ message }) {
 
 function ConvoItem({ convo, isActive, onClick }) {
   const isGroup = convo.type === 'group';
-  const name = isGroup ? 'Group Chat' : convo.partner?.name || 'Unknown';
+  const name = isGroup ? 'Rare Motion HQ' : convo.partner?.name || 'Unknown';
   const lastText = convo.lastMessage?.deleted
     ? 'Message deleted'
     : convo.lastMessage?.text || (convo.lastMessage?.attachments?.length ? 'Media message' : null);
@@ -550,7 +550,7 @@ function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall,
   const chunksRef = useRef([]);
 
   const isGroup = convo.type === 'group';
-  const chatName = isGroup ? 'Group Chat' : convo.partner?.name || 'Unknown';
+  const chatName = isGroup ? 'Rare Motion HQ' : convo.partner?.name || 'Unknown';
   const participants = convo.participants || [];
 
   const fetchMessages = useCallback(async () => {
@@ -771,7 +771,7 @@ function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall,
           <div className="grid grid-cols-2 gap-2">
             {conversations.map((target) => (
               <button key={target.type === 'group' ? 'group' : target.partner.id} onClick={() => handleForward(target)} className="truncate rounded-xl bg-shading px-3 py-2 text-left text-xs hover:bg-highlight">
-                {target.type === 'group' ? 'Group Chat' : target.partner.name}
+                {target.type === 'group' ? 'Rare Motion HQ' : target.partner.name}
               </button>
             ))}
           </div>
@@ -844,7 +844,7 @@ export default function ChatInbox({ user, isOpen, onToggle, onConversationsChang
           const previousId = lastMessageRef.current.get(key);
           const isIncoming = lastMessage.senderId !== user.id && lastMessage.id !== previousId;
           if (isIncoming) {
-            const title = convo.type === 'group' ? 'New message in Group Chat' : `${lastMessage.sender?.name || convo.partner?.name || 'Someone'} sent a message`;
+            const title = convo.type === 'group' ? 'New message in Rare Motion HQ' : `${lastMessage.sender?.name || convo.partner?.name || 'Someone'} sent a message`;
             const body = lastMessage.deleted ? 'Message deleted' : lastMessage.text || (lastMessage.attachments?.length ? 'Media message' : 'New message');
             showDesktopNotification(title, { body });
           }

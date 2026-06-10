@@ -1915,7 +1915,20 @@ app.get('/api/conversations', async (req, res) => {
   const others = db.users.filter((u) => u.id !== userId);
   const conversations = [];
 
-  // DMs
+  // Group always first (Rare Motion HQ)
+  const groupMsgs = db.messages.filter((m) => m.conversationType === 'group');
+  const lastGroup = groupMsgs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] || null;
+  const groupUnreadCount = groupMsgs.filter((m) => m.senderId !== userId && !(m.readBy || []).includes(userId)).length;
+  conversations.push({
+    type: 'group',
+    partner: null,
+    participants: db.users.map(publicUser),
+    lastMessage: lastGroup ? hydrateMessage(db, lastGroup) : null,
+    unreadCount: groupUnreadCount,
+    updatedAt: lastGroup?.createdAt || '9999'
+  });
+
+  // DMs — always include ALL other users even if no messages yet
   for (const other of others) {
     const msgs = db.messages.filter(
       (m) => m.conversationType === 'dm' &&
@@ -1923,7 +1936,7 @@ app.get('/api/conversations', async (req, res) => {
           (m.senderId === other.id && m.recipientId === userId))
     );
     const last = msgs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] || null;
-    const unreadCount = msgs.filter((message) => message.senderId === other.id && !(message.readBy || []).includes(userId)).length;
+    const unreadCount = msgs.filter((m) => m.senderId === other.id && !(m.readBy || []).includes(userId)).length;
     conversations.push({
       type: 'dm',
       partner: publicUser(other),
@@ -1933,19 +1946,7 @@ app.get('/api/conversations', async (req, res) => {
     });
   }
 
-  // Group
-  const groupMsgs = db.messages.filter((m) => m.conversationType === 'group');
-  const lastGroup = groupMsgs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] || null;
-  const groupUnreadCount = groupMsgs.filter((message) => message.senderId !== userId && !(message.readBy || []).includes(userId)).length;
-  conversations.push({
-    type: 'group',
-    partner: null,
-    participants: db.users.map(publicUser),
-    lastMessage: lastGroup ? hydrateMessage(db, lastGroup) : null,
-    unreadCount: groupUnreadCount,
-    updatedAt: lastGroup?.createdAt || null
-  });
-
+  // Sort DMs by last message (group stays first due to '9999' updatedAt)
   conversations.sort((a, b) => {
     if (!a.updatedAt && !b.updatedAt) return 0;
     if (!a.updatedAt) return 1;

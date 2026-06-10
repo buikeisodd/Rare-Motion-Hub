@@ -19,7 +19,7 @@ export default {
         highlight: 'rgb(var(--color-highlight) / 0.15)',
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'], // Fallback if local fonts fail, Inter closely matches untitled's premium feel
+        sans: ['DM Sans', 'sans-serif'],
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-out',
