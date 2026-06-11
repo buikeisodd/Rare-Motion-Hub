@@ -34,6 +34,7 @@ app.use((req, res, next) => {
   next();
 });
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.get('/api/ping', (req, res) => res.json({ ok: true, ts: Date.now() }));
 app.use('/covers', express.static(path.join(__dirname, 'covers')));
 app.use('/avatars', express.static(path.join(__dirname, 'avatars')));
 

@@ -520,28 +520,29 @@ function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall,
       const url = isGroup
         ? `${apiUrl}/api/messages?type=group&userId=${currentUser.id}`
         : `${apiUrl}/api/messages?type=dm&userId=${currentUser.id}&partnerId=${convo.partner.id}`;
-      const res = await fetch(url);
-      if (!res.ok) return; // don't wipe on error response
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeout);
+      if (!res.ok) return;
       const data = await res.json();
       const incoming = data.messages;
-      if (!Array.isArray(incoming)) return; // don't wipe on malformed response
-      // Always update from server (source of truth)
-      setMessages(incoming);
+      if (!Array.isArray(incoming)) return;
+      // Only replace if server returned MORE or EQUAL messages — never wipe with fewer
+      setMessages(prev => incoming.length >= prev.length ? incoming : prev);
     } catch (err) {
-      // Never wipe existing messages on network error
-      console.error('Failed to fetch messages', err);
+      // Silently ignore — abort, network error, Render sleeping
     } finally {
       setLoading(false);
     }
   }, [isGroup, currentUser.id, convo.partner]);
 
   useEffect(() => {
-    const firstLoad = window.setTimeout(fetchMessages, 0);
-    const poll = window.setInterval(fetchMessages, 3000);
-    return () => {
-      window.clearTimeout(firstLoad);
-      window.clearInterval(poll);
-    };
+    // Initial load immediately
+    fetchMessages();
+    // Poll every 6s — longer interval reduces chance of catching Render mid-sleep
+    const poll = window.setInterval(fetchMessages, 6000);
+    return () => window.clearInterval(poll);
   }, [fetchMessages]);
 
   useEffect(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), [messages]);
@@ -812,6 +813,15 @@ function MiniPlayer() {
 export default function ChatInbox({ user, isOpen, onToggle, onConversationsChange }) {
   const [conversations, setConversations] = useState([]);
   const [activeConvo, setActiveConvo] = useState(null);
+
+  // Keepalive — prevents Render free tier from sleeping while chat is open
+  useEffect(() => {
+    if (!isOpen) return;
+    const ping = () => fetch(`${apiUrl}/api/ping`).catch(() => {});
+    ping();
+    const interval = setInterval(ping, 25000);
+    return () => clearInterval(interval);
+  }, [isOpen]);
   const [loadingConvos, setLoadingConvos] = useState(true);
   const [activeCall, setActiveCall] = useState(null);
   const lastMessageRef = useRef(new Map());
