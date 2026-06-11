@@ -1774,68 +1774,111 @@ app.get('/api/users', async (req, res) => {
 // For dm: partnerId required
 // For group: returns all group messages
 app.get('/api/messages', async (req, res) => {
-  const db = ensureDBShape(await readDB());
-  const userId = requireUserId(req, res);
-  if (!userId) return;
-  if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
+  const userId = req.query.userId;
+  if (!userId) return res.status(400).json({ error: 'userId required.' });
 
   const { type, partnerId } = req.query;
 
-  let msgs;
-  if (type === 'group') {
-    msgs = await Message.find({ conversationType: 'group' }).lean().sort({ createdAt: 1 });
-  } else {
-    if (!partnerId) return res.status(400).json({ error: 'partnerId required for DM.' });
-    msgs = await Message.find({
-      conversationType: 'dm',
-      $or: [
-        { senderId: userId, recipientId: partnerId },
-        { senderId: partnerId, recipientId: userId }
-      ]
-    }).lean().sort({ createdAt: 1 });
-  }
-
-  // Mark as read — wrapped so it never breaks the response
   try {
-    await Message.updateMany(
+    // Fetch messages directly from MongoDB — no readDB() call
+    let msgs;
+    if (type === 'group') {
+      msgs = await Message.find({ conversationType: 'group' }).lean().sort({ createdAt: 1 });
+    } else {
+      if (!partnerId) return res.status(400).json({ error: 'partnerId required for DM.' });
+      msgs = await Message.find({
+        conversationType: 'dm',
+        $or: [
+          { senderId: userId, recipientId: partnerId },
+          { senderId: partnerId, recipientId: userId }
+        ]
+      }).lean().sort({ createdAt: 1 });
+    }
+
+    // Hydrate with sender info directly from MongoDB
+    const senderIds = [...new Set(msgs.map(m => m.senderId).filter(Boolean))];
+    const senders = await User.find({ id: { $in: senderIds } }).lean();
+    const senderMap = Object.fromEntries(senders.map(u => [u.id, u]));
+
+    const hydrated = msgs.map(m => ({
+      ...m,
+      sender: senderMap[m.senderId] ? {
+        id: senderMap[m.senderId].id,
+        name: senderMap[m.senderId].name,
+        avatarUrl: senderMap[m.senderId].avatarUrl || '',
+      } : { id: m.senderId, name: 'Unknown', avatarUrl: '' },
+      replyTo: null, // simplified — no nested hydration needed
+    }));
+
+    // Mark as read — non-blocking
+    Message.updateMany(
       type === 'group'
         ? { conversationType: 'group', readBy: { $ne: userId } }
         : { conversationType: 'dm', senderId: partnerId, recipientId: userId, readBy: { $ne: userId } },
       { $addToSet: { readBy: userId } }
-    );
-  } catch (e) { /* non-fatal */ }
+    ).catch(() => {});
 
-  res.json({
-    messages: msgs.map((m) => hydrateMessage(db, m)),
-    participants: type === 'group' ? db.users.map(publicUser) : []
-  });
+    // Get participants for group
+    let participants = [];
+    if (type === 'group') {
+      const users = await User.find({}).lean();
+      participants = users.map(u => ({ id: u.id, name: u.name, avatarUrl: u.avatarUrl || '' }));
+    }
+
+    res.json({ messages: hydrated, participants });
+  } catch (err) {
+    console.error('GET /api/messages error:', err);
+    res.status(500).json({ error: 'Failed to fetch messages.' });
+  }
 });
 
 // Send a message
 app.post('/api/messages', async (req, res) => {
-  const db = ensureDBShape(await readDB());
   const { senderId, recipientId, conversationType, text, replyToMessageId } = req.body;
   if (!senderId || !text?.trim()) return res.status(400).json({ error: 'senderId and text required.' });
-  if (!userExists(db, senderId)) return res.status(401).json({ error: 'Unauthorized user.' });
   if (conversationType === 'dm' && !recipientId) return res.status(400).json({ error: 'recipientId required for DM.' });
 
-  const msg = createMessage(db, { senderId, recipientId, conversationType, text, replyToMessageId });
+  try {
+    // Verify sender exists in MongoDB directly
+    const sender = await User.findOne({ id: senderId }).lean();
+    if (!sender) return res.status(401).json({ error: 'Unauthorized user.' });
 
-  // Write directly to MongoDB for reliability
-  await Message.create(msg);
+    const type = conversationType || 'dm';
+    const msg = {
+      id: makeId(),
+      senderId,
+      recipientId: type === 'group' ? null : recipientId,
+      conversationType: type,
+      text: text.trim(),
+      attachments: [],
+      replyToMessageId: replyToMessageId || null,
+      pinned: false,
+      deleted: false,
+      readBy: [],
+      createdAt: new Date().toISOString()
+    };
 
-  // Notify (uses in-memory db for user lookup)
-  db.messages.push(msg);
-  notifyMessage(db, msg);
+    await Message.create(msg);
 
-  // Write notifications only
-  const newNotifs = db.notifications.filter(n => !n._saved);
-  for (const n of newNotifs) {
-    await Notification.findOneAndUpdate({ id: n.id }, n, { upsert: true });
-    n._saved = true;
+    // Return hydrated message with sender info
+    const hydrated = {
+      ...msg,
+      sender: { id: sender.id, name: sender.name, avatarUrl: sender.avatarUrl || '' },
+    };
+
+    // Fire-and-forget notification
+    User.find({}).lean().then(users => {
+      const db = ensureDBShape({ users, messages: [msg], notifications: [] });
+      notifyMessage(db, msg);
+      const newNotifs = db.notifications.filter(n => n.id);
+      newNotifs.forEach(n => Notification.findOneAndUpdate({ id: n.id }, n, { upsert: true }).catch(() => {}));
+    }).catch(() => {});
+
+    res.json({ message: hydrated });
+  } catch (err) {
+    console.error('POST /api/messages error:', err);
+    res.status(500).json({ error: 'Failed to send message.' });
   }
-
-  res.json({ message: hydrateMessage(db, msg) });
 });
 
 app.post('/api/messages/media', uploadChatMedia.single('media'), async (req, res) => {
