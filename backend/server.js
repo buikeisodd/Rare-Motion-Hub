@@ -1782,21 +1782,28 @@ app.get('/api/messages', async (req, res) => {
 
   let msgs;
   if (type === 'group') {
-    msgs = db.messages.filter((m) => m.conversationType === 'group');
+    msgs = await Message.find({ conversationType: 'group' }).lean().sort({ createdAt: 1 });
   } else {
     if (!partnerId) return res.status(400).json({ error: 'partnerId required for DM.' });
-    msgs = db.messages.filter(
-      (m) => m.conversationType === 'dm' &&
-        ((m.senderId === userId && m.recipientId === partnerId) ||
-          (m.senderId === partnerId && m.recipientId === userId))
-    );
+    msgs = await Message.find({
+      conversationType: 'dm',
+      $or: [
+        { senderId: userId, recipientId: partnerId },
+        { senderId: partnerId, recipientId: userId }
+      ]
+    }).lean().sort({ createdAt: 1 });
   }
 
-  markConversationRead(db, { userId, type, partnerId });
-  await writeDB(db);
+  // Mark as read directly in MongoDB
+  await Message.updateMany(
+    type === 'group'
+      ? { conversationType: 'group', readBy: { $ne: userId } }
+      : { conversationType: 'dm', senderId: partnerId, recipientId: userId, readBy: { $ne: userId } },
+    { $addToSet: { readBy: userId } }
+  );
 
   res.json({
-    messages: msgs.map((message) => hydrateMessage(db, message)),
+    messages: msgs.map((m) => hydrateMessage(db, m)),
     participants: type === 'group' ? db.users.map(publicUser) : []
   });
 });
@@ -1807,14 +1814,23 @@ app.post('/api/messages', async (req, res) => {
   const { senderId, recipientId, conversationType, text, replyToMessageId } = req.body;
   if (!senderId || !text?.trim()) return res.status(400).json({ error: 'senderId and text required.' });
   if (!userExists(db, senderId)) return res.status(401).json({ error: 'Unauthorized user.' });
-
   if (conversationType === 'dm' && !recipientId) return res.status(400).json({ error: 'recipientId required for DM.' });
 
   const msg = createMessage(db, { senderId, recipientId, conversationType, text, replyToMessageId });
 
+  // Write directly to MongoDB for reliability
+  await Message.create(msg);
+
+  // Notify (uses in-memory db for user lookup)
   db.messages.push(msg);
   notifyMessage(db, msg);
-  await writeDB(db);
+
+  // Write notifications only
+  const newNotifs = db.notifications.filter(n => !n._saved);
+  for (const n of newNotifs) {
+    await Notification.findOneAndUpdate({ id: n.id }, n, { upsert: true });
+    n._saved = true;
+  }
 
   res.json({ message: hydrateMessage(db, msg) });
 });
@@ -1921,6 +1937,15 @@ app.get('/api/conversations', async (req, res) => {
 
   const others = db.users.filter((u) => u.id !== userId);
   const conversations = [];
+
+  // Read messages directly from MongoDB for accuracy
+  const allMessages = await Message.find({
+    $or: [
+      { conversationType: 'group' },
+      { conversationType: 'dm', $or: [{ senderId: userId }, { recipientId: userId }] }
+    ]
+  }).lean();
+  db.messages = allMessages;
 
   // Group always first (Rare Motion HQ)
   const groupMsgs = db.messages.filter((m) => m.conversationType === 'group');
