@@ -10,6 +10,7 @@ import ProjectInsights from './pages/ProjectInsights';
 import StarlightLogo from './components/StarlightLogo';
 import { AudioProvider, useAudio } from './context/AudioContext';
 import AudioPlayer from './components/AudioPlayer';
+import ServerStatus from './components/ServerStatus';
 
 function DesktopOnly({ children }) {
   const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 1024);
@@ -235,6 +236,7 @@ function App() {
             setJustAuthenticated={setJustAuthenticated}
           />
           <GlobalAudioPlayer />
+          <ServerStatus />
         </BrowserRouter>
       </AudioProvider>
     </div>
