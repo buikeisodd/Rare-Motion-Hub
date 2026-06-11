@@ -1794,13 +1794,15 @@ app.get('/api/messages', async (req, res) => {
     }).lean().sort({ createdAt: 1 });
   }
 
-  // Mark as read directly in MongoDB
-  await Message.updateMany(
-    type === 'group'
-      ? { conversationType: 'group', readBy: { $ne: userId } }
-      : { conversationType: 'dm', senderId: partnerId, recipientId: userId, readBy: { $ne: userId } },
-    { $addToSet: { readBy: userId } }
-  );
+  // Mark as read — wrapped so it never breaks the response
+  try {
+    await Message.updateMany(
+      type === 'group'
+        ? { conversationType: 'group', readBy: { $ne: userId } }
+        : { conversationType: 'dm', senderId: partnerId, recipientId: userId, readBy: { $ne: userId } },
+      { $addToSet: { readBy: userId } }
+    );
+  } catch (e) { /* non-fatal */ }
 
   res.json({
     messages: msgs.map((m) => hydrateMessage(db, m)),

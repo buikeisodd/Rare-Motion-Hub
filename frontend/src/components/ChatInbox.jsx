@@ -559,9 +559,14 @@ function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall,
         ? `${apiUrl}/api/messages?type=group&userId=${currentUser.id}`
         : `${apiUrl}/api/messages?type=dm&userId=${currentUser.id}&partnerId=${convo.partner.id}`;
       const res = await fetch(url);
+      if (!res.ok) return; // don't wipe on error response
       const data = await res.json();
-      setMessages(data.messages || []);
+      const incoming = data.messages;
+      if (!Array.isArray(incoming)) return; // don't wipe on malformed response
+      // Only replace if we got messages, or if we genuinely have none yet
+      setMessages(prev => incoming.length > 0 ? incoming : prev.length > 0 ? prev : []);
     } catch (err) {
+      // Never wipe existing messages on network error
       console.error('Failed to fetch messages', err);
     } finally {
       setLoading(false);
