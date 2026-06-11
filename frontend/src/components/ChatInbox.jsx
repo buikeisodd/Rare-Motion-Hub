@@ -707,10 +707,30 @@ function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall,
           <ArrowLeft className="h-4 w-4" />
         </button>
         <ProfileAvatar user={convo.partner} isGroup={isGroup} size="h-9 w-9" />
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-bold text-primary-label">{chatName}</p>
-          {isGroup && <p className="truncate text-[11px] text-secondary-label">etrange · sholabomii · aderoju · quarter21</p>}
+          {isGroup && <p className="truncate text-[11px] text-secondary-label">{participants.map(p => p.name).join(' · ')}</p>}
         </div>
+        {isGroup && (
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={onJoinCall}
+              className="grid h-9 w-9 place-items-center rounded-xl bg-shading text-primary-label transition-colors hover:bg-green-500/20 hover:text-green-400"
+              aria-label="Voice call"
+              title="Voice call"
+            >
+              <PhoneCall className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => { onJoinCall(); }}
+              className="grid h-9 w-9 place-items-center rounded-xl bg-shading text-primary-label transition-colors hover:bg-blue-500/20 hover:text-blue-400"
+              aria-label="Video call"
+              title="Video call"
+            >
+              <Video className="h-4 w-4" />
+            </button>
+          </div>
+        )}
       </div>
 
       {isGroup && <GroupStreamPanel currentUser={currentUser} participants={participants} activeCall={activeCall} onJoinCall={onJoinCall} onLeaveCall={onLeaveCall} />}
