@@ -451,24 +451,7 @@ function GroupStreamPanel({ currentUser, participants, activeCall, onJoinCall, o
         </div>
       )}
 
-      <div className="grid gap-2 sm:grid-cols-2">
-        {participants.filter((participant) => participant.id !== currentUser.id).map((participant) => (
-          <div key={participant.id} className="flex items-center gap-3 rounded-xl bg-shading px-3 py-2">
-            <ProfileAvatar user={participant} size="h-8 w-8" />
-            <span className="min-w-0 flex-1 truncate text-xs font-semibold">{participant.name}</span>
-            <Volume2 className="h-4 w-4 text-secondary-label" />
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={participantVolumes[participant.id] ?? 80}
-              onChange={(event) => setParticipantVolumes((prev) => ({ ...prev, [participant.id]: Number(event.target.value) }))}
-              className="w-20 accent-white"
-              aria-label={`Volume for ${participant.name}`}
-            />
-          </div>
-        ))}
-      </div>
+
     </div>
   );
 }
