@@ -423,27 +423,6 @@ function GroupStreamPanel({ currentUser, participants, activeCall, onJoinCall, o
         </button>
       )}
 
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <div>
-          <p className="text-sm font-bold">Group voice channel</p>
-          <p className="text-[11px] text-secondary-label">{joined ? `${status || 'Connected'} · ${connectedParticipants.length} connected` : 'Join voice, camera, or screen share'}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={toggleMic} className={`grid h-9 w-9 place-items-center rounded-xl ${micOn ? 'bg-green-400 text-black' : 'bg-shading'}`} aria-label="Toggle mic">
-            {micOn ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
-          </button>
-          <button onClick={toggleCamera} className={`grid h-9 w-9 place-items-center rounded-xl ${cameraOn ? 'bg-green-400 text-black' : 'bg-shading'}`} aria-label="Toggle camera">
-            {cameraOn ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
-          </button>
-          <button onClick={shareScreen} className={`grid h-9 w-9 place-items-center rounded-xl ${screenOn ? 'bg-green-400 text-black' : 'bg-shading'}`} aria-label="Share screen">
-            <MonitorUp className="h-4 w-4" />
-          </button>
-          <button onClick={leave} className="grid h-9 w-9 place-items-center rounded-xl bg-red-500/20 text-red-300" aria-label="Leave call">
-            <PhoneOff className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-
       {(joined || connectedParticipants.length > 0) && !callStageOpen && (
         <div className="mb-3 grid gap-2 sm:grid-cols-2">
           {joined && (
