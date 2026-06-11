@@ -563,8 +563,8 @@ function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall,
       const data = await res.json();
       const incoming = data.messages;
       if (!Array.isArray(incoming)) return; // don't wipe on malformed response
-      // Only replace if we got messages, or if we genuinely have none yet
-      setMessages(prev => incoming.length > 0 ? incoming : prev.length > 0 ? prev : []);
+      // Always update from server (source of truth)
+      setMessages(incoming);
     } catch (err) {
       // Never wipe existing messages on network error
       console.error('Failed to fetch messages', err);
@@ -967,7 +967,7 @@ export default function ChatInbox({ user, isOpen, onToggle, onConversationsChang
           </div>
           {activeConvo ? (
             <div className="flex flex-1 flex-col overflow-hidden bg-primary-background">
-              <ChatWindow convo={activeConvo} currentUser={user} conversations={conversations} activeCall={activeCall} onJoinCall={joinGroupCall} onLeaveCall={leaveGroupCall} onClose={handleCloseChat} />
+              <ChatWindow key={activeConvo?.type === "group" ? "group" : activeConvo?.partner?.id} convo={activeConvo} currentUser={user} conversations={conversations} activeCall={activeCall} onJoinCall={joinGroupCall} onLeaveCall={leaveGroupCall} onClose={handleCloseChat} />
             </div>
           ) : (
             <div className="hidden sm:flex flex-1 flex-col items-center justify-center text-secondary-label bg-primary-background">
