@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft, BarChart3, Download, FileAudio, FileText, Layers,
-  ListPlus, Mic, MicOff, MoreHorizontal, Pencil, Play, Share2, Trash2, Upload, X
+  ListPlus, MoreHorizontal, Pencil, Play, Share2, Trash2, Upload, X
 } from 'lucide-react';
 import ConfirmModal from './ConfirmModal';
 
@@ -152,165 +152,87 @@ function TrackRenameModal({ isOpen, onClose, track, userId, onSaved }) {
 
 function TrackNotesModal({ isOpen, onClose, track, userId, onSaved }) {
   const [notes, setNotes] = useState('');
-  const [memos, setMemos] = useState([]);
   const [saving, setSaving] = useState(false);
-  const [recording, setRecording] = useState(false);
-  const [uploadingMemo, setUploadingMemo] = useState(false);
-  const recorderRef = useRef(null);
-  const chunksRef = useRef([]);
+  const [saved, setSaved] = useState(false);
+  const saveTimer = useRef(null);
 
   useEffect(() => {
-    if (isOpen && track) {
-      setNotes(track.notes || '');
-      setMemos(track.noteMemos || []);
-    }
-  }, [isOpen, track]);
+    if (isOpen && track) setNotes(track.notes || '');
+  }, [isOpen, track?.id]);
 
-  const saveNotes = async () => {
-    setSaving(true);
-    try {
-      const res = await fetch(`${apiUrl}/api/tracks/${track.id}?userId=${encodeURIComponent(userId)}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, notes })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Could not save notes.');
-      onSaved(data.track);
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      setSaving(false);
-    }
+  const autoSave = (val) => {
+    setNotes(val);
+    setSaved(false);
+    clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(async () => {
+      setSaving(true);
+      try {
+        await fetch(`${apiUrl}/api/tracks/${track.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, notes: val })
+        });
+        setSaved(true);
+        if (onSaved) onSaved({ ...track, notes: val });
+      } catch (e) { console.error(e); }
+      finally { setSaving(false); }
+    }, 800);
   };
 
-  const uploadMemo = async (file) => {
-    if (!file) return;
-    setUploadingMemo(true);
-    try {
-      const formData = new FormData();
-      formData.append('memo', file);
-      formData.append('userId', userId);
-      const res = await fetch(`${apiUrl}/api/tracks/${track.id}/note-memos?userId=${encodeURIComponent(userId)}`, {
-        method: 'POST',
-        body: formData
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Could not save voice memo.');
-      setMemos(data.track.noteMemos || []);
-      onSaved(data.track);
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      setUploadingMemo(false);
-    }
-  };
-
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      chunksRef.current = [];
-      const recorder = new MediaRecorder(stream);
-      recorderRef.current = recorder;
-      recorder.ondataavailable = (event) => chunksRef.current.push(event.data);
-      recorder.onstop = () => {
-        stream.getTracks().forEach((t) => t.stop());
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        uploadMemo(new File([blob], `memo-${Date.now()}.webm`, { type: 'audio/webm' }));
-        setRecording(false);
-      };
-      recorder.start();
-      setRecording(true);
-    } catch (err) {
-      alert('Microphone access is required to record voice memos.');
-    }
-  };
-
-  const stopRecording = () => recorderRef.current?.stop();
-
-  const deleteMemo = async (memoId) => {
-    if (!confirm('Delete this voice memo?')) return;
-    try {
-      const res = await fetch(`${apiUrl}/api/tracks/${track.id}/note-memos/${memoId}?userId=${encodeURIComponent(userId)}`, {
-        method: 'DELETE'
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Could not delete voice memo.');
-      setMemos(data.track.noteMemos || []);
-      onSaved(data.track);
-    } catch (err) {
-      alert(err.message);
-    }
-  };
-
-  if (!isOpen) return null;
+  if (!isOpen || !track) return null;
 
   return (
-    <ModalShell isOpen={isOpen} onClose={onClose} className="max-w-4xl" zIndex="z-[95]">
-      <div className="flex max-h-[85vh] flex-col p-5 sm:p-6">
-        <div className="mb-4 flex shrink-0 items-center justify-between">
+    <ModalShell isOpen={isOpen} onClose={onClose} className="max-w-xl" zIndex="z-[95]">
+      <div className="flex flex-col" style={{ height: '75vh', maxHeight: '640px' }}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 pt-5 pb-3 shrink-0">
           <div>
-            <h3 className="text-xl font-semibold text-primary-label">Notes</h3>
-            <p className="mt-1 text-sm text-secondary-label">{track?.title}</p>
+            <h3 className="text-2xl font-black tracking-tight text-primary-label">Notes</h3>
+            <p className="text-xs text-secondary-label mt-0.5 truncate max-w-[280px] font-medium">{track.title}</p>
           </div>
-          <button onClick={onClose} className="grid h-9 w-9 place-items-center rounded-full bg-shading text-secondary-label hover:bg-highlight">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="Write lyrics, ideas, mix notes, session thoughts..."
-          className="min-h-[280px] flex-1 resize-y rounded-2xl border border-border bg-shading px-4 py-3 text-base leading-relaxed text-primary-label outline-none focus:border-secondary-label sm:min-h-[360px]"
-        />
-
-        <div className="mt-5 shrink-0">
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-sm font-semibold text-primary-label">Voice memos</p>
-            <button
-              onClick={recording ? stopRecording : startRecording}
-              disabled={uploadingMemo}
-              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-colors ${recording ? 'bg-red-500 text-white' : 'bg-shading hover:bg-highlight'}`}
-            >
-              {recording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-              {uploadingMemo ? 'Saving memo...' : recording ? 'Stop recording' : 'Record memo'}
+          <div className="flex items-center gap-3">
+            <span className={`text-[10px] font-bold uppercase tracking-widest transition-colors ${saving ? 'text-amber-400' : saved ? 'text-green-400' : 'text-secondary-label/50'}`}>
+              {saving ? '● Saving' : saved ? '✓ Saved' : '● Auto-save'}
+            </span>
+            <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-xl bg-shading text-secondary-label hover:bg-highlight transition-colors">
+              <X className="h-4 w-4" />
             </button>
           </div>
-
-          {memos.length === 0 ? (
-            <p className="rounded-2xl border border-dashed border-border bg-shading/50 px-4 py-6 text-center text-sm text-secondary-label">
-              No voice memos yet. Record quick ideas without typing.
-            </p>
-          ) : (
-            <div className="max-h-48 space-y-2 overflow-y-auto">
-              {memos.map((memo) => (
-                <div key={memo.id} className="flex items-center gap-3 rounded-2xl bg-shading px-3 py-2">
-                  <audio src={`${memo.url}?userId=${encodeURIComponent(userId)}`} controls className="min-w-0 flex-1" />
-                  <span className="hidden shrink-0 text-xs text-secondary-label sm:inline">
-                    {formatTrackDate(memo.uploadedAt)}
-                  </span>
-                  <button onClick={() => deleteMemo(memo.id)} className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-secondary-label hover:bg-highlight hover:text-red-400" aria-label="Delete voice memo">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
 
-        <div className="mt-5 flex shrink-0 justify-end gap-3">
-          <button onClick={onClose} className="rounded-full px-5 py-2.5 text-sm font-semibold text-secondary-label hover:bg-highlight">
-            Close
-          </button>
-          <button onClick={saveNotes} disabled={saving} className="rounded-full bg-primary-label px-6 py-2.5 text-sm font-semibold text-primary-background disabled:opacity-60">
-            {saving ? 'Saving...' : 'Save notes'}
-          </button>
+        {/* Divider with track name accent */}
+        <div className="mx-6 mb-0 h-px bg-gradient-to-r from-primary-label/40 via-primary-label/10 to-transparent" />
+
+        {/* Notepad */}
+        <div className="relative flex-1 overflow-hidden">
+          {/* Yellow legal pad lines */}
+          <div className="absolute inset-0 pointer-events-none" style={{
+            backgroundImage: 'repeating-linear-gradient(transparent, transparent 33px, rgb(var(--color-border) / 0.35) 33px, rgb(var(--color-border) / 0.35) 34px)',
+            backgroundPositionY: '56px',
+          }} />
+          {/* Red margin */}
+          <div className="absolute top-0 bottom-0 left-16 w-px bg-red-500/25 pointer-events-none" />
+          {/* Line numbers */}
+          <div className="absolute top-0 left-0 w-14 bottom-0 flex flex-col pt-14 pb-4 pointer-events-none select-none">
+            {Array.from({ length: 30 }).map((_, i) => (
+              <div key={i} className="text-right pr-3 text-[9px] text-secondary-label/25 font-mono" style={{ height: '34px', lineHeight: '34px' }}>
+                {i + 1}
+              </div>
+            ))}
+          </div>
+          <textarea
+            value={notes}
+            onChange={e => autoSave(e.target.value)}
+            placeholder={"Write your ideas, lyrics, mix notes…"}
+            className="relative w-full h-full resize-none bg-transparent pl-20 pr-6 pt-14 pb-6 text-sm font-semibold text-primary-label placeholder:text-secondary-label/30 outline-none z-10"
+            style={{ lineHeight: '34px', fontFamily: "'DM Sans', sans-serif", letterSpacing: '0.01em' }}
+          />
         </div>
       </div>
     </ModalShell>
   );
 }
+
 
 function TrackReplaceModal({ isOpen, onClose, track, userId, onSaved }) {
   const [dragging, setDragging] = useState(false);

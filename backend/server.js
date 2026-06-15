@@ -1021,38 +1021,36 @@ app.post('/api/upload', uploadTrack.single('track'), async (req, res) => {
 });
 
 app.delete('/api/tracks/:id', async (req, res) => {
-  const db = ensureDBShape(await readDB());
-  const userId = requireUserId(req, res);
-  if (!userId) return;
-  const track = findOwnedTrack(db, req.params.id, userId);
+  const userId = req.query.userId || req.body.userId;
+  if (!userId) return res.status(400).json({ error: 'userId required.' });
+
+  const track = await Track.findOne({ id: req.params.id, $or: [{ userId }, { 'uploader.id': userId }] }).lean();
   if (!track) return res.status(404).json({ error: 'Track not found' });
 
   removeTrackFiles(track);
   removeDirIfExists(path.join(stemsDir, userId, track.id));
-  db.tracks = db.tracks.filter(t => t.id !== req.params.id);
-  await writeDB(db);
+  await Track.deleteOne({ id: req.params.id });
   res.json({ success: true });
 });
 
 app.patch('/api/tracks/:id', async (req, res) => {
-  const db = ensureDBShape(await readDB());
-  const userId = requireUserId(req, res);
-  if (!userId) return;
-  const trackIndex = db.tracks.findIndex((item) => item.id?.toString() === req.params.id?.toString());
-  if (trackIndex === -1 || !findAccessibleTrack(db, req.params.id, userId)) {
-    return res.status(404).json({ error: 'Track not found' });
-  }
+  const userId = req.body.userId || req.query.userId;
+  if (!userId) return res.status(400).json({ error: 'userId required.' });
 
+  const track = await Track.findOne({ id: req.params.id }).lean();
+  if (!track) return res.status(404).json({ error: 'Track not found' });
+
+  const updates = {};
   const { title, notes } = req.body;
   if (title !== undefined) {
     const nextTitle = title.toString().trim();
     if (!nextTitle) return res.status(400).json({ error: 'Track title is required.' });
-    db.tracks[trackIndex].title = nextTitle;
+    updates.title = nextTitle;
   }
-  if (notes !== undefined) db.tracks[trackIndex].notes = notes.toString();
+  if (notes !== undefined) updates.notes = notes.toString();
 
-  await writeDB(db);
-  res.json({ track: normalizeTrack(db.tracks[trackIndex]) });
+  const updated = await Track.findOneAndUpdate({ id: req.params.id }, updates, { new: true }).lean();
+  res.json({ track: normalizeTrack(updated) });
 });
 
 app.get('/api/tracks/:id/insights', async (req, res) => {

@@ -426,7 +426,7 @@ function ProfilePanel({ isOpen, user, theme, onThemeChange, onEditProfile, onLog
             </div>
           </div>
 
-          <button onClick={onEditProfile} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
+          <button onClick={onEditProfile} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
             <Edit3 className="h-5 w-5" />
             Edit profile
           </button>
@@ -449,7 +449,7 @@ function ProfilePanel({ isOpen, user, theme, onThemeChange, onEditProfile, onLog
             </div>
           </div>
 
-          <button onClick={onLogout} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
+          <button onClick={onLogout} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
             <LogOut className="h-5 w-5" />
             Sign out
           </button>
@@ -893,44 +893,40 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
         )}
       </main>
 
-      {/* Add button — left side when track playing, centered when not */}
-      <div className={`fixed bottom-6 z-50 flex flex-col items-end gap-3 ${currentTrack ? "right-auto left-6" : "left-1/2 -translate-x-1/2"}`}>
-          <AnimatePresence>
-            {isAddMenuOpen && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                transition={{ duration: 0.15 }}
-                className="w-64 rounded-[1.2rem] panel-bg border border-border p-3 shadow-2xl backdrop-blur-xl origin-bottom"
-              >
-                <button onClick={() => convertInputRef.current?.click()} disabled={conversionProgress !== null} className="flex w-full items-center gap-5 rounded-xl px-4 py-3 text-left text-xl font-semibold hover:bg-highlight transition-colors disabled:opacity-50">
-                  <Video className="h-6 w-6" />
-                  {conversionProgress !== null ? 'Converting...' : 'Convert'}
-                </button>
-                <button onClick={() => showComingSoon('Record')} className="flex w-full items-center gap-5 rounded-xl px-4 py-3 text-left text-xl font-semibold hover:bg-highlight transition-colors">
-                  <Circle className="h-6 w-6 fill-red-500 text-red-500" />
-                  Record
-                </button>
-                <button onClick={createFolder} className="flex w-full items-center gap-5 rounded-xl px-4 py-3 text-left text-xl font-semibold hover:bg-highlight transition-colors">
-                  <FolderPlus className="h-6 w-6" />
-                  New Folder
-                </button>
-                <button onClick={() => createProject()} className="flex w-full items-center gap-5 rounded-xl px-4 py-3 text-left text-xl font-semibold hover:bg-highlight transition-colors">
-                  <Plus className="h-6 w-6" />
-                  New Project
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
+      {/* Add button — anchored, menu pops above, never moves */}
+      <div className={`fixed bottom-6 z-50 ${currentTrack ? 'left-6' : 'left-1/2 -translate-x-1/2'}`}>
+        <AnimatePresence>
+          {isAddMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: 8, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.97 }}
+              transition={{ duration: 0.15 }}
+              className="absolute bottom-full mb-3 left-0 w-52 rounded-2xl panel-bg border border-border p-2 shadow-2xl backdrop-blur-xl"
+            >
+              <button onClick={() => convertInputRef.current?.click()} disabled={conversionProgress !== null} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors disabled:opacity-50">
+                <Video className="h-4 w-4 shrink-0" />
+                {conversionProgress !== null ? 'Converting...' : 'Convert'}
+              </button>
+              <button onClick={createFolder} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
+                <FolderPlus className="h-4 w-4 shrink-0" />
+                New Folder
+              </button>
+              <button onClick={() => createProject()} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
+                <Plus className="h-4 w-4 shrink-0" />
+                New Project
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-          <button
-            onClick={() => { setIsAddMenuOpen((open) => !open); setIsProfileOpen(false); setIsNotificationsOpen(false); setIsChatOpen(false); }}
-            className="inline-flex h-16 min-w-48 items-center justify-center gap-3 rounded-full bg-shading px-7 text-xl font-semibold text-primary-label shadow-2xl backdrop-blur-md transition-transform hover:scale-[1.02]"
-          >
-            {isAddMenuOpen ? <X className="h-6 w-6" /> : <Plus className="h-6 w-6" />}
-            {isAddMenuOpen ? 'Close' : 'Add'}
-          </button>
+        <button
+          onClick={() => { setIsAddMenuOpen(o => !o); setIsProfileOpen(false); setIsNotificationsOpen(false); setIsChatOpen(false); }}
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-shading border border-border px-5 text-sm font-semibold text-primary-label shadow-xl backdrop-blur-md transition-colors hover:bg-highlight"
+        >
+          <Plus className={`h-4 w-4 transition-transform duration-200 ${isAddMenuOpen ? 'rotate-45' : ''}`} />
+          {isAddMenuOpen ? 'Close' : '+ Add'}
+        </button>
       </div>
 
       <input ref={convertInputRef} type="file" accept="video/*" className="hidden" onChange={handleConvert} />

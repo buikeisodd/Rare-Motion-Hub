@@ -353,14 +353,29 @@ export default function Project({ user }) {
                   className={`group grid cursor-pointer grid-cols-[2rem_1fr_auto] items-center gap-4 rounded-2xl px-3 py-4 transition-all ${currentTrack?.id === track.id ? 'bg-highlight' : 'hover:bg-shading'} ${dragTrackId === track.id ? 'ring-2 ring-primary-label/40 bg-highlight' : ''}`}
                 >
                   <div className="text-center text-xl text-secondary-label">
-                    {currentTrack?.id === track.id && isPlaying ? <Play className="mx-auto h-5 w-5 fill-current text-primary-label" /> : index + 1}
+                    {currentTrack?.id === track.id && isPlaying ? (
+                      <span className="flex items-end justify-center gap-[2px] h-5 w-5 mx-auto">
+                        {[0,1,2].map(i => (
+                          <span key={i} className="w-[3px] rounded-full bg-primary-label"
+                            style={{ animation: `audio-bar 0.8s ease-in-out ${i * 0.15}s infinite alternate`, height: `${[60,100,75][i]}%` }} />
+                        ))}
+                      </span>
+                    ) : currentTrack?.id === track.id ? (
+                      <span className="flex items-end justify-center gap-[2px] h-5 w-5 mx-auto">
+                        {[0,1,2].map(i => (
+                          <span key={i} className="w-[3px] rounded-full bg-primary-label opacity-40" style={{ height: `${[60,40,75][i]}%` }} />
+                        ))}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-secondary-label">{index + 1}</span>
+                    )}
                   </div>
                   <div className="min-w-0">
                     <h3 className="truncate text-xl font-semibold text-primary-label">{track.title}</h3>
                     <p className="mt-1 text-base text-secondary-label">{timeAgo(track.uploadedAt)}</p>
                     {(track.notes || track.noteMemos?.length > 0) && (
                       <p className="mt-1 truncate text-xs text-secondary-label/80">
-                        {track.notes || `${track.noteMemos.length} voice memo${track.noteMemos.length === 1 ? '' : 's'}`}
+                        {track.notes}
                       </p>
                     )}
                     {track.versions?.length > 0 && (
@@ -384,9 +399,14 @@ export default function Project({ user }) {
         </section>
       </main>
 
-      {/* Desktop Add Tracks Button */}
-      <button onClick={() => setIsUploadOpen(true)} className={`fixed bottom-6 z-50 grid h-12 w-12 place-items-center rounded-full bg-primary-label text-primary-background shadow-2xl transition-transform hover:scale-105 ${currentTrack ? "left-6" : "right-8"}`} aria-label="Add tracks">
-        <Plus className="h-6 w-6" />
+      {/* Add Tracks Button — fixed position, never moves */}
+      <button
+        onClick={() => setIsUploadOpen(true)}
+        className="fixed bottom-6 right-8 z-50 flex items-center gap-2 rounded-full bg-primary-label px-5 py-3 text-sm font-semibold text-primary-background shadow-2xl transition-transform hover:scale-105"
+        aria-label="Add tracks"
+      >
+        <Plus className="h-4 w-4" />
+        Add
       </button>
 
       <UploadModal

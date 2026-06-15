@@ -145,3 +145,9 @@
 .animate-slide-up {
   animation: slide-up 0.25s ease-out forwards;
 }
+
+/* Playing track bar animation */
+@keyframes audio-bar {
+  from { transform: scaleY(0.3); }
+  to   { transform: scaleY(1); }
+}
