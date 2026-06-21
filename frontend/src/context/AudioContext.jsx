@@ -97,12 +97,14 @@ export function AudioProvider({ children }) {
   }, []);
 
   const [projectCover, setProjectCover] = useState(null);
+  const [projectId, setProjectId] = useState(null);
 
-  const playTrack = useCallback((track, newTracks, newProjectName, newProjectCover) => {
+  const playTrack = useCallback((track, newTracks, newProjectName, newProjectCover, newProjectId) => {
     setCurrentTrack(track);
     if (newTracks) setTracks(newTracks);
     if (newProjectName !== undefined) setProjectName(newProjectName);
     if (newProjectCover !== undefined) setProjectCover(newProjectCover);
+    if (newProjectId !== undefined) setProjectId(newProjectId);
     setIsPlaying(true);
   }, []);
 
@@ -145,6 +147,7 @@ export function AudioProvider({ children }) {
     tracks: playbackTracks, setTracks,
     projectName, setProjectName,
     projectCover, setProjectCover,
+    projectId, setProjectId,
     isPlaying, setIsPlaying,
     progress, duration, isBuffering,
     repeatMode, setRepeatMode,

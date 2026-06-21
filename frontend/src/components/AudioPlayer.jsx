@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from 'react';
 import { Activity, ChevronDown, ChevronUp, ListMusic, Pause, Play, Repeat, Repeat1, Settings2, Shuffle, SkipBack, SkipForward, Volume2, VolumeX, X } from 'lucide-react';
 import { useAudio } from '../context/AudioContext';
+import { gradientFor } from '../utils/gradients';
 
 // Marquee with 2s pause at each end
 function MarqueeText({ text, className = '' }) {
@@ -97,7 +98,7 @@ function SettingsPanel({ playbackRate, setRate, pitchShift, setPitch, onClose, c
 export default function AudioPlayer({ cardModal = false, hideCover = false, onDismiss }) {
   const { currentTrack, tracks, projectName, isPlaying, setIsPlaying, setCurrentTrack,
           progress, duration, isBuffering, seek, setVolume, setMuted, setPlaybackRate: ctxSetRate,
-          repeatMode, setRepeatMode, projectCover } = useAudio();
+          repeatMode, setRepeatMode, projectCover, projectId } = useAudio();
 
   const [volume, setVolumeState] = useState(1);
   const [isMuted, setIsMutedState] = useState(false);
@@ -173,8 +174,8 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, onDi
 
   const coverArt = currentTrack.coverArt || projectCover;
   const coverStyle = coverArt
-    ? { backgroundImage: `url(${coverArt})` }
-    : { background: 'linear-gradient(145deg,#b8ff65,#df5b9c)' };
+    ? { backgroundImage: `url(${coverArt})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+    : { background: gradientFor(projectId || currentTrack.projectId || currentTrack.id) };
 
   // ── FLOATING PILL (all pages except insights/chat) ───────────────────
   if (!cardModal) return (

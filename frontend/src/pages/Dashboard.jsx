@@ -7,24 +7,9 @@ import StarlightLogo from '../components/StarlightLogo';
 import ConfirmModal from '../components/ConfirmModal';
 import MarqueeInput from '../components/MarqueeInput';
 import { useAudio } from '../context/AudioContext';
+import { gradientFor } from '../utils/gradients';
+
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-
-const palettes = [
-  ['#ff9a9e', '#fecfef', '#fbc2eb'],
-  ['#a18cd1', '#fbc2eb', '#e0c3fc'],
-  ['#84fab0', '#8fd3f4', '#a1c4fd'],
-  ['#ffecd2', '#fcb69f', '#ff9a9e'],
-  ['#cfd9df', '#e2ebf0', '#8fd3f4'],
-  ['#fbc2eb', '#a6c1ee', '#fccb90'],
-  ['#fdcbf1', '#fdcbf1', '#e6dee9'],
-  ['#a1c4fd', '#c2e9fb', '#e0c3fc'],
-];
-
-function gradientFor(id) {
-  const sum = String(id).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  const colors = palettes[sum % palettes.length];
-  return `linear-gradient(135deg, ${colors[0]} 0%, ${colors[1]} 48%, ${colors[2]} 100%)`;
-}
 
 export function LibraryProject({ project, tracks, onDragStart, isDragging, onDelete }) {
   const { addTracksToQueue, playTrack, currentTrack, isPlaying, setIsPlaying } = useAudio();
@@ -71,23 +56,22 @@ export function LibraryProject({ project, tracks, onDragStart, isDragging, onDel
       className={`relative w-full max-w-[15rem] transition-all duration-200 ${isDragging ? 'opacity-40 scale-95 rotate-1' : ''} ${isMenuOpen || isConfirmOpen ? 'z-50' : 'z-0'}`}
     >
       <Link to={`/project/${project.id}`} className="group block w-full" draggable={false}>
-        <div 
-          className="relative aspect-square overflow-hidden rounded-[1.25rem] bg-shading"
-          style={!project.coverArt ? { backgroundImage: gradientFor(project.id) } : undefined}
+        <div
+          className="relative aspect-square overflow-hidden rounded-[1.25rem]"
+          style={{ background: gradientFor(project.id) }}
         >
           {project.coverArt ? (
-            <img src={project.coverArt} alt="" onError={(e) => { e.currentTarget.style.display = 'none'; }} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-          ) : projectTracks.length > 1 ? (
-            <div className="grid h-full w-full grid-cols-2 gap-3 bg-black/20 p-3">
-              {projectTracks.slice(0, 4).map((track) => (
-                <div key={track.id} className="rounded-xl bg-black/30 backdrop-blur-sm" />
-              ))}
+            <img
+              src={project.coverArt}
+              alt=""
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center">
+              <Disc3 className="h-12 w-12 text-white/40 drop-shadow-lg" />
             </div>
-          ) : projectTracks.length === 0 ? (
-            <div className="flex h-full items-center justify-center bg-black/20 text-white/50">
-              <Disc3 className="h-10 w-10" />
-            </div>
-          ) : null}
+          )}
           {leadTrack && (
             <button 
               onClick={(e) => {
@@ -96,7 +80,7 @@ export function LibraryProject({ project, tracks, onDragStart, isDragging, onDel
                 if (isThisProjectPlaying) {
                   setIsPlaying(!isPlaying);
                 } else {
-                  playTrack(leadTrack, projectTracks, title, project.coverArt);
+                  playTrack(leadTrack, projectTracks, title, project.coverArt, project.id);
                 }
               }}
               className="absolute bottom-3 right-3 flex h-11 w-11 items-center justify-center rounded-full bg-white text-black shadow-xl transition-transform hover:scale-110 group-hover:scale-105"
