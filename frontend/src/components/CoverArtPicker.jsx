@@ -60,7 +60,10 @@ export default function CoverArtPicker({ isOpen, onClose, onSelect, projectId, u
     try {
       await fetch(`${apiUrl}/api/covers/${cover.id}?userId=${encodeURIComponent(userId)}`, { method: 'DELETE' });
       setCovers(prev => prev.filter(c => c.id !== cover.id));
-      if (cover.url === projectCoverUrl && onRefresh) onRefresh();
+      if (cover.url === projectCoverUrl) {
+        onSelect(null);  // revert grid card to gradient immediately
+        if (onRefresh) onRefresh();
+      }
     } catch (err) {
       console.error('Delete failed', err);
     }

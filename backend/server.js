@@ -988,7 +988,12 @@ app.delete('/api/covers/:id', async (req, res) => {
   const cover = db.coverArts.find((c) => c.id === req.params.id && c.userId === userId);
   if (!cover) return res.status(404).json({ error: 'Cover art not found' });
 
+  const coverUrl = cover.url;
   db.coverArts = db.coverArts.filter(c => c.id !== req.params.id);
+  db.projects.forEach(p => {
+    if (p.coverArt === coverUrl) p.coverArt = null;
+  });
+
   await writeDB(db);
   await CoverArt.deleteOne({ id: req.params.id });
   res.json({ success: true });

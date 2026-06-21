@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bell, ChevronRight, Circle, Disc3, Edit3, Folder, FolderOpen, FolderPlus, LogOut, MessageSquare, MoreHorizontal, Music, Palette, Play, Pause, Plus, Trash2, UploadCloud, Video, X, User } from 'lucide-react';
 import ChatInbox from '../components/ChatInbox';
@@ -565,8 +565,9 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
   const [draggingId, setDraggingId] = useState(null);
   const convertInputRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
-  useEffect(() => {
+  const refreshWorkspace = () => {
     fetch(`${apiUrl}/api/workspace?userId=${encodeURIComponent(user.id)}&_t=${Date.now()}`)
       .then((res) => res.json())
       .then((data) => {
@@ -580,7 +581,12 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [user.id]);
+  };
+
+  // Re-fetch every time we land on /library (e.g. coming back from a project page)
+  useEffect(() => {
+    refreshWorkspace();
+  }, [user.id, location.pathname]);
 
   useEffect(() => {
     document.documentElement.classList.toggle('theme-light', theme === 'light');
