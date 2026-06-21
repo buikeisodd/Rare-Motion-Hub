@@ -974,8 +974,7 @@ app.post('/api/upload-cover', uploadCover.single('cover'), async (req, res) => {
     return res.status(401).json({ error: 'Unauthorized user.' });
   }
 
-  const url = fileToDataUrl(req.file);
-  removeFileIfExists(req.file.path);
+  const url = `${BASE_URL}/covers/${req.file.filename}`;
   const newCover = { id: Date.now().toString(), userId, url, mimeType: req.file.mimetype, uploadedAt: new Date().toISOString() };
   db.coverArts.push(newCover);
   await writeDB(db);
