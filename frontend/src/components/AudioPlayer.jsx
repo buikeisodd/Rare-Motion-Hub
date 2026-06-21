@@ -97,7 +97,7 @@ function SettingsPanel({ playbackRate, setRate, pitchShift, setPitch, onClose, c
 export default function AudioPlayer({ cardModal = false, hideCover = false, onDismiss }) {
   const { currentTrack, tracks, projectName, isPlaying, setIsPlaying, setCurrentTrack,
           progress, duration, isBuffering, seek, setVolume, setMuted, setPlaybackRate: ctxSetRate,
-          repeatMode, setRepeatMode } = useAudio();
+          repeatMode, setRepeatMode, projectCover } = useAudio();
 
   const [volume, setVolumeState] = useState(1);
   const [isMuted, setIsMutedState] = useState(false);
