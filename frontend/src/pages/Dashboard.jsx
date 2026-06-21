@@ -567,7 +567,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch(`${apiUrl}/api/workspace?userId=${user.id}`)
+    fetch(`${apiUrl}/api/workspace?userId=${encodeURIComponent(user.id)}&_t=${Date.now()}`)
       .then((res) => res.json())
       .then((data) => {
         setWorkspace({

@@ -70,7 +70,7 @@ export default function Project({ user }) {
   const fetchWorkspace = fetchProject;
 
   const handlePlay = (track) => {
-    playTrack(track, tracks, project.title || project.name);
+    playTrack(track, tracks, project.title || project.name, project.coverArt);
     fetch(`${apiUrl}/api/listen`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

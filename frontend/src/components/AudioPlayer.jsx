@@ -171,8 +171,9 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, onDi
 
   if (!currentTrack) return null;
 
-  const coverStyle = currentTrack.coverArt
-    ? { backgroundImage: `url(${currentTrack.coverArt})` }
+  const coverArt = currentTrack.coverArt || projectCover;
+  const coverStyle = coverArt
+    ? { backgroundImage: `url(${coverArt})` }
     : { background: 'linear-gradient(145deg,#b8ff65,#df5b9c)' };
 
   // ── FLOATING PILL (all pages except insights/chat) ───────────────────
@@ -193,7 +194,7 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, onDi
       {/* Compact floating pill */}
       <div className="flex items-center gap-2 rounded-2xl bg-[#1c1c1e]/95 backdrop-blur-xl border border-white/10 shadow-2xl px-3 py-2">
         {/* Cover art */}
-        <div className="h-9 w-9 shrink-0 rounded-lg bg-cover bg-center" style={coverStyle} />
+        <div className={`h-9 w-9 shrink-0 rounded-full bg-cover bg-center ${isPlaying ? 'animate-spin-slow' : ''}`} style={coverStyle} />
 
         {/* Title + progress */}
         <div className="w-32 min-w-0">
@@ -246,8 +247,9 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, onDi
 
       <div className="rounded-2xl bg-[#1c1c1e] border border-white/10 shadow-2xl overflow-hidden">
         {!hideCover && !collapsed && (
-          <div className="relative w-full" style={{ paddingBottom: '100%' }}>
-            <div className="absolute inset-0 bg-cover bg-center" style={coverStyle} />
+          <div className="mx-auto mt-4 mb-6 aspect-square w-48 max-w-full relative">
+            <div className={`absolute inset-0 rounded-full border-4 border-[#2c2c2e] shadow-2xl overflow-hidden bg-cover bg-center ${isPlaying ? 'animate-spin-slow' : ''}`} style={coverStyle} />
+            <div className="absolute inset-0 m-auto h-6 w-6 rounded-full bg-[#1c1c1e] border-2 border-[#2c2c2e]" />
             <button onClick={() => setCollapsed(true)} className="absolute top-2 right-2 h-6 w-6 grid place-items-center rounded-full bg-black/50 text-white/80 hover:bg-black/70">
               <ChevronDown className="h-3.5 w-3.5" />
             </button>
