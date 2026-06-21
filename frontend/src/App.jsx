@@ -45,7 +45,6 @@ function WelcomeBack({ user, onDone }) {
 
   return (
     <div className="min-h-screen bg-primary-background px-6 py-12 flex flex-col">
-      <StarlightLogo className="logo-glow h-14 w-48 text-primary-label opacity-90" />
       <main className="flex-1 flex items-center justify-center">
         <div className="w-full max-w-xl text-center animate-welcome-rise">
           <StarlightLogo className="logo-glow mx-auto mb-10 h-32 w-80 text-primary-label opacity-90 animate-record-float" />
@@ -77,7 +76,6 @@ function WelcomeAnimation({ user, onDone }) {
 
   return (
     <div className="min-h-screen bg-primary-background px-6 py-12 flex flex-col">
-      <StarlightLogo className="logo-glow h-14 w-48 text-primary-label opacity-90" />
       <main className="flex-1 flex items-center justify-center">
         <div className="text-center animate-welcome-rise">
           <StarlightLogo className="logo-glow mx-auto mb-8 h-28 w-72 text-primary-label opacity-90 animate-record-float" />
