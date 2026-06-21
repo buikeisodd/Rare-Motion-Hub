@@ -5,6 +5,12 @@ services:
     rootDir: backend
     buildCommand: npm install && npm run setup:stems
     startCommand: npm start
+    disk:
+      name: rare-motion-data
+      mountPath: /data
+      sizeGB: 1
     envVars:
       - key: NODE_VERSION
         value: 20
+      - key: DATA_DIR
+        value: /data

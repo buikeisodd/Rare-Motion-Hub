@@ -33,16 +33,17 @@ app.use((req, res, next) => {
   res.setHeader('Access-Control-Expose-Headers', 'Accept-Ranges, Content-Length, Content-Range, Content-Type');
   next();
 });
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.get('/api/ping', (req, res) => res.json({ ok: true, ts: Date.now() }));
-app.use('/covers', express.static(path.join(__dirname, 'covers')));
-app.use('/avatars', express.static(path.join(__dirname, 'avatars')));
-
-const uploadDir = path.join(__dirname, 'uploads');
-const coverDir = path.join(__dirname, 'covers');
-const avatarDir = path.join(__dirname, 'avatars');
+const baseDir = process.env.DATA_DIR || __dirname;
+const uploadDir = path.join(baseDir, 'uploads');
+const coverDir = path.join(baseDir, 'covers');
+const avatarDir = path.join(baseDir, 'avatars');
 const chatDir = path.join(uploadDir, 'chat');
-const stemsDir = path.join(__dirname, 'stems');
+const stemsDir = path.join(baseDir, 'stems');
+
+app.use('/uploads', express.static(uploadDir));
+app.get('/api/ping', (req, res) => res.json({ ok: true, ts: Date.now() }));
+app.use('/covers', express.static(coverDir));
+app.use('/avatars', express.static(avatarDir));
 
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 if (!fs.existsSync(coverDir)) fs.mkdirSync(coverDir);
