@@ -454,7 +454,7 @@ function ProfilePanel({ isOpen, user, theme, onThemeChange, onEditProfile, onLog
                 <button
                   key={mode}
                   onClick={() => onThemeChange(mode)}
-                  className={`h-11 rounded-full text-sm font-bold capitalize transition-colors ${theme === mode ? 'bg-primary-label text-primary-background' : 'bg-highlight text-primary-label hover:opacity-80'}`}
+                  className={`h-11 rounded-full text-sm font-bold capitalize transition-all active:scale-95 hover:scale-[1.02] ${theme === mode ? 'bg-primary-label text-primary-background' : 'bg-highlight text-primary-label hover:opacity-80'}`}
                 >
                   {mode}
                 </button>

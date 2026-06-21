@@ -206,7 +206,7 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, onDi
           <button onClick={toggleShuffle} className={`h-7 w-7 grid place-items-center rounded-full ${isShuffled ? 'text-white' : 'text-white/30 hover:text-white/60'}`}>
             <Shuffle className="h-3.5 w-3.5" />
           </button>
-          <button onClick={handlePrev} className="h-7 w-7 grid place-items-center rounded-full hover:bg-white/10">
+          <button onClick={handlePrev} className="h-7 w-7 grid place-items-center rounded-full text-white/70 hover:text-white transition-colors">
             <SkipBack className="h-3.5 w-3.5 fill-current" />
           </button>
           <button onClick={() => setIsPlaying(p => !p)} className="h-8 w-8 grid place-items-center rounded-full bg-white text-black hover:scale-105 transition-transform">
@@ -214,7 +214,7 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, onDi
               ? <div className="h-3 w-3 animate-spin rounded-full border-2 border-black border-t-transparent" />
               : isPlaying ? <Pause className="h-3.5 w-3.5 fill-current" /> : <Play className="h-3.5 w-3.5 fill-current ml-0.5" />}
           </button>
-          <button onClick={handleNext} className="h-7 w-7 grid place-items-center rounded-full hover:bg-white/10">
+          <button onClick={handleNext} className="h-7 w-7 grid place-items-center rounded-full text-white/70 hover:text-white transition-colors">
             <SkipForward className="h-3.5 w-3.5 fill-current" />
           </button>
           <button onClick={() => setRepeatMode(m => (m+1)%3)} className={`h-7 w-7 grid place-items-center rounded-full ${repeatMode > 0 ? 'text-white' : 'text-white/30 hover:text-white/60'}`}>
@@ -270,12 +270,12 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, onDi
           </div>
           <div className="flex items-center justify-between text-white mb-2">
             <button onClick={toggleShuffle} className={`h-7 w-7 grid place-items-center rounded-full ${isShuffled ? 'text-white' : 'text-white/30 hover:text-white/60'}`}><Shuffle className="h-3.5 w-3.5" /></button>
-            <button onClick={handlePrev} className="h-8 w-8 grid place-items-center rounded-full hover:bg-white/10"><SkipBack className="h-4 w-4 fill-current" /></button>
+            <button onClick={handlePrev} className="h-8 w-8 grid place-items-center rounded-full text-white/70 hover:text-white transition-colors"><SkipBack className="h-4 w-4 fill-current" /></button>
             <button onClick={() => setIsPlaying(p => !p)} className="h-9 w-9 grid place-items-center rounded-full bg-white text-black hover:scale-105 transition-transform">
               {isBuffering && isPlaying ? <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-black border-t-transparent" />
                 : isPlaying ? <Pause className="h-4 w-4 fill-current" /> : <Play className="h-4 w-4 fill-current ml-0.5" />}
             </button>
-            <button onClick={handleNext} className="h-8 w-8 grid place-items-center rounded-full hover:bg-white/10"><SkipForward className="h-4 w-4 fill-current" /></button>
+            <button onClick={handleNext} className="h-8 w-8 grid place-items-center rounded-full text-white/70 hover:text-white transition-colors"><SkipForward className="h-4 w-4 fill-current" /></button>
             <button onClick={() => setRepeatMode(m => (m+1)%3)} className={`h-7 w-7 grid place-items-center rounded-full ${repeatMode > 0 ? 'text-white' : 'text-white/30 hover:text-white/60'}`}>
               {repeatMode === 2 ? <Repeat1 className="h-3.5 w-3.5" /> : <Repeat className="h-3.5 w-3.5" />}
             </button>
