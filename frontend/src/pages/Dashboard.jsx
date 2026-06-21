@@ -99,12 +99,12 @@ export function LibraryProject({ project, tracks, onDragStart, isDragging, onDel
                   playTrack(leadTrack, projectTracks, title, project.coverArt);
                 }
               }}
-              className="absolute bottom-3 right-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-black/50 text-white backdrop-blur-md transition-transform hover:scale-110 group-hover:scale-105 shadow-xl"
+              className="absolute bottom-3 right-3 flex h-11 w-11 items-center justify-center rounded-full bg-white text-black shadow-xl transition-transform hover:scale-110 group-hover:scale-105"
             >
               {isThisProjectPlaying && isPlaying ? (
-                <Pause className="h-6 w-6 fill-current" />
+                <Pause className="h-5 w-5 fill-current" />
               ) : (
-                <Play className="h-6 w-6 fill-current translate-x-0.5" />
+                <Play className="h-5 w-5 fill-current translate-x-0.5" />
               )}
             </button>
           )}

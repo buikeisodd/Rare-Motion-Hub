@@ -203,6 +203,9 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, onDi
 
         {/* Core controls */}
         <div className="flex items-center gap-1 text-white shrink-0">
+          <button onClick={toggleShuffle} className={`h-7 w-7 grid place-items-center rounded-full ${isShuffled ? 'text-white' : 'text-white/30 hover:text-white/60'}`}>
+            <Shuffle className="h-3.5 w-3.5" />
+          </button>
           <button onClick={handlePrev} className="h-7 w-7 grid place-items-center rounded-full hover:bg-white/10">
             <SkipBack className="h-3.5 w-3.5 fill-current" />
           </button>
@@ -213,6 +216,9 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, onDi
           </button>
           <button onClick={handleNext} className="h-7 w-7 grid place-items-center rounded-full hover:bg-white/10">
             <SkipForward className="h-3.5 w-3.5 fill-current" />
+          </button>
+          <button onClick={() => setRepeatMode(m => (m+1)%3)} className={`h-7 w-7 grid place-items-center rounded-full ${repeatMode > 0 ? 'text-white' : 'text-white/30 hover:text-white/60'}`}>
+            {repeatMode === 2 ? <Repeat1 className="h-3.5 w-3.5" /> : <Repeat className="h-3.5 w-3.5" />}
           </button>
         </div>
 
