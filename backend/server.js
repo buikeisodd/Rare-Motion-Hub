@@ -790,6 +790,7 @@ app.delete('/api/folders/:id', async (req, res) => {
 
   db.folders.splice(folderIndex, 1);
   await writeDB(db);
+  await Folder.deleteOne({ id: req.params.id });
   res.json({ success: true });
 });
 
@@ -857,10 +858,20 @@ app.delete('/api/projects/:id', async (req, res) => {
   if (!userId) return;
   const project = db.projects.find((p) => p.id === req.params.id && p.userId === userId);
   if (!project) return res.status(404).json({ error: 'Project not found' });
+  const tracksToDelete = db.tracks.filter(t => t.projectId === req.params.id && (t.userId === userId || t.uploader?.id === userId));
+  for (const track of tracksToDelete) {
+    removeTrackFiles(track);
+    removeDirIfExists(path.join(stemsDir, trackOwnerId(track), track.id));
+  }
 
   db.projects = db.projects.filter(p => p.id !== req.params.id);
   db.tracks = db.tracks.filter(t => !(t.projectId === req.params.id && (t.userId === userId || t.uploader?.id === userId)));
   await writeDB(db);
+
+  await Project.deleteOne({ id: req.params.id });
+  await Track.deleteMany({ projectId: req.params.id, $or: [{ userId }, { 'uploader.id': userId }] });
+  await CoverArt.deleteMany({ projectId: req.params.id });
+
   res.json({ success: true });
 });
 
@@ -979,6 +990,7 @@ app.delete('/api/covers/:id', async (req, res) => {
 
   db.coverArts = db.coverArts.filter(c => c.id !== req.params.id);
   await writeDB(db);
+  await CoverArt.deleteOne({ id: req.params.id });
   res.json({ success: true });
 });
 
