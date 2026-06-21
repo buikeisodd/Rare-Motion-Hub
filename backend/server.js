@@ -877,10 +877,13 @@ app.delete('/api/projects/:id', async (req, res) => {
 });
 
 app.get('/api/covers', async (req, res) => {
-  const { projectId, userId } = req.query;
-  if (!projectId || !userId) return res.status(400).json({ error: 'projectId and userId required.' });
-  const covers = await CoverArt.find({ projectId, userId }).lean();
-  res.json({ covers: covers.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) });
+  const { userId } = req.query;
+  if (!userId) return res.status(400).json({ error: 'userId required.' });
+  const db = ensureDBShape(await readDB());
+  const covers = db.coverArts
+    .filter(c => c.userId === userId)
+    .sort((a, b) => new Date(b.uploadedAt || 0) - new Date(a.uploadedAt || 0));
+  res.json({ covers });
 });
 
 app.put('/api/projects/:id/cover', async (req, res) => {
@@ -888,11 +891,8 @@ app.put('/api/projects/:id/cover', async (req, res) => {
   const db = ensureDBShape(await readDB());
   const projIndex = db.projects.findIndex(p => p.id === req.params.id && p.userId === userId);
   if (projIndex === -1) return res.status(404).json({ error: 'Project not found' });
-  if (coverUrl && !db.coverArts.some((cover) => cover.url === coverUrl && cover.userId === userId)) {
-    return res.status(404).json({ error: 'Cover art not found' });
-  }
-  
-  db.projects[projIndex].coverArt = coverUrl;
+
+  db.projects[projIndex].coverArt = coverUrl || null;
   await writeDB(db);
   res.json(db.projects[projIndex]);
 });

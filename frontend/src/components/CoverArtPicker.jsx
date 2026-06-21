@@ -16,7 +16,7 @@ export default function CoverArtPicker({ isOpen, onClose, onSelect, projectId, u
     async function loadCovers() {
       setLoading(true);
       try {
-        const res = await fetch(`${apiUrl}/api/covers?projectId=${encodeURIComponent(projectId)}&userId=${encodeURIComponent(userId)}`);
+        const res = await fetch(`${apiUrl}/api/covers?userId=${encodeURIComponent(userId)}`);
         const data = await res.json();
         if (!cancelled) {
           setCovers((data.covers || []).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));

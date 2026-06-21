@@ -34,7 +34,7 @@ export default function Project({ user }) {
   const navigate = useNavigate();
   const [project, setProject] = useState(null);
   const [tracks, setTracks] = useState([]);
-  const { currentTrack, isPlaying, playTrack, addToQueue, setCurrentTrack, setIsPlaying } = useAudio();
+  const { currentTrack, isPlaying, playTrack, addToQueue, setCurrentTrack, setIsPlaying, setProjectCover } = useAudio();
   const [loading, setLoading] = useState(true);
   const [dragTrackId, setDragTrackId] = useState(null);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
@@ -85,6 +85,7 @@ export default function Project({ user }) {
 
   const handleCoverSelect = (newCoverUrl) => {
     setProject((prev) => ({ ...prev, coverArt: newCoverUrl }));
+    setProjectCover(newCoverUrl); // update spinning disc in AudioPlayer live
   };
 
   const saveProjectMetadata = async () => {
