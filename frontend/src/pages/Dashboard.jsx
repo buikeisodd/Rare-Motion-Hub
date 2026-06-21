@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bell, ChevronRight, Circle, Disc3, Edit3, Folder, FolderOpen, FolderPlus, LogOut, MessageSquare, MoreHorizontal, Music, Palette, Play, Plus, Trash2, UploadCloud, Video, X } from 'lucide-react';
+import { Bell, ChevronRight, Circle, Disc3, Edit3, Folder, FolderOpen, FolderPlus, LogOut, MessageSquare, MoreHorizontal, Music, Palette, Play, Pause, Plus, Trash2, UploadCloud, Video, X, User } from 'lucide-react';
 import ChatInbox from '../components/ChatInbox';
 import StarlightLogo from '../components/StarlightLogo';
 import ConfirmModal from '../components/ConfirmModal';
@@ -27,12 +27,13 @@ function gradientFor(id) {
 }
 
 export function LibraryProject({ project, tracks, onDragStart, isDragging, onDelete }) {
-  const { addTracksToQueue } = useAudio();
+  const { addTracksToQueue, playTrack, currentTrack, isPlaying, setIsPlaying } = useAudio();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const projectTracks = (tracks || []).filter((track) => track.projectId === project.id);
   const leadTrack = projectTracks[0];
   const title = project.title || project.name || 'Untitled project';
   const artist = project.artist || leadTrack?.artist || leadTrack?.producer || 'Unknown artist';
+  const isThisProjectPlaying = projectTracks.some(t => t.id === currentTrack?.id);
 
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
@@ -88,9 +89,24 @@ export function LibraryProject({ project, tracks, onDragStart, isDragging, onDel
             </div>
           ) : null}
           {leadTrack && (
-            <span className="absolute bottom-3 right-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-shading text-primary-label backdrop-blur-md transition-transform group-hover:scale-105">
-              <Play className="h-6 w-6 fill-current translate-x-0.5" />
-            </span>
+            <button 
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (isThisProjectPlaying) {
+                  setIsPlaying(!isPlaying);
+                } else {
+                  playTrack(leadTrack, projectTracks, title, project.coverArt);
+                }
+              }}
+              className="absolute bottom-3 right-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-shading text-primary-label backdrop-blur-md transition-transform hover:scale-110 group-hover:scale-105"
+            >
+              {isThisProjectPlaying && isPlaying ? (
+                <Pause className="h-6 w-6 fill-current" />
+              ) : (
+                <Play className="h-6 w-6 fill-current translate-x-0.5" />
+              )}
+            </button>
           )}
         </div>
         <div className="mt-4 flex items-start justify-between gap-3 overflow-hidden">
@@ -339,11 +355,8 @@ function ProfileAvatar({ user, size = 'h-11 w-11', className = '' }) {
   }
 
   return (
-    <div className={`${size} ${className} relative overflow-hidden shrink-0 rounded-full shadow-lg`}>
-      <div className="absolute inset-0 bg-[linear-gradient(-45deg,#f7fbf1,#ff9bdf,#62e5ff,#a18cd1,#fbc2eb)] bg-[length:400%_400%] animate-cosmic" />
-      <div className="absolute inset-0 flex items-center justify-center font-['Georgia'] italic font-bold text-black/60 mix-blend-overlay" style={{ fontSize: '110%' }}>
-        S
-      </div>
+    <div className={`${size} ${className} relative overflow-hidden shrink-0 rounded-full shadow-lg bg-shading flex items-center justify-center`}>
+      <User className="h-1/2 w-1/2 text-secondary-label" />
     </div>
   );
 }
@@ -377,7 +390,7 @@ function NotificationsMenu({ isOpen, notifications, conversations }) {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: -10 }}
           transition={{ duration: 0.15 }}
-          className="absolute left-auto right-0 top-16 z-50 w-72 rounded-[1.25rem] border border-border panel-bg p-3 shadow-2xl origin-top-right"
+          className="absolute left-auto right-0 top-full mt-2 z-50 w-72 rounded-[1.25rem] border border-border panel-bg p-3 shadow-2xl origin-top-right"
         >
           <h2 className="px-2 pb-2 text-sm font-bold text-primary-label">Notifications</h2>
           {allNotifications.length === 0 ? (
@@ -416,7 +429,7 @@ function ProfilePanel({ isOpen, user, theme, onThemeChange, onEditProfile, onLog
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: -10 }}
           transition={{ duration: 0.15 }}
-          className="absolute left-auto right-0 top-16 z-50 w-64 rounded-[1.25rem] border border-border panel-bg p-2.5 shadow-2xl origin-top-right"
+          className="absolute left-auto right-0 top-full mt-2 z-50 w-64 rounded-[1.25rem] border border-border panel-bg p-2.5 shadow-2xl origin-top-right"
         >
           <div className="mb-2 flex items-center gap-3 rounded-xl bg-shading p-2">
             <ProfileAvatar user={user} size="h-12 w-12" />
