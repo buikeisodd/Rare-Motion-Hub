@@ -390,7 +390,7 @@ function NotificationsMenu({ isOpen, notifications, conversations }) {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: -10 }}
           transition={{ duration: 0.15 }}
-          className="absolute left-auto right-0 top-full mt-2 z-50 w-72 rounded-[1.25rem] border border-border panel-bg p-3 shadow-2xl origin-top-right"
+          className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-50 w-72 rounded-[1.25rem] border border-border panel-bg p-3 shadow-2xl origin-top"
         >
           <h2 className="px-2 pb-2 text-sm font-bold text-primary-label">Notifications</h2>
           {allNotifications.length === 0 ? (
@@ -429,7 +429,7 @@ function ProfilePanel({ isOpen, user, theme, onThemeChange, onEditProfile, onLog
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: -10 }}
           transition={{ duration: 0.15 }}
-          className="absolute left-auto right-0 top-full mt-2 z-50 w-64 rounded-[1.25rem] border border-border panel-bg p-2.5 shadow-2xl origin-top-right"
+          className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-50 w-64 rounded-[1.25rem] border border-border panel-bg p-2.5 shadow-2xl origin-top"
         >
           <div className="mb-2 flex items-center gap-3 rounded-xl bg-shading p-2">
             <ProfileAvatar user={user} size="h-12 w-12" />
@@ -462,10 +462,6 @@ function ProfilePanel({ isOpen, user, theme, onThemeChange, onEditProfile, onLog
             </div>
           </div>
 
-          <button onClick={onLogout} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
-            <LogOut className="h-5 w-5" />
-            Sign out
-          </button>
           <button onClick={onDeleteAccount} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-red-500 hover:bg-red-500/10 transition-colors">
             <Trash2 className="h-5 w-5" />
             Delete Account
