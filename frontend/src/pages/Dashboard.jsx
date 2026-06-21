@@ -938,7 +938,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
           className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-shading border border-border px-5 text-sm font-semibold text-primary-label shadow-xl backdrop-blur-md transition-colors hover:bg-highlight"
         >
           <Plus className={`h-4 w-4 transition-transform duration-200 ${isAddMenuOpen ? 'rotate-45' : ''}`} />
-          {isAddMenuOpen ? 'Close' : '+ Add'}
+          {isAddMenuOpen ? 'Close' : 'Add'}
         </button>
       </div>
 
