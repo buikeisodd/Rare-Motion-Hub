@@ -749,9 +749,16 @@ app.put('/api/folders/:id/move', async (req, res) => {
     }
   }
 
-  db.folders[folderIndex].parentFolderId = parentFolderId || null;
+  const nextParentFolderId = parentFolderId || null;
+  db.folders[folderIndex].parentFolderId = nextParentFolderId;
+  db.folders[folderIndex].updatedAt = new Date().toISOString();
   await writeDB(db);
-  res.json(db.folders[folderIndex]);
+  const movedFolder = await Folder.findOneAndUpdate(
+    { id: req.params.id, userId },
+    { parentFolderId: nextParentFolderId, updatedAt: db.folders[folderIndex].updatedAt },
+    { new: true, lean: true }
+  );
+  res.json(normalizeLibraryItem(movedFolder || db.folders[folderIndex], db, 'folder'));
 });
 
 app.put('/api/folders/:id', async (req, res) => {
@@ -847,10 +854,17 @@ app.put('/api/projects/:id/move', async (req, res) => {
   if (folderId && !db.folders.some((folder) => folder.id === folderId && folder.userId === userId)) {
     return res.status(404).json({ error: 'Folder not found' });
   }
-  
-  db.projects[projIndex].folderId = folderId; // Can be null to move to root
+
+  const nextFolderId = folderId || null;
+  db.projects[projIndex].folderId = nextFolderId; // Can be null to move to root
+  db.projects[projIndex].updatedAt = new Date().toISOString();
   await writeDB(db);
-  res.json(db.projects[projIndex]);
+  const movedProject = await Project.findOneAndUpdate(
+    { id: req.params.id, userId },
+    { folderId: nextFolderId, updatedAt: db.projects[projIndex].updatedAt },
+    { new: true, lean: true }
+  );
+  res.json(normalizeLibraryItem(movedProject || db.projects[projIndex], db, 'project'));
 });
 
 app.delete('/api/projects/:id', async (req, res) => {

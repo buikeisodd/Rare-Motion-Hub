@@ -615,11 +615,12 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
   };
 
   const moveItem = async (itemId, itemType, targetFolderId) => {
-    // Optimistically remove item from root grid
     if (itemType === 'project') {
       setWorkspace((prev) => ({
         ...prev,
-        projects: prev.projects.filter((p) => p.id !== itemId)
+        projects: prev.projects.map((p) => (
+          p.id === itemId ? { ...p, folderId: targetFolderId } : p
+        ))
       }));
       await fetch(`${apiUrl}/api/projects/${itemId}/move`, {
         method: 'PUT',
