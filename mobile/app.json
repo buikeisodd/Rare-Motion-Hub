@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "Rare Motion Hub",
+    "slug": "rare-motion-hub",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "raremotionhub",
+    "userInterfaceStyle": "automatic",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.raremotionhub.mobile"
+    },
+    "android": {
+      "package": "com.raremotionhub.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#050505"
+      }
+    },
+    "extra": {
+      "apiUrl": "https://rare-motion-hub.onrender.com"
+    },
+    "plugins": [
+      "expo-font",
+      "expo-audio"
+    ]
+  }
+}

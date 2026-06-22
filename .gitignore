@@ -5,5 +5,10 @@ backend/uploads/
 backend/covers/
 .env
 dist/
+mobile/.expo/
+mobile/dist/
+mobile/build/
+mobile/android/
+mobile/ios/
 .DS_Store
 .db.json
