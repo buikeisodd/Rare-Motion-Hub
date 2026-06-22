@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   FlatList,
   Image,
   KeyboardAvoidingView,
@@ -24,7 +25,7 @@ import { api } from './src/api';
 import { clearUser, getLastEmail, getStoredUser, storeLastEmail, storeUser } from './src/storage';
 import { colors, gradientFor } from './src/theme';
 
-function IconButton({ name, onPress, label, tone = 'dark' }) {
+function IconButton({ name, onPress, label, tone = 'dark', badge = 0 }) {
   return (
     <Pressable
       onPress={onPress}
@@ -36,16 +37,30 @@ function IconButton({ name, onPress, label, tone = 'dark' }) {
       ]}
     >
       <Ionicons name={name} size={20} color={tone === 'light' ? colors.bg : colors.ink} />
+      {badge > 0 && <View style={styles.badge} />}
     </Pressable>
   );
 }
 
 function LogoMark({ small = false }) {
+  const pulse = useRef(new Animated.Value(0.72)).current;
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1, duration: 1400, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0.72, duration: 1400, useNativeDriver: true })
+      ])
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [pulse]);
+
   return (
-    <View style={[styles.logoWrap, small && styles.logoWrapSmall]}>
+    <Animated.View style={[styles.logoWrap, small && styles.logoWrapSmall, { opacity: pulse }]}>
       <Text style={[styles.logoText, small && styles.logoTextSmall]}>Starlight</Text>
       <Text style={[styles.logoSubText, small && styles.logoSubTextSmall]}>Station</Text>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -126,17 +141,30 @@ function LoginScreen({ onLogin }) {
   );
 }
 
-function LibraryHeader({ user, title, subtitle, onBack, onLogout, onRefresh }) {
+function ProfileAvatar({ user, size = 44 }) {
+  if (user?.avatarUrl) {
+    const separator = user.avatarUrl.includes('?') ? '&' : '?';
+    const src = `${user.avatarUrl}${separator}v=${encodeURIComponent(user.updatedAt || user.avatarUpdatedAt || '')}`;
+    return <Image source={{ uri: src }} style={{ width: size, height: size, borderRadius: size / 2 }} />;
+  }
+  return (
+    <View style={[styles.avatarFallback, { width: size, height: size, borderRadius: size / 2 }]}>
+      <Ionicons name="person" size={Math.max(18, size * 0.44)} color={colors.ink} />
+    </View>
+  );
+}
+
+function LibraryHeader({ user, title, subtitle, onBack, onNotifications, onProfile, onSettings, notificationCount = 0 }) {
   return (
     <View style={styles.header}>
       <View style={styles.headerTop}>
         {onBack ? <IconButton name="chevron-back" label="Back" onPress={onBack} /> : <LogoMark small />}
         <View style={styles.headerActions}>
-          {onRefresh && <IconButton name="refresh" label="Refresh" onPress={onRefresh} />}
-          {onLogout && <IconButton name="log-out-outline" label="Log out" onPress={onLogout} />}
+          <IconButton name="notifications" label="Notifications" onPress={onNotifications} tone={notificationCount > 0 ? 'light' : 'dark'} badge={notificationCount} />
+          <IconButton name="person" label="Profile" onPress={onProfile} />
+          <IconButton name="settings" label="Settings" onPress={onSettings} />
         </View>
       </View>
-      <Text style={styles.kicker}>Starlight Station</Text>
       <Text style={styles.pageTitle}>{title}</Text>
       {!!subtitle && <Text style={styles.pageSubtitle}>{subtitle}</Text>}
     </View>
@@ -152,7 +180,7 @@ function ProjectCard({ project, tracks, onOpen, onMove, onPlay }) {
     <Pressable onPress={onOpen} style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
       <Artwork item={project}>
         <Pressable onPress={projectTracks.length ? onPlay : undefined} style={styles.playBubble}>
-          <Ionicons name="play" size={18} color={colors.bg} style={{ marginLeft: 2 }} />
+          <Ionicons name="play" size={18} color={colors.ink} style={{ marginLeft: 2 }} />
         </Pressable>
       </Artwork>
       <View style={styles.cardBody}>
@@ -210,17 +238,125 @@ function EmptyState({ icon, title, copy }) {
 }
 
 function CreateBar({ onCreateProject, onCreateFolder }) {
+  const [open, setOpen] = useState(false);
+
   return (
-    <View style={styles.createBar}>
-      <Pressable onPress={onCreateProject} style={({ pressed }) => [styles.createButton, pressed && styles.pressed]}>
-        <Ionicons name="add" size={19} color={colors.bg} />
-        <Text style={styles.createButtonText}>Project</Text>
-      </Pressable>
-      <Pressable onPress={onCreateFolder} style={({ pressed }) => [styles.createButtonSecondary, pressed && styles.pressed]}>
-        <Ionicons name="folder-open" size={18} color={colors.ink} />
-        <Text style={styles.createButtonSecondaryText}>Folder</Text>
+    <View pointerEvents="box-none" style={styles.createWrap}>
+      {open && (
+        <View style={styles.addMenu}>
+          <Pressable onPress={() => Alert.alert('Import', 'Audio import is coming next.')} style={styles.addMenuRow}>
+            <Ionicons name="pulse" size={20} color={colors.ink} />
+            <Text style={styles.addMenuText}>Import</Text>
+          </Pressable>
+          <Pressable onPress={() => Alert.alert('Convert', 'Video conversion is available on desktop for now.')} style={styles.addMenuRow}>
+            <Ionicons name="play-square-outline" size={20} color={colors.ink} />
+            <Text style={styles.addMenuText}>Convert</Text>
+          </Pressable>
+          <Pressable onPress={() => Alert.alert('Record', 'Mobile recording is coming next.')} style={styles.addMenuRow}>
+            <Ionicons name="radio-button-on" size={20} color="#ff0a54" />
+            <Text style={styles.addMenuText}>Record</Text>
+          </Pressable>
+          <View style={styles.addMenuDivider} />
+          <Pressable onPress={() => { setOpen(false); onCreateProject(); }} style={styles.addMenuRow}>
+            <Ionicons name="duplicate-outline" size={20} color={colors.ink} />
+            <Text style={styles.addMenuText}>Project</Text>
+          </Pressable>
+          <Pressable onPress={() => { setOpen(false); onCreateFolder(); }} style={styles.addMenuRow}>
+            <Ionicons name="file-tray-stacked-outline" size={20} color={colors.ink} />
+            <Text style={styles.addMenuText}>Folder</Text>
+          </Pressable>
+        </View>
+      )}
+      <Pressable onPress={() => setOpen((value) => !value)} style={({ pressed }) => [styles.addPill, pressed && styles.pressed]}>
+        <Ionicons name={open ? 'close' : 'add'} size={22} color={colors.ink} />
+        <Text style={styles.addPillText}>{open ? 'Close' : 'Add'}</Text>
       </Pressable>
     </View>
+  );
+}
+
+function NotificationsSheet({ visible, notifications, onClose, onMarkRead }) {
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <Pressable style={styles.modalShade} onPress={onClose} />
+      <View style={styles.sheet}>
+        <View style={styles.sheetHandle} />
+        <View style={styles.sheetTitleRow}>
+          <Text style={styles.sheetTitle}>Notifications</Text>
+          <Pressable onPress={onMarkRead}><Text style={styles.sheetAction}>Mark read</Text></Pressable>
+        </View>
+        <ScrollView style={{ maxHeight: 420 }} showsVerticalScrollIndicator={false}>
+          {notifications.length === 0 ? (
+            <Text style={styles.sheetCopy}>No notifications yet.</Text>
+          ) : notifications.map((notification) => (
+            <View key={notification.id} style={styles.notificationRow}>
+              <ProfileAvatar user={notification.actor} size={38} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.notificationText}>{notification.message || `${notification.actor?.name || 'Someone'} listened to your work`}</Text>
+                <Text style={styles.notificationTime}>{new Date(notification.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</Text>
+              </View>
+            </View>
+          ))}
+        </ScrollView>
+      </View>
+    </Modal>
+  );
+}
+
+function ProfileSheet({ visible, user, saving, onClose, onSave }) {
+  const [name, setName] = useState(user?.name || '');
+
+  useEffect(() => setName(user?.name || ''), [user?.name, visible]);
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <Pressable style={styles.modalShade} onPress={onClose} />
+      <View style={styles.sheet}>
+        <View style={styles.sheetHandle} />
+        <View style={styles.profileHero}>
+          <ProfileAvatar user={user} size={76} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.sheetTitle}>Profile</Text>
+            <Text numberOfLines={1} style={styles.sheetCopy}>{user?.email}</Text>
+          </View>
+        </View>
+        <View style={styles.inputRow}>
+          <Ionicons name="person-outline" size={20} color={colors.muted} />
+          <TextInput value={name} onChangeText={setName} placeholder="Username" placeholderTextColor={colors.muted} style={styles.input} />
+        </View>
+        <Pressable disabled={saving} onPress={() => onSave(name.trim())} style={({ pressed }) => [styles.primaryButton, styles.sheetButton, pressed && styles.pressed]}>
+          {saving ? <ActivityIndicator color={colors.bg} /> : <Text style={styles.primaryButtonText}>Save profile</Text>}
+        </Pressable>
+      </View>
+    </Modal>
+  );
+}
+
+function SettingsSheet({ visible, theme, onThemeChange, onLogout, onDeleteAccount, onClose }) {
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <Pressable style={styles.modalShade} onPress={onClose} />
+      <View style={styles.sheet}>
+        <View style={styles.sheetHandle} />
+        <Text style={styles.sheetTitle}>Settings</Text>
+        <Text style={styles.sheetCopy}>Theme</Text>
+        <View style={styles.segment}>
+          {['dark', 'light'].map((mode) => (
+            <Pressable key={mode} onPress={() => onThemeChange(mode)} style={[styles.segmentButton, theme === mode && styles.segmentButtonActive]}>
+              <Text style={[styles.segmentText, theme === mode && styles.segmentTextActive]}>{mode}</Text>
+            </Pressable>
+          ))}
+        </View>
+        <Pressable onPress={onLogout} style={styles.sheetRow}>
+          <Ionicons name="log-out-outline" size={20} color={colors.ink} />
+          <Text style={styles.sheetRowText}>Sign out</Text>
+        </Pressable>
+        <Pressable onPress={onDeleteAccount} style={styles.sheetRowDanger}>
+          <Ionicons name="trash-outline" size={20} color={colors.red} />
+          <Text style={styles.sheetRowDangerText}>Delete account</Text>
+        </Pressable>
+      </View>
+    </Modal>
   );
 }
 
@@ -264,7 +400,7 @@ function MiniPlayer({ playback, onToggle, onClose }) {
   );
 }
 
-function LibraryScreen({ user, workspace, loading, refreshing, onRefresh, onLogout, onOpenFolder, onOpenProject, onCreateProject, onCreateFolder, onMoveProject, onPlayProject }) {
+function LibraryScreen({ user, workspace, loading, refreshing, onRefresh, onOpenFolder, onOpenProject, onCreateProject, onCreateFolder, onMoveProject, onPlayProject, onNotifications, onProfile, onSettings }) {
   const rootProjects = workspace.projects.filter((project) => !project.folderId);
   const rootFolders = workspace.folders;
   const data = [
@@ -274,12 +410,21 @@ function LibraryScreen({ user, workspace, loading, refreshing, onRefresh, onLogo
 
   return (
     <SafeAreaView style={styles.screen}>
-      <LibraryHeader user={user} title="Library" subtitle="Keep every idea close, sorted, and ready to play." onLogout={onLogout} onRefresh={onRefresh} />
+      <LibraryHeader
+        user={user}
+        title="[untitled]"
+        onNotifications={onNotifications}
+        onProfile={onProfile}
+        onSettings={onSettings}
+        notificationCount={workspace.notifications.filter((notification) => !notification.read).length}
+      />
       {loading ? (
         <ActivityIndicator color={colors.accent} style={{ marginTop: 60 }} />
       ) : (
         <FlatList
           data={data}
+          numColumns={2}
+          columnWrapperStyle={styles.gridRow}
           keyExtractor={(entry) => `${entry.type}:${entry.item.id}`}
           contentContainerStyle={styles.listContent}
           refreshControl={<RefreshControl tintColor={colors.accent} refreshing={refreshing} onRefresh={onRefresh} />}
@@ -307,7 +452,7 @@ function LibraryScreen({ user, workspace, loading, refreshing, onRefresh, onLogo
   );
 }
 
-function FolderScreen({ user, folderData, loading, onBack, onOpenFolder, onOpenProject, onCreateProject, onCreateFolder, onMoveProject, onPlayProject }) {
+function FolderScreen({ user, folderData, loading, onBack, onOpenFolder, onOpenProject, onCreateProject, onCreateFolder, onMoveProject, onPlayProject, onNotifications, onProfile, onSettings, notificationCount }) {
   const folder = folderData?.folder;
   const folders = folderData?.folders || [];
   const projects = folderData?.projects || [];
@@ -322,14 +467,19 @@ function FolderScreen({ user, folderData, loading, onBack, onOpenFolder, onOpenP
       <LibraryHeader
         user={user}
         title={folder?.title || folder?.name || 'Folder'}
-        subtitle={folder?.artist || 'Projects inside this folder'}
         onBack={onBack}
+        onNotifications={onNotifications}
+        onProfile={onProfile}
+        onSettings={onSettings}
+        notificationCount={notificationCount}
       />
       {loading ? (
         <ActivityIndicator color={colors.accent} style={{ marginTop: 60 }} />
       ) : (
         <FlatList
           data={data}
+          numColumns={2}
+          columnWrapperStyle={styles.gridRow}
           keyExtractor={(entry) => `${entry.type}:${entry.item.id}`}
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={<EmptyState icon="folder-open-outline" title="This folder is empty" copy="Create something here or move projects into this folder." />}
@@ -399,6 +549,11 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [moveProject, setMoveProject] = useState(null);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [theme, setTheme] = useState('dark');
   const [playback, setPlayback] = useState({ player: null, track: null, project: null, tracks: [], playing: false });
   const playerRef = useRef(null);
 
@@ -587,6 +742,58 @@ export default function App() {
     setPlayback({ player: null, track: null, project: null, tracks: [], playing: false });
   };
 
+  const markNotificationsRead = async () => {
+    try {
+      await api(`/api/notifications/read?userId=${encodeURIComponent(user.id)}`, { method: 'POST' });
+      setWorkspace((prev) => ({
+        ...prev,
+        notifications: prev.notifications.map((notification) => ({ ...notification, read: true }))
+      }));
+    } catch (error) {
+      Alert.alert('Could not update notifications', error.message);
+    }
+  };
+
+  const saveProfile = async (name) => {
+    if (!name) return;
+    setProfileSaving(true);
+    try {
+      const data = await api(`/api/users/${user.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ name })
+      });
+      await storeUser(data.user);
+      setUser(data.user);
+      setIsProfileOpen(false);
+    } catch (error) {
+      Alert.alert('Could not save profile', error.message);
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
+  const deleteAccount = () => {
+    Alert.alert(
+      'Delete account?',
+      'This deletes your account and all of its projects, tracks, folders, and cover art.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await api(`/api/users/${user.id}`, { method: 'DELETE' });
+              await logout();
+            } catch (error) {
+              Alert.alert('Could not delete account', error.message);
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const logout = async () => {
     await closePlayer();
     await clearUser();
@@ -629,6 +836,10 @@ export default function App() {
       onCreateFolder={createFolder}
       onMoveProject={setMoveProject}
       onPlayProject={playProject}
+      onNotifications={() => setIsNotificationsOpen(true)}
+      onProfile={() => setIsProfileOpen(true)}
+      onSettings={() => setIsSettingsOpen(true)}
+      notificationCount={workspace.notifications.filter((notification) => !notification.read).length}
     />
   ) : (
     <LibraryScreen
@@ -637,13 +848,15 @@ export default function App() {
       loading={loading}
       refreshing={refreshing}
       onRefresh={refreshWorkspace}
-      onLogout={logout}
       onOpenFolder={openFolder}
       onOpenProject={openProject}
       onCreateProject={createProject}
       onCreateFolder={createFolder}
       onMoveProject={setMoveProject}
       onPlayProject={playProject}
+      onNotifications={() => setIsNotificationsOpen(true)}
+      onProfile={() => setIsProfileOpen(true)}
+      onSettings={() => setIsSettingsOpen(true)}
     />
   );
 
@@ -657,6 +870,27 @@ export default function App() {
         folders={allFolders.filter((folder) => folder.id !== moveProject?.folderId)}
         onClose={() => setMoveProject(null)}
         onMove={moveSelectedProject}
+      />
+      <NotificationsSheet
+        visible={isNotificationsOpen}
+        notifications={workspace.notifications}
+        onClose={() => setIsNotificationsOpen(false)}
+        onMarkRead={markNotificationsRead}
+      />
+      <ProfileSheet
+        visible={isProfileOpen}
+        user={user}
+        saving={profileSaving}
+        onClose={() => setIsProfileOpen(false)}
+        onSave={saveProfile}
+      />
+      <SettingsSheet
+        visible={isSettingsOpen}
+        theme={theme}
+        onThemeChange={setTheme}
+        onLogout={logout}
+        onDeleteAccount={deleteAccount}
+        onClose={() => setIsSettingsOpen(false)}
       />
       <StatusBar style="light" />
     </View>
@@ -797,9 +1031,9 @@ const styles = StyleSheet.create({
     gap: 10
   },
   iconButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 54,
+    height: 54,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.panelSoft,
@@ -807,8 +1041,22 @@ const styles = StyleSheet.create({
     borderColor: colors.border
   },
   iconButtonLight: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent
+    backgroundColor: colors.ink,
+    borderColor: colors.ink
+  },
+  badge: {
+    position: 'absolute',
+    right: 16,
+    top: 15,
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: '#0A84FF'
+  },
+  avatarFallback: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.panelSoft
   },
   kicker: {
     marginTop: 18,
@@ -819,10 +1067,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0
   },
   pageTitle: {
-    marginTop: 6,
+    marginTop: 28,
     color: colors.ink,
-    fontSize: 34,
-    lineHeight: 38,
+    fontSize: 26,
+    lineHeight: 32,
     fontWeight: '900',
     letterSpacing: 0
   },
@@ -833,22 +1081,27 @@ const styles = StyleSheet.create({
     lineHeight: 21
   },
   listContent: {
-    paddingHorizontal: 18,
+    paddingHorizontal: 32,
     paddingBottom: 150,
-    gap: 16
+    gap: 22
+  },
+  gridRow: {
+    gap: 28,
+    marginBottom: 28
   },
   card: {
-    borderRadius: 26,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.panel,
-    overflow: 'hidden'
+    flex: 1,
+    maxWidth: '48%',
+    backgroundColor: 'transparent',
+    overflow: 'visible'
   },
   art: {
-    aspectRatio: 1.45,
+    aspectRatio: 1,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden'
+    overflow: 'hidden',
+    backgroundColor: colors.panelSoft
   },
   artSmall: {
     width: 54,
@@ -863,10 +1116,10 @@ const styles = StyleSheet.create({
     height: '100%'
   },
   previewGrid: {
-    width: '76%',
+    width: '88%',
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 8,
     justifyContent: 'center'
   },
   playBubble: {
@@ -876,41 +1129,42 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: colors.ink,
+    backgroundColor: 'rgba(65,65,65,0.94)',
     alignItems: 'center',
     justifyContent: 'center'
   },
   cardBody: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    padding: 16
+    alignItems: 'flex-start',
+    gap: 8,
+    paddingTop: 12
   },
   cardTitle: {
     color: colors.ink,
-    fontSize: 18,
+    fontSize: 20,
+    lineHeight: 24,
     fontWeight: '900',
     letterSpacing: 0
   },
   cardMeta: {
-    marginTop: 4,
+    marginTop: 2,
     color: colors.muted,
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '700'
   },
   cardTiny: {
-    marginTop: 7,
+    marginTop: 0,
     color: '#6E6A65',
-    fontSize: 12,
+    fontSize: 0,
     fontWeight: '800'
   },
   cardMore: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.panelSoft
+    backgroundColor: 'transparent'
   },
   empty: {
     alignItems: 'center',
@@ -932,48 +1186,52 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     textAlign: 'center'
   },
-  createBar: {
+  createWrap: {
     position: 'absolute',
-    left: 18,
-    right: 18,
-    bottom: 24,
-    flexDirection: 'row',
-    gap: 12,
-    padding: 10,
-    borderRadius: 28,
-    backgroundColor: 'rgba(18,18,18,0.94)',
-    borderWidth: 1,
-    borderColor: colors.border
+    left: 0,
+    right: 0,
+    bottom: 22,
+    alignItems: 'center'
   },
-  createButton: {
-    flex: 1,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.accent,
+  addPill: {
+    minWidth: 218,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: '#303030',
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
-    gap: 8
+    gap: 10
   },
-  createButtonText: {
-    color: colors.bg,
-    fontWeight: '900',
-    fontSize: 15
-  },
-  createButtonSecondary: {
-    flex: 1,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.panelSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 8
-  },
-  createButtonSecondaryText: {
+  addPillText: {
     color: colors.ink,
     fontWeight: '900',
-    fontSize: 15
+    fontSize: 20
+  },
+  addMenu: {
+    width: 320,
+    borderRadius: 34,
+    backgroundColor: '#303030',
+    paddingVertical: 18,
+    marginBottom: 18,
+    overflow: 'hidden'
+  },
+  addMenuRow: {
+    minHeight: 54,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 20,
+    paddingHorizontal: 28
+  },
+  addMenuText: {
+    color: colors.ink,
+    fontSize: 22,
+    fontWeight: '500'
+  },
+  addMenuDivider: {
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    marginVertical: 10
   },
   projectContent: {
     padding: 18,
@@ -1087,6 +1345,17 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: 0
   },
+  sheetTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6
+  },
+  sheetAction: {
+    color: colors.accent,
+    fontSize: 13,
+    fontWeight: '900'
+  },
   sheetCopy: {
     marginTop: 5,
     marginBottom: 14,
@@ -1104,10 +1373,80 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     backgroundColor: colors.panelSoft
   },
+  sheetRowDanger: {
+    minHeight: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    marginTop: 8,
+    backgroundColor: 'rgba(255,92,108,0.08)'
+  },
   sheetRowText: {
     flex: 1,
     color: colors.ink,
     fontSize: 16,
     fontWeight: '900'
+  },
+  sheetRowDangerText: {
+    flex: 1,
+    color: colors.red,
+    fontSize: 16,
+    fontWeight: '900'
+  },
+  profileHero: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    marginBottom: 18
+  },
+  sheetButton: {
+    marginTop: 14
+  },
+  segment: {
+    flexDirection: 'row',
+    gap: 8,
+    padding: 6,
+    marginBottom: 14,
+    borderRadius: 18,
+    backgroundColor: colors.panelSoft
+  },
+  segmentButton: {
+    flex: 1,
+    minHeight: 42,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  segmentButtonActive: {
+    backgroundColor: colors.ink
+  },
+  segmentText: {
+    color: colors.muted,
+    textTransform: 'capitalize',
+    fontWeight: '900'
+  },
+  segmentTextActive: {
+    color: colors.bg
+  },
+  notificationRow: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.06)'
+  },
+  notificationText: {
+    color: colors.ink,
+    fontSize: 14,
+    lineHeight: 19,
+    fontWeight: '800'
+  },
+  notificationTime: {
+    marginTop: 4,
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '700'
   }
 });
