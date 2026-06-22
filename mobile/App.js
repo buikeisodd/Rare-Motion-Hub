@@ -43,13 +43,8 @@ function IconButton({ name, onPress, label, tone = 'dark' }) {
 function LogoMark({ small = false }) {
   return (
     <View style={[styles.logoWrap, small && styles.logoWrapSmall]}>
-      <LinearGradient colors={['#F7F4EC', '#D7FF65', '#85D7FF']} style={styles.logoDisc}>
-        <View style={styles.logoHole} />
-      </LinearGradient>
-      <View>
-        <Text style={[styles.logoText, small && styles.logoTextSmall]}>Rare</Text>
-        <Text style={[styles.logoSubText, small && styles.logoSubTextSmall]}>Motion Hub</Text>
-      </View>
+      <Text style={[styles.logoText, small && styles.logoTextSmall]}>Starlight</Text>
+      <Text style={[styles.logoSubText, small && styles.logoSubTextSmall]}>Station</Text>
     </View>
   );
 }
@@ -103,8 +98,8 @@ function LoginScreen({ onLogin }) {
       <SafeAreaView style={styles.safe}>
         <View style={styles.loginHero}>
           <LogoMark />
-          <Text style={styles.loginTitle}>Your music workspace, ready for the pocket.</Text>
-          <Text style={styles.loginCopy}>Projects, folders, playback, and collaboration stay synced with your Rare Motion Hub account.</Text>
+          <Text style={styles.loginTitle}>A sacred place for your work-in-progress music.</Text>
+          <Text style={styles.loginCopy}>Projects, folders, playback, and collaboration stay synced with your Starlight Station account.</Text>
         </View>
         <View style={styles.loginPanel}>
           <View style={styles.inputRow}>
@@ -141,7 +136,7 @@ function LibraryHeader({ user, title, subtitle, onBack, onLogout, onRefresh }) {
           {onLogout && <IconButton name="log-out-outline" label="Log out" onPress={onLogout} />}
         </View>
       </View>
-      <Text style={styles.kicker}>{user?.name || 'Library'}</Text>
+      <Text style={styles.kicker}>Starlight Station</Text>
       <Text style={styles.pageTitle}>{title}</Text>
       {!!subtitle && <Text style={styles.pageSubtitle}>{subtitle}</Text>}
     </View>
@@ -555,7 +550,7 @@ export default function App() {
       player.play();
       player.setActiveForLockScreen?.(true, {
         title: track.title || 'Untitled track',
-        artist: project?.artist || track.artist || 'Rare Motion Hub',
+        artist: project?.artist || track.artist || 'Starlight Station',
         albumTitle: project?.title || project?.name || 'Project',
         artworkUrl: project?.coverArt
       });
@@ -691,49 +686,46 @@ const styles = StyleSheet.create({
   },
   logoWrap: {
     alignItems: 'center',
-    gap: 16
+    gap: 0,
   },
   logoWrapSmall: {
-    flexDirection: 'row',
-    gap: 10
-  },
-  logoDisc: {
-    width: 78,
-    height: 78,
-    borderRadius: 39,
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  logoHole: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: colors.bg,
-    borderWidth: 3,
-    borderColor: 'rgba(247,244,236,0.8)'
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    gap: 0,
   },
   logoText: {
     color: colors.ink,
-    fontSize: 38,
+    fontSize: 36,
     lineHeight: 40,
-    fontWeight: '900',
-    letterSpacing: 0,
-    textAlign: 'center'
+    fontWeight: '300',
+    fontStyle: 'italic',
+    letterSpacing: 1,
+    textAlign: 'center',
+    textShadowColor: 'rgba(215,255,101,0.4)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 12,
   },
   logoTextSmall: {
-    fontSize: 20,
-    lineHeight: 22,
-    textAlign: 'left'
+    fontSize: 18,
+    lineHeight: 21,
+    textAlign: 'left',
   },
   logoSubText: {
-    color: colors.muted,
-    fontSize: 17,
-    fontWeight: '700',
-    textAlign: 'center'
+    color: colors.ink,
+    fontSize: 36,
+    lineHeight: 40,
+    fontWeight: '300',
+    fontStyle: 'italic',
+    letterSpacing: 1,
+    textAlign: 'center',
+    textShadowColor: 'rgba(215,255,101,0.4)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 12,
   },
   logoSubTextSmall: {
-    fontSize: 12,
-    textAlign: 'left'
+    fontSize: 18,
+    lineHeight: 21,
+    textAlign: 'left',
   },
   loginHero: {
     flex: 1,
