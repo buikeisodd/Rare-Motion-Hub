@@ -70,7 +70,7 @@ function LogoMark({ small = false }) {
 }
 
 function Artwork({ item, size = 'large', children }) {
-  const boxStyle = size === 'small' ? styles.artSmall : size === 'hero' ? styles.projectHeroArt : styles.art;
+  const boxStyle = size === 'small' ? styles.artSmall : size === 'hero' ? styles.projectHeroArt : size === 'record' ? styles.recordArt : styles.art;
   if (item?.coverArt) {
     return (
       <View style={boxStyle}>
@@ -83,6 +83,27 @@ function Artwork({ item, size = 'large', children }) {
     <LinearGradient colors={gradientFor(item?.id)} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={boxStyle}>
       {children || <Ionicons name="disc" size={size === 'small' ? 28 : 52} color="rgba(5,5,5,0.58)" />}
     </LinearGradient>
+  );
+}
+
+function formatDuration(seconds = 0) {
+  const clean = Math.max(0, Math.round(Number(seconds) || 0));
+  return `${Math.floor(clean / 60)}:${String(clean % 60).padStart(2, '0')}`;
+}
+
+function Waveform({ progress = 0.34, compact = false }) {
+  const bars = Array.from({ length: compact ? 34 : 58 }, (_, index) => {
+    const value = Math.sin(index * 0.78) + Math.cos(index * 0.31);
+    return 10 + Math.abs(value) * (compact ? 13 : 24);
+  });
+  const cursor = `${Math.max(4, Math.min(96, progress * 100))}%`;
+  return (
+    <View style={[styles.waveform, compact && styles.waveformCompact]}>
+      {bars.map((height, index) => (
+        <View key={index} style={[styles.waveBar, compact && styles.waveBarCompact, { height }]} />
+      ))}
+      <View style={[styles.waveCursor, { left: cursor }]} />
+    </View>
   );
 }
 
@@ -280,17 +301,140 @@ function CreateBar({ onCreateProject, onCreateFolder }) {
   );
 }
 
-function MiniPlayer({ playback, onToggle, onClose }) {
+function MiniPlayer({ playback, onToggle, onOpen, onShare }) {
   if (!playback.track) return null;
   return (
-    <View style={styles.miniPlayer}>
-      <Artwork item={playback.project || playback.track} size="small" />
-      <View style={{ flex: 1 }}>
+    <Pressable onPress={onOpen} style={({ pressed }) => [styles.miniPlayer, pressed && styles.pressed]}>
+      <Artwork item={playback.project || playback.track} size="small">
+        <Pressable onPress={onToggle} style={styles.miniArtButton}>
+          <Ionicons name={playback.playing ? 'pause' : 'play'} size={18} color={colors.ink} />
+        </Pressable>
+      </Artwork>
+      <View style={styles.miniCopy}>
         <Text numberOfLines={1} style={styles.miniTitle}>{playback.track.title || 'Untitled track'}</Text>
-        <Text numberOfLines={1} style={styles.miniMeta}>{playback.project?.title || playback.project?.name || 'Now playing'}</Text>
+        <Text numberOfLines={1} style={styles.miniMeta}>{playback.track.artist || playback.project?.artist || playback.project?.title || 'Now playing'}</Text>
       </View>
-      <IconButton name={playback.playing ? 'pause' : 'play'} label="Play or pause" onPress={onToggle} tone="light" />
-      <IconButton name="close" label="Close player" onPress={onClose} />
+      <Waveform compact progress={playback.progress || 0.36} />
+      <Pressable onPress={onShare} style={styles.miniShareButton}>
+        <Ionicons name="share-outline" size={22} color={colors.ink} />
+      </Pressable>
+    </Pressable>
+  );
+}
+
+function NowPlayingPage({ playback, settings, onBack, onToggle, onEdit, onShare, onSeekPrevious, onSeekNext }) {
+  const track = playback.track;
+  const project = playback.project;
+  if (!track) {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <View style={styles.pageHeader}>
+          <IconButton name="chevron-back" label="Back" onPress={onBack} />
+          <Text style={styles.pageHeaderTitle}>Now playing</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+  const duration = Number(track.duration) || 123;
+  const elapsed = Math.max(15, Math.round(duration * (playback.progress || 0.12)));
+  return (
+    <SafeAreaView style={styles.screen}>
+      <View style={styles.playerPage}>
+        <View style={styles.nowPlayingCard}>
+          <Text numberOfLines={1} style={styles.nowTitle}>{track.title || 'Untitled track'}</Text>
+          <Text numberOfLines={1} style={styles.nowMeta}>{track.artist || project?.artist || 'Unknown artist'} - {track.producer || project?.title || project?.name || 'Project'}</Text>
+          <Artwork item={project || track} size="record" />
+          <Waveform progress={playback.progress || 0.12} />
+          <Text style={styles.playerTime}>{formatDuration(elapsed)} / {formatDuration(duration)}</Text>
+          <View style={styles.transportRow}>
+            <Pressable onPress={onShare} style={styles.transportButtonPlain}>
+              <Ionicons name="share-outline" size={30} color={colors.ink} />
+            </Pressable>
+            <Pressable onPress={onSeekPrevious} style={styles.transportButtonPlain}>
+              <Ionicons name="play-back" size={32} color={colors.ink} />
+            </Pressable>
+            <Pressable onPress={onToggle} style={styles.transportButtonPlain}>
+              <Ionicons name={playback.playing ? 'pause' : 'play'} size={46} color={colors.ink} />
+            </Pressable>
+            <Pressable onPress={onSeekNext} style={styles.transportButtonPlain}>
+              <Ionicons name="play-forward" size={32} color={colors.ink} />
+            </Pressable>
+            <Pressable onPress={onSeekPrevious} style={styles.transportButtonPlain}>
+              <Ionicons name="repeat" size={28} color={colors.ink} />
+            </Pressable>
+          </View>
+        </View>
+        <View style={styles.playerFooterActions}>
+          <Pressable style={styles.playerFooterAction}>
+            <Ionicons name="document-text-outline" size={31} color={colors.ink} />
+            <Text style={styles.playerFooterText}>notes</Text>
+          </Pressable>
+          <View style={styles.playerFooterDivider} />
+          <Pressable onPress={onEdit} style={styles.playerFooterAction}>
+            <Ionicons name="options-outline" size={32} color={colors.ink} />
+            <Text style={styles.playerFooterText}>edit</Text>
+          </Pressable>
+        </View>
+        <Text style={styles.playerSettingHint}>Speed {Math.round(settings.speed * 100)}% - Pitch {settings.pitch} st</Text>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+function PlayerEditPage({ playback, settings, onBack, onSave, onCancel, onToggle, onChangeSpeed, onChangePitch }) {
+  const track = playback.track;
+  const project = playback.project;
+  const duration = Number(track?.duration) || 123;
+  const elapsed = Math.max(28, Math.round(duration * (playback.progress || 0.23)));
+  return (
+    <SafeAreaView style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.editorPage}>
+        <View style={styles.editorTop}>
+          <Pressable onPress={onCancel} style={styles.editorPill}><Text style={styles.editorPillText}>Cancel</Text></Pressable>
+          <Pressable onPress={onSave} style={[styles.editorPill, styles.editorPillDim]}><Text style={styles.editorPillText}>Save</Text></Pressable>
+        </View>
+        <Text numberOfLines={1} style={styles.editorTitle}>{track?.title || 'Untitled track'}</Text>
+        <Text numberOfLines={1} style={styles.editorMeta}>{track?.artist || project?.artist || 'Unknown artist'} - {track?.producer || project?.title || project?.name || 'Project'}</Text>
+        <View style={styles.editorChips}>
+          <Text style={styles.editorChip}>G Min</Text>
+          <Text style={styles.editorChip}>166 BPM</Text>
+          <Text style={styles.editorChip}>Settings</Text>
+        </View>
+        <Waveform progress={playback.progress || 0.23} />
+        <Text style={styles.playerTime}>{formatDuration(elapsed)} / {formatDuration(duration)}</Text>
+        <View style={styles.editorTransport}>
+          <Pressable style={styles.editorTransportButton}><Ionicons name="play-skip-back" size={31} color={colors.ink} /></Pressable>
+          <Pressable style={styles.loopButton}><Text style={styles.loopButtonText}>Hold to loop</Text></Pressable>
+          <Pressable onPress={onToggle} style={styles.editorTransportButton}><Ionicons name={playback.playing ? 'pause' : 'play'} size={31} color={colors.ink} /></Pressable>
+        </View>
+        <View style={styles.modeRow}>
+          <Text style={styles.modeActive}>VARISPEED</Text>
+          <Text style={styles.modeInactive}>GAIN</Text>
+        </View>
+        <StepperControl label="Speed" value={`${Math.round(settings.speed * 100)}%`} onMinus={() => onChangeSpeed(-0.05)} onPlus={() => onChangeSpeed(0.05)} />
+        <StepperControl label="Pitch" value={`${settings.pitch} st`} onMinus={() => onChangePitch(-1)} onPlus={() => onChangePitch(1)} />
+        <Waveform compact progress={playback.progress || 0.23} />
+        <View style={styles.editorTabs}>
+          <Text style={styles.editorTabActive}>Adjust</Text>
+          <Text style={styles.editorTab}>Stems</Text>
+          <Text style={styles.editorTab}>EQ</Text>
+          <Pressable style={styles.recordDot}><View style={styles.recordDotInner} /></Pressable>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+function StepperControl({ label, value, onMinus, onPlus }) {
+  return (
+    <View style={styles.stepper}>
+      <Text style={styles.stepperLabel}>{label}</Text>
+      <Pressable onPress={onMinus} style={styles.stepperButton}><Ionicons name="remove" size={20} color={colors.muted} /></Pressable>
+      <View style={styles.stepperTicks}>
+        {Array.from({ length: 9 }, (_, index) => <View key={index} style={styles.stepperTick} />)}
+      </View>
+      <Pressable onPress={onPlus} style={styles.stepperButton}><Ionicons name="add" size={20} color={colors.muted} /></Pressable>
+      <Text style={styles.stepperValue}>{value}</Text>
     </View>
   );
 }
@@ -675,7 +819,8 @@ export default function App() {
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [uploadingTrack, setUploadingTrack] = useState(false);
   const [offlineTracks, setOfflineTracks] = useState({});
-  const [playback, setPlayback] = useState({ player: null, track: null, project: null, tracks: [], playing: false });
+  const [playbackSettings, setPlaybackSettings] = useState({ speed: 1, pitch: 0 });
+  const [playback, setPlayback] = useState({ player: null, track: null, project: null, tracks: [], playing: false, progress: 0.12 });
   const playerRef = useRef(null);
 
   const allFolders = useMemo(() => {
@@ -693,6 +838,8 @@ export default function App() {
     if (route.name === 'contact') return setRoute(route.from || { name: 'account' });
     if (route.name === 'messages') return setRoute(route.from || { name: 'library' });
     if (route.name === 'move-project') return setRoute(route.from || { name: 'library' });
+    if (route.name === 'player-edit') return setRoute({ name: 'now-playing', from: route.from || { name: 'library' } });
+    if (route.name === 'now-playing') return setRoute(route.from || { name: 'library' });
     if (route.name === 'notifications' || route.name === 'account') return setRoute(route.from || { name: 'library' });
     if (route.name === 'project') {
       if (projectData?.project?.folderId) return openFolder(projectData.project.folderId);
@@ -881,6 +1028,7 @@ export default function App() {
       }
       playerRef.current?.remove?.();
       const player = createAudioPlayer(source);
+      player.setPlaybackRate?.(playbackSettings.speed, 'medium');
       playerRef.current = player;
       player.play();
       player.setActiveForLockScreen?.(true, {
@@ -889,7 +1037,7 @@ export default function App() {
         albumTitle: project?.title || project?.name || 'Project',
         artworkUrl: project?.coverArt
       });
-      setPlayback({ player, track, project, tracks, playing: true });
+      setPlayback({ player, track, project, tracks, playing: true, progress: 0.12 });
     } catch (error) {
       Alert.alert('Could not play track', error.message);
     }
@@ -915,11 +1063,29 @@ export default function App() {
     }
   };
 
+  const adjustPlaybackSpeed = (delta) => {
+    const speed = Math.max(0.5, Math.min(2, Number((playbackSettings.speed + delta).toFixed(2))));
+    setPlaybackSettings((prev) => ({ ...prev, speed }));
+    playerRef.current?.setPlaybackRate?.(speed, 'medium');
+  };
+
+  const adjustPlaybackPitch = (delta) => {
+    setPlaybackSettings((prev) => ({ ...prev, pitch: Math.max(-12, Math.min(12, prev.pitch + delta)) }));
+  };
+
+  const seekRelative = async (seconds) => {
+    if (!playerRef.current || !playback.track) return;
+    const duration = Number(playback.track.duration) || 123;
+    const current = Math.max(0, Math.min(duration, duration * (playback.progress || 0.12) + seconds));
+    await playerRef.current.seekTo?.(current);
+    setPlayback((prev) => ({ ...prev, progress: duration ? current / duration : prev.progress }));
+  };
+
   const closePlayer = async () => {
     playerRef.current?.clearLockScreenControls?.();
     playerRef.current?.remove?.();
     playerRef.current = null;
-    setPlayback({ player: null, track: null, project: null, tracks: [], playing: false });
+    setPlayback({ player: null, track: null, project: null, tracks: [], playing: false, progress: 0.12 });
   };
 
   const markNotificationsRead = async () => {
@@ -1131,6 +1297,15 @@ export default function App() {
     }
   };
 
+  const shareCurrentTrack = async () => {
+    const track = playback.track;
+    if (!track?.url) {
+      Alert.alert('Track unavailable', 'This track does not have a shareable URL yet.');
+      return;
+    }
+    await Share.share({ message: track.url, url: track.url });
+  };
+
   const deleteAccount = () => {
     Alert.alert(
       'Delete account?',
@@ -1173,7 +1348,29 @@ export default function App() {
     return <LoginScreen onLogin={setUser} />;
   }
 
-  const currentScreen = route.name === 'notifications' ? (
+  const currentScreen = route.name === 'now-playing' ? (
+    <NowPlayingPage
+      playback={playback}
+      settings={playbackSettings}
+      onBack={() => setRoute(route.from || { name: 'library' })}
+      onToggle={togglePlayback}
+      onEdit={() => setRoute({ name: 'player-edit', from: route.from || { name: 'library' } })}
+      onShare={shareCurrentTrack}
+      onSeekPrevious={() => seekRelative(-15)}
+      onSeekNext={() => seekRelative(15)}
+    />
+  ) : route.name === 'player-edit' ? (
+    <PlayerEditPage
+      playback={playback}
+      settings={playbackSettings}
+      onBack={() => setRoute({ name: 'now-playing', from: route.from || { name: 'library' } })}
+      onCancel={() => setRoute({ name: 'now-playing', from: route.from || { name: 'library' } })}
+      onSave={() => setRoute({ name: 'now-playing', from: route.from || { name: 'library' } })}
+      onToggle={togglePlayback}
+      onChangeSpeed={adjustPlaybackSpeed}
+      onChangePitch={adjustPlaybackPitch}
+    />
+  ) : route.name === 'notifications' ? (
     <NotificationsPage
       notifications={workspace.notifications}
       onBack={goBack}
@@ -1263,7 +1460,14 @@ export default function App() {
   return (
     <View style={styles.app} {...edgeSwipeResponder.panHandlers}>
       {currentScreen}
-      <MiniPlayer playback={playback} onToggle={togglePlayback} onClose={closePlayer} />
+      {route.name !== 'now-playing' && route.name !== 'player-edit' && (
+        <MiniPlayer
+          playback={playback}
+          onToggle={togglePlayback}
+          onOpen={() => setRoute({ name: 'now-playing', from: route })}
+          onShare={shareCurrentTrack}
+        />
+      )}
       <StatusBar style="light" />
     </View>
   );
@@ -1494,6 +1698,16 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: colors.panelSoft
   },
+  recordArt: {
+    width: 250,
+    height: 250,
+    borderRadius: 125,
+    alignSelf: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    backgroundColor: colors.panelSoft
+  },
   artImage: {
     width: '100%',
     height: '100%'
@@ -1715,20 +1929,67 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center'
   },
+  waveform: {
+    position: 'relative',
+    height: 104,
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    overflow: 'hidden'
+  },
+  waveformCompact: {
+    height: 50,
+    flex: 0.74
+  },
+  waveBar: {
+    width: 3,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.72)'
+  },
+  waveBarCompact: {
+    width: 2,
+    backgroundColor: 'rgba(255,255,255,0.62)'
+  },
+  waveCursor: {
+    position: 'absolute',
+    top: 10,
+    bottom: 10,
+    width: 3,
+    borderRadius: 2,
+    backgroundColor: colors.accent
+  },
   miniPlayer: {
     position: 'absolute',
     left: 14,
     right: 14,
     bottom: 96,
-    minHeight: 74,
-    borderRadius: 26,
+    height: 74,
+    borderRadius: 34,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: '#0E0E0E',
+    backgroundColor: '#333333',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     padding: 10
+  },
+  miniArtButton: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.38)'
+  },
+  miniCopy: {
+    flex: 1,
+    minWidth: 0
+  },
+  miniShareButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   miniTitle: {
     color: colors.ink,
@@ -1763,6 +2024,275 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     fontWeight: '700'
+  },
+  playerPage: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 76,
+    paddingBottom: 32,
+    justifyContent: 'center'
+  },
+  nowPlayingCard: {
+    width: '100%',
+    borderRadius: 30,
+    backgroundColor: '#3A3A3A',
+    paddingHorizontal: 24,
+    paddingTop: 38,
+    paddingBottom: 26,
+    alignItems: 'center'
+  },
+  nowTitle: {
+    color: colors.ink,
+    fontSize: 29,
+    lineHeight: 34,
+    fontWeight: '500',
+    letterSpacing: 0
+  },
+  nowMeta: {
+    marginTop: 5,
+    marginBottom: 48,
+    color: colors.muted,
+    fontSize: 18,
+    fontWeight: '500'
+  },
+  playerTime: {
+    marginTop: 8,
+    color: colors.ink,
+    fontSize: 18,
+    fontWeight: '600',
+    fontVariant: ['tabular-nums']
+  },
+  transportRow: {
+    width: '100%',
+    marginTop: 28,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  },
+  transportButtonPlain: {
+    width: 54,
+    height: 54,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  playerFooterActions: {
+    marginTop: 72,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  playerFooterAction: {
+    width: 128,
+    alignItems: 'center',
+    gap: 12
+  },
+  playerFooterText: {
+    color: colors.ink,
+    fontSize: 16,
+    fontWeight: '500'
+  },
+  playerFooterDivider: {
+    width: 1,
+    height: 82,
+    backgroundColor: colors.border
+  },
+  playerSettingHint: {
+    marginTop: 22,
+    color: colors.muted,
+    textAlign: 'center',
+    fontSize: 12,
+    fontWeight: '700'
+  },
+  editorPage: {
+    paddingHorizontal: 36,
+    paddingTop: 28,
+    paddingBottom: 48
+  },
+  editorTop: {
+    minHeight: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  },
+  editorPill: {
+    minWidth: 104,
+    minHeight: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.panel
+  },
+  editorPillDim: {
+    opacity: 0.62
+  },
+  editorPillText: {
+    color: colors.ink,
+    fontSize: 19,
+    fontWeight: '700'
+  },
+  editorTitle: {
+    marginTop: 16,
+    color: colors.ink,
+    textAlign: 'center',
+    fontSize: 28,
+    lineHeight: 34,
+    fontWeight: '500'
+  },
+  editorMeta: {
+    marginTop: 4,
+    color: colors.muted,
+    textAlign: 'center',
+    fontSize: 18,
+    fontWeight: '500'
+  },
+  editorChips: {
+    marginTop: 18,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 12
+  },
+  editorChip: {
+    overflow: 'hidden',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: colors.panel,
+    color: colors.ink,
+    fontSize: 16,
+    fontWeight: '600'
+  },
+  editorTransport: {
+    marginTop: 30,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  },
+  editorTransportButton: {
+    width: 78,
+    height: 66,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.panel
+  },
+  loopButton: {
+    minWidth: 146,
+    height: 66,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.panel
+  },
+  loopButtonText: {
+    color: colors.ink,
+    fontSize: 20,
+    fontWeight: '500'
+  },
+  modeRow: {
+    marginTop: 54,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  modeActive: {
+    overflow: 'hidden',
+    paddingHorizontal: 18,
+    paddingVertical: 13,
+    borderRadius: 10,
+    backgroundColor: colors.accent,
+    color: colors.bg,
+    fontSize: 16,
+    fontWeight: '900'
+  },
+  modeInactive: {
+    overflow: 'hidden',
+    paddingHorizontal: 18,
+    paddingVertical: 13,
+    borderRadius: 10,
+    backgroundColor: colors.panel,
+    color: colors.muted,
+    fontSize: 16,
+    fontWeight: '700'
+  },
+  stepper: {
+    marginTop: 16,
+    minHeight: 84,
+    borderRadius: 16,
+    backgroundColor: '#191919',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 20
+  },
+  stepperLabel: {
+    width: 62,
+    color: colors.muted,
+    fontSize: 16,
+    fontWeight: '700'
+  },
+  stepperButton: {
+    width: 32,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  stepperTicks: {
+    flex: 1,
+    minWidth: 76,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  stepperTick: {
+    width: 3,
+    height: 24,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.18)'
+  },
+  stepperValue: {
+    width: 58,
+    textAlign: 'right',
+    color: colors.ink,
+    fontSize: 16,
+    fontWeight: '700'
+  },
+  editorTabs: {
+    marginTop: 36,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16
+  },
+  editorTabActive: {
+    overflow: 'hidden',
+    minWidth: 112,
+    paddingVertical: 18,
+    borderRadius: 18,
+    backgroundColor: colors.panel,
+    color: colors.ink,
+    textAlign: 'center',
+    fontSize: 20,
+    fontWeight: '700'
+  },
+  editorTab: {
+    flex: 1,
+    color: colors.muted,
+    textAlign: 'center',
+    fontSize: 20,
+    fontWeight: '700'
+  },
+  recordDot: {
+    width: 76,
+    height: 62,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#191919'
+  },
+  recordDotInner: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#FF2D55'
   },
   pageContent: {
     paddingHorizontal: 18,
