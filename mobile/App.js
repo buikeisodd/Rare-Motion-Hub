@@ -2,15 +2,17 @@ import { StatusBar } from 'expo-status-bar';
 import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Animated,
+  Dimensions,
   FlatList,
   Image,
   KeyboardAvoidingView,
-  Modal,
+  PanResponder,
   Platform,
   Pressable,
   RefreshControl,
@@ -21,7 +23,7 @@ import {
   TextInput,
   View
 } from 'react-native';
-import { api } from './src/api';
+import { API_URL, api } from './src/api';
 import { clearUser, getLastEmail, getStoredUser, storeLastEmail, storeUser } from './src/storage';
 import { colors, gradientFor } from './src/theme';
 
@@ -154,7 +156,7 @@ function ProfileAvatar({ user, size = 44 }) {
   );
 }
 
-function LibraryHeader({ user, title, subtitle, onBack, onNotifications, onProfile, onSettings, notificationCount = 0 }) {
+function LibraryHeader({ user, title, subtitle, onBack, onNotifications, onProfile, onMessages, notificationCount = 0 }) {
   return (
     <View style={styles.header}>
       <View style={styles.headerTop}>
@@ -162,10 +164,10 @@ function LibraryHeader({ user, title, subtitle, onBack, onNotifications, onProfi
         <View style={styles.headerActions}>
           <IconButton name="notifications" label="Notifications" onPress={onNotifications} tone={notificationCount > 0 ? 'light' : 'dark'} badge={notificationCount} />
           <IconButton name="person" label="Profile" onPress={onProfile} />
-          <IconButton name="settings" label="Settings" onPress={onSettings} />
+          <IconButton name="chatbubble-ellipses" label="Messages" onPress={onMessages} />
         </View>
       </View>
-      <Text style={styles.pageTitle}>{title}</Text>
+      {!!title && <Text style={styles.pageTitle}>{title}</Text>}
       {!!subtitle && <Text style={styles.pageSubtitle}>{subtitle}</Text>}
     </View>
   );
@@ -275,116 +277,6 @@ function CreateBar({ onCreateProject, onCreateFolder }) {
   );
 }
 
-function NotificationsSheet({ visible, notifications, onClose, onMarkRead }) {
-  return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.modalShade} onPress={onClose} />
-      <View style={styles.sheet}>
-        <View style={styles.sheetHandle} />
-        <View style={styles.sheetTitleRow}>
-          <Text style={styles.sheetTitle}>Notifications</Text>
-          <Pressable onPress={onMarkRead}><Text style={styles.sheetAction}>Mark read</Text></Pressable>
-        </View>
-        <ScrollView style={{ maxHeight: 420 }} showsVerticalScrollIndicator={false}>
-          {notifications.length === 0 ? (
-            <Text style={styles.sheetCopy}>No notifications yet.</Text>
-          ) : notifications.map((notification) => (
-            <View key={notification.id} style={styles.notificationRow}>
-              <ProfileAvatar user={notification.actor} size={38} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.notificationText}>{notification.message || `${notification.actor?.name || 'Someone'} listened to your work`}</Text>
-                <Text style={styles.notificationTime}>{new Date(notification.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</Text>
-              </View>
-            </View>
-          ))}
-        </ScrollView>
-      </View>
-    </Modal>
-  );
-}
-
-function ProfileSheet({ visible, user, saving, onClose, onSave }) {
-  const [name, setName] = useState(user?.name || '');
-
-  useEffect(() => setName(user?.name || ''), [user?.name, visible]);
-
-  return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.modalShade} onPress={onClose} />
-      <View style={styles.sheet}>
-        <View style={styles.sheetHandle} />
-        <View style={styles.profileHero}>
-          <ProfileAvatar user={user} size={76} />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.sheetTitle}>Profile</Text>
-            <Text numberOfLines={1} style={styles.sheetCopy}>{user?.email}</Text>
-          </View>
-        </View>
-        <View style={styles.inputRow}>
-          <Ionicons name="person-outline" size={20} color={colors.muted} />
-          <TextInput value={name} onChangeText={setName} placeholder="Username" placeholderTextColor={colors.muted} style={styles.input} />
-        </View>
-        <Pressable disabled={saving} onPress={() => onSave(name.trim())} style={({ pressed }) => [styles.primaryButton, styles.sheetButton, pressed && styles.pressed]}>
-          {saving ? <ActivityIndicator color={colors.bg} /> : <Text style={styles.primaryButtonText}>Save profile</Text>}
-        </Pressable>
-      </View>
-    </Modal>
-  );
-}
-
-function SettingsSheet({ visible, theme, onThemeChange, onLogout, onDeleteAccount, onClose }) {
-  return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.modalShade} onPress={onClose} />
-      <View style={styles.sheet}>
-        <View style={styles.sheetHandle} />
-        <Text style={styles.sheetTitle}>Settings</Text>
-        <Text style={styles.sheetCopy}>Theme</Text>
-        <View style={styles.segment}>
-          {['dark', 'light'].map((mode) => (
-            <Pressable key={mode} onPress={() => onThemeChange(mode)} style={[styles.segmentButton, theme === mode && styles.segmentButtonActive]}>
-              <Text style={[styles.segmentText, theme === mode && styles.segmentTextActive]}>{mode}</Text>
-            </Pressable>
-          ))}
-        </View>
-        <Pressable onPress={onLogout} style={styles.sheetRow}>
-          <Ionicons name="log-out-outline" size={20} color={colors.ink} />
-          <Text style={styles.sheetRowText}>Sign out</Text>
-        </Pressable>
-        <Pressable onPress={onDeleteAccount} style={styles.sheetRowDanger}>
-          <Ionicons name="trash-outline" size={20} color={colors.red} />
-          <Text style={styles.sheetRowDangerText}>Delete account</Text>
-        </Pressable>
-      </View>
-    </Modal>
-  );
-}
-
-function MoveSheet({ visible, project, folders, onClose, onMove }) {
-  return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.modalShade} onPress={onClose} />
-      <View style={styles.sheet}>
-        <View style={styles.sheetHandle} />
-        <Text style={styles.sheetTitle}>Move project</Text>
-        <Text numberOfLines={1} style={styles.sheetCopy}>{project?.title || project?.name || 'Untitled project'}</Text>
-        <ScrollView style={{ maxHeight: 360 }} showsVerticalScrollIndicator={false}>
-          <Pressable onPress={() => onMove(null)} style={styles.sheetRow}>
-            <Ionicons name="albums-outline" size={20} color={colors.ink} />
-            <Text style={styles.sheetRowText}>Library root</Text>
-          </Pressable>
-          {folders.map((folder) => (
-            <Pressable key={folder.id} onPress={() => onMove(folder.id)} style={styles.sheetRow}>
-              <Ionicons name="folder-outline" size={20} color={colors.ink} />
-              <Text numberOfLines={1} style={styles.sheetRowText}>{folder.title || folder.name || 'Untitled folder'}</Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-      </View>
-    </Modal>
-  );
-}
-
 function MiniPlayer({ playback, onToggle, onClose }) {
   if (!playback.track) return null;
   return (
@@ -400,7 +292,186 @@ function MiniPlayer({ playback, onToggle, onClose }) {
   );
 }
 
-function LibraryScreen({ user, workspace, loading, refreshing, onRefresh, onOpenFolder, onOpenProject, onCreateProject, onCreateFolder, onMoveProject, onPlayProject, onNotifications, onProfile, onSettings }) {
+function NotificationsPage({ notifications, onBack, onMarkRead }) {
+  return (
+    <SafeAreaView style={styles.screen}>
+      <View style={styles.pageHeader}>
+        <IconButton name="chevron-back" label="Back" onPress={onBack} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.pageHeaderTitle}>Notifications</Text>
+          <Text style={styles.pageHeaderSubtitle}>Recent activity around your music.</Text>
+        </View>
+        <Pressable onPress={onMarkRead} style={styles.textPill}>
+          <Text style={styles.textPillText}>Read</Text>
+        </Pressable>
+      </View>
+      <ScrollView contentContainerStyle={styles.pageContent}>
+        {notifications.length === 0 ? (
+          <EmptyState icon="notifications-outline" title="No notifications yet" copy="Listens, messages, and updates will appear here." />
+        ) : notifications.map((notification) => (
+          <View key={notification.id} style={styles.fullRow}>
+            <ProfileAvatar user={notification.actor} size={46} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.fullRowTitle}>{notification.message || `${notification.actor?.name || 'Someone'} listened to your work`}</Text>
+              <Text style={styles.fullRowMeta}>{new Date(notification.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</Text>
+            </View>
+            {!notification.read && <View style={styles.rowDot} />}
+          </View>
+        ))}
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+function AccountPage({ user, theme, saving, onBack, onSave, onPickAvatar, onThemeChange, onLogout, onDeleteAccount, onContact }) {
+  const [name, setName] = useState(user?.name || '');
+
+  useEffect(() => setName(user?.name || ''), [user?.name]);
+
+  return (
+    <SafeAreaView style={styles.screen}>
+      <View style={styles.pageHeader}>
+        <IconButton name="chevron-back" label="Back" onPress={onBack} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.pageHeaderTitle}>Account</Text>
+          <Text style={styles.pageHeaderSubtitle}>Profile, theme, and account controls.</Text>
+        </View>
+      </View>
+      <ScrollView contentContainerStyle={styles.pageContent}>
+        <View style={styles.accountHero}>
+          <Pressable onPress={onPickAvatar} style={({ pressed }) => [styles.avatarEdit, pressed && styles.pressed]}>
+            <ProfileAvatar user={user} size={92} />
+            <View style={styles.avatarCamera}>
+              <Ionicons name="camera" size={16} color={colors.bg} />
+            </View>
+          </Pressable>
+          <Text style={styles.accountName}>{user?.name}</Text>
+          <Text style={styles.accountEmail}>{user?.email}</Text>
+        </View>
+
+        <Text style={styles.formLabel}>Username</Text>
+        <View style={styles.inputRow}>
+          <Ionicons name="person-outline" size={20} color={colors.muted} />
+          <TextInput value={name} onChangeText={setName} placeholder="Username" placeholderTextColor={colors.muted} style={styles.input} />
+        </View>
+        <Pressable disabled={saving} onPress={() => onSave(name.trim())} style={({ pressed }) => [styles.primaryButton, styles.accountButton, pressed && styles.pressed]}>
+          {saving ? <ActivityIndicator color={colors.bg} /> : <Text style={styles.primaryButtonText}>Save profile</Text>}
+        </Pressable>
+
+        <Text style={styles.formLabel}>Theme</Text>
+        <View style={styles.segment}>
+          {['dark', 'light'].map((mode) => (
+            <Pressable key={mode} onPress={() => onThemeChange(mode)} style={[styles.segmentButton, theme === mode && styles.segmentButtonActive]}>
+              <Text style={[styles.segmentText, theme === mode && styles.segmentTextActive]}>{mode}</Text>
+            </Pressable>
+          ))}
+        </View>
+
+        <Pressable onPress={onContact} style={styles.settingsRow}>
+          <Ionicons name="mail-outline" size={21} color={colors.ink} />
+          <Text style={styles.settingsRowText}>Contact us</Text>
+          <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+        </Pressable>
+        <Pressable onPress={onLogout} style={styles.settingsRow}>
+          <Ionicons name="log-out-outline" size={21} color={colors.ink} />
+          <Text style={styles.settingsRowText}>Sign out</Text>
+        </Pressable>
+        <Pressable onPress={onDeleteAccount} style={styles.settingsRowDanger}>
+          <Ionicons name="trash-outline" size={21} color={colors.red} />
+          <Text style={styles.settingsRowDangerText}>Delete account</Text>
+        </Pressable>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+function ContactPage({ onBack }) {
+  return (
+    <SafeAreaView style={styles.screen}>
+      <View style={styles.pageHeader}>
+        <IconButton name="chevron-back" label="Back" onPress={onBack} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.pageHeaderTitle}>Contact us</Text>
+          <Text style={styles.pageHeaderSubtitle}>Reach the Starlight Station team.</Text>
+        </View>
+      </View>
+      <ScrollView contentContainerStyle={styles.pageContent}>
+        <View style={styles.contactCard}>
+          <Ionicons name="mail" size={30} color={colors.accent} />
+          <Text style={styles.contactTitle}>Need help?</Text>
+          <Text style={styles.contactCopy}>Send questions, bug reports, release ideas, or account requests to the support inbox.</Text>
+          <Text selectable style={styles.contactEmail}>support@raremotionhub.com</Text>
+        </View>
+        <View style={styles.contactCard}>
+          <Ionicons name="chatbubble-ellipses" size={30} color={colors.blue} />
+          <Text style={styles.contactTitle}>Collaborator support</Text>
+          <Text style={styles.contactCopy}>For urgent project access or upload issues, include your account email and the project name.</Text>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+function MessagesPage({ conversations, loading, onBack }) {
+  return (
+    <SafeAreaView style={styles.screen}>
+      <View style={styles.pageHeader}>
+        <IconButton name="chevron-back" label="Back" onPress={onBack} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.pageHeaderTitle}>Messages</Text>
+          <Text style={styles.pageHeaderSubtitle}>Collaborator conversations.</Text>
+        </View>
+      </View>
+      {loading ? (
+        <ActivityIndicator color={colors.accent} style={{ marginTop: 60 }} />
+      ) : (
+        <ScrollView contentContainerStyle={styles.pageContent}>
+          {conversations.length === 0 ? (
+            <EmptyState icon="chatbubble-ellipses-outline" title="No messages yet" copy="Your chats will appear here when collaborators message you." />
+          ) : conversations.map((conversation) => (
+            <View key={conversation.id} style={styles.fullRow}>
+              <ProfileAvatar user={conversation.partner || { name: 'Group' }} size={48} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.fullRowTitle}>{conversation.name || conversation.partner?.name || 'Group Chat'}</Text>
+                <Text numberOfLines={1} style={styles.fullRowMeta}>{conversation.lastMessage?.text || 'No messages yet'}</Text>
+              </View>
+              {conversation.unreadCount > 0 && <Text style={styles.unreadCount}>{conversation.unreadCount}</Text>}
+            </View>
+          ))}
+        </ScrollView>
+      )}
+    </SafeAreaView>
+  );
+}
+
+function MoveProjectPage({ project, folders, onBack, onMove }) {
+  return (
+    <SafeAreaView style={styles.screen}>
+      <View style={styles.pageHeader}>
+        <IconButton name="chevron-back" label="Back" onPress={onBack} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.pageHeaderTitle}>Move project</Text>
+          <Text numberOfLines={1} style={styles.pageHeaderSubtitle}>{project?.title || project?.name || 'Untitled project'}</Text>
+        </View>
+      </View>
+      <ScrollView contentContainerStyle={styles.pageContent}>
+        <Pressable onPress={() => onMove(null)} style={styles.settingsRow}>
+          <Ionicons name="albums-outline" size={21} color={colors.ink} />
+          <Text style={styles.settingsRowText}>Library root</Text>
+        </Pressable>
+        {folders.map((folder) => (
+          <Pressable key={folder.id} onPress={() => onMove(folder.id)} style={styles.settingsRow}>
+            <Ionicons name="folder-outline" size={21} color={colors.ink} />
+            <Text numberOfLines={1} style={styles.settingsRowText}>{folder.title || folder.name || 'Untitled folder'}</Text>
+            <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+          </Pressable>
+        ))}
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+function LibraryScreen({ user, workspace, loading, refreshing, onRefresh, onOpenFolder, onOpenProject, onCreateProject, onCreateFolder, onMoveProject, onPlayProject, onNotifications, onProfile, onMessages }) {
   const rootProjects = workspace.projects.filter((project) => !project.folderId);
   const rootFolders = workspace.folders;
   const data = [
@@ -412,10 +483,9 @@ function LibraryScreen({ user, workspace, loading, refreshing, onRefresh, onOpen
     <SafeAreaView style={styles.screen}>
       <LibraryHeader
         user={user}
-        title="[untitled]"
         onNotifications={onNotifications}
         onProfile={onProfile}
-        onSettings={onSettings}
+        onMessages={onMessages}
         notificationCount={workspace.notifications.filter((notification) => !notification.read).length}
       />
       {loading ? (
@@ -452,7 +522,7 @@ function LibraryScreen({ user, workspace, loading, refreshing, onRefresh, onOpen
   );
 }
 
-function FolderScreen({ user, folderData, loading, onBack, onOpenFolder, onOpenProject, onCreateProject, onCreateFolder, onMoveProject, onPlayProject, onNotifications, onProfile, onSettings, notificationCount }) {
+function FolderScreen({ user, folderData, loading, onBack, onOpenFolder, onOpenProject, onCreateProject, onCreateFolder, onMoveProject, onPlayProject, onNotifications, onProfile, onMessages, notificationCount }) {
   const folder = folderData?.folder;
   const folders = folderData?.folders || [];
   const projects = folderData?.projects || [];
@@ -470,7 +540,7 @@ function FolderScreen({ user, folderData, loading, onBack, onOpenFolder, onOpenP
         onBack={onBack}
         onNotifications={onNotifications}
         onProfile={onProfile}
-        onSettings={onSettings}
+        onMessages={onMessages}
         notificationCount={notificationCount}
       />
       {loading ? (
@@ -548,12 +618,10 @@ export default function App() {
   const [route, setRoute] = useState({ name: 'library' });
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [moveProject, setMoveProject] = useState(null);
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
   const [theme, setTheme] = useState('dark');
+  const [conversations, setConversations] = useState([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
   const [playback, setPlayback] = useState({ player: null, track: null, project: null, tracks: [], playing: false });
   const playerRef = useRef(null);
 
@@ -564,6 +632,40 @@ export default function App() {
     (folderData?.folders || []).forEach((folder) => byId.set(folder.id, folder));
     return Array.from(byId.values());
   }, [workspace.folders, folderData]);
+
+  const goLibrary = () => setRoute({ name: 'library' });
+
+  const goBack = () => {
+    if (route.name === 'library') return;
+    if (route.name === 'contact') return setRoute(route.from || { name: 'account' });
+    if (route.name === 'messages') return setRoute(route.from || { name: 'library' });
+    if (route.name === 'move-project') return setRoute(route.from || { name: 'library' });
+    if (route.name === 'notifications' || route.name === 'account') return setRoute(route.from || { name: 'library' });
+    if (route.name === 'project') {
+      if (projectData?.project?.folderId) return openFolder(projectData.project.folderId);
+      return goLibrary();
+    }
+    return goLibrary();
+  };
+
+  const edgeSwipeResponder = PanResponder.create({
+    onMoveShouldSetPanResponder: (event, gesture) => {
+      if (route.name === 'library') return false;
+      const screenWidth = Dimensions.get('window').width;
+      const startX = event.nativeEvent.pageX;
+      const startsAtEdge = startX < 28 || startX > screenWidth - 28;
+      return startsAtEdge && Math.abs(gesture.dx) > 18 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.4;
+    },
+    onPanResponderRelease: (_event, gesture) => {
+      if (Math.abs(gesture.dx) > 70) {
+        goBack();
+      }
+    }
+  });
+
+  const openMoveProject = (project) => {
+    setRoute({ name: 'move-project', project, from: route });
+  };
 
   useEffect(() => {
     getStoredUser()
@@ -675,8 +777,7 @@ export default function App() {
   };
 
   const moveSelectedProject = async (folderId) => {
-    const project = moveProject;
-    setMoveProject(null);
+    const project = route.project;
     if (!project) return;
     try {
       const moved = await api(`/api/projects/${project.id}/move`, {
@@ -687,9 +788,24 @@ export default function App() {
         ...prev,
         projects: prev.projects.map((item) => item.id === project.id ? { ...item, ...moved } : item)
       }));
-      if (route.name === 'folder') await openFolder(route.id);
+      const previousRoute = route.from;
+      if (previousRoute?.name === 'folder') await openFolder(previousRoute.id);
+      else goLibrary();
     } catch (error) {
       Alert.alert('Could not move project', error.message);
+    }
+  };
+
+  const openMessages = async () => {
+    setRoute({ name: 'messages', from: route });
+    setMessagesLoading(true);
+    try {
+      const data = await api(`/api/conversations?userId=${encodeURIComponent(user.id)}`);
+      setConversations(data.conversations || []);
+    } catch (error) {
+      Alert.alert('Could not load messages', error.message);
+    } finally {
+      setMessagesLoading(false);
     }
   };
 
@@ -764,11 +880,47 @@ export default function App() {
       });
       await storeUser(data.user);
       setUser(data.user);
-      setIsProfileOpen(false);
     } catch (error) {
       Alert.alert('Could not save profile', error.message);
     } finally {
       setProfileSaving(false);
+    }
+  };
+
+  const pickAvatar = async () => {
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert('Permission needed', 'Allow photo access to update your profile picture.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.85
+      });
+      if (result.canceled || !result.assets?.[0]) return;
+
+      const asset = result.assets[0];
+      const extension = asset.uri.split('.').pop() || 'jpg';
+      const formData = new FormData();
+      formData.append('avatar', {
+        uri: asset.uri,
+        name: `avatar.${extension}`,
+        type: asset.mimeType || `image/${extension === 'jpg' ? 'jpeg' : extension}`
+      });
+
+      const response = await fetch(`${API_URL}/api/users/${user.id}/avatar`, {
+        method: 'POST',
+        body: formData
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Could not update profile picture.');
+      await storeUser(data.user);
+      setUser(data.user);
+    } catch (error) {
+      Alert.alert('Could not update profile picture', error.message);
     }
   };
 
@@ -814,7 +966,41 @@ export default function App() {
     return <LoginScreen onLogin={setUser} />;
   }
 
-  const currentScreen = route.name === 'project' ? (
+  const currentScreen = route.name === 'notifications' ? (
+    <NotificationsPage
+      notifications={workspace.notifications}
+      onBack={goBack}
+      onMarkRead={markNotificationsRead}
+    />
+  ) : route.name === 'account' ? (
+    <AccountPage
+      user={user}
+      theme={theme}
+      saving={profileSaving}
+      onBack={goBack}
+      onSave={saveProfile}
+      onPickAvatar={pickAvatar}
+      onThemeChange={setTheme}
+      onLogout={logout}
+      onDeleteAccount={deleteAccount}
+      onContact={() => setRoute({ name: 'contact', from: { name: 'account' } })}
+    />
+  ) : route.name === 'contact' ? (
+    <ContactPage onBack={() => setRoute(route.from || { name: 'account' })} />
+  ) : route.name === 'messages' ? (
+    <MessagesPage
+      conversations={conversations}
+      loading={messagesLoading}
+      onBack={() => setRoute(route.from || { name: 'library' })}
+    />
+  ) : route.name === 'move-project' ? (
+    <MoveProjectPage
+      project={route.project}
+      folders={allFolders.filter((folder) => folder.id !== route.project?.folderId)}
+      onBack={() => setRoute(route.from || { name: 'library' })}
+      onMove={moveSelectedProject}
+    />
+  ) : route.name === 'project' ? (
     <ProjectScreen
       projectData={projectData}
       loading={loading}
@@ -829,16 +1015,16 @@ export default function App() {
       user={user}
       folderData={folderData}
       loading={loading}
-      onBack={() => setRoute({ name: 'library' })}
+      onBack={goBack}
       onOpenFolder={openFolder}
       onOpenProject={openProject}
       onCreateProject={createProject}
       onCreateFolder={createFolder}
-      onMoveProject={setMoveProject}
+      onMoveProject={openMoveProject}
       onPlayProject={playProject}
-      onNotifications={() => setIsNotificationsOpen(true)}
-      onProfile={() => setIsProfileOpen(true)}
-      onSettings={() => setIsSettingsOpen(true)}
+      onNotifications={() => setRoute({ name: 'notifications', from: route })}
+      onProfile={() => setRoute({ name: 'account', from: route })}
+      onMessages={openMessages}
       notificationCount={workspace.notifications.filter((notification) => !notification.read).length}
     />
   ) : (
@@ -852,46 +1038,18 @@ export default function App() {
       onOpenProject={openProject}
       onCreateProject={createProject}
       onCreateFolder={createFolder}
-      onMoveProject={setMoveProject}
+      onMoveProject={openMoveProject}
       onPlayProject={playProject}
-      onNotifications={() => setIsNotificationsOpen(true)}
-      onProfile={() => setIsProfileOpen(true)}
-      onSettings={() => setIsSettingsOpen(true)}
+      onNotifications={() => setRoute({ name: 'notifications', from: route })}
+      onProfile={() => setRoute({ name: 'account', from: route })}
+      onMessages={openMessages}
     />
   );
 
   return (
-    <View style={styles.app}>
+    <View style={styles.app} {...edgeSwipeResponder.panHandlers}>
       {currentScreen}
       <MiniPlayer playback={playback} onToggle={togglePlayback} onClose={closePlayer} />
-      <MoveSheet
-        visible={!!moveProject}
-        project={moveProject}
-        folders={allFolders.filter((folder) => folder.id !== moveProject?.folderId)}
-        onClose={() => setMoveProject(null)}
-        onMove={moveSelectedProject}
-      />
-      <NotificationsSheet
-        visible={isNotificationsOpen}
-        notifications={workspace.notifications}
-        onClose={() => setIsNotificationsOpen(false)}
-        onMarkRead={markNotificationsRead}
-      />
-      <ProfileSheet
-        visible={isProfileOpen}
-        user={user}
-        saving={profileSaving}
-        onClose={() => setIsProfileOpen(false)}
-        onSave={saveProfile}
-      />
-      <SettingsSheet
-        visible={isSettingsOpen}
-        theme={theme}
-        onThemeChange={setTheme}
-        onLogout={logout}
-        onDeleteAccount={deleteAccount}
-        onClose={() => setIsSettingsOpen(false)}
-      />
       <StatusBar style="light" />
     </View>
   );
@@ -940,8 +1098,8 @@ const styles = StyleSheet.create({
     textShadowRadius: 12,
   },
   logoTextSmall: {
-    fontSize: 18,
-    lineHeight: 21,
+    fontSize: 22,
+    lineHeight: 25,
     textAlign: 'left',
   },
   logoSubText: {
@@ -957,8 +1115,8 @@ const styles = StyleSheet.create({
     textShadowRadius: 12,
   },
   logoSubTextSmall: {
-    fontSize: 18,
-    lineHeight: 21,
+    fontSize: 22,
+    lineHeight: 25,
     textAlign: 'left',
   },
   loginHero: {
@@ -1194,9 +1352,9 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   addPill: {
-    minWidth: 218,
-    height: 70,
-    borderRadius: 35,
+    minWidth: 190,
+    height: 58,
+    borderRadius: 29,
     backgroundColor: '#303030',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1206,26 +1364,27 @@ const styles = StyleSheet.create({
   addPillText: {
     color: colors.ink,
     fontWeight: '900',
-    fontSize: 20
+    fontSize: 18
   },
   addMenu: {
-    width: 320,
-    borderRadius: 34,
+    width: '76%',
+    maxWidth: 310,
+    borderRadius: 28,
     backgroundColor: '#303030',
-    paddingVertical: 18,
-    marginBottom: 18,
+    paddingVertical: 12,
+    marginBottom: 14,
     overflow: 'hidden'
   },
   addMenuRow: {
-    minHeight: 54,
+    minHeight: 46,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 20,
-    paddingHorizontal: 28
+    gap: 16,
+    paddingHorizontal: 24
   },
   addMenuText: {
     color: colors.ink,
-    fontSize: 22,
+    fontSize: 19,
     fontWeight: '500'
   },
   addMenuDivider: {
@@ -1313,96 +1472,134 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700'
   },
-  modalShade: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)'
-  },
-  sheet: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    backgroundColor: colors.panel,
-    borderWidth: 1,
-    borderColor: colors.border,
+  pageHeader: {
+    minHeight: 82,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
     paddingHorizontal: 18,
-    paddingTop: 10,
-    paddingBottom: 36
+    paddingTop: 12,
+    paddingBottom: 16
   },
-  sheetHandle: {
-    alignSelf: 'center',
-    width: 44,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: colors.border,
-    marginBottom: 18
-  },
-  sheetTitle: {
+  pageHeaderTitle: {
     color: colors.ink,
-    fontSize: 23,
+    fontSize: 25,
+    lineHeight: 30,
     fontWeight: '900',
     letterSpacing: 0
   },
-  sheetTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 6
+  pageHeaderSubtitle: {
+    marginTop: 3,
+    color: colors.muted,
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '700'
   },
-  sheetAction: {
-    color: colors.accent,
+  pageContent: {
+    paddingHorizontal: 18,
+    paddingBottom: 140,
+    gap: 12
+  },
+  textPill: {
+    minWidth: 58,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.panelSoft
+  },
+  textPillText: {
+    color: colors.ink,
     fontSize: 13,
     fontWeight: '900'
   },
-  sheetCopy: {
-    marginTop: 5,
-    marginBottom: 14,
+  fullRow: {
+    minHeight: 76,
+    borderRadius: 22,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    backgroundColor: colors.panel,
+    borderWidth: 1,
+    borderColor: colors.border
+  },
+  fullRowTitle: {
+    color: colors.ink,
+    fontSize: 15,
+    lineHeight: 20,
+    fontWeight: '900'
+  },
+  fullRowMeta: {
+    marginTop: 4,
+    color: colors.muted,
+    fontSize: 13,
+    fontWeight: '700'
+  },
+  rowDot: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: '#0A84FF'
+  },
+  unreadCount: {
+    minWidth: 26,
+    overflow: 'hidden',
+    borderRadius: 13,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    color: colors.bg,
+    backgroundColor: colors.accent,
+    textAlign: 'center',
+    fontSize: 12,
+    fontWeight: '900'
+  },
+  accountHero: {
+    alignItems: 'center',
+    paddingVertical: 18,
+    marginBottom: 6
+  },
+  avatarEdit: {
+    position: 'relative',
+    marginBottom: 12
+  },
+  avatarCamera: {
+    position: 'absolute',
+    right: -2,
+    bottom: 2,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.accent,
+    borderWidth: 3,
+    borderColor: colors.bg
+  },
+  accountName: {
+    color: colors.ink,
+    fontSize: 25,
+    lineHeight: 30,
+    fontWeight: '900'
+  },
+  accountEmail: {
+    marginTop: 4,
     color: colors.muted,
     fontSize: 14,
     fontWeight: '700'
   },
-  sheetRow: {
-    minHeight: 56,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    borderRadius: 18,
-    paddingHorizontal: 14,
+  formLabel: {
+    marginTop: 12,
     marginBottom: 8,
-    backgroundColor: colors.panelSoft
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '900',
+    textTransform: 'uppercase'
   },
-  sheetRowDanger: {
-    minHeight: 56,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    borderRadius: 18,
-    paddingHorizontal: 14,
-    marginTop: 8,
-    backgroundColor: 'rgba(255,92,108,0.08)'
-  },
-  sheetRowText: {
-    flex: 1,
-    color: colors.ink,
-    fontSize: 16,
-    fontWeight: '900'
-  },
-  sheetRowDangerText: {
-    flex: 1,
-    color: colors.red,
-    fontSize: 16,
-    fontWeight: '900'
-  },
-  profileHero: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-    marginBottom: 18
-  },
-  sheetButton: {
-    marginTop: 14
+  accountButton: {
+    marginTop: 12,
+    marginBottom: 8
   },
   segment: {
     flexDirection: 'row',
@@ -1430,23 +1627,65 @@ const styles = StyleSheet.create({
   segmentTextActive: {
     color: colors.bg
   },
-  notificationRow: {
+  settingsRow: {
+    minHeight: 58,
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 12,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.06)'
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    backgroundColor: colors.panel,
+    borderWidth: 1,
+    borderColor: colors.border
   },
-  notificationText: {
+  settingsRowText: {
+    flex: 1,
     color: colors.ink,
-    fontSize: 14,
-    lineHeight: 19,
-    fontWeight: '800'
+    fontSize: 16,
+    fontWeight: '900'
   },
-  notificationTime: {
-    marginTop: 4,
+  settingsRowDanger: {
+    minHeight: 58,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(255,92,108,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,92,108,0.18)'
+  },
+  settingsRowDangerText: {
+    flex: 1,
+    color: colors.red,
+    fontSize: 16,
+    fontWeight: '900'
+  },
+  contactCard: {
+    borderRadius: 26,
+    padding: 22,
+    backgroundColor: colors.panel,
+    borderWidth: 1,
+    borderColor: colors.border
+  },
+  contactTitle: {
+    marginTop: 14,
+    color: colors.ink,
+    fontSize: 22,
+    lineHeight: 27,
+    fontWeight: '900'
+  },
+  contactCopy: {
+    marginTop: 8,
     color: colors.muted,
-    fontSize: 12,
+    fontSize: 15,
+    lineHeight: 22,
     fontWeight: '700'
+  },
+  contactEmail: {
+    marginTop: 16,
+    color: colors.accent,
+    fontSize: 16,
+    fontWeight: '900'
   }
 });

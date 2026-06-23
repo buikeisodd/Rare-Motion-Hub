@@ -26,7 +26,13 @@
     "plugins": [
       "expo-font",
       "expo-audio",
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Starlight Station to choose a profile picture from your library."
+        }
+      ]
     ]
   }
 }
