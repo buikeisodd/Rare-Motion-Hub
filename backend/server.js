@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
@@ -7,6 +8,49 @@ const { spawn } = require('child_process');
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 const mongoose = require('mongoose');
+const { v2: cloudinary } = require('cloudinary');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const redis = require('redis');
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+let redisClient = null;
+if (process.env.REDIS_URL) {
+  redisClient = redis.createClient({ url: process.env.REDIS_URL });
+  redisClient.on('error', (err) => console.error('Redis Client Error', err));
+  redisClient.connect().then(() => console.log('Connected to Redis')).catch(console.error);
+}
+
+// Caching utility
+const getOrSetCache = async (key, ttl, fetcher) => {
+  if (!redisClient || !redisClient.isReady) return fetcher();
+  try {
+    const cached = await redisClient.get(key);
+    if (cached) return JSON.parse(cached);
+    const data = await fetcher();
+    await redisClient.setEx(key, ttl, JSON.stringify(data));
+    return data;
+  } catch (err) {
+    console.error('Redis cache error:', err);
+    return fetcher();
+  }
+};
+
+const invalidateCache = async (pattern) => {
+  if (!redisClient || !redisClient.isReady) return;
+  try {
+    const keys = await redisClient.keys(pattern);
+    if (keys.length > 0) {
+      await redisClient.del(keys);
+    }
+  } catch (err) {
+    console.error('Redis invalidate error:', err);
+  }
+};
 const {
   User, Project, Track, Folder, CoverArt,
   Notification, PlayEvent, Message, Call, CallSignal, ShareLink
@@ -121,6 +165,19 @@ const removeFileIfExists = (filePath) => {
 };
 const removeDirIfExists = (dirPath) => {
   if (dirPath && fs.existsSync(dirPath)) fs.rmSync(dirPath, { recursive: true, force: true });
+};
+const downloadFile = (url, dest) => {
+  return new Promise((resolve, reject) => {
+    const file = fs.createWriteStream(dest);
+    require('https').get(url, (response) => {
+      response.pipe(file);
+      file.on('finish', () => {
+        file.close(resolve);
+      });
+    }).on('error', (err) => {
+      fs.unlink(dest, () => reject(err));
+    });
+  });
 };
 const fileToDataUrl = (file) => {
   const buffer = fs.readFileSync(file.path);
@@ -306,21 +363,24 @@ const notifyCall = (db, call, caller) => {
     });
 };
 
-// Multer setups
-const trackStorage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => cb(null, Date.now() + '-' + Math.round(Math.random() * 1e9) + path.extname(file.originalname))
+// Multer setups with Cloudinary
+const trackStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'tracks',
+    resource_type: 'auto',
+    public_id: (req, file) => 'track-' + Date.now() + '-' + Math.round(Math.random() * 1e9)
+  }
 });
 const uploadTrack = multer({ storage: trackStorage });
-const noteMemoStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    // Use trackId from URL param to build path without DB lookup
-    const trackId = req.params.id || 'unknown';
-    const dir = path.join(__dirname, 'uploads', 'memos', trackId);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => cb(null, `memo-${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(file.originalname) || '.webm'}`)
+
+const noteMemoStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'memos',
+    resource_type: 'auto',
+    public_id: (req, file) => 'memo-' + Date.now() + '-' + Math.round(Math.random() * 1e9)
+  }
 });
 const uploadNoteMemo = multer({
   storage: noteMemoStorage,
@@ -330,24 +390,33 @@ const uploadNoteMemo = multer({
   }
 });
 
-const coverStorage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, coverDir),
-  filename: (req, file, cb) => cb(null, 'cover-' + Date.now() + path.extname(file.originalname))
+const coverStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'covers',
+    resource_type: 'auto',
+    public_id: (req, file) => 'cover-' + Date.now()
+  }
 });
 const uploadCover = multer({ storage: coverStorage });
 
-const avatarStorage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, avatarDir),
-  filename: (req, file, cb) => cb(null, 'avatar-' + Date.now() + path.extname(file.originalname))
+const avatarStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'avatars',
+    resource_type: 'auto',
+    public_id: (req, file) => 'avatar-' + Date.now()
+  }
 });
 const uploadAvatar = multer({ storage: avatarStorage });
 
-const chatStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const userId = req.body.senderId || 'unknown';
-    cb(null, ensureUserDir(chatDir, userId));
-  },
-  filename: (req, file, cb) => cb(null, 'chat-' + Date.now() + '-' + Math.round(Math.random() * 1e9) + path.extname(file.originalname))
+const chatStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'chat',
+    resource_type: 'auto',
+    public_id: (req, file) => 'chat-' + Date.now() + '-' + Math.round(Math.random() * 1e9)
+  }
 });
 const uploadChatMedia = multer({
   storage: chatStorage,
@@ -413,15 +482,15 @@ app.post('/api/users/:id/avatar', uploadAvatar.single('avatar'), async (req, res
   const db = ensureDBShape(await readDB());
   const userIndex = db.users.findIndex((user) => user.id === req.params.id);
   if (userIndex === -1) {
-    removeFileIfExists(req.file.path);
+    cloudinary.uploader.destroy(req.file.filename).catch(console.error);
     return res.status(404).json({ error: 'User not found.' });
   }
 
-  moveFileToUserDir(req.file, avatarDir, req.params.id);
-  db.users[userIndex].avatarUrl = `${BASE_URL}/avatars/${req.params.id}/${req.file.filename}`;
+  db.users[userIndex].avatarUrl = req.file.path; // Cloudinary URL
   db.users[userIndex].avatarUpdatedAt = new Date().toISOString();
   db.users[userIndex].updatedAt = db.users[userIndex].avatarUpdatedAt;
   await writeDB(db);
+  invalidateCache(`workspace:${req.params.id}`);
   res.json({ user: db.users[userIndex] });
 });
 
@@ -449,20 +518,26 @@ app.delete('/api/users/:id', async (req, res) => {
 
 // --- DATA FETCHING ---
 app.get('/api/workspace', async (req, res) => {
-  const db = ensureDBShape(await readDB());
   const userId = requireUserId(req, res);
   if (!userId) return;
-  if (!userExists(db, userId)) return res.status(401).json({ error: 'Unauthorized user.' });
 
-  // Only return root-level folders (not nested inside any folder)
-  const rootFolders = db.folders.filter((folder) => folder.userId === userId && !folder.parentFolderId);
-  res.json({
-    folders: rootFolders.map((folder) => normalizeLibraryItem(folder, db, 'folder')),
-    projects: db.projects.filter((project) => project.userId === userId).map((project) => normalizeLibraryItem(project, db, 'project')),
-    tracks: db.tracks.filter((track) => track.userId === userId || track.uploader?.id === userId).map(normalizeTrack),
-    coverArts: db.coverArts.filter((cover) => cover.userId === userId),
-    notifications: db.notifications.filter((notification) => notification.userId === userId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  const data = await getOrSetCache(`workspace:${userId}`, 3600, async () => {
+    const db = ensureDBShape(await readDB());
+    if (!userExists(db, userId)) return { error: 'Unauthorized user.', status: 401 };
+
+    // Only return root-level folders (not nested inside any folder)
+    const rootFolders = db.folders.filter((folder) => folder.userId === userId && !folder.parentFolderId);
+    return {
+      folders: rootFolders.map((folder) => normalizeLibraryItem(folder, db, 'folder')),
+      projects: db.projects.filter((project) => project.userId === userId).map((project) => normalizeLibraryItem(project, db, 'project')),
+      tracks: db.tracks.filter((track) => track.userId === userId || track.uploader?.id === userId).map(normalizeTrack),
+      coverArts: db.coverArts.filter((cover) => cover.userId === userId),
+      notifications: db.notifications.filter((notification) => notification.userId === userId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    };
   });
+
+  if (data.error) return res.status(data.status).json({ error: data.error });
+  res.json(data);
 });
 
 // --- SHARING ---
@@ -912,13 +987,19 @@ app.put('/api/projects/:id/cover', async (req, res) => {
 });
 
 app.get('/api/projects/:id', async (req, res) => {
-  const db = ensureDBShape(await readDB());
   const userId = requireUserId(req, res);
   if (!userId) return;
-  const project = db.projects.find((item) => item.id === req.params.id && item.userId === userId);
-  if (!project) return res.status(404).json({ error: 'Project not found' });
-  const tracks = db.tracks.filter((track) => track.projectId === project.id).map(normalizeTrack);
-  res.json({ project: normalizeLibraryItem(project, db, 'project'), tracks });
+
+  const data = await getOrSetCache(`project:${req.params.id}:${userId}`, 3600, async () => {
+    const db = ensureDBShape(await readDB());
+    const project = db.projects.find((item) => item.id === req.params.id && item.userId === userId);
+    if (!project) return { error: 'Project not found', status: 404 };
+    const tracks = db.tracks.filter((track) => track.projectId === project.id).map(normalizeTrack);
+    return { project: normalizeLibraryItem(project, db, 'project'), tracks };
+  });
+
+  if (data.error) return res.status(data.status).json({ error: data.error });
+  res.json(data);
 });
 
 app.get('/api/projects/:id/insights', async (req, res) => {
@@ -984,14 +1065,15 @@ app.post('/api/upload-cover', uploadCover.single('cover'), async (req, res) => {
   const { userId } = req.body;
   const db = ensureDBShape(await readDB());
   if (!userExists(db, userId)) {
-    removeFileIfExists(req.file.path);
+    cloudinary.uploader.destroy(req.file.filename).catch(console.error);
     return res.status(401).json({ error: 'Unauthorized user.' });
   }
 
-  const url = `${BASE_URL}/covers/${req.file.filename}`;
+  const url = req.file.path; // Cloudinary URL
   const newCover = { id: Date.now().toString(), userId, url, mimeType: req.file.mimetype, uploadedAt: new Date().toISOString() };
   db.coverArts.push(newCover);
   await writeDB(db);
+  invalidateCache(`workspace:${userId}`);
   res.json(newCover);
 });
 
@@ -1020,15 +1102,13 @@ app.post('/api/upload', uploadTrack.single('track'), async (req, res) => {
   const db = ensureDBShape(await readDB());
   const uploader = db.users.find(u => u.id === userId);
   if (!uploader) {
-    removeFileIfExists(req.file.path);
+    cloudinary.uploader.destroy(req.file.filename, { resource_type: 'video' }).catch(console.error);
     return res.status(401).json({ error: 'Unauthorized user.' });
   }
   if (projectId && !db.projects.some((project) => project.id === projectId && project.userId === userId)) {
-    removeFileIfExists(req.file.path);
+    cloudinary.uploader.destroy(req.file.filename, { resource_type: 'video' }).catch(console.error);
     return res.status(404).json({ error: 'Project not found' });
   }
-  
-  moveFileToUserDir(req.file, uploadDir, userId);
   
   const trackId = Date.now().toString();
   const newTrack = {
@@ -1038,16 +1118,18 @@ app.post('/api/upload', uploadTrack.single('track'), async (req, res) => {
     title: title || req.file.originalname,
     artist: artist || '',
     producer: producer || '',
-    filename: req.file.filename,
+    filename: null, // No local file
     mimeType: req.file.mimetype,
     size: req.file.size,
-    url: `${BASE_URL}/api/media/tracks/${trackId}`,
+    url: req.file.path, // Cloudinary URL
     uploader: { id: uploader.id, name: uploader.name },
     uploadedAt: new Date().toISOString()
   };
   
   db.tracks.push(newTrack);
   await writeDB(db);
+  invalidateCache(`workspace:${userId}`);
+  if (projectId) invalidateCache(`project:${projectId}:${userId}`);
   res.json({ track: newTrack });
 });
 
@@ -1129,12 +1211,11 @@ app.post('/api/tracks/:id/replace-audio', uploadTrack.single('track'), async (re
 
   const trackIndex = db.tracks.findIndex((item) => item.id === req.params.id && (item.userId === userId || item.uploader?.id === userId));
   if (trackIndex === -1) {
-    removeFileIfExists(req.file.path);
+    cloudinary.uploader.destroy(req.file.filename, { resource_type: 'video' }).catch(console.error);
     return res.status(404).json({ error: 'Track not found' });
   }
 
   const track = db.tracks[trackIndex];
-  moveFileToUserDir(req.file, uploadDir, userId);
   track.versions ||= [];
 
   if (track.filename) {
@@ -1148,7 +1229,8 @@ app.post('/api/tracks/:id/replace-audio', uploadTrack.single('track'), async (re
     });
   }
 
-  track.filename = req.file.filename;
+  track.filename = null;
+  track.url = req.file.path; // Cloudinary URL
   track.mimeType = req.file.mimetype;
   track.size = req.file.size;
   track.uploadedAt = new Date().toISOString();
@@ -1263,14 +1345,15 @@ app.post('/api/tracks/:id/note-memos', uploadNoteMemo.single('memo'), async (req
   const trackIndex = db.tracks.findIndex((item) => item.id?.toString() === req.params.id?.toString());
   const track = trackIndex === -1 ? null : findAccessibleTrack(db, req.params.id, userId);
   if (!track) {
-    removeFileIfExists(req.file.path);
+    cloudinary.uploader.destroy(req.file.filename, { resource_type: 'video' }).catch(console.error);
     return res.status(404).json({ error: 'Track not found' });
   }
 
   track.noteMemos ||= [];
   const memo = {
     id: makeId(),
-    filename: req.file.filename,
+    filename: null,
+    url: req.file.path, // Cloudinary URL
     mimeType: req.file.mimetype,
     size: req.file.size,
     uploadedAt: new Date().toISOString()
@@ -1329,25 +1412,27 @@ app.post('/api/tracks/:id/split-stems', async (req, res) => {
   if (!track) {
     const rawTrack = db.tracks.find(t => t.id?.toString() === req.params.id?.toString());
     console.error('[stem-split] Track not found. trackId:', req.params.id, 'userId:', userId,
-      'rawTrack:', rawTrack ? JSON.stringify({ id: rawTrack.id, userId: rawTrack.userId, uploader: rawTrack.uploader, projectId: rawTrack.projectId }) : 'not in db');
     return res.status(404).json({ error: 'Track not found' });
-  }
-
-  const sourcePath = trackMediaPath(track);
-  if (!fs.existsSync(sourcePath)) {
-    console.error('[stem-split] File missing at:', sourcePath);
-    return res.status(404).json({ error: 'Track audio file is missing on the server. Try re-uploading this track.' });
   }
 
   const jobId = makeId();
   const outputRoot = path.join(stemsDir, userId, track.id, jobId);
   fs.mkdirSync(outputRoot, { recursive: true });
+
+  let sourcePath = trackMediaPath(track);
+  let isCloudinary = !track.filename && track.url;
+  
+  if (!isCloudinary && !fs.existsSync(sourcePath)) {
+    console.error('[stem-split] File missing at:', sourcePath);
+    return res.status(404).json({ error: 'Track audio file is missing on the server. Try re-uploading this track.' });
+  }
+
   stemJobs[jobId] = { progress: 5, done: false, error: null, stems: null };
 
   res.json({ jobId });
 
   (async () => {
-    // Simulate incremental progress while Demucs runs (25 → 88)
+    // Simulate incremental progress while Demucs runs (25   88)
     let simulatedProgress = 25;
     const progressTimer = setInterval(() => {
       if (stemJobs[jobId] && !stemJobs[jobId].done && !stemJobs[jobId].error) {
@@ -1362,6 +1447,11 @@ app.post('/api/tracks/:id/split-stems', async (req, res) => {
 
     try {
       stemJobs[jobId].progress = 10;
+      if (isCloudinary) {
+        sourcePath = path.join(outputRoot, 'downloaded_track.mp3');
+        await downloadFile(track.url, sourcePath);
+      }
+
       let inputPath = sourcePath;
       const ext = path.extname(sourcePath).toLowerCase();
       if (ext !== '.wav') {
@@ -1378,23 +1468,24 @@ app.post('/api/tracks/:id/split-stems', async (req, res) => {
       const demucsOutputDir = findStemOutputDir(outputRoot);
       if (!demucsOutputDir) throw new Error('Stem output not found after Demucs processing.');
 
-      const trackStemDir = path.join(stemsDir, userId, track.id);
-      fs.mkdirSync(trackStemDir, { recursive: true });
-
-      const stems = ['drums', 'bass', 'other', 'vocals'].map((stem) => {
+      const stems = await Promise.all(['drums', 'bass', 'other', 'vocals'].map(async (stem) => {
         const sourceFile = fs.readdirSync(demucsOutputDir).find((file) => file.startsWith(stem));
         if (!sourceFile) return null;
-        const targetName = `${stem}.wav`;
-        const targetPath = path.join(trackStemDir, targetName);
-        fs.copyFileSync(path.join(demucsOutputDir, sourceFile), targetPath);
+        
+        const uploadResult = await cloudinary.uploader.upload(path.join(demucsOutputDir, sourceFile), {
+          folder: `stems/${track.id}`,
+          resource_type: 'video',
+          public_id: `${stem}-${jobId}`
+        });
+
         return {
           name: stem,
-          filename: targetName,
-          url: `${BASE_URL}/api/media/stems/${track.id}/${targetName}?userId=${encodeURIComponent(userId)}`
+          filename: null,
+          url: uploadResult.secure_url
         };
-      }).filter(Boolean);
+      }));
 
-      stemJobs[jobId].stems = stems;
+      stemJobs[jobId].stems = stems.filter(Boolean);
       stemJobs[jobId].done = true;
       stemJobs[jobId].progress = 100;
       removeDirIfExists(outputRoot);
@@ -1537,8 +1628,7 @@ app.post('/api/convert', uploadTrack.single('video'), async (req, res) => {
         conversionJobs[jobId].progress = Math.round(progress.percent);
       }
     })
-    .on('end', () => {
-      removeFileIfExists(req.file.path);
+    .on('end', async () => {
       const currentDb = readDB();
       const projectId = makeId();
       const newProject = {
@@ -1561,16 +1651,35 @@ app.post('/api/convert', uploadTrack.single('video'), async (req, res) => {
         title: originalNameNoExt,
         artist: uploader.name,
         producer: '',
-        filename: newFilename,
+        filename: null,
         mimeType: 'audio/wav',
         size: fs.statSync(outputPath).size,
-        url: `${BASE_URL}/api/media/tracks/${trackId}`,
+        url: '', // will be set shortly
         uploader: { id: uploader.id, name: uploader.name },
         uploadedAt: new Date().toISOString()
       };
+      
+      try {
+        const uploadResult = await cloudinary.uploader.upload(outputPath, {
+          folder: 'tracks',
+          resource_type: 'video',
+          public_id: `track-${Date.now()}`
+        });
+        newTrack.url = uploadResult.secure_url;
+      } catch (err) {
+        console.error('Cloudinary upload error after convert:', err);
+        conversionJobs[jobId].error = 'Upload to cloud failed';
+        return;
+      }
+
+      // Cleanup local files and original cloud file
+      removeFileIfExists(outputPath);
+      cloudinary.uploader.destroy(req.file.filename, { resource_type: 'video' }).catch(console.error);
+
       currentDb.tracks.push(newTrack);
       
-      writeDB(currentDb);
+      await writeDB(currentDb);
+      invalidateCache(`workspace:${userId}`);
       conversionJobs[jobId].done = true;
       conversionJobs[jobId].project = newProject;
       conversionJobs[jobId].track = newTrack;
@@ -1578,7 +1687,8 @@ app.post('/api/convert', uploadTrack.single('video'), async (req, res) => {
     })
     .on('error', (err) => {
       console.error('ffmpeg error:', err);
-      removeFileIfExists(req.file.path);
+      cloudinary.uploader.destroy(req.file.filename, { resource_type: 'video' }).catch(console.error);
+      removeFileIfExists(outputPath);
       conversionJobs[jobId].error = 'Conversion failed';
       setTimeout(() => delete conversionJobs[jobId], 60000); // cleanup
     })
@@ -1915,7 +2025,7 @@ app.post('/api/messages/media', uploadChatMedia.single('media'), async (req, res
   const db = ensureDBShape(await readDB());
   const { senderId, recipientId, conversationType, text, replyToMessageId, mediaKind } = req.body;
   if (!senderId || !userExists(db, senderId)) {
-    removeFileIfExists(req.file.path);
+    cloudinary.uploader.destroy(req.file.filename, { resource_type: 'auto' }).catch(console.error);
     return res.status(401).json({ error: 'Unauthorized user.' });
   }
   if (conversationType === 'dm' && !recipientId) return res.status(400).json({ error: 'recipientId required for DM.' });
@@ -1926,11 +2036,10 @@ app.post('/api/messages/media', uploadChatMedia.single('media'), async (req, res
       ? 'video'
       : 'voice';
   if (attachmentType === 'voice' && mediaKind !== 'voice') {
-    removeFileIfExists(req.file.path);
+    cloudinary.uploader.destroy(req.file.filename, { resource_type: 'auto' }).catch(console.error);
     return res.status(400).json({ error: 'Only photos and videos can be shared from files.' });
   }
 
-  const relativePath = `chat/${senderId}/${req.file.filename}`.replace(/\\/g, '/');
   const msg = createMessage(db, {
     senderId,
     recipientId,
@@ -1940,7 +2049,7 @@ app.post('/api/messages/media', uploadChatMedia.single('media'), async (req, res
     attachments: [{
       id: makeId(),
       type: attachmentType,
-      url: `${BASE_URL}/uploads/${relativePath}`,
+      url: req.file.path, // Cloudinary URL
       name: req.file.originalname,
       mimeType: req.file.mimetype,
       size: req.file.size
