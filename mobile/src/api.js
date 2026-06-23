@@ -10,6 +10,24 @@ export const API_URL =
   Constants.expoConfig?.extra?.apiUrl ||
   fallbackLocalUrl;
 
+export function resolveMediaUrl(url) {
+  if (!url) return url;
+  try {
+    const api = new URL(API_URL);
+    const media = new URL(url);
+    if (['localhost', '127.0.0.1', '0.0.0.0'].includes(media.hostname)) {
+      media.protocol = api.protocol;
+      media.hostname = api.hostname;
+      media.port = api.port;
+      return media.toString();
+    }
+    return url;
+  } catch {
+    if (url.startsWith('/')) return `${API_URL.replace(/\/$/, '')}${url}`;
+    return url;
+  }
+}
+
 export async function api(path, options = {}) {
   const response = await fetch(`${API_URL}${path}`, {
     ...options,

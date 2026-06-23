@@ -26,7 +26,7 @@ import {
   TextInput,
   View
 } from 'react-native';
-import { API_URL, api } from './src/api';
+import { API_URL, api, resolveMediaUrl } from './src/api';
 import { clearUser, getLastEmail, getOfflineTracks, getStoredUser, storeLastEmail, storeOfflineTracks, storeUser } from './src/storage';
 import { colors, gradientFor } from './src/theme';
 
@@ -41,7 +41,7 @@ function IconButton({ name, onPress, label, tone = 'dark', badge = 0 }) {
         pressed && styles.pressed
       ]}
     >
-      <Ionicons name={name} size={20} color={tone === 'light' ? colors.bg : colors.ink} />
+      <Ionicons name={name} size={18} color={tone === 'light' ? colors.bg : colors.ink} />
       {badge > 0 && <View style={styles.badge} />}
     </Pressable>
   );
@@ -197,7 +197,8 @@ function LibraryHeader({ user, title, subtitle, onBack, onNotifications, onProfi
   );
 }
 
-function ProjectCard({ project, tracks, onOpen, onMove, onPlay }) {
+function ProjectCard({ project, tracks, onOpen, onMove, onPlay, onDelete }) {
+  const [menuOpen, setMenuOpen] = useState(false);
   const projectTracks = tracks.filter((track) => track.projectId === project.id);
   const title = project.title || project.name || 'Untitled project';
   const artist = project.artist || projectTracks[0]?.artist || 'Unknown artist';
@@ -215,15 +216,28 @@ function ProjectCard({ project, tracks, onOpen, onMove, onPlay }) {
           <Text numberOfLines={1} style={styles.cardMeta}>{artist}</Text>
           <Text style={styles.cardTiny}>{projectTracks.length} track{projectTracks.length === 1 ? '' : 's'}</Text>
         </View>
-        <Pressable onPress={onMove} style={styles.cardMore} accessibilityLabel="Move project">
-          <Ionicons name="folder-open-outline" size={18} color={colors.ink} />
+        <Pressable onPress={() => setMenuOpen((value) => !value)} style={styles.cardMore} accessibilityLabel="Project options">
+          <Ionicons name="ellipsis-horizontal" size={19} color={colors.ink} />
         </Pressable>
       </View>
+      {menuOpen && (
+        <View style={styles.cardMenu}>
+          <Pressable onPress={() => { setMenuOpen(false); onMove(); }} style={styles.cardMenuRow}>
+            <Ionicons name="folder-open-outline" size={17} color={colors.ink} />
+            <Text style={styles.cardMenuText}>Move</Text>
+          </Pressable>
+          <Pressable onPress={() => { setMenuOpen(false); onDelete(); }} style={styles.cardMenuRow}>
+            <Ionicons name="trash-outline" size={17} color="#FF6961" />
+            <Text style={[styles.cardMenuText, styles.cardMenuDanger]}>Delete</Text>
+          </Pressable>
+        </View>
+      )}
     </Pressable>
   );
 }
 
-function FolderCard({ folder, projects, tracks, onOpen }) {
+function FolderCard({ folder, projects, tracks, onOpen, onDelete }) {
+  const [menuOpen, setMenuOpen] = useState(false);
   const title = folder.title || folder.name || 'Untitled folder';
   const folderTracks = projects.flatMap((project) => tracks.filter((track) => track.projectId === project.id));
   const preview = projects.slice(0, 4);
@@ -247,8 +261,18 @@ function FolderCard({ folder, projects, tracks, onOpen }) {
           <Text numberOfLines={1} style={styles.cardMeta}>{folder.artist || 'Folder'}</Text>
           <Text style={styles.cardTiny}>{projects.length} project{projects.length === 1 ? '' : 's'} · {folderTracks.length} track{folderTracks.length === 1 ? '' : 's'}</Text>
         </View>
-        <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+        <Pressable onPress={() => setMenuOpen((value) => !value)} style={styles.cardMore} accessibilityLabel="Folder options">
+          <Ionicons name="ellipsis-horizontal" size={19} color={colors.ink} />
+        </Pressable>
       </View>
+      {menuOpen && (
+        <View style={styles.cardMenu}>
+          <Pressable onPress={() => { setMenuOpen(false); onDelete(); }} style={styles.cardMenuRow}>
+            <Ionicons name="trash-outline" size={17} color="#FF6961" />
+            <Text style={[styles.cardMenuText, styles.cardMenuDanger]}>Delete</Text>
+          </Pressable>
+        </View>
+      )}
     </Pressable>
   );
 }
@@ -322,7 +346,7 @@ function MiniPlayer({ playback, onToggle, onOpen, onShare }) {
   );
 }
 
-function NowPlayingPage({ playback, settings, onBack, onToggle, onEdit, onShare, onSeekPrevious, onSeekNext }) {
+function NowPlayingPage({ playback, settings, onBack, onToggle, onEdit, onShare, onSeekPrevious, onSeekNext, onToggleRepeat }) {
   const track = playback.track;
   const project = playback.project;
   if (!track) {
@@ -359,8 +383,8 @@ function NowPlayingPage({ playback, settings, onBack, onToggle, onEdit, onShare,
             <Pressable onPress={onSeekNext} style={styles.transportButtonPlain}>
               <Ionicons name="play-forward" size={32} color={colors.ink} />
             </Pressable>
-            <Pressable onPress={onSeekPrevious} style={styles.transportButtonPlain}>
-              <Ionicons name="repeat" size={28} color={colors.ink} />
+            <Pressable onPress={onToggleRepeat} style={styles.transportButtonPlain}>
+              <Ionicons name="repeat" size={28} color={playback.repeat ? colors.accent : colors.ink} />
             </Pressable>
           </View>
         </View>
@@ -386,9 +410,15 @@ function PlayerEditPage({ playback, settings, onBack, onSave, onCancel, onToggle
   const project = playback.project;
   const duration = Number(track?.duration) || 123;
   const elapsed = Math.max(28, Math.round(duration * (playback.progress || 0.23)));
+  const swipeDownResponder = useMemo(() => PanResponder.create({
+    onMoveShouldSetPanResponder: (_event, gesture) => gesture.dy > 14 && Math.abs(gesture.dy) > Math.abs(gesture.dx) * 1.2,
+    onPanResponderRelease: (_event, gesture) => {
+      if (gesture.dy > 70) onCancel();
+    }
+  }), [onCancel]);
   return (
     <SafeAreaView style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.editorPage}>
+      <ScrollView {...swipeDownResponder.panHandlers} contentContainerStyle={styles.editorPage}>
         <View style={styles.editorTop}>
           <Pressable onPress={onCancel} style={styles.editorPill}><Text style={styles.editorPillText}>Cancel</Text></Pressable>
           <Pressable onPress={onSave} style={[styles.editorPill, styles.editorPillDim]}><Text style={styles.editorPillText}>Save</Text></Pressable>
@@ -397,7 +427,7 @@ function PlayerEditPage({ playback, settings, onBack, onSave, onCancel, onToggle
         <Text numberOfLines={1} style={styles.editorMeta}>{track?.artist || project?.artist || 'Unknown artist'} - {track?.producer || project?.title || project?.name || 'Project'}</Text>
         <View style={styles.editorChips}>
           <Text style={styles.editorChip}>G Min</Text>
-          <Text style={styles.editorChip}>166 BPM</Text>
+          <Text style={styles.editorChip}>Tempo pending</Text>
           <Text style={styles.editorChip}>Settings</Text>
         </View>
         <Waveform progress={playback.progress || 0.23} />
@@ -618,7 +648,7 @@ function MoveProjectPage({ project, folders, onBack, onMove }) {
   );
 }
 
-function LibraryScreen({ user, workspace, loading, refreshing, onRefresh, onOpenFolder, onOpenProject, onCreateProject, onCreateFolder, onMoveProject, onPlayProject, onNotifications, onProfile, onMessages }) {
+function LibraryScreen({ user, workspace, loading, refreshing, onRefresh, onOpenFolder, onOpenProject, onCreateProject, onCreateFolder, onMoveProject, onDeleteProject, onDeleteFolder, onPlayProject, onNotifications, onProfile, onMessages }) {
   const rootProjects = workspace.projects.filter((project) => !project.folderId);
   const rootFolders = workspace.folders;
   const data = [
@@ -652,6 +682,7 @@ function LibraryScreen({ user, workspace, loading, refreshing, onRefresh, onOpen
               projects={workspace.projects.filter((project) => project.folderId === item.item.id)}
               tracks={workspace.tracks}
               onOpen={() => onOpenFolder(item.item.id)}
+              onDelete={() => onDeleteFolder(item.item)}
             />
           ) : (
             <ProjectCard
@@ -659,6 +690,7 @@ function LibraryScreen({ user, workspace, loading, refreshing, onRefresh, onOpen
               tracks={workspace.tracks}
               onOpen={() => onOpenProject(item.item.id)}
               onMove={() => onMoveProject(item.item)}
+              onDelete={() => onDeleteProject(item.item)}
               onPlay={() => onPlayProject(item.item)}
             />
           )}
@@ -669,7 +701,7 @@ function LibraryScreen({ user, workspace, loading, refreshing, onRefresh, onOpen
   );
 }
 
-function FolderScreen({ user, folderData, loading, onBack, onOpenFolder, onOpenProject, onCreateProject, onCreateFolder, onMoveProject, onPlayProject, onNotifications, onProfile, onMessages, notificationCount }) {
+function FolderScreen({ user, folderData, loading, onBack, onOpenFolder, onOpenProject, onCreateProject, onCreateFolder, onMoveProject, onDeleteProject, onDeleteFolder, onPlayProject, onNotifications, onProfile, onMessages, notificationCount }) {
   const folder = folderData?.folder;
   const folders = folderData?.folders || [];
   const projects = folderData?.projects || [];
@@ -701,13 +733,14 @@ function FolderScreen({ user, folderData, loading, onBack, onOpenFolder, onOpenP
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={<EmptyState icon="folder-open-outline" title="This folder is empty" copy="Create something here or move projects into this folder." />}
           renderItem={({ item }) => item.type === 'folder' ? (
-            <FolderCard folder={item.item} projects={[]} tracks={tracks} onOpen={() => onOpenFolder(item.item.id)} />
+            <FolderCard folder={item.item} projects={[]} tracks={tracks} onOpen={() => onOpenFolder(item.item.id)} onDelete={() => onDeleteFolder(item.item)} />
           ) : (
             <ProjectCard
               project={item.item}
               tracks={tracks}
               onOpen={() => onOpenProject(item.item.id)}
               onMove={() => onMoveProject(item.item)}
+              onDelete={() => onDeleteProject(item.item)}
               onPlay={() => onPlayProject(item.item, tracks)}
             />
           )}
@@ -820,7 +853,7 @@ export default function App() {
   const [uploadingTrack, setUploadingTrack] = useState(false);
   const [offlineTracks, setOfflineTracks] = useState({});
   const [playbackSettings, setPlaybackSettings] = useState({ speed: 1, pitch: 0 });
-  const [playback, setPlayback] = useState({ player: null, track: null, project: null, tracks: [], playing: false, progress: 0.12 });
+  const [playback, setPlayback] = useState({ player: null, track: null, project: null, tracks: [], playing: false, progress: 0.12, repeat: false });
   const playerRef = useRef(null);
 
   const allFolders = useMemo(() => {
@@ -894,6 +927,27 @@ export default function App() {
       interruptionMode: 'doNotMix'
     }).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!playback.playing || !playback.track) return undefined;
+    const timer = setInterval(() => {
+      setPlayback((prev) => {
+        if (!prev.playing || !prev.track) return prev;
+        const duration = Number(prev.track.duration) || 123;
+        const next = (prev.progress || 0) + (1 / duration);
+        if (next >= 1 && prev.repeat) {
+          playerRef.current?.seekTo?.(0);
+          return { ...prev, progress: 0.01 };
+        }
+        if (next >= 1) {
+          playerRef.current?.pause?.();
+          return { ...prev, progress: 1, playing: false };
+        }
+        return { ...prev, progress: next };
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [playback.playing, playback.track?.id, playback.repeat]);
 
   const refreshWorkspace = async () => {
     if (!user?.id) return;
@@ -1000,6 +1054,48 @@ export default function App() {
     }
   };
 
+  const deleteProject = (project) => {
+    if (!project) return;
+    Alert.alert('Delete project?', `${project.title || project.name || 'This project'} and its tracks will be removed.`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await api(`/api/projects/${project.id}?userId=${encodeURIComponent(user.id)}`, { method: 'DELETE' });
+            if (projectData?.project?.id === project.id) setProjectData(null);
+            if (route.name === 'folder') await openFolder(route.id);
+            await refreshWorkspace();
+          } catch (error) {
+            Alert.alert('Could not delete project', error.message);
+          }
+        }
+      }
+    ]);
+  };
+
+  const deleteFolder = (folder) => {
+    if (!folder) return;
+    Alert.alert('Delete folder?', 'Projects inside this folder will move back to the library.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await api(`/api/folders/${folder.id}?userId=${encodeURIComponent(user.id)}`, { method: 'DELETE' });
+            if (route.name === 'folder' && route.id === folder.id) goLibrary();
+            else if (route.name === 'folder') await openFolder(route.id);
+            await refreshWorkspace();
+          } catch (error) {
+            Alert.alert('Could not delete folder', error.message);
+          }
+        }
+      }
+    ]);
+  };
+
   const refreshProject = async (projectId = projectData?.project?.id) => {
     if (!projectId || !user?.id) return;
     const data = await api(`/api/projects/${projectId}?userId=${encodeURIComponent(user.id)}`);
@@ -1021,7 +1117,7 @@ export default function App() {
 
   const playTrack = async (track, project, tracks) => {
     try {
-      const source = offlineTracks[track.id] || track.url;
+      const source = offlineTracks[track.id] || resolveMediaUrl(track.url);
       if (!source) {
         Alert.alert('Track unavailable', 'This track does not have a playable URL yet.');
         return;
@@ -1037,7 +1133,7 @@ export default function App() {
         albumTitle: project?.title || project?.name || 'Project',
         artworkUrl: project?.coverArt
       });
-      setPlayback({ player, track, project, tracks, playing: true, progress: 0.12 });
+      setPlayback((prev) => ({ player, track, project, tracks, playing: true, progress: 0.01, repeat: prev.repeat }));
     } catch (error) {
       Alert.alert('Could not play track', error.message);
     }
@@ -1081,11 +1177,15 @@ export default function App() {
     setPlayback((prev) => ({ ...prev, progress: duration ? current / duration : prev.progress }));
   };
 
+  const toggleRepeat = () => {
+    setPlayback((prev) => ({ ...prev, repeat: !prev.repeat }));
+  };
+
   const closePlayer = async () => {
     playerRef.current?.clearLockScreenControls?.();
     playerRef.current?.remove?.();
     playerRef.current = null;
-    setPlayback({ player: null, track: null, project: null, tracks: [], playing: false, progress: 0.12 });
+    setPlayback((prev) => ({ player: null, track: null, project: null, tracks: [], playing: false, progress: 0.12, repeat: prev.repeat }));
   };
 
   const markNotificationsRead = async () => {
@@ -1267,12 +1367,13 @@ export default function App() {
         await storeOfflineTracks(next);
         return;
       }
-      if (!track.url) {
+      const remoteUrl = resolveMediaUrl(track.url);
+      if (!remoteUrl) {
         Alert.alert('Track unavailable', 'This track does not have a downloadable URL yet.');
         return;
       }
       const destination = `${FileSystem.documentDirectory}${track.id}.audio`;
-      await FileSystem.downloadAsync(track.url, destination);
+      await FileSystem.downloadAsync(remoteUrl, destination);
       const next = { ...offlineTracks, [track.id]: destination };
       setOfflineTracks(next);
       await storeOfflineTracks(next);
@@ -1299,11 +1400,12 @@ export default function App() {
 
   const shareCurrentTrack = async () => {
     const track = playback.track;
-    if (!track?.url) {
+    const url = resolveMediaUrl(track?.url);
+    if (!url) {
       Alert.alert('Track unavailable', 'This track does not have a shareable URL yet.');
       return;
     }
-    await Share.share({ message: track.url, url: track.url });
+    await Share.share({ message: url, url });
   };
 
   const deleteAccount = () => {
@@ -1358,6 +1460,7 @@ export default function App() {
       onShare={shareCurrentTrack}
       onSeekPrevious={() => seekRelative(-15)}
       onSeekNext={() => seekRelative(15)}
+      onToggleRepeat={toggleRepeat}
     />
   ) : route.name === 'player-edit' ? (
     <PlayerEditPage
@@ -1432,6 +1535,8 @@ export default function App() {
       onCreateProject={createProject}
       onCreateFolder={createFolder}
       onMoveProject={openMoveProject}
+      onDeleteProject={deleteProject}
+      onDeleteFolder={deleteFolder}
       onPlayProject={playProject}
       onNotifications={() => setRoute({ name: 'notifications', from: route })}
       onProfile={() => setRoute({ name: 'account', from: route })}
@@ -1450,6 +1555,8 @@ export default function App() {
       onCreateProject={createProject}
       onCreateFolder={createFolder}
       onMoveProject={openMoveProject}
+      onDeleteProject={deleteProject}
+      onDeleteFolder={deleteFolder}
       onPlayProject={playProject}
       onNotifications={() => setRoute({ name: 'notifications', from: route })}
       onProfile={() => setRoute({ name: 'account', from: route })}
@@ -1592,9 +1699,9 @@ const styles = StyleSheet.create({
     fontWeight: '900'
   },
   header: {
-    paddingHorizontal: 18,
-    paddingTop: 12,
-    paddingBottom: 14
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 12
   },
   headerTop: {
     minHeight: 50,
@@ -1607,9 +1714,9 @@ const styles = StyleSheet.create({
     gap: 10
   },
   iconButton: {
-    width: 54,
-    height: 54,
-    borderRadius: 18,
+    width: 46,
+    height: 46,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.panelSoft,
@@ -1622,8 +1729,8 @@ const styles = StyleSheet.create({
   },
   badge: {
     position: 'absolute',
-    right: 16,
-    top: 15,
+    right: 13,
+    top: 12,
     width: 7,
     height: 7,
     borderRadius: 4,
@@ -1657,13 +1764,13 @@ const styles = StyleSheet.create({
     lineHeight: 21
   },
   listContent: {
-    paddingHorizontal: 32,
+    paddingHorizontal: 24,
     paddingBottom: 150,
-    gap: 22
+    gap: 20
   },
   gridRow: {
-    gap: 28,
-    marginBottom: 28
+    gap: 22,
+    marginBottom: 24
   },
   card: {
     flex: 1,
@@ -1689,7 +1796,7 @@ const styles = StyleSheet.create({
   },
   projectHeroArt: {
     width: '100%',
-    maxWidth: 390,
+    maxWidth: 350,
     aspectRatio: 1,
     alignSelf: 'center',
     borderRadius: 18,
@@ -1699,9 +1806,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.panelSoft
   },
   recordArt: {
-    width: 250,
-    height: 250,
-    borderRadius: 125,
+    width: 216,
+    height: 216,
+    borderRadius: 108,
     alignSelf: 'center',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1738,15 +1845,15 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     color: colors.ink,
-    fontSize: 20,
-    lineHeight: 24,
+    fontSize: 18,
+    lineHeight: 22,
     fontWeight: '900',
     letterSpacing: 0
   },
   cardMeta: {
     marginTop: 2,
     color: colors.muted,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700'
   },
   cardTiny: {
@@ -1756,12 +1863,39 @@ const styles = StyleSheet.create({
     fontWeight: '800'
   },
   cardMore: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent'
+  },
+  cardMenu: {
+    position: 'absolute',
+    right: 0,
+    bottom: 34,
+    minWidth: 132,
+    borderRadius: 14,
+    backgroundColor: '#2D2D2D',
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingVertical: 6,
+    zIndex: 10
+  },
+  cardMenuRow: {
+    minHeight: 40,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 14
+  },
+  cardMenuText: {
+    color: colors.ink,
+    fontSize: 14,
+    fontWeight: '800'
+  },
+  cardMenuDanger: {
+    color: '#FF6961'
   },
   empty: {
     alignItems: 'center',
@@ -1832,7 +1966,7 @@ const styles = StyleSheet.create({
     marginVertical: 10
   },
   projectContent: {
-    paddingHorizontal: 30,
+    paddingHorizontal: 24,
     paddingTop: 10,
     paddingBottom: 140
   },
@@ -1855,8 +1989,8 @@ const styles = StyleSheet.create({
   },
   projectTitle: {
     color: colors.ink,
-    fontSize: 31,
-    lineHeight: 36,
+    fontSize: 28,
+    lineHeight: 33,
     fontWeight: '900',
     letterSpacing: 0
   },
@@ -1867,9 +2001,9 @@ const styles = StyleSheet.create({
     fontWeight: '700'
   },
   projectPlayButton: {
-    width: 58,
-    height: 58,
-    borderRadius: 20,
+    width: 52,
+    height: 52,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.ink
@@ -1894,7 +2028,7 @@ const styles = StyleSheet.create({
     gap: 4
   },
   trackRow: {
-    minHeight: 72,
+    minHeight: 64,
     borderRadius: 0,
     backgroundColor: 'transparent',
     borderWidth: 0,
@@ -1912,14 +2046,14 @@ const styles = StyleSheet.create({
   },
   trackTitle: {
     color: colors.ink,
-    fontSize: 19,
-    lineHeight: 23,
+    fontSize: 17,
+    lineHeight: 21,
     fontWeight: '900'
   },
   trackMeta: {
     marginTop: 4,
     color: colors.muted,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700'
   },
   trackIconButton: {
@@ -2027,32 +2161,32 @@ const styles = StyleSheet.create({
   },
   playerPage: {
     flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 76,
+    paddingHorizontal: 16,
+    paddingTop: 44,
     paddingBottom: 32,
     justifyContent: 'center'
   },
   nowPlayingCard: {
     width: '100%',
-    borderRadius: 30,
+    borderRadius: 26,
     backgroundColor: '#3A3A3A',
-    paddingHorizontal: 24,
-    paddingTop: 38,
-    paddingBottom: 26,
+    paddingHorizontal: 20,
+    paddingTop: 28,
+    paddingBottom: 22,
     alignItems: 'center'
   },
   nowTitle: {
     color: colors.ink,
-    fontSize: 29,
-    lineHeight: 34,
+    fontSize: 26,
+    lineHeight: 31,
     fontWeight: '500',
     letterSpacing: 0
   },
   nowMeta: {
     marginTop: 5,
-    marginBottom: 48,
+    marginBottom: 30,
     color: colors.muted,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '500'
   },
   playerTime: {
@@ -2076,7 +2210,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center'
   },
   playerFooterActions: {
-    marginTop: 72,
+    marginTop: 42,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center'
@@ -2104,8 +2238,8 @@ const styles = StyleSheet.create({
     fontWeight: '700'
   },
   editorPage: {
-    paddingHorizontal: 36,
-    paddingTop: 28,
+    paddingHorizontal: 24,
+    paddingTop: 18,
     paddingBottom: 48
   },
   editorTop: {
@@ -2115,9 +2249,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between'
   },
   editorPill: {
-    minWidth: 104,
-    minHeight: 48,
-    borderRadius: 24,
+    minWidth: 90,
+    minHeight: 42,
+    borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.panel
@@ -2127,26 +2261,26 @@ const styles = StyleSheet.create({
   },
   editorPillText: {
     color: colors.ink,
-    fontSize: 19,
+    fontSize: 17,
     fontWeight: '700'
   },
   editorTitle: {
-    marginTop: 16,
+    marginTop: 10,
     color: colors.ink,
     textAlign: 'center',
-    fontSize: 28,
-    lineHeight: 34,
+    fontSize: 25,
+    lineHeight: 30,
     fontWeight: '500'
   },
   editorMeta: {
     marginTop: 4,
     color: colors.muted,
     textAlign: 'center',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '500'
   },
   editorChips: {
-    marginTop: 18,
+    marginTop: 14,
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 12
@@ -2162,7 +2296,7 @@ const styles = StyleSheet.create({
     fontWeight: '600'
   },
   editorTransport: {
-    marginTop: 30,
+    marginTop: 22,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between'
@@ -2189,7 +2323,7 @@ const styles = StyleSheet.create({
     fontWeight: '500'
   },
   modeRow: {
-    marginTop: 54,
+    marginTop: 34,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center'
@@ -2216,13 +2350,13 @@ const styles = StyleSheet.create({
   },
   stepper: {
     marginTop: 16,
-    minHeight: 84,
+    minHeight: 72,
     borderRadius: 16,
     backgroundColor: '#191919',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingHorizontal: 20
+    paddingHorizontal: 16
   },
   stepperLabel: {
     width: 62,
