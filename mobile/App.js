@@ -2,6 +2,8 @@ import { StatusBar } from 'expo-status-bar';
 import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -18,13 +20,14 @@ import {
   RefreshControl,
   SafeAreaView,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TextInput,
   View
 } from 'react-native';
 import { API_URL, api } from './src/api';
-import { clearUser, getLastEmail, getStoredUser, storeLastEmail, storeUser } from './src/storage';
+import { clearUser, getLastEmail, getOfflineTracks, getStoredUser, storeLastEmail, storeOfflineTracks, storeUser } from './src/storage';
 import { colors, gradientFor } from './src/theme';
 
 function IconButton({ name, onPress, label, tone = 'dark', badge = 0 }) {
@@ -67,7 +70,7 @@ function LogoMark({ small = false }) {
 }
 
 function Artwork({ item, size = 'large', children }) {
-  const boxStyle = size === 'small' ? styles.artSmall : styles.art;
+  const boxStyle = size === 'small' ? styles.artSmall : size === 'hero' ? styles.projectHeroArt : styles.art;
   if (item?.coverArt) {
     return (
       <View style={boxStyle}>
@@ -571,23 +574,66 @@ function FolderScreen({ user, folderData, loading, onBack, onOpenFolder, onOpenP
   );
 }
 
-function ProjectScreen({ projectData, loading, onBack, onPlayTrack }) {
+function formatTrackDate(track) {
+  const raw = track.uploadedAt || track.createdAt;
+  if (!raw) return '';
+  return new Date(raw).toLocaleDateString([], { day: 'numeric', month: 'short' });
+}
+
+function ProjectScreen({
+  projectData,
+  loading,
+  uploadingTrack,
+  offlineTracks,
+  onBack,
+  onPlayTrack,
+  onShare,
+  onPickCover,
+  onDeleteCover,
+  onAddTrack,
+  onToggleOffline
+}) {
   const project = projectData?.project;
   const tracks = projectData?.tracks || [];
+  const totalSeconds = tracks.reduce((sum, track) => sum + (Number(track.duration) || 0), 0);
+  const durationText = totalSeconds
+    ? `${Math.floor(totalSeconds / 60)}m ${Math.round(totalSeconds % 60)}s`
+    : `${tracks.length} track${tracks.length === 1 ? '' : 's'}`;
 
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView contentContainerStyle={styles.projectContent}>
-        <View style={styles.projectNav}>
+        <View style={styles.projectTopBar}>
           <IconButton name="chevron-back" label="Back" onPress={onBack} />
+          <View style={styles.projectTopActions}>
+            <IconButton name="link" label="Share project" onPress={onShare} />
+            <IconButton name="image" label="Change cover art" onPress={onPickCover} />
+            <IconButton name="ellipsis-horizontal" label="Project options" onPress={onDeleteCover} />
+          </View>
         </View>
         {loading ? (
           <ActivityIndicator color={colors.accent} style={{ marginTop: 80 }} />
         ) : (
           <>
-            <Artwork item={project} />
-            <Text style={styles.projectTitle}>{project?.title || project?.name || 'Untitled project'}</Text>
-            <Text style={styles.projectArtist}>{project?.artist || 'Unknown artist'}</Text>
+            <Artwork item={project} size="hero" />
+            <View style={styles.projectInfoRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.projectTitle}>{project?.title || project?.name || 'Untitled project'}</Text>
+                <Text style={styles.projectArtist}>
+                  {project?.artist || 'Unknown artist'} - {tracks.length} track{tracks.length === 1 ? '' : 's'} - {durationText}
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => tracks[0] && onPlayTrack(tracks[0], project, tracks)}
+                style={({ pressed }) => [styles.projectPlayButton, pressed && styles.pressed]}
+              >
+                <Ionicons name="play" size={28} color={colors.bg} style={{ marginLeft: 3 }} />
+              </Pressable>
+            </View>
+            <Pressable onPress={onAddTrack} disabled={uploadingTrack} style={({ pressed }) => [styles.addTracksButton, pressed && styles.pressed]}>
+              {uploadingTrack ? <ActivityIndicator color={colors.ink} /> : <Ionicons name="add" size={22} color={colors.ink} />}
+              <Text style={styles.addTracksText}>{uploadingTrack ? 'Uploading...' : 'Add tracks'}</Text>
+            </Pressable>
             <View style={styles.trackList}>
               {tracks.length === 0 ? (
                 <EmptyState icon="musical-notes-outline" title="No tracks yet" copy="Tracks added on desktop will appear here." />
@@ -596,9 +642,14 @@ function ProjectScreen({ projectData, loading, onBack, onPlayTrack }) {
                   <Text style={styles.trackIndex}>{index + 1}</Text>
                   <View style={{ flex: 1 }}>
                     <Text numberOfLines={1} style={styles.trackTitle}>{track.title || 'Untitled track'}</Text>
-                    <Text numberOfLines={1} style={styles.trackMeta}>{track.artist || track.producer || project?.artist || 'Track'}</Text>
+                    <Text numberOfLines={1} style={styles.trackMeta}>
+                      {track.artist || track.producer || project?.artist || 'Track'}{formatTrackDate(track) ? ` - ${formatTrackDate(track)}` : ''}
+                    </Text>
                   </View>
-                  <Ionicons name="play-circle" size={28} color={colors.accent} />
+                  <Pressable onPress={() => onToggleOffline(track)} style={styles.trackIconButton}>
+                    <Ionicons name={offlineTracks[track.id] ? 'checkmark-circle' : 'download-outline'} size={20} color={offlineTracks[track.id] ? colors.accent : colors.muted} />
+                  </Pressable>
+                  <Ionicons name="ellipsis-horizontal" size={22} color={colors.ink} />
                 </Pressable>
               ))}
             </View>
@@ -622,6 +673,8 @@ export default function App() {
   const [theme, setTheme] = useState('dark');
   const [conversations, setConversations] = useState([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
+  const [uploadingTrack, setUploadingTrack] = useState(false);
+  const [offlineTracks, setOfflineTracks] = useState({});
   const [playback, setPlayback] = useState({ player: null, track: null, project: null, tracks: [], playing: false });
   const playerRef = useRef(null);
 
@@ -678,6 +731,10 @@ export default function App() {
   useEffect(() => {
     if (user) refreshWorkspace();
   }, [user?.id]);
+
+  useEffect(() => {
+    getOfflineTracks().then(setOfflineTracks).catch(() => {});
+  }, []);
 
   useEffect(() => () => {
     playerRef.current?.remove?.();
@@ -796,6 +853,12 @@ export default function App() {
     }
   };
 
+  const refreshProject = async (projectId = projectData?.project?.id) => {
+    if (!projectId || !user?.id) return;
+    const data = await api(`/api/projects/${projectId}?userId=${encodeURIComponent(user.id)}`);
+    setProjectData(data);
+  };
+
   const openMessages = async () => {
     setRoute({ name: 'messages', from: route });
     setMessagesLoading(true);
@@ -811,12 +874,13 @@ export default function App() {
 
   const playTrack = async (track, project, tracks) => {
     try {
-      if (!track?.url) {
+      const source = offlineTracks[track.id] || track.url;
+      if (!source) {
         Alert.alert('Track unavailable', 'This track does not have a playable URL yet.');
         return;
       }
       playerRef.current?.remove?.();
-      const player = createAudioPlayer(track.url);
+      const player = createAudioPlayer(source);
       playerRef.current = player;
       player.play();
       player.setActiveForLockScreen?.(true, {
@@ -924,6 +988,149 @@ export default function App() {
     }
   };
 
+  const pickProjectCover = async () => {
+    const project = projectData?.project;
+    if (!project) return;
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert('Permission needed', 'Allow photo access to update cover art.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.9
+      });
+      if (result.canceled || !result.assets?.[0]) return;
+      const asset = result.assets[0];
+      const extension = asset.uri.split('.').pop() || 'jpg';
+      const formData = new FormData();
+      formData.append('userId', user.id);
+      formData.append('projectId', project.id);
+      formData.append('cover', {
+        uri: asset.uri,
+        name: `cover.${extension}`,
+        type: asset.mimeType || `image/${extension === 'jpg' ? 'jpeg' : extension}`
+      });
+      const uploadRes = await fetch(`${API_URL}/api/upload-cover`, { method: 'POST', body: formData });
+      const cover = await uploadRes.json();
+      if (!uploadRes.ok) throw new Error(cover.error || 'Could not upload cover art.');
+      await api(`/api/projects/${project.id}/cover`, {
+        method: 'PUT',
+        body: JSON.stringify({ userId: user.id, coverUrl: cover.url })
+      });
+      setProjectData((prev) => ({ ...prev, project: { ...prev.project, coverArt: cover.url } }));
+      await refreshWorkspace();
+    } catch (error) {
+      Alert.alert('Could not update cover art', error.message);
+    }
+  };
+
+  const deleteProjectCover = () => {
+    const project = projectData?.project;
+    if (!project?.coverArt) {
+      Alert.alert('Cover art', 'This project does not have cover art yet.');
+      return;
+    }
+    Alert.alert('Remove cover art?', 'The project will return to its generated artwork.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await api(`/api/projects/${project.id}/cover`, {
+              method: 'PUT',
+              body: JSON.stringify({ userId: user.id, coverUrl: null })
+            });
+            setProjectData((prev) => ({ ...prev, project: { ...prev.project, coverArt: null } }));
+            await refreshWorkspace();
+          } catch (error) {
+            Alert.alert('Could not remove cover art', error.message);
+          }
+        }
+      }
+    ]);
+  };
+
+  const addTrackFromDevice = async () => {
+    const project = projectData?.project;
+    if (!project) return;
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['audio/*'],
+        copyToCacheDirectory: true,
+        multiple: false
+      });
+      if (result.canceled || !result.assets?.[0]) return;
+      const asset = result.assets[0];
+      setUploadingTrack(true);
+      const title = asset.name?.replace(/\.[^/.]+$/, '') || 'Untitled track';
+      const formData = new FormData();
+      formData.append('track', {
+        uri: asset.uri,
+        name: asset.name || `${title}.mp3`,
+        type: asset.mimeType || 'audio/mpeg'
+      });
+      formData.append('title', title);
+      formData.append('artist', project.artist || user.name || '');
+      formData.append('producer', '');
+      formData.append('userId', user.id);
+      formData.append('projectId', project.id);
+      const response = await fetch(`${API_URL}/api/upload`, { method: 'POST', body: formData });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Could not upload track.');
+      await refreshProject(project.id);
+      await refreshWorkspace();
+    } catch (error) {
+      Alert.alert('Could not add track', error.message);
+    } finally {
+      setUploadingTrack(false);
+    }
+  };
+
+  const toggleTrackOffline = async (track) => {
+    try {
+      if (offlineTracks[track.id]) {
+        await FileSystem.deleteAsync(offlineTracks[track.id], { idempotent: true });
+        const next = { ...offlineTracks };
+        delete next[track.id];
+        setOfflineTracks(next);
+        await storeOfflineTracks(next);
+        return;
+      }
+      if (!track.url) {
+        Alert.alert('Track unavailable', 'This track does not have a downloadable URL yet.');
+        return;
+      }
+      const destination = `${FileSystem.documentDirectory}${track.id}.audio`;
+      await FileSystem.downloadAsync(track.url, destination);
+      const next = { ...offlineTracks, [track.id]: destination };
+      setOfflineTracks(next);
+      await storeOfflineTracks(next);
+      Alert.alert('Available offline', `${track.title || 'Track'} was saved on this device.`);
+    } catch (error) {
+      Alert.alert('Could not save offline', error.message);
+    }
+  };
+
+  const shareProject = async () => {
+    const project = projectData?.project;
+    if (!project) return;
+    try {
+      const data = await api('/api/share/generate', {
+        method: 'POST',
+        body: JSON.stringify({ type: 'project', targetId: project.id })
+      });
+      const link = `${API_URL.replace(/\/$/, '')}/shared/link/${data.token}`;
+      await Share.share({ message: link, url: link });
+    } catch (error) {
+      Alert.alert('Could not share project', error.message);
+    }
+  };
+
   const deleteAccount = () => {
     Alert.alert(
       'Delete account?',
@@ -1004,11 +1211,18 @@ export default function App() {
     <ProjectScreen
       projectData={projectData}
       loading={loading}
+      uploadingTrack={uploadingTrack}
+      offlineTracks={offlineTracks}
       onBack={() => {
         if (projectData?.project?.folderId) openFolder(projectData.project.folderId);
         else setRoute({ name: 'library' });
       }}
       onPlayTrack={playTrack}
+      onShare={shareProject}
+      onPickCover={pickProjectCover}
+      onDeleteCover={deleteProjectCover}
+      onAddTrack={addTrackFromDevice}
+      onToggleOffline={toggleTrackOffline}
     />
   ) : route.name === 'folder' ? (
     <FolderScreen
@@ -1269,6 +1483,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden'
   },
+  projectHeroArt: {
+    width: '100%',
+    maxWidth: 390,
+    aspectRatio: 1,
+    alignSelf: 'center',
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    backgroundColor: colors.panelSoft
+  },
   artImage: {
     width: '100%',
     height: '100%'
@@ -1393,58 +1618,102 @@ const styles = StyleSheet.create({
     marginVertical: 10
   },
   projectContent: {
-    padding: 18,
+    paddingHorizontal: 30,
+    paddingTop: 10,
     paddingBottom: 140
   },
-  projectNav: {
-    marginBottom: 20
+  projectTopBar: {
+    minHeight: 64,
+    marginBottom: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  },
+  projectTopActions: {
+    flexDirection: 'row',
+    gap: 10
+  },
+  projectInfoRow: {
+    marginTop: 28,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 18
   },
   projectTitle: {
-    marginTop: 24,
     color: colors.ink,
-    fontSize: 35,
-    lineHeight: 39,
+    fontSize: 31,
+    lineHeight: 36,
     fontWeight: '900',
     letterSpacing: 0
   },
   projectArtist: {
-    marginTop: 8,
+    marginTop: 5,
     color: colors.muted,
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '700'
   },
-  trackList: {
-    marginTop: 28,
-    gap: 10
-  },
-  trackRow: {
-    minHeight: 68,
+  projectPlayButton: {
+    width: 58,
+    height: 58,
     borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.ink
+  },
+  addTracksButton: {
+    minHeight: 55,
+    marginTop: 22,
+    borderRadius: 13,
     backgroundColor: colors.panel,
-    borderWidth: 1,
-    borderColor: colors.border,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    gap: 14
+    justifyContent: 'center',
+    gap: 9
+  },
+  addTracksText: {
+    color: colors.ink,
+    fontSize: 17,
+    fontWeight: '900'
+  },
+  trackList: {
+    marginTop: 24,
+    gap: 4
+  },
+  trackRow: {
+    minHeight: 72,
+    borderRadius: 0,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 0,
+    gap: 16
   },
   trackIndex: {
-    width: 24,
+    width: 32,
     textAlign: 'center',
     color: colors.muted,
-    fontSize: 13,
-    fontWeight: '900'
+    fontSize: 16,
+    fontWeight: '500'
   },
   trackTitle: {
     color: colors.ink,
-    fontSize: 16,
+    fontSize: 19,
+    lineHeight: 23,
     fontWeight: '900'
   },
   trackMeta: {
-    marginTop: 3,
+    marginTop: 4,
     color: colors.muted,
-    fontSize: 13,
+    fontSize: 16,
     fontWeight: '700'
+  },
+  trackIconButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   miniPlayer: {
     position: 'absolute',
