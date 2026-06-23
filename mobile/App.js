@@ -287,11 +287,11 @@ function EmptyState({ icon, title, copy }) {
   );
 }
 
-function CreateBar({ onCreateProject, onCreateFolder }) {
+function CreateBar({ onCreateProject, onCreateFolder, hasPlayback }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <View pointerEvents="box-none" style={styles.createWrap}>
+    <View pointerEvents="box-none" style={hasPlayback ? styles.createWrapPlayback : styles.createWrap}>
       {open && (
         <View style={styles.addMenu}>
           <Pressable onPress={() => Alert.alert('Import', 'Audio import is coming next.')} style={styles.addMenuRow}>
@@ -317,9 +317,9 @@ function CreateBar({ onCreateProject, onCreateFolder }) {
           </Pressable>
         </View>
       )}
-      <Pressable onPress={() => setOpen((value) => !value)} style={({ pressed }) => [styles.addPill, pressed && styles.pressed]}>
+      <Pressable onPress={() => setOpen((value) => !value)} style={({ pressed }) => [hasPlayback ? styles.addFabSmall : styles.addPill, pressed && styles.pressed]}>
         <Ionicons name={open ? 'close' : 'add'} size={22} color={colors.ink} />
-        <Text style={styles.addPillText}>{open ? 'Close' : 'Add'}</Text>
+        {!hasPlayback && <Text style={styles.addPillText}>{open ? 'Close' : 'Add'}</Text>}
       </Pressable>
     </View>
   );
@@ -648,7 +648,7 @@ function MoveProjectPage({ project, folders, onBack, onMove }) {
   );
 }
 
-function LibraryScreen({ user, workspace, loading, refreshing, onRefresh, onOpenFolder, onOpenProject, onCreateProject, onCreateFolder, onMoveProject, onDeleteProject, onDeleteFolder, onPlayProject, onNotifications, onProfile, onMessages }) {
+function LibraryScreen({ user, workspace, loading, refreshing, onRefresh, onOpenFolder, onOpenProject, onCreateProject, onCreateFolder, onMoveProject, onDeleteProject, onDeleteFolder, onPlayProject, onNotifications, onProfile, onMessages, playback }) {
   const rootProjects = workspace.projects.filter((project) => !project.folderId);
   const rootFolders = workspace.folders;
   const data = [
@@ -696,12 +696,12 @@ function LibraryScreen({ user, workspace, loading, refreshing, onRefresh, onOpen
           )}
         />
       )}
-      <CreateBar onCreateProject={onCreateProject} onCreateFolder={onCreateFolder} />
+      <CreateBar onCreateProject={onCreateProject} onCreateFolder={onCreateFolder} hasPlayback={!!playback?.track} />
     </SafeAreaView>
   );
 }
 
-function FolderScreen({ user, folderData, loading, onBack, onOpenFolder, onOpenProject, onCreateProject, onCreateFolder, onMoveProject, onDeleteProject, onDeleteFolder, onPlayProject, onNotifications, onProfile, onMessages, notificationCount }) {
+function FolderScreen({ user, folderData, loading, onBack, onOpenFolder, onOpenProject, onCreateProject, onCreateFolder, onMoveProject, onDeleteProject, onDeleteFolder, onPlayProject, onNotifications, onProfile, onMessages, notificationCount, playback }) {
   const folder = folderData?.folder;
   const folders = folderData?.folders || [];
   const projects = folderData?.projects || [];
@@ -746,7 +746,7 @@ function FolderScreen({ user, folderData, loading, onBack, onOpenFolder, onOpenP
           )}
         />
       )}
-      <CreateBar onCreateProject={onCreateProject} onCreateFolder={onCreateFolder} />
+      <CreateBar onCreateProject={onCreateProject} onCreateFolder={onCreateFolder} hasPlayback={!!playback?.track} />
     </SafeAreaView>
   );
 }
@@ -784,7 +784,6 @@ function ProjectScreen({
           <IconButton name="chevron-back" label="Back" onPress={onBack} />
           <View style={styles.projectTopActions}>
             <IconButton name="link" label="Share project" onPress={onShare} />
-            <IconButton name="image" label="Change cover art" onPress={onPickCover} />
             <IconButton name="ellipsis-horizontal" label="Project options" onPress={onDeleteCover} />
           </View>
         </View>
@@ -792,7 +791,9 @@ function ProjectScreen({
           <ActivityIndicator color={colors.accent} style={{ marginTop: 80 }} />
         ) : (
           <>
-            <Artwork item={project} size="hero" />
+            <Pressable onPress={onPickCover}>
+              <Artwork item={project} size="hero" />
+            </Pressable>
             <View style={styles.projectInfoRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.projectTitle}>{project?.title || project?.name || 'Untitled project'}</Text>
@@ -1542,6 +1543,7 @@ export default function App() {
       onProfile={() => setRoute({ name: 'account', from: route })}
       onMessages={openMessages}
       notificationCount={workspace.notifications.filter((notification) => !notification.read).length}
+      playback={playback}
     />
   ) : (
     <LibraryScreen
@@ -1561,6 +1563,7 @@ export default function App() {
       onNotifications={() => setRoute({ name: 'notifications', from: route })}
       onProfile={() => setRoute({ name: 'account', from: route })}
       onMessages={openMessages}
+      playback={playback}
     />
   );
 
@@ -1924,6 +1927,21 @@ const styles = StyleSheet.create({
     bottom: 22,
     alignItems: 'center'
   },
+  createWrapPlayback: {
+    position: 'absolute',
+    right: 14,
+    bottom: 40,
+    alignItems: 'flex-end',
+    justifyContent: 'flex-end'
+  },
+  addFabSmall: {
+    width: 74,
+    height: 74,
+    borderRadius: 37,
+    backgroundColor: '#303030',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   addPill: {
     minWidth: 190,
     height: 58,
@@ -2096,8 +2114,8 @@ const styles = StyleSheet.create({
   miniPlayer: {
     position: 'absolute',
     left: 14,
-    right: 14,
-    bottom: 96,
+    right: 100,
+    bottom: 40,
     height: 74,
     borderRadius: 34,
     borderWidth: 1,
