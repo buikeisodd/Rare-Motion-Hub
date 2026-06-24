@@ -326,11 +326,11 @@ function CreateBar({ onCreateProject, onCreateFolder, hasPlayback }) {
 }
 
 function PlayingBars({ playing }) {
-  const b0 = React.useRef(new Animated.Value(0.3)).current;
-  const b1 = React.useRef(new Animated.Value(0.6)).current;
-  const b2 = React.useRef(new Animated.Value(0.4)).current;
+  const b0 = useRef(new Animated.Value(0.3)).current;
+  const b1 = useRef(new Animated.Value(0.6)).current;
+  const b2 = useRef(new Animated.Value(0.4)).current;
   const bars = [b0, b1, b2];
-  React.useEffect(() => {
+  useEffect(() => {
     if (!playing) { bars.forEach(b => b.setValue(0.3)); return; }
     const anims = bars.map((bar, i) =>
       Animated.loop(Animated.sequence([
