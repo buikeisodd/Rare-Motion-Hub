@@ -287,11 +287,11 @@ function EmptyState({ icon, title, copy }) {
   );
 }
 
-function CreateBar({ onCreateProject, onCreateFolder }) {
+function CreateBar({ onCreateProject, onCreateFolder, hasPlayback }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <View pointerEvents="box-none" style={styles.createWrap}>
+    <View pointerEvents="box-none" style={hasPlayback ? styles.createWrapPlayback : styles.createWrap}>
       {open && (
         <View style={styles.addMenu}>
           <Pressable onPress={() => Alert.alert('Import', 'Audio import is coming next.')} style={styles.addMenuRow}>
@@ -317,10 +317,35 @@ function CreateBar({ onCreateProject, onCreateFolder }) {
           </Pressable>
         </View>
       )}
-      <Pressable onPress={() => setOpen((value) => !value)} style={({ pressed }) => [styles.addPill, pressed && styles.pressed]}>
+      <Pressable onPress={() => setOpen((value) => !value)} style={({ pressed }) => [hasPlayback ? styles.addFabSmall : styles.addPill, pressed && styles.pressed]}>
         <Ionicons name={open ? 'close' : 'add'} size={22} color={colors.ink} />
-        <Text style={styles.addPillText}>{open ? 'Close' : 'Add'}</Text>
+        {!hasPlayback && <Text style={styles.addPillText}>{open ? 'Close' : 'Add'}</Text>}
       </Pressable>
+    </View>
+  );
+}
+
+function PlayingBars({ playing }) {
+  const b0 = useRef(new Animated.Value(0.3)).current;
+  const b1 = useRef(new Animated.Value(0.6)).current;
+  const b2 = useRef(new Animated.Value(0.4)).current;
+  const bars = [b0, b1, b2];
+  useEffect(() => {
+    if (!playing) { bars.forEach(b => b.setValue(0.3)); return; }
+    const anims = bars.map((bar, i) =>
+      Animated.loop(Animated.sequence([
+        Animated.timing(bar, { toValue: 1, duration: 300 + i * 120, useNativeDriver: true }),
+        Animated.timing(bar, { toValue: 0.2, duration: 300 + i * 120, useNativeDriver: true }),
+      ]))
+    );
+    anims.forEach(a => a.start());
+    return () => anims.forEach(a => a.stop());
+  }, [playing]);
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 2, width: 18, height: 18 }}>
+      {bars.map((bar, i) => (
+        <Animated.View key={i} style={{ width: 4, backgroundColor: colors.accent, borderRadius: 2, flex: 1, transform: [{ scaleY: bar }] }} />
+      ))}
     </View>
   );
 }
@@ -410,15 +435,29 @@ function PlayerEditPage({ playback, settings, onBack, onSave, onCancel, onToggle
   const project = playback.project;
   const duration = Number(track?.duration) || 123;
   const elapsed = Math.max(28, Math.round(duration * (playback.progress || 0.23)));
-  const swipeDownResponder = useMemo(() => PanResponder.create({
-    onMoveShouldSetPanResponder: (_event, gesture) => gesture.dy > 14 && Math.abs(gesture.dy) > Math.abs(gesture.dx) * 1.2,
+
+  // Attach the swipe responder only to the drag handle at the top so the
+  // ScrollView beneath it never competes for the gesture.
+  const dragHandleResponder = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: (_event, gesture) =>
+      gesture.dy > 5 && Math.abs(gesture.dy) > Math.abs(gesture.dx) * 0.8,
     onPanResponderRelease: (_event, gesture) => {
-      if (gesture.dy > 70) onCancel();
+      if (gesture.dy > 48) onCancel();
     }
   }), [onCancel]);
+
   return (
     <SafeAreaView style={styles.screen}>
-      <ScrollView {...swipeDownResponder.panHandlers} contentContainerStyle={styles.editorPage}>
+      {/* Dedicated drag handle — touch area is generous and isolated from ScrollView */}
+      <View
+        {...dragHandleResponder.panHandlers}
+        accessibilityLabel="Swipe down to dismiss"
+        style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 6, cursor: 'grab' }}
+      >
+        <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.22)' }} />
+      </View>
+      <ScrollView contentContainerStyle={styles.editorPage}>
         <View style={styles.editorTop}>
           <Pressable onPress={onCancel} style={styles.editorPill}><Text style={styles.editorPillText}>Cancel</Text></Pressable>
           <Pressable onPress={onSave} style={[styles.editorPill, styles.editorPillDim]}><Text style={styles.editorPillText}>Save</Text></Pressable>
@@ -648,7 +687,7 @@ function MoveProjectPage({ project, folders, onBack, onMove }) {
   );
 }
 
-function LibraryScreen({ user, workspace, loading, refreshing, onRefresh, onOpenFolder, onOpenProject, onCreateProject, onCreateFolder, onMoveProject, onDeleteProject, onDeleteFolder, onPlayProject, onNotifications, onProfile, onMessages }) {
+function LibraryScreen({ user, workspace, loading, refreshing, onRefresh, onOpenFolder, onOpenProject, onCreateProject, onCreateFolder, onMoveProject, onDeleteProject, onDeleteFolder, onPlayProject, onNotifications, onProfile, onMessages, playback }) {
   const rootProjects = workspace.projects.filter((project) => !project.folderId);
   const rootFolders = workspace.folders;
   const data = [
@@ -696,12 +735,12 @@ function LibraryScreen({ user, workspace, loading, refreshing, onRefresh, onOpen
           )}
         />
       )}
-      <CreateBar onCreateProject={onCreateProject} onCreateFolder={onCreateFolder} />
+      <CreateBar onCreateProject={onCreateProject} onCreateFolder={onCreateFolder} hasPlayback={!!playback?.track} />
     </SafeAreaView>
   );
 }
 
-function FolderScreen({ user, folderData, loading, onBack, onOpenFolder, onOpenProject, onCreateProject, onCreateFolder, onMoveProject, onDeleteProject, onDeleteFolder, onPlayProject, onNotifications, onProfile, onMessages, notificationCount }) {
+function FolderScreen({ user, folderData, loading, onBack, onOpenFolder, onOpenProject, onCreateProject, onCreateFolder, onMoveProject, onDeleteProject, onDeleteFolder, onPlayProject, onNotifications, onProfile, onMessages, notificationCount, playback }) {
   const folder = folderData?.folder;
   const folders = folderData?.folders || [];
   const projects = folderData?.projects || [];
@@ -746,7 +785,7 @@ function FolderScreen({ user, folderData, loading, onBack, onOpenFolder, onOpenP
           )}
         />
       )}
-      <CreateBar onCreateProject={onCreateProject} onCreateFolder={onCreateFolder} />
+      <CreateBar onCreateProject={onCreateProject} onCreateFolder={onCreateFolder} hasPlayback={!!playback?.track} />
     </SafeAreaView>
   );
 }
@@ -768,7 +807,9 @@ function ProjectScreen({
   onPickCover,
   onDeleteCover,
   onAddTrack,
-  onToggleOffline
+  onToggleOffline,
+  playingTrackId,
+  playback
 }) {
   const project = projectData?.project;
   const tracks = projectData?.tracks || [];
@@ -784,7 +825,6 @@ function ProjectScreen({
           <IconButton name="chevron-back" label="Back" onPress={onBack} />
           <View style={styles.projectTopActions}>
             <IconButton name="link" label="Share project" onPress={onShare} />
-            <IconButton name="image" label="Change cover art" onPress={onPickCover} />
             <IconButton name="ellipsis-horizontal" label="Project options" onPress={onDeleteCover} />
           </View>
         </View>
@@ -792,7 +832,9 @@ function ProjectScreen({
           <ActivityIndicator color={colors.accent} style={{ marginTop: 80 }} />
         ) : (
           <>
-            <Artwork item={project} size="hero" />
+            <Pressable onPress={onPickCover}>
+              <Artwork item={project} size="hero" />
+            </Pressable>
             <View style={styles.projectInfoRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.projectTitle}>{project?.title || project?.name || 'Untitled project'}</Text>
@@ -816,7 +858,9 @@ function ProjectScreen({
                 <EmptyState icon="musical-notes-outline" title="No tracks yet" copy="Tracks added on desktop will appear here." />
               ) : tracks.map((track, index) => (
                 <Pressable key={track.id} onPress={() => onPlayTrack(track, project, tracks)} style={({ pressed }) => [styles.trackRow, pressed && styles.pressed]}>
-                  <Text style={styles.trackIndex}>{index + 1}</Text>
+                  {playingTrackId === track.id
+                    ? <PlayingBars playing={playback?.playing ?? false} />
+                    : <Text style={styles.trackIndex}>{index + 1}</Text>}
                   <View style={{ flex: 1 }}>
                     <Text numberOfLines={1} style={styles.trackTitle}>{track.title || 'Untitled track'}</Text>
                     <Text numberOfLines={1} style={styles.trackMeta}>
@@ -886,11 +930,13 @@ export default function App() {
       if (route.name === 'library') return false;
       const screenWidth = Dimensions.get('window').width;
       const startX = event.nativeEvent.pageX;
-      const startsAtEdge = startX < 28 || startX > screenWidth - 28;
-      return startsAtEdge && Math.abs(gesture.dx) > 18 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.4;
+      // Widened edge zone (48px) and lower dx threshold for easier activation
+      const startsAtEdge = startX < 48 || startX > screenWidth - 48;
+      return startsAtEdge && Math.abs(gesture.dx) > 10 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.1;
     },
     onPanResponderRelease: (_event, gesture) => {
-      if (Math.abs(gesture.dx) > 70) {
+      // Lower release threshold from 70 to 50 for easier completion
+      if (Math.abs(gesture.dx) > 50) {
         goBack();
       }
     }
@@ -1122,17 +1168,34 @@ export default function App() {
         Alert.alert('Track unavailable', 'This track does not have a playable URL yet.');
         return;
       }
-      playerRef.current?.remove?.();
+      // Tear down previous player before creating a new one
+      try { playerRef.current?.remove?.(); } catch (_) {}
+      playerRef.current = null;
+
       const player = createAudioPlayer(source);
-      player.setPlaybackRate?.(playbackSettings.speed, 'medium');
       playerRef.current = player;
+
+      // setPlaybackRate signature varies across expo-audio versions; guard both forms
+      try {
+        if (typeof player.setPlaybackRate === 'function') {
+          player.setPlaybackRate(playbackSettings.speed);
+        }
+      } catch (_) {}
+
       player.play();
-      player.setActiveForLockScreen?.(true, {
-        title: track.title || 'Untitled track',
-        artist: project?.artist || track.artist || 'Starlight Station',
-        albumTitle: project?.title || project?.name || 'Project',
-        artworkUrl: project?.coverArt
-      });
+
+      // Lock-screen metadata — only available in some expo-audio builds
+      try {
+        if (typeof player.setActiveForLockScreen === 'function') {
+          player.setActiveForLockScreen(true, {
+            title: track.title || 'Untitled track',
+            artist: project?.artist || track.artist || 'Starlight Station',
+            albumTitle: project?.title || project?.name || 'Project',
+            artworkUrl: project?.coverArt
+          });
+        }
+      } catch (_) {}
+
       setPlayback((prev) => ({ player, track, project, tracks, playing: true, progress: 0.01, repeat: prev.repeat }));
     } catch (error) {
       Alert.alert('Could not play track', error.message);
@@ -1162,7 +1225,11 @@ export default function App() {
   const adjustPlaybackSpeed = (delta) => {
     const speed = Math.max(0.5, Math.min(2, Number((playbackSettings.speed + delta).toFixed(2))));
     setPlaybackSettings((prev) => ({ ...prev, speed }));
-    playerRef.current?.setPlaybackRate?.(speed, 'medium');
+    try {
+      if (typeof playerRef.current?.setPlaybackRate === 'function') {
+        playerRef.current.setPlaybackRate(speed);
+      }
+    } catch (_) {}
   };
 
   const adjustPlaybackPitch = (delta) => {
@@ -1523,6 +1590,8 @@ export default function App() {
       onDeleteCover={deleteProjectCover}
       onAddTrack={addTrackFromDevice}
       onToggleOffline={toggleTrackOffline}
+      playingTrackId={playback.track?.id}
+      playback={playback}
     />
   ) : route.name === 'folder' ? (
     <FolderScreen
@@ -1542,6 +1611,7 @@ export default function App() {
       onProfile={() => setRoute({ name: 'account', from: route })}
       onMessages={openMessages}
       notificationCount={workspace.notifications.filter((notification) => !notification.read).length}
+      playback={playback}
     />
   ) : (
     <LibraryScreen
@@ -1561,6 +1631,7 @@ export default function App() {
       onNotifications={() => setRoute({ name: 'notifications', from: route })}
       onProfile={() => setRoute({ name: 'account', from: route })}
       onMessages={openMessages}
+      playback={playback}
     />
   );
 
@@ -1924,6 +1995,21 @@ const styles = StyleSheet.create({
     bottom: 22,
     alignItems: 'center'
   },
+  createWrapPlayback: {
+    position: 'absolute',
+    right: 14,
+    bottom: 40,
+    alignItems: 'flex-end',
+    justifyContent: 'flex-end'
+  },
+  addFabSmall: {
+    width: 74,
+    height: 74,
+    borderRadius: 37,
+    backgroundColor: '#303030',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   addPill: {
     minWidth: 190,
     height: 58,
@@ -2096,8 +2182,8 @@ const styles = StyleSheet.create({
   miniPlayer: {
     position: 'absolute',
     left: 14,
-    right: 14,
-    bottom: 96,
+    right: 100,
+    bottom: 40,
     height: 74,
     borderRadius: 34,
     borderWidth: 1,
