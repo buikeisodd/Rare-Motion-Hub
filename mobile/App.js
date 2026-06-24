@@ -325,6 +325,31 @@ function CreateBar({ onCreateProject, onCreateFolder, hasPlayback }) {
   );
 }
 
+function PlayingBars({ playing }) {
+  const b0 = React.useRef(new Animated.Value(0.3)).current;
+  const b1 = React.useRef(new Animated.Value(0.6)).current;
+  const b2 = React.useRef(new Animated.Value(0.4)).current;
+  const bars = [b0, b1, b2];
+  React.useEffect(() => {
+    if (!playing) { bars.forEach(b => b.setValue(0.3)); return; }
+    const anims = bars.map((bar, i) =>
+      Animated.loop(Animated.sequence([
+        Animated.timing(bar, { toValue: 1, duration: 300 + i * 120, useNativeDriver: true }),
+        Animated.timing(bar, { toValue: 0.2, duration: 300 + i * 120, useNativeDriver: true }),
+      ]))
+    );
+    anims.forEach(a => a.start());
+    return () => anims.forEach(a => a.stop());
+  }, [playing]);
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 2, width: 18, height: 18 }}>
+      {bars.map((bar, i) => (
+        <Animated.View key={i} style={{ width: 4, backgroundColor: colors.accent, borderRadius: 2, flex: 1, transform: [{ scaleY: bar }] }} />
+      ))}
+    </View>
+  );
+}
+
 function MiniPlayer({ playback, onToggle, onOpen, onShare }) {
   if (!playback.track) return null;
   return (
@@ -768,7 +793,9 @@ function ProjectScreen({
   onPickCover,
   onDeleteCover,
   onAddTrack,
-  onToggleOffline
+  onToggleOffline,
+  playingTrackId,
+  playback
 }) {
   const project = projectData?.project;
   const tracks = projectData?.tracks || [];
@@ -817,7 +844,9 @@ function ProjectScreen({
                 <EmptyState icon="musical-notes-outline" title="No tracks yet" copy="Tracks added on desktop will appear here." />
               ) : tracks.map((track, index) => (
                 <Pressable key={track.id} onPress={() => onPlayTrack(track, project, tracks)} style={({ pressed }) => [styles.trackRow, pressed && styles.pressed]}>
-                  <Text style={styles.trackIndex}>{index + 1}</Text>
+                  {playingTrackId === track.id
+                    ? <PlayingBars playing={playback?.playing ?? false} />
+                    : <Text style={styles.trackIndex}>{index + 1}</Text>}
                   <View style={{ flex: 1 }}>
                     <Text numberOfLines={1} style={styles.trackTitle}>{track.title || 'Untitled track'}</Text>
                     <Text numberOfLines={1} style={styles.trackMeta}>
@@ -1524,6 +1553,8 @@ export default function App() {
       onDeleteCover={deleteProjectCover}
       onAddTrack={addTrackFromDevice}
       onToggleOffline={toggleTrackOffline}
+      playingTrackId={playback.track?.id}
+      playback={playback}
     />
   ) : route.name === 'folder' ? (
     <FolderScreen
