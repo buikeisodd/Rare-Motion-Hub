@@ -91,17 +91,52 @@ function formatDuration(seconds = 0) {
   return `${Math.floor(clean / 60)}:${String(clean % 60).padStart(2, '0')}`;
 }
 
-function Waveform({ progress = 0.34, compact = false }) {
+function Waveform({ progress = 0.34, compact = false, onSeek }) {
+  const [width, setWidth] = useState(0);
   const bars = Array.from({ length: compact ? 34 : 58 }, (_, index) => {
     const value = Math.sin(index * 0.78) + Math.cos(index * 0.31);
     return 10 + Math.abs(value) * (compact ? 13 : 24);
   });
   const cursor = `${Math.max(4, Math.min(96, progress * 100))}%`;
+
+  const seekResponder = useMemo(() => {
+    if (!onSeek) return null;
+    return PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: (e) => {
+        if (!width) return;
+        const x = e.nativeEvent.locationX;
+        onSeek(Math.max(0, Math.min(1, x / width)));
+      },
+      onPanResponderMove: (e) => {
+        if (!width) return;
+        const x = e.nativeEvent.locationX;
+        onSeek(Math.max(0, Math.min(1, x / width)));
+      }
+    });
+  }, [onSeek, width]);
+
   return (
-    <View style={[styles.waveform, compact && styles.waveformCompact]}>
-      {bars.map((height, index) => (
-        <View key={index} style={[styles.waveBar, compact && styles.waveBarCompact, { height }]} />
-      ))}
+    <View
+      style={[styles.waveform, compact && styles.waveformCompact]}
+      onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
+      {...(seekResponder ? seekResponder.panHandlers : {})}
+    >
+      {bars.map((height, index) => {
+        const barProgress = index / bars.length;
+        const played = barProgress < progress;
+        return (
+          <View
+            key={index}
+            style={[
+              styles.waveBar,
+              compact && styles.waveBarCompact,
+              { height, backgroundColor: played ? colors.accent : (compact ? 'rgba(255,255,255,0.62)' : 'rgba(255,255,255,0.72)') }
+            ]}
+          />
+        );
+      })}
       <View style={[styles.waveCursor, { left: cursor }]} />
     </View>
   );
@@ -350,6 +385,50 @@ function PlayingBars({ playing }) {
   );
 }
 
+<<<<<<< HEAD
+=======
+function MarqueeText({ text, style }) {
+  const anim = useRef(new Animated.Value(0)).current;
+  const [containerWidth, setContainerWidth] = useState(0);
+  const [textWidth, setTextWidth] = useState(0);
+  const animRef = useRef(null);
+
+  useEffect(() => {
+    if (!containerWidth || !textWidth || textWidth <= containerWidth) {
+      anim.setValue(0);
+      return;
+    }
+    const distance = textWidth - containerWidth + 16;
+    const run = () => {
+      anim.setValue(0);
+      animRef.current = Animated.sequence([
+        Animated.delay(2000),
+        Animated.timing(anim, { toValue: -distance, duration: distance * 18, useNativeDriver: true }),
+        Animated.delay(2000),
+      ]);
+      animRef.current.start(({ finished }) => { if (finished) run(); });
+    };
+    run();
+    return () => animRef.current?.stop();
+  }, [containerWidth, textWidth, text]);
+
+  return (
+    <View
+      style={{ overflow: 'hidden', flex: 1 }}
+      onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}
+    >
+      <Animated.Text
+        numberOfLines={1}
+        style={[style, { transform: [{ translateX: anim }] }]}
+        onLayout={(e) => setTextWidth(e.nativeEvent.layout.width)}
+      >
+        {text}
+      </Animated.Text>
+    </View>
+  );
+}
+
+>>>>>>> 5be370b7c38ab20154ec8b23256a4f20ee1cf485
 function MiniPlayer({ playback, onToggle, onOpen, onShare }) {
   if (!playback.track) return null;
   return (
@@ -360,7 +439,7 @@ function MiniPlayer({ playback, onToggle, onOpen, onShare }) {
         </Pressable>
       </Artwork>
       <View style={styles.miniCopy}>
-        <Text numberOfLines={1} style={styles.miniTitle}>{playback.track.title || 'Untitled track'}</Text>
+        <MarqueeText text={playback.track.title || 'Untitled track'} style={styles.miniTitle} />
         <Text numberOfLines={1} style={styles.miniMeta}>{playback.track.artist || playback.project?.artist || playback.project?.title || 'Now playing'}</Text>
       </View>
       <Waveform compact progress={playback.progress || 0.36} />
@@ -371,7 +450,7 @@ function MiniPlayer({ playback, onToggle, onOpen, onShare }) {
   );
 }
 
-function NowPlayingPage({ playback, settings, onBack, onToggle, onEdit, onShare, onSeekPrevious, onSeekNext, onToggleRepeat }) {
+function NowPlayingPage({ playback, settings, onBack, onToggle, onEdit, onShare, onSeekPrevious, onSeekNext, onToggleRepeat, onSeek }) {
   const track = playback.track;
   const project = playback.project;
   if (!track) {
@@ -385,15 +464,15 @@ function NowPlayingPage({ playback, settings, onBack, onToggle, onEdit, onShare,
     );
   }
   const duration = Number(track.duration) || 123;
-  const elapsed = Math.max(15, Math.round(duration * (playback.progress || 0.12)));
+  const elapsed = Math.max(0, Math.round(duration * (playback.progress || 0)));
   return (
     <SafeAreaView style={styles.screen}>
       <View style={styles.playerPage}>
         <View style={styles.nowPlayingCard}>
-          <Text numberOfLines={1} style={styles.nowTitle}>{track.title || 'Untitled track'}</Text>
+          <MarqueeText text={track.title || 'Untitled track'} style={styles.nowTitle} />
           <Text numberOfLines={1} style={styles.nowMeta}>{track.artist || project?.artist || 'Unknown artist'} - {track.producer || project?.title || project?.name || 'Project'}</Text>
           <Artwork item={project || track} size="record" />
-          <Waveform progress={playback.progress || 0.12} />
+          <Waveform progress={playback.progress || 0} onSeek={onSeek} />
           <Text style={styles.playerTime}>{formatDuration(elapsed)} / {formatDuration(duration)}</Text>
           <View style={styles.transportRow}>
             <Pressable onPress={onShare} style={styles.transportButtonPlain}>
@@ -430,11 +509,15 @@ function NowPlayingPage({ playback, settings, onBack, onToggle, onEdit, onShare,
   );
 }
 
-function PlayerEditPage({ playback, settings, onBack, onSave, onCancel, onToggle, onChangeSpeed, onChangePitch }) {
+function PlayerEditPage({ playback, settings, onBack, onSave, onCancel, onToggle, onChangeSpeed, onChangePitch, onSeek }) {
   const track = playback.track;
   const project = playback.project;
   const duration = Number(track?.duration) || 123;
+<<<<<<< HEAD
   const elapsed = Math.max(28, Math.round(duration * (playback.progress || 0.23)));
+=======
+  const elapsed = Math.max(0, Math.round(duration * (playback.progress || 0)));
+>>>>>>> 5be370b7c38ab20154ec8b23256a4f20ee1cf485
 
   // Attach the swipe responder only to the drag handle at the top so the
   // ScrollView beneath it never competes for the gesture.
@@ -469,7 +552,7 @@ function PlayerEditPage({ playback, settings, onBack, onSave, onCancel, onToggle
           <Text style={styles.editorChip}>Tempo pending</Text>
           <Text style={styles.editorChip}>Settings</Text>
         </View>
-        <Waveform progress={playback.progress || 0.23} />
+        <Waveform progress={playback.progress || 0} onSeek={onSeek} />
         <Text style={styles.playerTime}>{formatDuration(elapsed)} / {formatDuration(duration)}</Text>
         <View style={styles.editorTransport}>
           <Pressable style={styles.editorTransportButton}><Ionicons name="play-skip-back" size={31} color={colors.ink} /></Pressable>
@@ -1222,18 +1305,45 @@ export default function App() {
     }
   };
 
+  const applySpeedAndPitch = (speed, pitch) => {
+    const player = playerRef.current;
+    if (!player) return;
+    // Same formula as desktop: rate = speed × 2^(semitones/12)
+    const combined = Math.max(0.25, Math.min(3, speed * Math.pow(2, pitch / 12)));
+    try {
+      if (typeof player.setPlaybackRate === 'function') {
+        player.setPlaybackRate(combined);
+      }
+    } catch (_) {}
+    // Disable browser pitch correction so we get real pitch shift (same as desktop preservesPitch=false)
+    try {
+      const audio = player._nativeAudio || player._audio || player.audioNode;
+      if (audio) {
+        audio.preservesPitch = false;
+        audio.mozPreservesPitch = false;
+        audio.webkitPreservesPitch = false;
+      }
+    } catch (_) {}
+  };
+
   const adjustPlaybackSpeed = (delta) => {
     const speed = Math.max(0.5, Math.min(2, Number((playbackSettings.speed + delta).toFixed(2))));
     setPlaybackSettings((prev) => ({ ...prev, speed }));
+<<<<<<< HEAD
     try {
       if (typeof playerRef.current?.setPlaybackRate === 'function') {
         playerRef.current.setPlaybackRate(speed);
       }
     } catch (_) {}
+=======
+    applySpeedAndPitch(speed, playbackSettings.pitch);
+>>>>>>> 5be370b7c38ab20154ec8b23256a4f20ee1cf485
   };
 
   const adjustPlaybackPitch = (delta) => {
-    setPlaybackSettings((prev) => ({ ...prev, pitch: Math.max(-12, Math.min(12, prev.pitch + delta)) }));
+    const pitch = Math.max(-12, Math.min(12, playbackSettings.pitch + delta));
+    setPlaybackSettings((prev) => ({ ...prev, pitch }));
+    applySpeedAndPitch(playbackSettings.speed, pitch);
   };
 
   const seekRelative = async (seconds) => {
@@ -1528,6 +1638,12 @@ export default function App() {
       onSeekPrevious={() => seekRelative(-15)}
       onSeekNext={() => seekRelative(15)}
       onToggleRepeat={toggleRepeat}
+      onSeek={(ratio) => {
+        const duration = Number(playback.track?.duration) || 123;
+        const target = duration * ratio;
+        playerRef.current?.seekTo?.(target);
+        setPlayback((prev) => ({ ...prev, progress: ratio }));
+      }}
     />
   ) : route.name === 'player-edit' ? (
     <PlayerEditPage
@@ -1539,6 +1655,12 @@ export default function App() {
       onToggle={togglePlayback}
       onChangeSpeed={adjustPlaybackSpeed}
       onChangePitch={adjustPlaybackPitch}
+      onSeek={(ratio) => {
+        const duration = Number(playback.track?.duration) || 123;
+        const target = duration * ratio;
+        playerRef.current?.seekTo?.(target);
+        setPlayback((prev) => ({ ...prev, progress: ratio }));
+      }}
     />
   ) : route.name === 'notifications' ? (
     <NotificationsPage
@@ -2182,7 +2304,11 @@ const styles = StyleSheet.create({
   miniPlayer: {
     position: 'absolute',
     left: 14,
+<<<<<<< HEAD
     right: 100,
+=======
+    right: 14,
+>>>>>>> 5be370b7c38ab20154ec8b23256a4f20ee1cf485
     bottom: 40,
     height: 74,
     borderRadius: 34,
