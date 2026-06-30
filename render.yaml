@@ -3,7 +3,7 @@ services:
     name: rare-motion-hub-api
     runtime: node
     rootDir: backend
-    buildCommand: npm install && npm run setup:stems
+    buildCommand: npm install
     startCommand: npm start
     disk:
       name: rare-motion-data
