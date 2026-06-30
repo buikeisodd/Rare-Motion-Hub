@@ -385,8 +385,6 @@ function PlayingBars({ playing }) {
   );
 }
 
-<<<<<<< HEAD
-=======
 function MarqueeText({ text, style }) {
   const anim = useRef(new Animated.Value(0)).current;
   const [containerWidth, setContainerWidth] = useState(0);
@@ -428,7 +426,6 @@ function MarqueeText({ text, style }) {
   );
 }
 
->>>>>>> 5be370b7c38ab20154ec8b23256a4f20ee1cf485
 function MiniPlayer({ playback, onToggle, onOpen, onShare }) {
   if (!playback.track) return null;
   return (
@@ -513,11 +510,7 @@ function PlayerEditPage({ playback, settings, onBack, onSave, onCancel, onToggle
   const track = playback.track;
   const project = playback.project;
   const duration = Number(track?.duration) || 123;
-<<<<<<< HEAD
-  const elapsed = Math.max(28, Math.round(duration * (playback.progress || 0.23)));
-=======
   const elapsed = Math.max(0, Math.round(duration * (playback.progress || 0)));
->>>>>>> 5be370b7c38ab20154ec8b23256a4f20ee1cf485
 
   // Attach the swipe responder only to the drag handle at the top so the
   // ScrollView beneath it never competes for the gesture.
@@ -532,11 +525,11 @@ function PlayerEditPage({ playback, settings, onBack, onSave, onCancel, onToggle
 
   return (
     <SafeAreaView style={styles.screen}>
-      {/* Dedicated drag handle — touch area is generous and isolated from ScrollView */}
+      {/* Dedicated drag handle: touch area is generous and isolated from ScrollView. */}
       <View
         {...dragHandleResponder.panHandlers}
         accessibilityLabel="Swipe down to dismiss"
-        style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 6, cursor: 'grab' }}
+        style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 6 }}
       >
         <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.22)' }} />
       </View>
@@ -1267,7 +1260,7 @@ export default function App() {
 
       player.play();
 
-      // Lock-screen metadata — only available in some expo-audio builds
+      // Lock-screen metadata is only available in some expo-audio builds.
       try {
         if (typeof player.setActiveForLockScreen === 'function') {
           player.setActiveForLockScreen(true, {
@@ -1329,15 +1322,7 @@ export default function App() {
   const adjustPlaybackSpeed = (delta) => {
     const speed = Math.max(0.5, Math.min(2, Number((playbackSettings.speed + delta).toFixed(2))));
     setPlaybackSettings((prev) => ({ ...prev, speed }));
-<<<<<<< HEAD
-    try {
-      if (typeof playerRef.current?.setPlaybackRate === 'function') {
-        playerRef.current.setPlaybackRate(speed);
-      }
-    } catch (_) {}
-=======
     applySpeedAndPitch(speed, playbackSettings.pitch);
->>>>>>> 5be370b7c38ab20154ec8b23256a4f20ee1cf485
   };
 
   const adjustPlaybackPitch = (delta) => {
@@ -2304,11 +2289,7 @@ const styles = StyleSheet.create({
   miniPlayer: {
     position: 'absolute',
     left: 14,
-<<<<<<< HEAD
-    right: 100,
-=======
     right: 14,
->>>>>>> 5be370b7c38ab20154ec8b23256a4f20ee1cf485
     bottom: 40,
     height: 74,
     borderRadius: 34,
