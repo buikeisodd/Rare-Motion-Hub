@@ -37,7 +37,19 @@ export async function api(path, options = {}) {
     }
   });
   const text = await response.text();
-  const data = text ? JSON.parse(text) : null;
+  let data = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      const preview = text.replace(/\s+/g, ' ').trim().slice(0, 140);
+      throw new Error(
+        response.ok
+          ? `Server returned an invalid response: ${preview || 'empty response'}`
+          : `Server error ${response.status}: ${preview || response.statusText || 'invalid response'}`
+      );
+    }
+  }
   if (!response.ok) {
     throw new Error(data?.error || 'Request failed');
   }

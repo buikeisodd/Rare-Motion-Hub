@@ -431,28 +431,32 @@ const uploadChatMedia = multer({
 
 // --- AUTH ---
 app.post('/api/auth', async (req, res) => {
-  const email = req.body.email?.trim();
-  if (!email) return res.status(400).json({ error: 'Email is required.' });
+  try {
+    const email = req.body.email?.trim();
+    if (!email) return res.status(400).json({ error: 'Email is required.' });
 
-  // Find existing user
-  let user = await User.findOne({ email: email.toLowerCase() }).lean();
+    const normalizedEmail = email.toLowerCase();
+    let user = await User.findOne({ email: normalizedEmail }).lean();
 
-  if (!user) {
-    // Auto-create user on first login
-    const id = Date.now().toString(36) + Math.random().toString(36).slice(2);
-    const name = email.split('@')[0];
-    user = {
-      id,
-      name,
-      email: email.toLowerCase(),
-      avatarUrl: '',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    await User.create(user);
+    if (!user) {
+      const id = Date.now().toString(36) + Math.random().toString(36).slice(2);
+      const name = normalizedEmail.split('@')[0];
+      user = {
+        id,
+        name,
+        email: normalizedEmail,
+        avatarUrl: '',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      await User.create(user);
+    }
+
+    res.json({ user });
+  } catch (err) {
+    console.error('POST /api/auth error:', err);
+    res.status(500).json({ error: 'Could not sign in. Please try again shortly.' });
   }
-
-  res.json({ user });
 });
 
 // --- USERS ---
@@ -1412,6 +1416,7 @@ app.post('/api/tracks/:id/split-stems', async (req, res) => {
   if (!track) {
     const rawTrack = db.tracks.find(t => t.id?.toString() === req.params.id?.toString());
     console.error('[stem-split] Track not found. trackId:', req.params.id, 'userId:', userId,
+      'rawTrack:', rawTrack ? JSON.stringify({ id: rawTrack.id, userId: rawTrack.userId, uploader: rawTrack.uploader, projectId: rawTrack.projectId }) : 'not in db');
     return res.status(404).json({ error: 'Track not found' });
   }
 
@@ -2186,6 +2191,12 @@ app.post('/api/notifications/read', async (req, res) => {
 
   await writeDB(db);
   res.json({ success: true });
+});
+
+app.use('/api', (err, req, res, next) => {
+  console.error('API error:', err);
+  if (res.headersSent) return next(err);
+  res.status(err.status || 500).json({ error: err.message || 'Server error' });
 });
 
 app.listen(PORT, () => console.log(`Backend server running on http://localhost:${PORT}`));
