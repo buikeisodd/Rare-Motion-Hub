@@ -6,7 +6,6 @@
   "scripts": {
     "start": "node server.js",
     "setup:stems": "node scripts/setup-stems.js",
-    "postinstall": "node scripts/setup-stems.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

@@ -2,6 +2,8 @@ export const colors = {
   ink: '#F7F4EC',
   muted: '#A6A09A',
   bg: '#050505',
+  primaryBackground: '#000000',
+  primaryLabel: '#FFFFFF',
   panel: '#121212',
   panelSoft: '#1B1B1B',
   border: '#2A2927',

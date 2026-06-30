@@ -1867,12 +1867,12 @@ const styles = StyleSheet.create({
   primaryButton: {
     height: 56,
     borderRadius: 28,
-    backgroundColor: colors.accent,
+    backgroundColor: colors.primaryLabel,
     alignItems: 'center',
     justifyContent: 'center'
   },
   primaryButtonText: {
-    color: colors.bg,
+    color: colors.primaryBackground,
     fontSize: 16,
     fontWeight: '900'
   },
