@@ -4,6 +4,7 @@ backend/stems/
 backend/uploads/
 backend/covers/
 .env
+.env.production
 dist/
 mobile/.expo/
 mobile/dist/
