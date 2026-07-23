@@ -71,6 +71,9 @@ if (!MONGODB_URI) {
   process.exit(1);
 }
 
+// Fix DNS resolution issues on Windows for MongoDB Atlas SRV records
+require('dns').setServers(['8.8.8.8', '8.8.4.4']);
+
 // Connect to MongoDB
 mongoose.connect(MONGODB_URI)
   .then(() => console.log('Connected to MongoDB Atlas'))
