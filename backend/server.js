@@ -446,48 +446,56 @@ const uploadChatMedia = multer({
 // --- AUTH ---
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
 
-app.post('/api/auth/register', async (req, res) => {
-  const email = req.body.email?.trim().toLowerCase();
-  const password = req.body.password;
-  if (!email || !password) return res.status(400).json({ error: 'Email and password are required.' });
+app.post('/api/auth/register', async (req, res, next) => {
+  try {
+    const email = req.body.email?.trim().toLowerCase();
+    const password = req.body.password;
+    if (!email || !password) return res.status(400).json({ error: 'Email and password are required.' });
 
-  let user = await User.findOne({ email }).lean();
-  if (user) return res.status(400).json({ error: 'Email already exists.' });
+    let user = await User.findOne({ email }).lean();
+    if (user) return res.status(400).json({ error: 'Email already exists.' });
 
-  const id = Date.now().toString(36) + Math.random().toString(36).slice(2);
-  const name = email.split('@')[0];
-  const passwordHash = await bcrypt.hash(password, 10);
-  
-  const newUser = {
-    id,
-    name,
-    email,
-    passwordHash,
-    avatarUrl: '',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-  await User.create(newUser);
-  
-  const token = jwt.sign({ userId: id }, JWT_SECRET, { expiresIn: '7d' });
-  const userSafe = { id: newUser.id, name: newUser.name, email: newUser.email, avatarUrl: newUser.avatarUrl };
-  res.json({ user: userSafe, token });
+    const id = Date.now().toString(36) + Math.random().toString(36).slice(2);
+    const name = email.split('@')[0];
+    const passwordHash = await bcrypt.hash(password, 10);
+    
+    const newUser = {
+      id,
+      name,
+      email,
+      passwordHash,
+      avatarUrl: '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    await User.create(newUser);
+    
+    const token = jwt.sign({ userId: id }, JWT_SECRET, { expiresIn: '7d' });
+    const userSafe = { id: newUser.id, name: newUser.name, email: newUser.email, avatarUrl: newUser.avatarUrl };
+    res.json({ user: userSafe, token });
+  } catch (error) {
+    next(error);
+  }
 });
 
-app.post('/api/auth/login', async (req, res) => {
-  const email = req.body.email?.trim().toLowerCase();
-  const password = req.body.password;
-  if (!email || !password) return res.status(400).json({ error: 'Email and password are required.' });
+app.post('/api/auth/login', async (req, res, next) => {
+  try {
+    const email = req.body.email?.trim().toLowerCase();
+    const password = req.body.password;
+    if (!email || !password) return res.status(400).json({ error: 'Email and password are required.' });
 
-  const user = await User.findOne({ email }).lean();
-  if (!user || !user.passwordHash) return res.status(401).json({ error: 'Invalid email or password.' });
+    const user = await User.findOne({ email }).lean();
+    if (!user || !user.passwordHash) return res.status(401).json({ error: 'Invalid email or password.' });
 
-  const isMatch = await bcrypt.compare(password, user.passwordHash);
-  if (!isMatch) return res.status(401).json({ error: 'Invalid email or password.' });
+    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    if (!isMatch) return res.status(401).json({ error: 'Invalid email or password.' });
 
-  const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
-  const userSafe = { id: user.id, name: user.name, email: user.email, avatarUrl: user.avatarUrl };
-  res.json({ user: userSafe, token });
+    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
+    const userSafe = { id: user.id, name: user.name, email: user.email, avatarUrl: user.avatarUrl };
+    res.json({ user: userSafe, token });
+  } catch (error) {
+    next(error);
+  }
 });
 
 // --- USERS ---
