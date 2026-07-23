@@ -74,10 +74,33 @@ if (!MONGODB_URI) {
 // Fix DNS resolution issues on Windows for MongoDB Atlas SRV records
 require('dns').setServers(['8.8.8.8', '8.8.4.4']);
 
-// Connect to MongoDB
-mongoose.connect(MONGODB_URI)
-  .then(() => console.log('Connected to MongoDB Atlas'))
-  .catch(err => console.error('MongoDB connection error:', err));
+let mongod = null;
+async function connectToDatabase() {
+  try {
+    console.log('Attempting to connect to MongoDB Atlas...');
+    await mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: 5000 });
+    console.log('Connected to MongoDB Atlas');
+  } catch (err) {
+    console.warn(`MongoDB Atlas connection failed (${err.message}). Falling back to local in-memory MongoDB...`);
+    try {
+      const { MongoMemoryServer } = require('mongodb-memory-server');
+      const dbPath = path.join(__dirname, '.data', 'local-mongo');
+      fs.mkdirSync(dbPath, { recursive: true });
+      
+      mongod = await MongoMemoryServer.create({
+        instance: { dbPath, storageEngine: 'wiredTiger' }
+      });
+      const uri = mongod.getUri();
+      await mongoose.connect(uri);
+      console.log(`Connected to Local MongoDB Fallback at ${dbPath}`);
+    } catch (fallbackErr) {
+      console.error('Failed to start local MongoDB fallback:', fallbackErr);
+      process.exit(1);
+    }
+  }
+}
+
+connectToDatabase();
 
 app.use(cors());
 app.use(express.json());
