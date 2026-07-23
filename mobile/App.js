@@ -27,7 +27,7 @@ import {
   View
 } from 'react-native';
 import { API_URL, api, resolveMediaUrl } from './src/api';
-import { clearUser, getLastEmail, getOfflineTracks, getStoredUser, storeLastEmail, storeOfflineTracks, storeUser } from './src/storage';
+import { clearUser, getLastEmail, getOfflineTracks, getStoredUser, storeLastEmail, storeOfflineTracks, storeUser, storeToken } from './src/storage';
 import { colors, gradientFor } from './src/theme';
 
 function IconButton({ name, onPress, label, tone = 'dark', badge = 0 }) {
@@ -143,7 +143,9 @@ function Waveform({ progress = 0.34, compact = false, onSeek }) {
 }
 
 function LoginScreen({ onLogin }) {
+  const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -152,18 +154,20 @@ function LoginScreen({ onLogin }) {
 
   const submit = async () => {
     const cleanEmail = email.trim().toLowerCase();
-    if (!cleanEmail) return;
+    if (!cleanEmail || !password) return;
     setLoading(true);
     try {
-      const data = await api('/api/auth', {
+      const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
+      const data = await api(endpoint, {
         method: 'POST',
-        body: JSON.stringify({ email: cleanEmail })
+        body: JSON.stringify({ email: cleanEmail, password })
       });
       await storeLastEmail(cleanEmail);
       await storeUser(data.user);
+      if (data.token) await storeToken(data.token);
       onLogin(data.user);
     } catch (error) {
-      Alert.alert('Could not sign in', error.message);
+      Alert.alert('Could not ' + (isRegister ? 'register' : 'sign in'), error.message);
     } finally {
       setLoading(false);
     }
@@ -178,6 +182,14 @@ function LoginScreen({ onLogin }) {
           <Text style={styles.loginCopy}>Projects, folders, playback, and collaboration stay synced with your Starlight Station account.</Text>
         </View>
         <View style={styles.loginPanel}>
+          <View style={{flexDirection: 'row', justifyContent: 'center', marginBottom: 20, gap: 20}}>
+            <Pressable onPress={() => setIsRegister(false)}>
+              <Text style={{fontSize: 18, color: !isRegister ? colors.text : colors.muted, fontWeight: 'bold'}}>Login</Text>
+            </Pressable>
+            <Pressable onPress={() => setIsRegister(true)}>
+              <Text style={{fontSize: 18, color: isRegister ? colors.text : colors.muted, fontWeight: 'bold'}}>Register</Text>
+            </Pressable>
+          </View>
           <View style={styles.inputRow}>
             <Ionicons name="mail-outline" size={20} color={colors.muted} />
             <TextInput
@@ -187,13 +199,25 @@ function LoginScreen({ onLogin }) {
               placeholderTextColor={colors.muted}
               autoCapitalize="none"
               keyboardType="email-address"
+              returnKeyType="next"
+              style={styles.input}
+            />
+          </View>
+          <View style={[styles.inputRow, { marginTop: 12 }]}>
+            <Ionicons name="lock-closed-outline" size={20} color={colors.muted} />
+            <TextInput
+              value={password}
+              onChangeText={setPassword}
+              placeholder="Password"
+              placeholderTextColor={colors.muted}
+              secureTextEntry
               returnKeyType="go"
               onSubmitEditing={submit}
               style={styles.input}
             />
           </View>
-          <Pressable onPress={submit} disabled={loading} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}>
-            {loading ? <ActivityIndicator color={colors.bg} /> : <Text style={styles.primaryButtonText}>Continue</Text>}
+          <Pressable onPress={submit} disabled={loading} style={({ pressed }) => [styles.primaryButton, {marginTop: 20}, pressed && styles.pressed]}>
+            {loading ? <ActivityIndicator color={colors.bg} /> : <Text style={styles.primaryButtonText}>{isRegister ? 'Create Account' : 'Continue'}</Text>}
           </Pressable>
         </View>
       </SafeAreaView>

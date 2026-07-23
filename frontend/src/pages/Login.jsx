@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { Loader2, Mail } from 'lucide-react';
+import { Loader2, Mail, Lock } from 'lucide-react';
 import StarlightLogo from '../components/StarlightLogo';
 
 export default function Login({ onLogin }) {
+  const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState(() => localStorage.getItem('lastEmail') || '');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -13,19 +15,20 @@ export default function Login({ onLogin }) {
     setLoading(true);
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/auth`, {
+      const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, password }),
       });
 
       const data = await res.json();
 
       if (res.ok) {
         localStorage.setItem('lastEmail', email);
-        onLogin(data.user);
+        onLogin(data.user, data.token);
       } else {
-        setError(data.error || 'Login failed');
+        setError(data.error || 'Authentication failed');
       }
     } catch {
       setError('Could not connect to the server. Make sure the backend is running.');
@@ -36,13 +39,25 @@ export default function Login({ onLogin }) {
 
   return (
     <div className="min-h-screen bg-primary-background px-20 py-12 relative overflow-hidden">
-
       <div className="mx-auto flex min-h-[calc(100vh-8rem)] w-full max-w-3xl flex-col items-center justify-center animate-fade-in">
         <StarlightLogo className="logo-glow mb-8 h-28 w-96 text-primary-label" />
-
+        
         <h1 className="max-w-md text-center text-3xl font-semibold leading-tight tracking-normal mb-7">
           A sacred place for your work-in-progress music
         </h1>
+
+        <div className="flex space-x-4 mb-6">
+          <button 
+            onClick={() => setIsRegister(false)}
+            className={`text-lg font-semibold transition-colors ${!isRegister ? 'text-primary-label' : 'text-secondary-label'}`}>
+            Login
+          </button>
+          <button 
+            onClick={() => setIsRegister(true)}
+            className={`text-lg font-semibold transition-colors ${isRegister ? 'text-primary-label' : 'text-secondary-label'}`}>
+            Register
+          </button>
+        </div>
 
         <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-3">
           <label className="relative block">
@@ -52,6 +67,17 @@ export default function Login({ onLogin }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Email address"
+              className="h-12 w-full rounded-full bg-shading border border-border pl-14 pr-8 text-center text-base font-semibold text-primary-label placeholder:text-secondary-label focus:outline-none focus:ring-2 focus:ring-primary-label/20 transition-all"
+              required
+            />
+          </label>
+          <label className="relative block">
+            <Lock className="absolute left-8 top-1/2 h-5 w-5 -translate-y-1/2 text-secondary-label" />
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
               className="h-12 w-full rounded-full bg-shading border border-border pl-14 pr-8 text-center text-base font-semibold text-primary-label placeholder:text-secondary-label focus:outline-none focus:ring-2 focus:ring-primary-label/20 transition-all"
               required
             />
@@ -68,7 +94,7 @@ export default function Login({ onLogin }) {
             disabled={loading}
             className="flex h-12 w-full items-center justify-center rounded-full bg-primary-label text-base font-semibold text-primary-background transition-transform hover:scale-[1.01] disabled:opacity-70"
           >
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Continue with email'}
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (isRegister ? 'Create Account' : 'Login')}
           </button>
         </form>
 

@@ -15,6 +15,15 @@ export async function storeUser(user) {
 
 export async function clearUser() {
   await AsyncStorage.removeItem(USER_KEY);
+  await AsyncStorage.removeItem('rare-motion-hub:token');
+}
+
+export async function getStoredToken() {
+  return await AsyncStorage.getItem('rare-motion-hub:token');
+}
+
+export async function storeToken(token) {
+  await AsyncStorage.setItem('rare-motion-hub:token', token);
 }
 
 export async function getLastEmail() {

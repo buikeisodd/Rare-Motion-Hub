@@ -3,6 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
 const fs = require('fs');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const path = require('path');
 const { spawn } = require('child_process');
 const ffmpeg = require('fluent-ffmpeg');
@@ -63,7 +65,11 @@ const PORT = process.env.PORT || 3001;
 const conversionJobs = {};
 const stemJobs = {};
 const BASE_URL = process.env.BASE_URL || process.env.RENDER_EXTERNAL_URL || 'https://rare-motion-hub.onrender.com';
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://chibuikeeseagwu02_db_user:4c4rkQj7HlQNlxp5@cluster0.efinpoe.mongodb.net/starlight-station?appName=Cluster0';
+const MONGODB_URI = process.env.MONGODB_URI;
+if (!MONGODB_URI) {
+  console.error('FATAL: MONGODB_URI is not set in environment.');
+  process.exit(1);
+}
 
 // Connect to MongoDB
 mongoose.connect(MONGODB_URI)
@@ -184,12 +190,20 @@ const fileToDataUrl = (file) => {
   return `data:${file.mimetype};base64,${buffer.toString('base64')}`;
 };
 const requireUserId = (req, res) => {
-  const userId = (req.query.userId || req.body.userId || '').toString();
-  if (!userId) {
-    res.status(400).json({ error: 'User ID is required.' });
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    res.status(401).json({ error: 'Unauthorized: Missing token' });
     return null;
   }
-  return userId;
+  
+  try {
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+    return decoded.userId;
+  } catch (error) {
+    res.status(401).json({ error: 'Unauthorized: Invalid token' });
+    return null;
+  }
 };
 const makeId = () => `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
 const publicUser = (user) => user ? { id: user.id, name: user.name, avatarUrl: user.avatarUrl || null } : null;
@@ -430,33 +444,50 @@ const uploadChatMedia = multer({
 });
 
 // --- AUTH ---
-app.post('/api/auth', async (req, res) => {
-  try {
-    const email = req.body.email?.trim();
-    if (!email) return res.status(400).json({ error: 'Email is required.' });
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
 
-    const normalizedEmail = email.toLowerCase();
-    let user = await User.findOne({ email: normalizedEmail }).lean();
+app.post('/api/auth/register', async (req, res) => {
+  const email = req.body.email?.trim().toLowerCase();
+  const password = req.body.password;
+  if (!email || !password) return res.status(400).json({ error: 'Email and password are required.' });
 
-    if (!user) {
-      const id = Date.now().toString(36) + Math.random().toString(36).slice(2);
-      const name = normalizedEmail.split('@')[0];
-      user = {
-        id,
-        name,
-        email: normalizedEmail,
-        avatarUrl: '',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      await User.create(user);
-    }
+  let user = await User.findOne({ email }).lean();
+  if (user) return res.status(400).json({ error: 'Email already exists.' });
 
-    res.json({ user });
-  } catch (err) {
-    console.error('POST /api/auth error:', err);
-    res.status(500).json({ error: 'Could not sign in. Please try again shortly.' });
-  }
+  const id = Date.now().toString(36) + Math.random().toString(36).slice(2);
+  const name = email.split('@')[0];
+  const passwordHash = await bcrypt.hash(password, 10);
+  
+  const newUser = {
+    id,
+    name,
+    email,
+    passwordHash,
+    avatarUrl: '',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  await User.create(newUser);
+  
+  const token = jwt.sign({ userId: id }, JWT_SECRET, { expiresIn: '7d' });
+  const userSafe = { id: newUser.id, name: newUser.name, email: newUser.email, avatarUrl: newUser.avatarUrl };
+  res.json({ user: userSafe, token });
+});
+
+app.post('/api/auth/login', async (req, res) => {
+  const email = req.body.email?.trim().toLowerCase();
+  const password = req.body.password;
+  if (!email || !password) return res.status(400).json({ error: 'Email and password are required.' });
+
+  const user = await User.findOne({ email }).lean();
+  if (!user || !user.passwordHash) return res.status(401).json({ error: 'Invalid email or password.' });
+
+  const isMatch = await bcrypt.compare(password, user.passwordHash);
+  if (!isMatch) return res.status(401).json({ error: 'Invalid email or password.' });
+
+  const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
+  const userSafe = { id: user.id, name: user.name, email: user.email, avatarUrl: user.avatarUrl };
+  res.json({ user: userSafe, token });
 });
 
 // --- USERS ---
@@ -1634,7 +1665,7 @@ app.post('/api/convert', uploadTrack.single('video'), async (req, res) => {
       }
     })
     .on('end', async () => {
-      const currentDb = readDB();
+      const currentDb = await readDB();
       const projectId = makeId();
       const newProject = {
         id: projectId,

@@ -28,11 +28,15 @@ export function resolveMediaUrl(url) {
   }
 }
 
+import { getStoredToken } from './storage';
+
 export async function api(path, options = {}) {
+  const token = await getStoredToken();
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
       ...(options.headers || {})
     }
   });
