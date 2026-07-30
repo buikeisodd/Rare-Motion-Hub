@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Loader2, Mail, Lock } from 'lucide-react';
+import { Loader2, Mail, Lock, Phone } from 'lucide-react';
 import StarlightLogo from '../components/StarlightLogo';
 
 function GoogleIcon({ className = '' }) {
@@ -144,6 +144,14 @@ export default function Login({ onLogin }) {
             >
               <AppleIcon className="h-5 w-5" />
               Continue with Apple
+            </button>
+            <button
+              type="button"
+              onClick={() => handleProviderAuth('Phone number')}
+              className="flex min-h-12 w-full items-center justify-center gap-3 rounded-full border border-border bg-shading px-4 py-3 text-sm font-semibold text-primary-label transition-all hover:border-primary-label/30 hover:bg-highlight hover:scale-[1.01]"
+            >
+              <Phone className="h-5 w-5" />
+              Continue with phone number
             </button>
           </div>
         </div>
