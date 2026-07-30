@@ -11,6 +11,7 @@ export default function UploadModal({ isOpen, onClose, onSuccess, userId, projec
   const [uploadComplete, setUploadComplete] = useState(false);
   const [error, setError] = useState('');
   const fileInputRef = useRef(null);
+  const xhrRef = useRef(null);
 
   if (!isOpen) return null;
 
@@ -63,6 +64,10 @@ export default function UploadModal({ isOpen, onClose, onSuccess, userId, projec
     if (projectId) formData.append('projectId', projectId);
 
     const xhr = new XMLHttpRequest();
+    xhrRef.current = xhr;
+
+    // Minimum timeout of 5 minutes. If file is large, allow more time (assume 50KB/s minimum transfer speed)
+    xhr.timeout = Math.max(300000, Math.ceil((file.size / 50000) * 1000));
 
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable) {
@@ -72,28 +77,46 @@ export default function UploadModal({ isOpen, onClose, onSuccess, userId, projec
 
     xhr.onload = () => {
       setLoading(false);
-      const data = JSON.parse(xhr.responseText || '{}');
-
-      if (xhr.status >= 200 && xhr.status < 300) {
-        setUploadProgress(100);
-        setUploadComplete(true);
-        window.setTimeout(() => {
-          setFile(null);
-          setTitle('');
-          setArtist('');
-          setProducer('');
-          setUploadProgress(0);
-          setUploadComplete(false);
-          onSuccess(data.track);
-        }, 650);
-      } else {
-        setError(data.error || 'Upload failed');
+      xhrRef.current = null;
+      try {
+        const data = JSON.parse(xhr.responseText || '{}');
+        if (xhr.status >= 200 && xhr.status < 300) {
+          setUploadProgress(100);
+          setUploadComplete(true);
+          window.setTimeout(() => {
+            setFile(null);
+            setTitle('');
+            setArtist('');
+            setProducer('');
+            setUploadProgress(0);
+            setUploadComplete(false);
+            onSuccess(data.track);
+          }, 650);
+        } else {
+          setError(data.error || 'Upload failed');
+        }
+      } catch (err) {
+        setError('Failed to parse server response.');
       }
     };
 
     xhr.onerror = () => {
       setLoading(false);
-      setError('Could not connect to the server.');
+      xhrRef.current = null;
+      setError('Network error: Could not connect to the server. Please check your internet connection or server status.');
+    };
+
+    xhr.ontimeout = () => {
+      setLoading(false);
+      xhrRef.current = null;
+      setError('Upload timed out. The server took too long to respond or your connection is too slow.');
+    };
+
+    xhr.onabort = () => {
+      setLoading(false);
+      xhrRef.current = null;
+      setUploadProgress(0);
+      setError('Upload cancelled.');
     };
 
     xhr.open('POST', `${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/upload`);
@@ -225,11 +248,10 @@ export default function UploadModal({ isOpen, onClose, onSuccess, userId, projec
             <div className="flex gap-3">
               <button
                 type="button"
-                onClick={onClose}
-                disabled={loading}
+                onClick={loading ? () => xhrRef.current?.abort() : onClose}
                 className="px-5 py-2.5 text-sm font-medium rounded-xl hover:bg-shading transition-colors text-primary-label"
               >
-                Cancel
+                {loading ? 'Cancel Upload' : 'Cancel'}
               </button>
               <button
                 type="submit"
