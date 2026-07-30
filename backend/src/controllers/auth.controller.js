@@ -6,6 +6,7 @@ const { removeDirIfExists, getUserDir, uploadDir, coverDir, avatarDir } = requir
 const { cloudinary } = require('../config/cloudinary');
 const { invalidateCache } = require('../config/redis');
 const { AppError } = require('../middlewares/error.middleware');
+const { BASE_URL } = require('../utils/helpers');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
 
@@ -105,7 +106,9 @@ const uploadUserAvatar = async (req, res, next) => {
       return next(new AppError('User not found.', 404));
     }
 
-    db.users[userIndex].avatarUrl = req.file.path; // Cloudinary URL
+    db.users[userIndex].avatarUrl = /^https?:\/\//i.test(req.file.path || '')
+      ? req.file.path
+      : `${BASE_URL}/avatars/${req.file.filename}`;
     db.users[userIndex].avatarUpdatedAt = new Date().toISOString();
     db.users[userIndex].updatedAt = db.users[userIndex].avatarUpdatedAt;
     await writeDB(db);

@@ -13,11 +13,12 @@ const {
   getProjectBundle,
   notifyListen,
   trackOwnerId,
-  trackMediaPath
+  trackMediaPath,
+  BASE_URL
 } = require('../utils/helpers');
 const { getOrSetCache, invalidateCache } = require('../config/redis');
 const { cloudinary } = require('../config/cloudinary');
-const { removeDirIfExists, removeFileIfExists, stemsDir } = require('../utils/fileHelper');
+const { removeDirIfExists, removeFileIfExists, stemsDir, coverDir } = require('../utils/fileHelper');
 const { AppError } = require('../middlewares/error.middleware');
 
 const getWorkspace = async (req, res, next) => {
@@ -433,8 +434,16 @@ const uploadCover = async (req, res, next) => {
       return next(new AppError('Unauthorized user.', 401));
     }
 
-    const url = req.file.path; // Cloudinary URL
-    const newCover = { id: Date.now().toString(), userId, url, mimeType: req.file.mimetype, uploadedAt: new Date().toISOString() };
+    const isRemoteUpload = /^https?:\/\//i.test(req.file.path || '');
+    const url = isRemoteUpload ? req.file.path : `${BASE_URL}/covers/${req.file.filename}`;
+    const newCover = {
+      id: Date.now().toString(),
+      userId,
+      url,
+      filename: isRemoteUpload ? null : req.file.filename,
+      mimeType: req.file.mimetype,
+      uploadedAt: new Date().toISOString()
+    };
     db.coverArts.push(newCover);
     await writeDB(db);
     invalidateCache(`workspace:${userId}`);
@@ -460,9 +469,12 @@ const deleteCover = async (req, res, next) => {
     await writeDB(db);
     await CoverArt.deleteOne({ id: req.params.id });
     
-    // Also delete from Cloudinary
-    const publicId = coverUrl.split('/').pop().split('.')[0];
-    cloudinary.uploader.destroy(`raremotionhub/covers/${publicId}`).catch(console.error);
+    if (cover.filename) {
+      removeFileIfExists(path.join(coverDir, cover.filename));
+    } else {
+      const publicId = coverUrl.split('/').pop().split('.')[0];
+      cloudinary.uploader.destroy(`raremotionhub/covers/${publicId}`).catch(console.error);
+    }
 
     invalidateCache(`workspace:${userId}`);
     res.json({ success: true });

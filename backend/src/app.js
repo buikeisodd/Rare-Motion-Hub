@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const { errorHandler } = require('./middlewares/error.middleware');
+const { uploadDir, coverDir, avatarDir } = require('./utils/fileHelper');
 
 const authRoutes = require('./routes/auth.routes');
 const workspaceRoutes = require('./routes/workspace.routes');
@@ -12,6 +13,9 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static(uploadDir));
+app.use('/covers', express.static(coverDir));
+app.use('/avatars', express.static(avatarDir));
 
 // System routes
 app.get('/api/ping', (req, res) => res.json({ ok: true, ts: Date.now() }));

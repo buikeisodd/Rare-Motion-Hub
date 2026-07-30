@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Loader2, Mail, Lock } from 'lucide-react';
+import { Globe2, Loader2, Mail, Lock, Smartphone } from 'lucide-react';
 import StarlightLogo from '../components/StarlightLogo';
 
 export default function Login({ onLogin }) {
@@ -37,12 +37,16 @@ export default function Login({ onLogin }) {
     }
   };
 
+  const handleProviderAuth = (provider) => {
+    setError(provider + ' sign-in is not connected yet. Use email and password for now.');
+  };
+
   return (
-    <div className="min-h-screen bg-primary-background px-20 py-12 relative overflow-hidden">
-      <div className="mx-auto flex min-h-[calc(100vh-8rem)] w-full max-w-3xl flex-col items-center justify-center animate-fade-in">
-        <StarlightLogo className="logo-glow mb-8 h-28 w-96 text-primary-label" />
+    <div className="min-h-screen bg-primary-background px-5 py-8 sm:px-8 lg:px-20 lg:py-12 relative overflow-hidden">
+      <div className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-5xl flex-col items-center justify-center animate-fade-in">
+        <StarlightLogo className="logo-glow mb-7 h-24 w-full max-w-sm text-primary-label sm:h-28 sm:max-w-md" />
         
-        <h1 className="max-w-md text-center text-3xl font-semibold leading-tight tracking-normal mb-7">
+        <h1 className="max-w-md text-center text-2xl font-semibold leading-tight tracking-normal mb-7 sm:text-3xl">
           A sacred place for your work-in-progress music
         </h1>
 
@@ -59,7 +63,8 @@ export default function Login({ onLogin }) {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-3">
+        <div className="grid w-full max-w-4xl gap-4 md:grid-cols-2 md:items-stretch">
+          <form onSubmit={handleSubmit} className="space-y-3 rounded-2xl border border-border bg-shading/20 p-3 sm:p-4">
           <label className="relative block">
             <Mail className="absolute left-8 top-1/2 h-5 w-5 -translate-y-1/2 text-secondary-label" />
             <input
@@ -97,6 +102,18 @@ export default function Login({ onLogin }) {
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (isRegister ? 'Create Account' : 'Login')}
           </button>
         </form>
+
+          <div className="grid gap-3 rounded-2xl border border-border bg-shading/20 p-3 sm:p-4">
+            <button type="button" onClick={() => handleProviderAuth('Google')} className="flex h-12 items-center justify-center gap-2 rounded-full border border-border bg-shading text-sm font-semibold text-primary-label transition-all hover:border-primary-label/30 hover:bg-highlight">
+              <Globe2 className="h-4 w-4" />
+              Continue with Google
+            </button>
+            <button type="button" onClick={() => handleProviderAuth('Phone')} className="flex h-12 items-center justify-center gap-2 rounded-full border border-border bg-shading text-sm font-semibold text-primary-label transition-all hover:border-primary-label/30 hover:bg-highlight">
+              <Smartphone className="h-4 w-4" />
+              Continue with phone
+            </button>
+          </div>
+        </div>
 
         <p className="mt-12 max-w-md text-center text-sm text-secondary-label">
           By continuing you confirm that this email belongs to an approved Starlight Station collaborator.

@@ -5,13 +5,19 @@ const path = require('path');
 const fs = require('fs');
 
 const uploadDir = path.join(__dirname, '..', '..', '.data', 'uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+const coverDir = path.join(__dirname, '..', '..', '.data', 'covers');
+const avatarDir = path.join(__dirname, '..', '..', '.data', 'avatars');
+[uploadDir, coverDir, avatarDir].forEach((dir) => {
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+});
 
 // Local storage for large files to be chunked to Cloudinary later
 const localDiskStorage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
+  filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname.replace(/\s+/g, '_'))
+});
+const diskStorage = (destination) => multer.diskStorage({
+  destination: (req, file, cb) => cb(null, destination),
   filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname.replace(/\s+/g, '_'))
 });
 
@@ -32,12 +38,12 @@ const uploadTrack = multer({
 });
 
 const uploadCover = multer({
-  storage: makeCloudinaryStorage('covers', 'image'),
+  storage: hasCloudinaryConfig ? makeCloudinaryStorage('covers', 'image') : diskStorage(coverDir),
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB
 });
 
 const uploadAvatar = multer({
-  storage: makeCloudinaryStorage('avatars', 'image'),
+  storage: hasCloudinaryConfig ? makeCloudinaryStorage('avatars', 'image') : diskStorage(avatarDir),
   limits: { fileSize: 5 * 1024 * 1024 } // 5MB
 });
 
