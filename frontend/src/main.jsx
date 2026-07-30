@@ -14,7 +14,13 @@ window.fetch = async (url, options = {}) => {
       };
     }
   }
-  return originalFetch(url, options);
+  const res = await originalFetch(url, options);
+  if (res.status === 401 && typeof url === 'string' && !url.includes('/api/auth') && !url.includes('/api/register') && !url.includes('/api/login')) {
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    window.location.href = '/login';
+  }
+  return res;
 };
 
 createRoot(document.getElementById('root')).render(
