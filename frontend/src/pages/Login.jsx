@@ -129,22 +129,28 @@ export default function Login({ onLogin }) {
           </div>
 
           <div className="grid content-center gap-3 rounded-2xl border border-border bg-shading/20 p-3 sm:p-4">
-            <button
-              type="button"
-              onClick={() => handleProviderAuth('Google')}
-              className="flex h-12 items-center justify-center gap-3 rounded-full border border-border bg-shading text-sm font-semibold text-primary-label transition-all hover:border-primary-label/30 hover:bg-highlight hover:scale-[1.01]"
-            >
-              <GoogleIcon className="h-5 w-5" />
-              Continue with Google
-            </button>
-            <button
-              type="button"
-              onClick={() => handleProviderAuth('Apple')}
-              className="flex h-12 items-center justify-center gap-3 rounded-full border border-border bg-shading text-sm font-semibold text-primary-label transition-all hover:border-primary-label/30 hover:bg-highlight hover:scale-[1.01]"
-            >
-              <AppleIcon className="h-5 w-5" />
-              Continue with Apple
-            </button>
+            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-center">
+              <button
+                type="button"
+                onClick={() => handleProviderAuth('Google')}
+                className="flex min-h-12 w-full items-center justify-center gap-3 rounded-full border border-border bg-shading px-4 py-3 text-sm font-semibold text-primary-label transition-all hover:border-primary-label/30 hover:bg-highlight hover:scale-[1.01]"
+              >
+                <GoogleIcon className="h-5 w-5" />
+                Continue with Google
+              </button>
+              <div className="flex items-center justify-center text-lg font-semibold text-secondary-label/70">
+                <span className="hidden sm:inline">/</span>
+                <span className="h-px w-full bg-border sm:hidden" />
+              </div>
+              <button
+                type="button"
+                onClick={() => handleProviderAuth('Apple')}
+                className="flex min-h-12 w-full items-center justify-center gap-3 rounded-full border border-border bg-shading px-4 py-3 text-sm font-semibold text-primary-label transition-all hover:border-primary-label/30 hover:bg-highlight hover:scale-[1.01]"
+              >
+                <AppleIcon className="h-5 w-5" />
+                Continue with Apple
+              </button>
+            </div>
           </div>
         </div>
 
