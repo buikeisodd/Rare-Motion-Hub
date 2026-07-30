@@ -31,9 +31,14 @@ async function startServer() {
     }
   }
 
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     console.log(`Backend server running on http://localhost:${PORT}`);
   });
+  
+  // Set connection and header timeouts to 10 minutes to support large uploads on slow connections
+  server.timeout = 600000;
+  server.keepAliveTimeout = 600000;
+  server.headersTimeout = 605000;
 }
 
 startServer();
