@@ -1,7 +1,21 @@
 const multer = require('multer');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const { cloudinary } = require('../config/cloudinary');
+const path = require('path');
+const fs = require('fs');
 
+const uploadDir = path.join(__dirname, '..', '..', '.data', 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// Local storage for large files to be chunked to Cloudinary later
+const localDiskStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadDir),
+  filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname.replace(/\s+/g, '_'))
+});
+
+// Direct Cloudinary storage for small images
 const makeCloudinaryStorage = (folderName, resourceType = 'auto') => {
   return new CloudinaryStorage({
     cloudinary,
@@ -13,7 +27,7 @@ const makeCloudinaryStorage = (folderName, resourceType = 'auto') => {
 };
 
 const uploadTrack = multer({
-  storage: makeCloudinaryStorage('tracks', 'video'),
+  storage: localDiskStorage,
   limits: { fileSize: 50 * 1024 * 1024 } // 50MB
 });
 
@@ -28,12 +42,12 @@ const uploadAvatar = multer({
 });
 
 const uploadNoteMemo = multer({
-  storage: makeCloudinaryStorage('memos', 'video'),
+  storage: localDiskStorage,
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB
 });
 
 const uploadChatMedia = multer({
-  storage: makeCloudinaryStorage('chat', 'auto'),
+  storage: localDiskStorage,
   limits: { fileSize: 50 * 1024 * 1024 } // 50MB
 });
 

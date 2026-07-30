@@ -27,17 +27,18 @@ const uploadTrackController = async (req, res, next) => {
     const db = ensureDBShape(await readDB());
     const uploader = db.users.find(u => u.id === userId);
     if (!uploader) {
-      if (req.file.filename) {
-        cloudinary.uploader.destroy(req.file.filename, { resource_type: 'video' }).catch(console.error);
-      }
+      if (req.file) removeFileIfExists(req.file.path);
       return next(new AppError('Unauthorized user.', 401));
     }
     if (projectId && !db.projects.some((project) => project.id === projectId && project.userId === userId)) {
-      if (req.file.filename) {
-        cloudinary.uploader.destroy(req.file.filename, { resource_type: 'video' }).catch(console.error);
-      }
+      if (req.file) removeFileIfExists(req.file.path);
       return next(new AppError('Project not found', 404));
     }
+    
+    const uploadResult = await cloudinary.uploader.upload_large(req.file.path, {
+      resource_type: 'video',
+      folder: 'raremotionhub/tracks'
+    });
     
     const trackId = makeId();
     const newTrack = {
@@ -50,11 +51,12 @@ const uploadTrackController = async (req, res, next) => {
       filename: null,
       mimeType: req.file.mimetype,
       size: req.file.size,
-      url: req.file.path, // Cloudinary URL
+      url: uploadResult.secure_url, // Cloudinary URL
       uploader: { id: uploader.id, name: uploader.name },
       uploadedAt: new Date().toISOString()
     };
     
+    removeFileIfExists(req.file.path);
     db.tracks.push(newTrack);
     await writeDB(db);
     invalidateCache(`workspace:${userId}`);
@@ -167,9 +169,7 @@ const replaceAudio = async (req, res, next) => {
 
     const trackIndex = db.tracks.findIndex((item) => item.id === req.params.id && (item.userId === userId || item.uploader?.id === userId));
     if (trackIndex === -1) {
-      if (req.file.filename) {
-        cloudinary.uploader.destroy(req.file.filename, { resource_type: 'video' }).catch(console.error);
-      }
+      if (req.file) removeFileIfExists(req.file.path);
       return next(new AppError('Track not found', 404));
     }
 
@@ -187,11 +187,17 @@ const replaceAudio = async (req, res, next) => {
       });
     }
 
+    const uploadResult = await cloudinary.uploader.upload_large(req.file.path, {
+      resource_type: 'video',
+      folder: 'raremotionhub/tracks'
+    });
+
     track.filename = null;
-    track.url = req.file.path; // Cloudinary URL
+    track.url = uploadResult.secure_url; // Cloudinary URL
     track.mimeType = req.file.mimetype;
     track.size = req.file.size;
     track.uploadedAt = new Date().toISOString();
+    removeFileIfExists(req.file.path);
     db.tracks[trackIndex] = track;
     await writeDB(db);
     invalidateCache(`workspace:${userId}`);
@@ -301,21 +307,25 @@ const createNoteMemo = async (req, res, next) => {
     const trackIndex = db.tracks.findIndex((item) => item.id?.toString() === req.params.id?.toString());
     const track = trackIndex === -1 ? null : findAccessibleTrack(db, req.params.id, userId);
     if (!track) {
-      if (req.file.filename) {
-        cloudinary.uploader.destroy(req.file.filename, { resource_type: 'video' }).catch(console.error);
-      }
+      if (req.file) removeFileIfExists(req.file.path);
       return next(new AppError('Track not found', 404));
     }
+
+    const uploadResult = await cloudinary.uploader.upload_large(req.file.path, {
+      resource_type: 'video',
+      folder: 'raremotionhub/memos'
+    });
 
     track.noteMemos ||= [];
     const memo = {
       id: makeId(),
       filename: null,
-      url: req.file.path, // Cloudinary URL
+      url: uploadResult.secure_url, // Cloudinary URL
       mimeType: req.file.mimetype,
       size: req.file.size,
       uploadedAt: new Date().toISOString()
     };
+    removeFileIfExists(req.file.path);
     track.noteMemos.push(memo);
     db.tracks[trackIndex] = track;
     await writeDB(db);
@@ -420,7 +430,7 @@ const splitStems = async (req, res, next) => {
           const sourceFile = fs.readdirSync(demucsOutputDir).find((file) => file.startsWith(stem));
           if (!sourceFile) return null;
           
-          const uploadResult = await cloudinary.uploader.upload(path.join(demucsOutputDir, sourceFile), {
+          const uploadResult = await cloudinary.uploader.upload_large(path.join(demucsOutputDir, sourceFile), {
             folder: `raremotionhub/stems/${track.id}`,
             resource_type: 'video',
             public_id: `${stem}-${jobId}`
@@ -557,7 +567,7 @@ const convertVideo = async (req, res, next) => {
         };
         
         try {
-          const uploadResult = await cloudinary.uploader.upload(outputPath, {
+          const uploadResult = await cloudinary.uploader.upload_large(outputPath, {
             folder: 'raremotionhub/tracks',
             resource_type: 'video',
             public_id: `track-${Date.now()}`
@@ -570,9 +580,7 @@ const convertVideo = async (req, res, next) => {
         }
 
         removeFileIfExists(outputPath);
-        if (req.file.filename) {
-          cloudinary.uploader.destroy(req.file.filename, { resource_type: 'video' }).catch(console.error);
-        }
+        removeFileIfExists(req.file.path);
 
         currentDb.tracks.push(newTrack);
         await writeDB(currentDb);
@@ -587,9 +595,7 @@ const convertVideo = async (req, res, next) => {
       })
       .on('error', (err) => {
         console.error('ffmpeg error:', err);
-        if (req.file.filename) {
-          cloudinary.uploader.destroy(req.file.filename, { resource_type: 'video' }).catch(console.error);
-        }
+        removeFileIfExists(req.file.path);
         removeFileIfExists(outputPath);
         if (conversionJobs[jobId]) {
           conversionJobs[jobId].error = 'Conversion failed';

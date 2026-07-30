@@ -13,6 +13,7 @@ const {
 const { invalidateCache } = require('../config/redis');
 const { cloudinary } = require('../config/cloudinary');
 const { AppError } = require('../middlewares/error.middleware');
+const { removeFileIfExists } = require('../utils/fileHelper');
 
 const getCallGroup = async (req, res, next) => {
   try {
@@ -239,15 +240,11 @@ const sendMediaMessage = async (req, res, next) => {
     const db = ensureDBShape(await readDB());
     const { senderId, recipientId, conversationType, text, replyToMessageId, mediaKind } = req.body;
     if (!senderId || !userExists(db, senderId)) {
-      if (req.file.filename) {
-        cloudinary.uploader.destroy(req.file.filename, { resource_type: 'auto' }).catch(console.error);
-      }
+      if (req.file) removeFileIfExists(req.file.path);
       return next(new AppError('Unauthorized user.', 401));
     }
     if (conversationType === 'dm' && !recipientId) {
-      if (req.file.filename) {
-        cloudinary.uploader.destroy(req.file.filename, { resource_type: 'auto' }).catch(console.error);
-      }
+      if (req.file) removeFileIfExists(req.file.path);
       return next(new AppError('recipientId required for DM.', 400));
     }
 
@@ -257,11 +254,14 @@ const sendMediaMessage = async (req, res, next) => {
         ? 'video'
         : 'voice';
     if (attachmentType === 'voice' && mediaKind !== 'voice') {
-      if (req.file.filename) {
-        cloudinary.uploader.destroy(req.file.filename, { resource_type: 'auto' }).catch(console.error);
-      }
+      if (req.file) removeFileIfExists(req.file.path);
       return next(new AppError('Only photos and videos can be shared from files.', 400));
     }
+
+    const uploadResult = await cloudinary.uploader.upload_large(req.file.path, {
+      resource_type: 'auto',
+      folder: 'raremotionhub/chat'
+    });
 
     const msg = createMessage(db, {
       senderId,
@@ -272,12 +272,14 @@ const sendMediaMessage = async (req, res, next) => {
       attachments: [{
         id: makeId(),
         type: attachmentType,
-        url: req.file.path, // Cloudinary URL
+        url: uploadResult.secure_url, // Cloudinary URL
         name: req.file.originalname,
         mimeType: req.file.mimetype,
         size: req.file.size
       }]
     });
+
+    removeFileIfExists(req.file.path);
 
     db.messages.push(msg);
     notifyMessage(db, msg);
