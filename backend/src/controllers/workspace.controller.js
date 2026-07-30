@@ -1,0 +1,492 @@
+const crypto = require('crypto');
+const path = require('path');
+const { Folder, Project, Track, CoverArt } = require('../models');
+const { readDB, writeDB, ensureDBShape } = require('../utils/dbHelper');
+const {
+  makeId,
+  publicUser,
+  userExists,
+  ownerNameFor,
+  defaultTitleFor,
+  normalizeLibraryItem,
+  normalizeTrack,
+  getProjectBundle,
+  notifyListen,
+  trackOwnerId,
+  trackMediaPath
+} = require('../utils/helpers');
+const { getOrSetCache, invalidateCache } = require('../config/redis');
+const { cloudinary } = require('../config/cloudinary');
+const { removeDirIfExists, removeFileIfExists, stemsDir } = require('../utils/fileHelper');
+const { AppError } = require('../middlewares/error.middleware');
+
+const getWorkspace = async (req, res, next) => {
+  try {
+    const userId = req.userId;
+    const data = await getOrSetCache(`workspace:${userId}`, 3600, async () => {
+      const db = ensureDBShape(await readDB());
+      if (!userExists(db, userId)) return { error: 'Unauthorized user.', status: 401 };
+
+      const rootFolders = db.folders.filter((folder) => folder.userId === userId && !folder.parentFolderId);
+      return {
+        folders: rootFolders.map((folder) => normalizeLibraryItem(folder, db, 'folder')),
+        projects: db.projects.filter((project) => project.userId === userId).map((project) => normalizeLibraryItem(project, db, 'project')),
+        tracks: db.tracks.filter((track) => track.userId === userId || track.uploader?.id === userId).map(normalizeTrack),
+        coverArts: db.coverArts.filter((cover) => cover.userId === userId),
+        notifications: db.notifications.filter((notification) => notification.userId === userId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      };
+    });
+
+    if (data.error) return next(new AppError(data.error, data.status));
+    res.json(data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const generateShare = async (req, res, next) => {
+  try {
+    const db = ensureDBShape(await readDB());
+    const { type, targetId, expiresInMs } = req.body;
+    if (!['project', 'folder'].includes(type) || !targetId) {
+      return next(new AppError('Valid type and targetId are required.', 400));
+    }
+
+    const token = crypto.randomBytes(16).toString('hex');
+    const expiresAt = expiresInMs ? new Date(Date.now() + expiresInMs).toISOString() : null;
+
+    const shareLink = {
+      token,
+      type,
+      targetId,
+      expiresAt,
+      createdAt: new Date().toISOString()
+    };
+
+    db.shareLinks.push(shareLink);
+    await writeDB(db);
+
+    res.json({ token, expiresAt });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getShareLink = async (req, res, next) => {
+  try {
+    const db = ensureDBShape(await readDB());
+    const link = db.shareLinks.find((l) => l.token === req.params.token);
+    
+    if (!link) return next(new AppError('Share link not found.', 404));
+
+    if (link.expiresAt && Date.now() > new Date(link.expiresAt).getTime()) {
+      return res.status(410).json({ error: 'Link no longer accessible.', expired: true });
+    }
+
+    if (link.type === 'project') {
+      const project = db.projects.find((item) => item.id === link.targetId);
+      if (!project) return next(new AppError('Project not found.', 404));
+      return res.json(getProjectBundle(db, project));
+    } else if (link.type === 'folder') {
+      const folder = db.folders.find((item) => item.id === link.targetId);
+      if (!folder) return next(new AppError('Folder not found.', 404));
+      const subFolders = db.folders.filter((f) => f.folderId === folder.id);
+      const subProjects = db.projects.filter((p) => p.folderId === folder.id);
+      const tracks = db.tracks.filter((t) => subProjects.some((sp) => sp.id === t.projectId));
+      return res.json({
+        type: 'folder',
+        folder: normalizeLibraryItem(folder, db, 'folder'),
+        owner: publicUser(db.users.find((user) => user.id === folder.userId)),
+        folders: subFolders.map((f) => normalizeLibraryItem(f, db, 'folder')),
+        projects: subProjects.map((p) => normalizeLibraryItem(p, db, 'project')),
+        tracks: tracks.map(normalizeTrack)
+      });
+    }
+
+    return next(new AppError('Invalid link type.', 400));
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getFolder = async (req, res, next) => {
+  try {
+    const db = ensureDBShape(await readDB());
+    const userId = req.userId;
+    const folder = db.folders.find((f) => f.id === req.params.id && f.userId === userId);
+    if (!folder) return next(new AppError('Folder not found', 404));
+
+    const childProjects = db.projects.filter((p) => p.folderId === folder.id && p.userId === userId);
+    const childFolders = db.folders.filter((f) => f.parentFolderId === folder.id && f.userId === userId);
+
+    const breadcrumbs = [];
+    let current = folder;
+    while (current.parentFolderId) {
+      const parent = db.folders.find((f) => f.id === current.parentFolderId);
+      if (!parent) break;
+      breadcrumbs.unshift({ id: parent.id, title: parent.title || parent.name });
+      current = parent;
+    }
+
+    res.json({
+      folder: normalizeLibraryItem(folder, db, 'folder'),
+      folders: childFolders.map((f) => normalizeLibraryItem(f, db, 'folder')),
+      projects: childProjects.map((p) => normalizeLibraryItem(p, db, 'project')),
+      tracks: db.tracks.filter((t) => t.userId === userId || t.uploader?.id === userId).map(normalizeTrack),
+      breadcrumbs
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const createFolder = async (req, res, next) => {
+  try {
+    const { name, title, artist, userId, parentFolderId } = req.body;
+    const db = ensureDBShape(await readDB());
+    const ownerName = ownerNameFor(db, userId);
+    if (!userExists(db, userId)) return next(new AppError('Unauthorized user.', 401));
+    if (parentFolderId && !db.folders.some((f) => f.id === parentFolderId && f.userId === userId)) {
+      return next(new AppError('Parent folder not found', 404));
+    }
+    const nextTitle = (title || name || '').trim() || defaultTitleFor('folder');
+    const newFolder = {
+      id: makeId(),
+      name: nextTitle,
+      title: nextTitle,
+      artist: artist?.trim() || ownerName,
+      userId,
+      parentFolderId: parentFolderId || null,
+      createdAt: new Date().toISOString()
+    };
+    db.folders.push(newFolder);
+    await writeDB(db);
+    invalidateCache(`workspace:${userId}`);
+    res.json(newFolder);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const moveFolder = async (req, res, next) => {
+  try {
+    const { userId, parentFolderId } = req.body;
+    const db = ensureDBShape(await readDB());
+    const folderIndex = db.folders.findIndex((f) => f.id === req.params.id && f.userId === userId);
+    if (folderIndex === -1) return next(new AppError('Folder not found', 404));
+
+    if (parentFolderId) {
+      if (parentFolderId === req.params.id) return next(new AppError('Cannot move a folder into itself', 400));
+      if (!db.folders.some((f) => f.id === parentFolderId && f.userId === userId)) {
+        return next(new AppError('Target folder not found', 404));
+      }
+      const isDescendant = (folderId, ancestorId) => {
+        const f = db.folders.find((x) => x.id === folderId);
+        if (!f || !f.parentFolderId) return false;
+        if (f.parentFolderId === ancestorId) return true;
+        return isDescendant(f.parentFolderId, ancestorId);
+      };
+      if (isDescendant(parentFolderId, req.params.id)) {
+        return next(new AppError('Cannot move a folder into one of its own sub-folders', 400));
+      }
+    }
+
+    const nextParentFolderId = parentFolderId || null;
+    db.folders[folderIndex].parentFolderId = nextParentFolderId;
+    db.folders[folderIndex].updatedAt = new Date().toISOString();
+    await writeDB(db);
+    await Folder.findOneAndUpdate(
+      { id: req.params.id, userId },
+      { parentFolderId: nextParentFolderId, updatedAt: db.folders[folderIndex].updatedAt }
+    );
+    invalidateCache(`workspace:${userId}`);
+    res.json(normalizeLibraryItem(db.folders[folderIndex], db, 'folder'));
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateFolder = async (req, res, next) => {
+  try {
+    const { userId, title, name, artist } = req.body;
+    const db = ensureDBShape(await readDB());
+    const folderIndex = db.folders.findIndex((folder) => folder.id === req.params.id && folder.userId === userId);
+    if (folderIndex === -1) return next(new AppError('Folder not found', 404));
+
+    const nextTitle = (title ?? name ?? db.folders[folderIndex].title ?? db.folders[folderIndex].name ?? '').trim() || defaultTitleFor('folder');
+    const nextArtist = (artist ?? db.folders[folderIndex].artist ?? '').trim() || ownerNameFor(db, userId);
+    db.folders[folderIndex] = {
+      ...db.folders[folderIndex],
+      name: nextTitle,
+      title: nextTitle,
+      artist: nextArtist,
+      updatedAt: new Date().toISOString()
+    };
+    await writeDB(db);
+    invalidateCache(`workspace:${userId}`);
+    res.json(normalizeLibraryItem(db.folders[folderIndex], db, 'folder'));
+  } catch (error) {
+    next(error);
+  }
+};
+
+const deleteFolder = async (req, res, next) => {
+  try {
+    const db = ensureDBShape(await readDB());
+    const userId = req.userId;
+
+    const folderIndex = db.folders.findIndex((f) => f.id === req.params.id && f.userId === userId);
+    if (folderIndex === -1) return next(new AppError('Folder not found', 404));
+
+    db.folders.forEach(f => {
+      if (f.parentFolderId === req.params.id) f.parentFolderId = null;
+    });
+    db.projects.forEach(p => {
+      if (p.folderId === req.params.id) p.folderId = null;
+    });
+
+    db.folders.splice(folderIndex, 1);
+    await writeDB(db);
+    await Folder.deleteOne({ id: req.params.id });
+    invalidateCache(`workspace:${userId}`);
+    res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const createProject = async (req, res, next) => {
+  try {
+    const { name, title, artist, userId, folderId } = req.body;
+    const db = ensureDBShape(await readDB());
+    const ownerName = ownerNameFor(db, userId);
+    if (!userExists(db, userId)) return next(new AppError('Unauthorized user.', 401));
+    if (folderId && !db.folders.some((folder) => folder.id === folderId && folder.userId === userId)) {
+      return next(new AppError('Folder not found', 404));
+    }
+    const nextTitle = (title || name || '').trim() || defaultTitleFor('project');
+    const newProject = { 
+      id: makeId(),
+      name: nextTitle,
+      title: nextTitle,
+      artist: artist?.trim() || ownerName,
+      userId, 
+      folderId: folderId || null,
+      coverArt: null,
+      createdAt: new Date().toISOString() 
+    };
+    db.projects.push(newProject);
+    await writeDB(db);
+    invalidateCache(`workspace:${userId}`);
+    res.json(newProject);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateProject = async (req, res, next) => {
+  try {
+    const { userId, title, name, artist } = req.body;
+    const db = ensureDBShape(await readDB());
+    const projectIndex = db.projects.findIndex((project) => project.id === req.params.id && project.userId === userId);
+    if (projectIndex === -1) return next(new AppError('Project not found', 404));
+
+    const nextTitle = (title ?? name ?? db.projects[projectIndex].title ?? db.projects[projectIndex].name ?? '').trim() || defaultTitleFor('project');
+    const nextArtist = (artist ?? db.projects[projectIndex].artist ?? '').trim() || ownerNameFor(db, userId);
+    db.projects[projectIndex] = {
+      ...db.projects[projectIndex],
+      name: nextTitle,
+      title: nextTitle,
+      artist: nextArtist,
+      updatedAt: new Date().toISOString()
+    };
+    await writeDB(db);
+    invalidateCache(`workspace:${userId}`);
+    invalidateCache(`project:${req.params.id}:${userId}`);
+    res.json(normalizeLibraryItem(db.projects[projectIndex], db, 'project'));
+  } catch (error) {
+    next(error);
+  }
+};
+
+const moveProject = async (req, res, next) => {
+  try {
+    const { folderId, userId } = req.body;
+    const db = ensureDBShape(await readDB());
+    const projIndex = db.projects.findIndex(p => p.id === req.params.id && p.userId === userId);
+    if (projIndex === -1) return next(new AppError('Project not found', 404));
+    if (folderId && !db.folders.some((folder) => folder.id === folderId && folder.userId === userId)) {
+      return next(new AppError('Folder not found', 404));
+    }
+
+    const nextFolderId = folderId || null;
+    db.projects[projIndex].folderId = nextFolderId;
+    db.projects[projIndex].updatedAt = new Date().toISOString();
+    await writeDB(db);
+    await Project.findOneAndUpdate(
+      { id: req.params.id, userId },
+      { folderId: nextFolderId, updatedAt: db.projects[projIndex].updatedAt }
+    );
+    invalidateCache(`workspace:${userId}`);
+    res.json(normalizeLibraryItem(db.projects[projIndex], db, 'project'));
+  } catch (error) {
+    next(error);
+  }
+};
+
+const deleteProject = async (req, res, next) => {
+  try {
+    const db = ensureDBShape(await readDB());
+    const userId = req.userId;
+    const project = db.projects.find((p) => p.id === req.params.id && p.userId === userId);
+    if (!project) return next(new AppError('Project not found', 404));
+
+    const tracksToDelete = db.tracks.filter(t => t.projectId === req.params.id && (t.userId === userId || t.uploader?.id === userId));
+    for (const track of tracksToDelete) {
+      if (track.filename) {
+        removeFileIfExists(trackMediaPath(track));
+        (track.versions || []).forEach((version) => {
+          removeFileIfExists(path.join(uploadDir, trackOwnerId(track), version.filename));
+        });
+      } else if (track.url) {
+        // Delete from Cloudinary
+        const publicId = track.url.split('/').pop().split('.')[0];
+        cloudinary.uploader.destroy(`raremotionhub/tracks/${publicId}`, { resource_type: 'video' }).catch(console.error);
+      }
+      removeDirIfExists(path.join(stemsDir, trackOwnerId(track), track.id));
+    }
+
+    db.projects = db.projects.filter(p => p.id !== req.params.id);
+    db.tracks = db.tracks.filter(t => !(t.projectId === req.params.id && (t.userId === userId || t.uploader?.id === userId)));
+    await writeDB(db);
+
+    await Project.deleteOne({ id: req.params.id });
+    await Track.deleteMany({ projectId: req.params.id, $or: [{ userId }, { 'uploader.id': userId }] });
+    await CoverArt.deleteMany({ projectId: req.params.id });
+
+    invalidateCache(`workspace:${userId}`);
+    invalidateCache(`project:${req.params.id}:${userId}`);
+    res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getCovers = async (req, res, next) => {
+  try {
+    const { userId } = req.query;
+    if (!userId) return next(new AppError('userId required.', 400));
+    const db = ensureDBShape(await readDB());
+    const covers = db.coverArts
+      .filter(c => c.userId === userId)
+      .sort((a, b) => new Date(b.uploadedAt || 0) - new Date(a.uploadedAt || 0));
+    res.json({ covers });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateProjectCover = async (req, res, next) => {
+  try {
+    const { coverUrl, userId } = req.body;
+    const db = ensureDBShape(await readDB());
+    const projIndex = db.projects.findIndex(p => p.id === req.params.id && p.userId === userId);
+    if (projIndex === -1) return next(new AppError('Project not found', 404));
+
+    db.projects[projIndex].coverArt = coverUrl || null;
+    await writeDB(db);
+    invalidateCache(`workspace:${userId}`);
+    invalidateCache(`project:${req.params.id}:${userId}`);
+    res.json(db.projects[projIndex]);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getProject = async (req, res, next) => {
+  try {
+    const userId = req.userId;
+    const data = await getOrSetCache(`project:${req.params.id}:${userId}`, 3600, async () => {
+      const db = ensureDBShape(await readDB());
+      const project = db.projects.find((item) => item.id === req.params.id && item.userId === userId);
+      if (!project) return { error: 'Project not found', status: 404 };
+      const tracks = db.tracks.filter((track) => track.projectId === project.id).map(normalizeTrack);
+      return { project: normalizeLibraryItem(project, db, 'project'), tracks };
+    });
+
+    if (data.error) return next(new AppError(data.error, data.status));
+    res.json(data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const uploadCover = async (req, res, next) => {
+  try {
+    if (!req.file) return next(new AppError('No image file uploaded', 400));
+    const { userId } = req.body;
+    const db = ensureDBShape(await readDB());
+    if (!userExists(db, userId)) {
+      if (req.file.filename) {
+        cloudinary.uploader.destroy(req.file.filename).catch(console.error);
+      }
+      return next(new AppError('Unauthorized user.', 401));
+    }
+
+    const url = req.file.path; // Cloudinary URL
+    const newCover = { id: Date.now().toString(), userId, url, mimeType: req.file.mimetype, uploadedAt: new Date().toISOString() };
+    db.coverArts.push(newCover);
+    await writeDB(db);
+    invalidateCache(`workspace:${userId}`);
+    res.json(newCover);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const deleteCover = async (req, res, next) => {
+  try {
+    const db = ensureDBShape(await readDB());
+    const userId = req.userId;
+    const cover = db.coverArts.find((c) => c.id === req.params.id && c.userId === userId);
+    if (!cover) return next(new AppError('Cover art not found', 404));
+
+    const coverUrl = cover.url;
+    db.coverArts = db.coverArts.filter(c => c.id !== req.params.id);
+    db.projects.forEach(p => {
+      if (p.coverArt === coverUrl) p.coverArt = null;
+    });
+
+    await writeDB(db);
+    await CoverArt.deleteOne({ id: req.params.id });
+    
+    // Also delete from Cloudinary
+    const publicId = coverUrl.split('/').pop().split('.')[0];
+    cloudinary.uploader.destroy(`raremotionhub/covers/${publicId}`).catch(console.error);
+
+    invalidateCache(`workspace:${userId}`);
+    res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = {
+  getWorkspace,
+  generateShare,
+  getShareLink,
+  getFolder,
+  createFolder,
+  moveFolder,
+  updateFolder,
+  deleteFolder,
+  createProject,
+  updateProject,
+  moveProject,
+  deleteProject,
+  getCovers,
+  updateProjectCover,
+  getProject,
+  uploadCover,
+  deleteCover
+};

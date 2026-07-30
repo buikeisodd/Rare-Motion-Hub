@@ -13,3 +13,5 @@ mobile/android/
 mobile/ios/
 .DS_Store
 .db.json
+
+backend/.data/

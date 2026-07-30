@@ -1,13 +1,23 @@
-require('dotenv').config();
+const mongoose = require('mongoose');
 const path = require('path');
 const fs = require('fs');
-const mongoose = require('mongoose');
-const app = require('./src/app');
 
-const PORT = process.env.PORT || 4000;
-const MONGODB_URI = process.env.MONGODB_URI;
+let mongod = null;
 
-async function startServer() {
+const connectDB = async () => {
+  const MONGODB_URI = process.env.MONGODB_URI;
+  if (!MONGODB_URI) {
+    console.error('FATAL: MONGODB_URI is not set in environment.');
+    process.exit(1);
+  }
+
+  // Fix DNS resolution issues on Windows for MongoDB Atlas SRV records
+  try {
+    require('dns').setServers(['8.8.8.8', '8.8.4.4']);
+  } catch (e) {
+    // Ignore error in environments where dns setServers fails
+  }
+
   try {
     console.log('Attempting to connect to MongoDB Atlas...');
     await mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: 5000 });
@@ -16,10 +26,10 @@ async function startServer() {
     console.warn(`MongoDB Atlas connection failed (${err.message}). Falling back to local in-memory MongoDB...`);
     try {
       const { MongoMemoryServer } = require('mongodb-memory-server');
-      const dbPath = path.join(__dirname, '.data', 'local-mongo');
+      const dbPath = path.join(__dirname, '..', '..', '.data', 'local-mongo');
       fs.mkdirSync(dbPath, { recursive: true });
       
-      const mongod = await MongoMemoryServer.create({
+      mongod = await MongoMemoryServer.create({
         instance: { dbPath, storageEngine: 'wiredTiger' }
       });
       const uri = mongod.getUri();
@@ -30,10 +40,13 @@ async function startServer() {
       process.exit(1);
     }
   }
+};
 
-  app.listen(PORT, () => {
-    console.log(`Backend server running on http://localhost:${PORT}`);
-  });
-}
+const disconnectDB = async () => {
+  await mongoose.disconnect();
+  if (mongod) {
+    await mongod.stop();
+  }
+};
 
-startServer();
+module.exports = { connectDB, disconnectDB };
