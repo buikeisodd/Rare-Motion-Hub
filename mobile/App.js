@@ -30,6 +30,9 @@ import { API_URL, api, resolveMediaUrl } from './src/api';
 import { clearUser, getLastEmail, getOfflineTracks, getStoredUser, storeLastEmail, storeOfflineTracks, storeUser, storeToken } from './src/storage';
 import { colors, gradientFor } from './src/theme';
 
+const IDLE_LIMIT_MS = 15 * 60 * 1000;
+const IDLE_WARNING_MS = 60 * 1000;
+
 function IconButton({ name, onPress, label, tone = 'dark', badge = 0 }) {
   return (
     <Pressable
@@ -998,6 +1001,9 @@ export default function App() {
   const [offlineTracks, setOfflineTracks] = useState({});
   const [playbackSettings, setPlaybackSettings] = useState({ speed: 1, pitch: 0 });
   const [playback, setPlayback] = useState({ player: null, track: null, project: null, tracks: [], playing: false, progress: 0.12, repeat: false });
+  const [idleWarningVisible, setIdleWarningVisible] = useState(false);
+  const idleLastActivityRef = useRef(Date.now());
+  const idleWarnedRef = useRef(false);
   const playerRef = useRef(null);
 
   const allFolders = useMemo(() => {
@@ -1623,6 +1629,34 @@ export default function App() {
     setRoute({ name: 'library' });
   };
 
+  const markActivity = () => {
+    idleLastActivityRef.current = Date.now();
+    idleWarnedRef.current = false;
+    setIdleWarningVisible(false);
+  };
+
+  useEffect(() => {
+    if (!user) return undefined;
+    if (playback.playing) {
+      markActivity();
+      return undefined;
+    }
+
+    const timer = setInterval(() => {
+      const idleFor = Date.now() - idleLastActivityRef.current;
+      if (idleFor >= IDLE_LIMIT_MS) {
+        logout();
+        return;
+      }
+      if (idleFor >= IDLE_LIMIT_MS - IDLE_WARNING_MS && !idleWarnedRef.current) {
+        idleWarnedRef.current = true;
+        setIdleWarningVisible(true);
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [user, playback.playing]);
+
   if (booting) {
     return (
       <View style={[styles.screen, styles.center]}>
@@ -1767,7 +1801,7 @@ export default function App() {
   );
 
   return (
-    <View style={styles.app} {...edgeSwipeResponder.panHandlers}>
+    <View style={styles.app} onTouchStart={markActivity} {...edgeSwipeResponder.panHandlers}>
       {currentScreen}
       {route.name !== 'now-playing' && route.name !== 'player-edit' && (
         <MiniPlayer

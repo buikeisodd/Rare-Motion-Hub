@@ -42,6 +42,10 @@ const TrackSchema = new Schema({
   size: Number,
   url: String,
   uploader: { id: String, name: String },
+  noteMemos: [Schema.Types.Mixed],
+  versions: [Schema.Types.Mixed],
+  sourceTrackId: String,
+  sourceUserId: String,
   uploadedAt: { type: String, default: () => new Date().toISOString() },
   isStem: Boolean,
   stemOf: String,
@@ -64,6 +68,8 @@ const CoverArtSchema = new Schema({
   userId: String,
   url: String,
   filename: String,
+  mimeType: String,
+  uploadedAt: String,
   createdAt: { type: String, default: () => new Date().toISOString() },
 });
 
@@ -91,10 +97,15 @@ const PlayEventSchema = new Schema({
 
 const MessageSchema = new Schema({
   id: { type: String, required: true, unique: true },
+  senderId: String,
+  recipientId: String,
+  conversationType: String,
   fromId: String,
   toId: String,
   groupId: String,
   text: String,
+  attachments: [Schema.Types.Mixed],
+  replyToMessageId: String,
   type: String,
   fileUrl: String,
   fileName: String,
@@ -109,6 +120,7 @@ const MessageSchema = new Schema({
 
 const CallSchema = new Schema({
   id: { type: String, required: true, unique: true },
+  startedBy: Schema.Types.Mixed,
   fromId: String,
   toId: String,
   type: String,
@@ -121,6 +133,8 @@ const CallSchema = new Schema({
 const CallSignalSchema = new Schema({
   id: { type: String, required: true, unique: true },
   callId: String,
+  fromUserId: String,
+  toUserId: String,
   fromId: String,
   toId: String,
   type: String,
