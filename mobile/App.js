@@ -27,7 +27,7 @@ import {
   View
 } from 'react-native';
 import { API_URL, api, resolveMediaUrl } from './src/api';
-import { clearUser, getLastEmail, getOfflineTracks, getStoredUser, storeLastEmail, storeOfflineTracks, storeUser, storeToken } from './src/storage';
+import { clearUser, getLastEmail, getOfflineTracks, getStoredToken, getStoredUser, storeLastEmail, storeOfflineTracks, storeUser, storeToken } from './src/storage';
 import { colors, gradientFor } from './src/theme';
 
 const IDLE_LIMIT_MS = 15 * 60 * 1000;
@@ -1433,8 +1433,10 @@ export default function App() {
         type: asset.mimeType || `image/${extension === 'jpg' ? 'jpeg' : extension}`
       });
 
+      const token = await getStoredToken();
       const response = await fetch(`${API_URL}/api/users/${user.id}/avatar`, {
         method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         body: formData
       });
       const data = await response.json();
@@ -1472,7 +1474,12 @@ export default function App() {
         name: `cover.${extension}`,
         type: asset.mimeType || `image/${extension === 'jpg' ? 'jpeg' : extension}`
       });
-      const uploadRes = await fetch(`${API_URL}/api/upload-cover`, { method: 'POST', body: formData });
+      const token = await getStoredToken();
+      const uploadRes = await fetch(`${API_URL}/api/upload-cover`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        body: formData
+      });
       const cover = await uploadRes.json();
       if (!uploadRes.ok) throw new Error(cover.error || 'Could not upload cover art.');
       await api(`/api/projects/${project.id}/cover`, {
@@ -1537,7 +1544,12 @@ export default function App() {
       formData.append('producer', '');
       formData.append('userId', user.id);
       formData.append('projectId', project.id);
-      const response = await fetch(`${API_URL}/api/upload`, { method: 'POST', body: formData });
+      const token = await getStoredToken();
+      const response = await fetch(`${API_URL}/api/upload`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        body: formData
+      });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Could not upload track.');
       await refreshProject(project.id);

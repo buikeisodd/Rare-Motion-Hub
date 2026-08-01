@@ -1,12 +1,8 @@
 const multer = require('multer');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const { cloudinary, hasCloudinaryConfig } = require('../config/cloudinary');
-const path = require('path');
 const fs = require('fs');
-
-const uploadDir = path.join(__dirname, '..', '..', '.data', 'uploads');
-const coverDir = path.join(__dirname, '..', '..', '.data', 'covers');
-const avatarDir = path.join(__dirname, '..', '..', '.data', 'avatars');
+const { uploadDir, coverDir, avatarDir } = require('../utils/fileHelper');
 [uploadDir, coverDir, avatarDir].forEach((dir) => {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 });
