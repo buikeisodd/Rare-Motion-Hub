@@ -431,7 +431,7 @@ function ProfilePanel({ isOpen, user, theme, onThemeChange, onEditProfile, onLog
           <div className="my-1 rounded-xl px-3 py-3">
             <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-primary-label">
               <Palette className="h-5 w-5" />
-              Theme setting
+              Theme
             </div>
             <div className="grid grid-cols-2 gap-3">
               {['dark', 'light'].map((mode) => (

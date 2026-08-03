@@ -26,7 +26,7 @@ function DesktopOnly({ children }) {
   return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-center px-8 text-center">
       <StarlightLogo className="logo-glow h-16 w-56 text-white opacity-80 mb-12" />
-      <div className="mb-8 text-6xl">🖥️</div>
+      <div className="mb-8 text-6xl"></div>
       <h1 className="text-2xl font-semibold text-white mb-3">Desktop only</h1>
       <p className="text-[#888] text-base max-w-xs leading-relaxed">
         Starlight Station is built for desktop. Please open this on a laptop or desktop computer to continue.
