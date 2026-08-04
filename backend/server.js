@@ -3,11 +3,22 @@ const path = require('path');
 const fs = require('fs');
 const mongoose = require('mongoose');
 const app = require('./src/app');
+const { configCloudinary, hasCloudinaryConfig } = require('./src/config/cloudinary');
+const { connectRedis } = require('./src/config/redis');
 
 const PORT = process.env.PORT || 4000;
 const MONGODB_URI = process.env.MONGODB_URI;
 
 async function startServer() {
+  // Configure Cloudinary SDK with credentials from env
+  configCloudinary();
+  if (hasCloudinaryConfig) {
+    console.log('Cloudinary configured.');
+  }
+
+  // Connect to Redis (no-op if REDIS_URL isn't set)
+  await connectRedis();
+
   try {
     console.log('Attempting to connect to MongoDB Atlas...');
     await mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: 5000 });
