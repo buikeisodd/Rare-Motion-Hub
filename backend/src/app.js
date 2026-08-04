@@ -19,6 +19,16 @@ app.use('/avatars', express.static(avatarDir));
 
 // System routes
 app.get('/api/ping', (req, res) => res.json({ ok: true, ts: Date.now() }));
+app.get('/api/status', (req, res) => {
+  const { hasCloudinaryConfig } = require('./config/cloudinary');
+  const { getRedisClient } = require('./config/redis');
+  const redisClient = getRedisClient();
+  res.json({
+    cloudinary: hasCloudinaryConfig,
+    redis: Boolean(redisClient && redisClient.isReady),
+    mongoState: require('mongoose').connection.readyState // 1 = connected
+  });
+});
 
 // Routes
 app.use('/api/auth', authRoutes);
