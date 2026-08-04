@@ -1396,7 +1396,7 @@ export default function App() {
     if (!name) return;
     setProfileSaving(true);
     try {
-      const data = await api(`/api/users/${user.id}`, {
+      const data = await api(`/api/auth/${user.id}`, {
         method: 'PUT',
         body: JSON.stringify({ name })
       });
@@ -1434,7 +1434,7 @@ export default function App() {
       });
 
       const token = await getStoredToken();
-      const response = await fetch(`${API_URL}/api/users/${user.id}/avatar`, {
+      const response = await fetch(`${API_URL}/api/auth/${user.id}/avatar`, {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         body: formData
@@ -1623,7 +1623,7 @@ export default function App() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await api(`/api/users/${user.id}`, { method: 'DELETE' });
+              await api(`/api/auth/${user.id}`, { method: 'DELETE' });
               await logout();
             } catch (error) {
               Alert.alert('Could not delete account', error.message);

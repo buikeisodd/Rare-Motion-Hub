@@ -717,7 +717,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
     setProfileSaving(true);
     setProfileError('');
     try {
-      const profileRes = await fetch(`${apiUrl}/api/users/${user.id}`, {
+      const profileRes = await fetch(`${apiUrl}/api/auth/${user.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name })
@@ -729,7 +729,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
       if (avatarFile) {
         const formData = new FormData();
         formData.append('avatar', avatarFile);
-        const avatarRes = await fetch(`${apiUrl}/api/users/${user.id}/avatar`, {
+        const avatarRes = await fetch(`${apiUrl}/api/auth/${user.id}/avatar`, {
           method: 'POST',
           body: formData
         });
