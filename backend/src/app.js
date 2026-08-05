@@ -30,6 +30,33 @@ app.get('/api/status', (req, res) => {
   });
 });
 
+// TEMPORARY DEBUG ENDPOINT — remove once Cloudinary issue is resolved.
+// Performs a real upload against Cloudinary using the live server's env vars
+// so we can see the exact raw error Cloudinary returns, without needing
+// local reproduction.
+app.get('/api/debug/cloudinary-test', async (req, res) => {
+  const { cloudinary, hasCloudinaryConfig } = require('./config/cloudinary');
+  if (!hasCloudinaryConfig) {
+    return res.json({ ok: false, stage: 'config', reason: 'Cloudinary env vars not set on this server.' });
+  }
+  try {
+    const result = await cloudinary.uploader.upload(
+      'https://res.cloudinary.com/demo/image/upload/sample.jpg',
+      { folder: 'raremotionhub/debug-test' }
+    );
+    return res.json({ ok: true, url: result.secure_url, public_id: result.public_id });
+  } catch (err) {
+    return res.json({
+      ok: false,
+      stage: 'upload',
+      message: err.message,
+      http_code: err.http_code || err.error?.http_code,
+      name: err.name,
+      raw: err.error || err
+    });
+  }
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/media', mediaRoutes);
