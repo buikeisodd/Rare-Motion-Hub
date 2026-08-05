@@ -40,10 +40,13 @@ app.get('/api/debug/cloudinary-test', async (req, res) => {
     return res.json({ ok: false, stage: 'config', reason: 'Cloudinary env vars not set on this server.' });
   }
   try {
-    const result = await cloudinary.uploader.upload(
-      'https://res.cloudinary.com/demo/image/upload/sample.jpg',
-      { folder: 'raremotionhub/debug-test' }
-    );
+    // 1x1 transparent PNG as a base64 data URI — treated by Cloudinary as a direct
+    // "uploaded" asset (same path as multer-storage-cloudinary's upload_stream),
+    // NOT a "fetched URL" asset, so it correctly mirrors the real app's upload flow.
+    const tinyPng = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+    const result = await cloudinary.uploader.upload(tinyPng, {
+      folder: 'raremotionhub/debug-test'
+    });
     return res.json({ ok: true, url: result.secure_url, public_id: result.public_id });
   } catch (err) {
     return res.json({
