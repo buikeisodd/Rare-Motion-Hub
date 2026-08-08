@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const { errorHandler } = require('./middlewares/error.middleware');
+const { uploadDir, coverDir, avatarDir } = require('./utils/fileHelper');
 
 const authRoutes = require('./routes/auth.routes');
 const workspaceRoutes = require('./routes/workspace.routes');
@@ -12,9 +13,65 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static(uploadDir));
+app.use('/covers', express.static(coverDir));
+app.use('/avatars', express.static(avatarDir));
 
 // System routes
 app.get('/api/ping', (req, res) => res.json({ ok: true, ts: Date.now() }));
+app.get('/api/status', (req, res) => {
+  const { hasCloudinaryConfig } = require('./config/cloudinary');
+  const { getRedisClient } = require('./config/redis');
+  const redisClient = getRedisClient();
+  res.json({
+    cloudinary: hasCloudinaryConfig,
+    redis: Boolean(redisClient && redisClient.isReady),
+    mongoState: require('mongoose').connection.readyState // 1 = connected
+  });
+});
+
+// TEMPORARY DEBUG ENDPOINT — remove once Cloudinary issue is resolved.
+// Performs a real upload against Cloudinary using the live server's env vars
+// so we can see the exact raw error Cloudinary returns, without needing
+// local reproduction.
+app.get('/api/debug/cloudinary-test', async (req, res) => {
+  const { cloudinary, hasCloudinaryConfig } = require('./config/cloudinary');
+  if (!hasCloudinaryConfig) {
+    return res.json({ ok: false, stage: 'config', reason: 'Cloudinary env vars not set on this server.' });
+  }
+
+  // Show exactly what's loaded into the SDK at runtime, byte for byte,
+  // without leaking the full secret. Wrapped in JSON.stringify + quotes
+  // so any leading/trailing whitespace or hidden characters become visible.
+  const cfg = cloudinary.config();
+  const inspect = {
+    cloud_name: JSON.stringify(cfg.cloud_name),
+    cloud_name_length: (cfg.cloud_name || '').length,
+    api_key: JSON.stringify(cfg.api_key),
+    api_key_length: (cfg.api_key || '').length,
+    api_secret_length: (cfg.api_secret || '').length,
+    api_secret_first4: (cfg.api_secret || '').slice(0, 4),
+    api_secret_last4: (cfg.api_secret || '').slice(-4),
+  };
+
+  try {
+    const tinyPng = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+    const result = await cloudinary.uploader.upload(tinyPng, {
+      folder: 'raremotionhub/debug-test'
+    });
+    return res.json({ ok: true, url: result.secure_url, public_id: result.public_id, config: inspect });
+  } catch (err) {
+    return res.json({
+      ok: false,
+      stage: 'upload',
+      message: err.message,
+      http_code: err.http_code || err.error?.http_code,
+      name: err.name,
+      raw: err.error || err,
+      config: inspect
+    });
+  }
+});
 
 // Routes
 app.use('/api/auth', authRoutes);

@@ -7,6 +7,7 @@ export default function CoverArtPicker({ isOpen, onClose, onSelect, projectId, u
   const [covers, setCovers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState('');
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -18,11 +19,13 @@ export default function CoverArtPicker({ isOpen, onClose, onSelect, projectId, u
       try {
         const res = await fetch(`${apiUrl}/api/covers?userId=${encodeURIComponent(userId)}`);
         const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Could not load cover art.');
         if (!cancelled) {
           setCovers((data.covers || []).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
         }
       } catch (err) {
         console.error('Failed to fetch covers', err);
+        if (!cancelled) setError(err.message || 'Could not load cover art.');
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -36,6 +39,7 @@ export default function CoverArtPicker({ isOpen, onClose, onSelect, projectId, u
     const file = e.target.files[0];
     if (!file) return;
     setUploading(true);
+    setError('');
     const formData = new FormData();
     formData.append('userId', userId);
     formData.append('projectId', projectId);
@@ -43,14 +47,17 @@ export default function CoverArtPicker({ isOpen, onClose, onSelect, projectId, u
     try {
       const res = await fetch(`${apiUrl}/api/upload-cover`, { method: 'POST', body: formData });
       const newCover = await res.json();
+      if (!res.ok) throw new Error(newCover.error || 'Cover upload failed.');
       if (res.ok) {
         setCovers(prev => [newCover, ...prev]);
         await handleSelect(newCover.url);
       }
     } catch (err) {
       console.error('Upload failed', err);
+      setError(err.message || 'Cover upload failed.');
     } finally {
       setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -58,7 +65,10 @@ export default function CoverArtPicker({ isOpen, onClose, onSelect, projectId, u
     e.stopPropagation();
     if (!confirm('Delete this cover art?')) return;
     try {
-      await fetch(`${apiUrl}/api/covers/${cover.id}?userId=${encodeURIComponent(userId)}`, { method: 'DELETE' });
+      setError('');
+      const res = await fetch(`${apiUrl}/api/covers/${cover.id}?userId=${encodeURIComponent(userId)}`, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Could not delete cover art.');
       setCovers(prev => prev.filter(c => c.id !== cover.id));
       if (cover.url === projectCoverUrl) {
         onSelect(null);  // revert grid card to gradient immediately
@@ -66,20 +76,25 @@ export default function CoverArtPicker({ isOpen, onClose, onSelect, projectId, u
       }
     } catch (err) {
       console.error('Delete failed', err);
+      setError(err.message || 'Could not delete cover art.');
     }
   };
 
   const handleSelect = async (url) => {
     try {
-      await fetch(`${apiUrl}/api/projects/${projectId}/cover`, {
+      setError('');
+      const res = await fetch(`${apiUrl}/api/projects/${projectId}/cover`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ coverUrl: url, userId })
       });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Could not update cover art.');
       onSelect(url);
       onClose();
     } catch (err) {
       console.error('Failed to update project cover', err);
+      setError(err.message || 'Could not update cover art.');
     }
   };
 
@@ -89,18 +104,19 @@ export default function CoverArtPicker({ isOpen, onClose, onSelect, projectId, u
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative glass w-full max-w-2xl rounded-3xl p-6 shadow-2xl border border-border max-h-[90vh] flex flex-col">
-        <button onClick={onClose} className="absolute top-5 right-5 text-secondary-label hover:text-primary-label">
+      <div className="relative glass w-full max-w-xl rounded-2xl p-4 sm:p-5 shadow-2xl border border-border max-h-[88vh] flex flex-col">
+        <button onClick={onClose} className="absolute top-4 right-4 text-secondary-label hover:text-primary-label">
           <X className="w-5 h-5" />
         </button>
 
         <h2 className="text-lg font-semibold mb-1">Cover Art</h2>
-        <p className="text-xs text-secondary-label mb-5">
+        <p className="text-xs text-secondary-label mb-4">
           {covers.length === 0 && !loading ? 'No cover art yet — upload one below.' : 'Pick a previous cover or upload a new one.'}
         </p>
+        {error && <div className="mb-3 rounded-xl border border-red-300/20 bg-red-400/10 px-3 py-2 text-sm text-red-300">{error}</div>}
 
         <div className="flex-1 overflow-y-auto hide-scrollbar pb-4">
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
 
             {/* Upload tile */}
             <div

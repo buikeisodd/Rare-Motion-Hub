@@ -27,8 +27,11 @@ import {
   View
 } from 'react-native';
 import { API_URL, api, resolveMediaUrl } from './src/api';
-import { clearUser, getLastEmail, getOfflineTracks, getStoredUser, storeLastEmail, storeOfflineTracks, storeUser, storeToken } from './src/storage';
+import { clearUser, getLastEmail, getOfflineTracks, getStoredToken, getStoredUser, storeLastEmail, storeOfflineTracks, storeUser, storeToken } from './src/storage';
 import { colors, gradientFor } from './src/theme';
+
+const IDLE_LIMIT_MS = 15 * 60 * 1000;
+const IDLE_WARNING_MS = 60 * 1000;
 
 function IconButton({ name, onPress, label, tone = 'dark', badge = 0 }) {
   return (
@@ -920,7 +923,7 @@ function ProjectScreen({
 
   return (
     <SafeAreaView style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.projectContent}>
+      <ScrollView contentContainerStyle={[styles.projectContent, playback?.track && styles.projectContentWithPlayback]}>
         <View style={styles.projectTopBar}>
           <IconButton name="chevron-back" label="Back" onPress={onBack} />
           <View style={styles.projectTopActions}>
@@ -998,6 +1001,9 @@ export default function App() {
   const [offlineTracks, setOfflineTracks] = useState({});
   const [playbackSettings, setPlaybackSettings] = useState({ speed: 1, pitch: 0 });
   const [playback, setPlayback] = useState({ player: null, track: null, project: null, tracks: [], playing: false, progress: 0.12, repeat: false });
+  const [idleWarningVisible, setIdleWarningVisible] = useState(false);
+  const idleLastActivityRef = useRef(Date.now());
+  const idleWarnedRef = useRef(false);
   const playerRef = useRef(null);
 
   const allFolders = useMemo(() => {
@@ -1115,6 +1121,7 @@ export default function App() {
   };
 
   const openFolder = async (folderId) => {
+    setProjectData(null);
     setRoute({ name: 'folder', id: folderId });
     setLoading(true);
     try {
@@ -1129,6 +1136,7 @@ export default function App() {
   };
 
   const openProject = async (projectId) => {
+    setProjectData(null);
     setRoute({ name: 'project', id: projectId });
     setLoading(true);
     try {
@@ -1155,7 +1163,7 @@ export default function App() {
         })
       });
       await refreshWorkspace();
-      openProject(project.id);
+      await openProject(project.id);
     } catch (error) {
       Alert.alert('Could not create project', error.message);
     }
@@ -1368,6 +1376,7 @@ export default function App() {
   };
 
   const closePlayer = async () => {
+    playerRef.current?.pause?.();
     playerRef.current?.clearLockScreenControls?.();
     playerRef.current?.remove?.();
     playerRef.current = null;
@@ -1390,7 +1399,7 @@ export default function App() {
     if (!name) return;
     setProfileSaving(true);
     try {
-      const data = await api(`/api/users/${user.id}`, {
+      const data = await api(`/api/auth/${user.id}`, {
         method: 'PUT',
         body: JSON.stringify({ name })
       });
@@ -1427,8 +1436,10 @@ export default function App() {
         type: asset.mimeType || `image/${extension === 'jpg' ? 'jpeg' : extension}`
       });
 
-      const response = await fetch(`${API_URL}/api/users/${user.id}/avatar`, {
+      const token = await getStoredToken();
+      const response = await fetch(`${API_URL}/api/auth/${user.id}/avatar`, {
         method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         body: formData
       });
       const data = await response.json();
@@ -1466,7 +1477,12 @@ export default function App() {
         name: `cover.${extension}`,
         type: asset.mimeType || `image/${extension === 'jpg' ? 'jpeg' : extension}`
       });
-      const uploadRes = await fetch(`${API_URL}/api/upload-cover`, { method: 'POST', body: formData });
+      const token = await getStoredToken();
+      const uploadRes = await fetch(`${API_URL}/api/upload-cover`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        body: formData
+      });
       const cover = await uploadRes.json();
       if (!uploadRes.ok) throw new Error(cover.error || 'Could not upload cover art.');
       await api(`/api/projects/${project.id}/cover`, {
@@ -1531,7 +1547,12 @@ export default function App() {
       formData.append('producer', '');
       formData.append('userId', user.id);
       formData.append('projectId', project.id);
-      const response = await fetch(`${API_URL}/api/upload`, { method: 'POST', body: formData });
+      const token = await getStoredToken();
+      const response = await fetch(`${API_URL}/api/upload`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        body: formData
+      });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Could not upload track.');
       await refreshProject(project.id);
@@ -1605,7 +1626,7 @@ export default function App() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await api(`/api/users/${user.id}`, { method: 'DELETE' });
+              await api(`/api/auth/${user.id}`, { method: 'DELETE' });
               await logout();
             } catch (error) {
               Alert.alert('Could not delete account', error.message);
@@ -1622,6 +1643,34 @@ export default function App() {
     setUser(null);
     setRoute({ name: 'library' });
   };
+
+  const markActivity = () => {
+    idleLastActivityRef.current = Date.now();
+    idleWarnedRef.current = false;
+    setIdleWarningVisible(false);
+  };
+
+  useEffect(() => {
+    if (!user) return undefined;
+    if (playback.playing) {
+      markActivity();
+      return undefined;
+    }
+
+    const timer = setInterval(() => {
+      const idleFor = Date.now() - idleLastActivityRef.current;
+      if (idleFor >= IDLE_LIMIT_MS) {
+        logout();
+        return;
+      }
+      if (idleFor >= IDLE_LIMIT_MS - IDLE_WARNING_MS && !idleWarnedRef.current) {
+        idleWarnedRef.current = true;
+        setIdleWarningVisible(true);
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [user, playback.playing]);
 
   if (booting) {
     return (
@@ -1767,7 +1816,7 @@ export default function App() {
   );
 
   return (
-    <View style={styles.app} {...edgeSwipeResponder.panHandlers}>
+    <View style={styles.app} onTouchStart={markActivity} {...edgeSwipeResponder.panHandlers}>
       {currentScreen}
       {route.name !== 'now-playing' && route.name !== 'player-edit' && (
         <MiniPlayer
@@ -2129,7 +2178,7 @@ const styles = StyleSheet.create({
   createWrapPlayback: {
     position: 'absolute',
     right: 14,
-    bottom: 40,
+    bottom: 128,
     alignItems: 'flex-end',
     justifyContent: 'flex-end'
   },
@@ -2186,6 +2235,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 10,
     paddingBottom: 140
+  },
+  projectContentWithPlayback: {
+    paddingBottom: 240
   },
   projectTopBar: {
     minHeight: 64,

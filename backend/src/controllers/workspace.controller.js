@@ -13,11 +13,12 @@ const {
   getProjectBundle,
   notifyListen,
   trackOwnerId,
-  trackMediaPath
+  trackMediaPath,
+  BASE_URL
 } = require('../utils/helpers');
 const { getOrSetCache, invalidateCache } = require('../config/redis');
-const { cloudinary } = require('../config/cloudinary');
-const { removeDirIfExists, removeFileIfExists, stemsDir } = require('../utils/fileHelper');
+const { cloudinary, hasCloudinaryConfig } = require('../config/cloudinary');
+const { removeDirIfExists, removeFileIfExists, stemsDir, coverDir } = require('../utils/fileHelper');
 const { AppError } = require('../middlewares/error.middleware');
 
 const getWorkspace = async (req, res, next) => {
@@ -433,8 +434,27 @@ const uploadCover = async (req, res, next) => {
       return next(new AppError('Unauthorized user.', 401));
     }
 
-    const url = req.file.path; // Cloudinary URL
-    const newCover = { id: Date.now().toString(), userId, url, mimeType: req.file.mimetype, uploadedAt: new Date().toISOString() };
+    let url = `${BASE_URL}/covers/${req.file.filename}`;
+    if (hasCloudinaryConfig) {
+      try {
+        const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+          folder: 'raremotionhub/covers',
+          resource_type: 'image'
+        });
+        url = uploadResult.secure_url;
+        removeFileIfExists(req.file.path);
+      } catch (uploadError) {
+        console.error('Cloudinary cover upload failed, keeping local file:', uploadError.message);
+      }
+    }
+    const newCover = {
+      id: Date.now().toString(),
+      userId,
+      url,
+      filename: url.startsWith(`${BASE_URL}/covers/`) ? req.file.filename : null,
+      mimeType: req.file.mimetype,
+      uploadedAt: new Date().toISOString()
+    };
     db.coverArts.push(newCover);
     await writeDB(db);
     invalidateCache(`workspace:${userId}`);
@@ -460,9 +480,12 @@ const deleteCover = async (req, res, next) => {
     await writeDB(db);
     await CoverArt.deleteOne({ id: req.params.id });
     
-    // Also delete from Cloudinary
-    const publicId = coverUrl.split('/').pop().split('.')[0];
-    cloudinary.uploader.destroy(`raremotionhub/covers/${publicId}`).catch(console.error);
+    if (cover.filename) {
+      removeFileIfExists(path.join(coverDir, cover.filename));
+    } else {
+      const publicId = coverUrl.split('/').pop().split('.')[0];
+      cloudinary.uploader.destroy(`raremotionhub/covers/${publicId}`).catch(console.error);
+    }
 
     invalidateCache(`workspace:${userId}`);
     res.json({ success: true });

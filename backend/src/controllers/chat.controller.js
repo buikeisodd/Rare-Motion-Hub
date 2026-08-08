@@ -8,12 +8,35 @@ const {
   notifyMessage,
   notifyCall,
   hydrateMessage,
-  hydrateCall
+  hydrateCall,
+  BASE_URL
 } = require('../utils/helpers');
 const { invalidateCache } = require('../config/redis');
-const { cloudinary } = require('../config/cloudinary');
+const { cloudinary, hasCloudinaryConfig } = require('../config/cloudinary');
 const { AppError } = require('../middlewares/error.middleware');
-const { removeFileIfExists } = require('../utils/fileHelper');
+const { ensureUserDir, removeFileIfExists, chatDir } = require('../utils/fileHelper');
+const fs = require('fs');
+const path = require('path');
+
+const storeChatMedia = async (file, userId) => {
+  if (hasCloudinaryConfig) {
+    try {
+      const uploadResult = await cloudinary.uploader.upload_large(file.path, {
+        resource_type: 'auto',
+        folder: 'raremotionhub/chat'
+      });
+      removeFileIfExists(file.path);
+      return uploadResult.secure_url;
+    } catch (error) {
+      console.error('Cloudinary chat upload failed, keeping local file:', error.message);
+    }
+  }
+  const userDir = ensureUserDir(chatDir, userId);
+  const filename = path.basename(file.filename || `${Date.now()}-${file.originalname || 'media'}`).replace(/\s+/g, '_');
+  const destination = path.join(userDir, filename);
+  fs.renameSync(file.path, destination);
+  return `${BASE_URL}/uploads/chat/${userId}/${filename}`;
+};
 
 const getCallGroup = async (req, res, next) => {
   try {
@@ -258,10 +281,7 @@ const sendMediaMessage = async (req, res, next) => {
       return next(new AppError('Only photos and videos can be shared from files.', 400));
     }
 
-    const uploadResult = await cloudinary.uploader.upload_large(req.file.path, {
-      resource_type: 'auto',
-      folder: 'raremotionhub/chat'
-    });
+    const mediaUrl = await storeChatMedia(req.file, senderId);
 
     const msg = createMessage(db, {
       senderId,
@@ -272,14 +292,12 @@ const sendMediaMessage = async (req, res, next) => {
       attachments: [{
         id: makeId(),
         type: attachmentType,
-        url: uploadResult.secure_url, // Cloudinary URL
+        url: mediaUrl,
         name: req.file.originalname,
         mimeType: req.file.mimetype,
         size: req.file.size
       }]
     });
-
-    removeFileIfExists(req.file.path);
 
     db.messages.push(msg);
     notifyMessage(db, msg);

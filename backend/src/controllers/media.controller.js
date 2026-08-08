@@ -11,7 +11,9 @@ const streamTrack = async (req, res, next) => {
     const track = db.tracks.find((item) => item.id === req.params.id);
     if (!track) return next(new AppError('Track not found', 404));
 
-    if (track.url) {
+    // Local uploads must be streamed from this server directly. Redirecting
+    // their stored BASE_URL can point mobile clients at localhost in deploys.
+    if (track.url && !track.filename) {
       return res.redirect(track.url);
     }
 

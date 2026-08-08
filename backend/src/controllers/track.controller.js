@@ -9,16 +9,92 @@ const {
   trackOwnerId,
   trackMediaPath,
   noteMemoDir,
-  downloadFile
+  downloadFile,
+  BASE_URL
 } = require('../utils/helpers');
 const { runDemucs, convertToWav, findStemOutputDir } = require('../services/audio.service');
 const { getOrSetCache, invalidateCache } = require('../config/redis');
-const { cloudinary } = require('../config/cloudinary');
-const { removeDirIfExists, removeFileIfExists, uploadDir, stemsDir } = require('../utils/fileHelper');
+const { cloudinary, hasCloudinaryConfig } = require('../config/cloudinary');
+const { ensureUserDir, removeDirIfExists, removeFileIfExists, uploadDir, stemsDir } = require('../utils/fileHelper');
 const { AppError } = require('../middlewares/error.middleware');
 
 const conversionJobs = {};
 const stemJobs = {};
+
+const storeMemoFile = async (file, userId, trackId) => {
+  if (hasCloudinaryConfig) {
+    try {
+      const uploadResult = await cloudinary.uploader.upload_large(file.path, {
+        resource_type: 'video',
+        folder: 'raremotionhub/memos'
+      });
+      removeFileIfExists(file.path);
+      return { filename: null, url: uploadResult.secure_url };
+    } catch (err) {
+      console.error('Cloudinary memo upload failed, using local storage fallback:', err.message);
+    }
+  }
+  const memoDir = noteMemoDir({ userId, uploader: { id: userId }, id: trackId });
+  fs.mkdirSync(memoDir, { recursive: true });
+  const filename = path.basename(file.filename || `${Date.now()}-${file.originalname || 'memo'}`).replace(/\s+/g, '_');
+  const destination = path.join(memoDir, filename);
+  if (path.resolve(file.path) !== path.resolve(destination)) fs.renameSync(file.path, destination);
+  return { filename, url: null };
+};
+
+const storeTrackFile = async (file, userId, folder = 'raremotionhub/tracks') => {
+  if (hasCloudinaryConfig) {
+    try {
+      const uploadResult = await cloudinary.uploader.upload_large(file.path, {
+        resource_type: 'video',
+        folder
+      });
+      removeFileIfExists(file.path);
+      return { filename: null, url: uploadResult.secure_url };
+    } catch (err) {
+      console.error('Cloudinary track upload failed, using local storage fallback:', err.message);
+    }
+  }
+
+  const userDir = ensureUserDir(uploadDir, userId);
+  const safeName = path.basename(file.filename || `${Date.now()}-${file.originalname || 'track'}`).replace(/\s+/g, '_');
+  const finalPath = path.join(userDir, safeName);
+  if (path.resolve(file.path) !== path.resolve(finalPath)) {
+    fs.renameSync(file.path, finalPath);
+  }
+  return {
+    filename: safeName,
+    url: `${BASE_URL}/uploads/${userId}/${safeName}`
+  };
+};
+
+const storeTrackLocally = (file, userId) => {
+  const userDir = ensureUserDir(uploadDir, userId);
+  const safeName = path.basename(file.filename || `${Date.now()}-${file.originalname || 'track'}`).replace(/\s+/g, '_');
+  const finalPath = path.join(userDir, safeName);
+  if (path.resolve(file.path) !== path.resolve(finalPath)) fs.renameSync(file.path, finalPath);
+  return { filename: safeName, url: `${BASE_URL}/uploads/${userId}/${safeName}`, path: finalPath };
+};
+
+const promoteTrackToCloudinary = async (track, localPath, userId) => {
+  if (!hasCloudinaryConfig) return;
+  try {
+    const uploadResult = await cloudinary.uploader.upload_large(localPath, {
+      resource_type: 'video',
+      folder: 'raremotionhub/tracks'
+    });
+    const db = ensureDBShape(await readDB());
+    const index = db.tracks.findIndex((item) => item.id === track.id);
+    if (index === -1) return;
+    db.tracks[index] = { ...db.tracks[index], filename: null, url: uploadResult.secure_url };
+    await writeDB(db);
+    invalidateCache(`workspace:${userId}`);
+    if (track.projectId) invalidateCache(`project:${track.projectId}:${userId}`);
+    removeFileIfExists(localPath);
+  } catch (error) {
+    console.error('Background Cloudinary track upload failed; local playback remains active:', error.message);
+  }
+};
 
 const uploadTrackController = async (req, res, next) => {
   try {
@@ -35,10 +111,7 @@ const uploadTrackController = async (req, res, next) => {
       return next(new AppError('Project not found', 404));
     }
     
-    const uploadResult = await cloudinary.uploader.upload_large(req.file.path, {
-      resource_type: 'video',
-      folder: 'raremotionhub/tracks'
-    });
+    const storedFile = storeTrackLocally(req.file, userId);
     
     const trackId = makeId();
     const newTrack = {
@@ -48,20 +121,20 @@ const uploadTrackController = async (req, res, next) => {
       title: title || req.file.originalname,
       artist: artist || '',
       producer: producer || '',
-      filename: null,
+      filename: storedFile.filename,
       mimeType: req.file.mimetype,
       size: req.file.size,
-      url: uploadResult.secure_url, // Cloudinary URL
+      url: storedFile.url,
       uploader: { id: uploader.id, name: uploader.name },
       uploadedAt: new Date().toISOString()
     };
     
-    removeFileIfExists(req.file.path);
     db.tracks.push(newTrack);
     await writeDB(db);
     invalidateCache(`workspace:${userId}`);
     if (projectId) invalidateCache(`project:${projectId}:${userId}`);
-    res.json({ track: newTrack });
+    res.json({ track: normalizeTrack(newTrack) });
+    promoteTrackToCloudinary(newTrack, storedFile.path, userId);
   } catch (error) {
     next(error);
   }
@@ -187,17 +260,13 @@ const replaceAudio = async (req, res, next) => {
       });
     }
 
-    const uploadResult = await cloudinary.uploader.upload_large(req.file.path, {
-      resource_type: 'video',
-      folder: 'raremotionhub/tracks'
-    });
+    const storedFile = await storeTrackFile(req.file, userId);
 
-    track.filename = null;
-    track.url = uploadResult.secure_url; // Cloudinary URL
+    track.filename = storedFile.filename;
+    track.url = storedFile.url;
     track.mimeType = req.file.mimetype;
     track.size = req.file.size;
     track.uploadedAt = new Date().toISOString();
-    removeFileIfExists(req.file.path);
     db.tracks[trackIndex] = track;
     await writeDB(db);
     invalidateCache(`workspace:${userId}`);
@@ -311,21 +380,17 @@ const createNoteMemo = async (req, res, next) => {
       return next(new AppError('Track not found', 404));
     }
 
-    const uploadResult = await cloudinary.uploader.upload_large(req.file.path, {
-      resource_type: 'video',
-      folder: 'raremotionhub/memos'
-    });
+    const storedMemo = await storeMemoFile(req.file, userId, track.id);
 
     track.noteMemos ||= [];
     const memo = {
       id: makeId(),
-      filename: null,
-      url: uploadResult.secure_url, // Cloudinary URL
+      filename: storedMemo.filename,
+      url: storedMemo.url,
       mimeType: req.file.mimetype,
       size: req.file.size,
       uploadedAt: new Date().toISOString()
     };
-    removeFileIfExists(req.file.path);
     track.noteMemos.push(memo);
     db.tracks[trackIndex] = track;
     await writeDB(db);
@@ -566,20 +631,14 @@ const convertVideo = async (req, res, next) => {
           uploadedAt: new Date().toISOString()
         };
         
-        try {
-          const uploadResult = await cloudinary.uploader.upload_large(outputPath, {
-            folder: 'raremotionhub/tracks',
-            resource_type: 'video',
-            public_id: `track-${Date.now()}`
-          });
-          newTrack.url = uploadResult.secure_url;
-        } catch (err) {
-          console.error('Cloudinary upload error after convert:', err);
-          if (conversionJobs[jobId]) conversionJobs[jobId].error = 'Upload to cloud failed';
-          return;
-        }
-
-        removeFileIfExists(outputPath);
+        const storedFile = await storeTrackFile({
+          path: outputPath,
+          filename: newFilename,
+          originalname: newFilename,
+          mimetype: 'audio/wav'
+        }, userId);
+        newTrack.filename = storedFile.filename;
+        newTrack.url = storedFile.url;
         removeFileIfExists(req.file.path);
 
         currentDb.tracks.push(newTrack);

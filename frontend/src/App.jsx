@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link, useNavigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import Login from './pages/Login';
@@ -26,7 +26,7 @@ function DesktopOnly({ children }) {
   return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-center px-8 text-center">
       <StarlightLogo className="logo-glow h-16 w-56 text-white opacity-80 mb-12" />
-      <div className="mb-8 text-6xl">🖥️</div>
+      <div className="mb-8 text-6xl"></div>
       <h1 className="text-2xl font-semibold text-white mb-3">Desktop only</h1>
       <p className="text-[#888] text-base max-w-xs leading-relaxed">
         Starlight Station is built for desktop. Please open this on a laptop or desktop computer to continue.
@@ -162,6 +162,77 @@ function GlobalAudioPlayer() {
   return player;
 }
 
+const IDLE_LIMIT_MS = 15 * 60 * 1000;
+const IDLE_WARNING_MS = 60 * 1000;
+
+function IdleLogoutGuard({ user, onLogout }) {
+  const { isPlaying } = useAudio();
+  const [warningOpen, setWarningOpen] = useState(false);
+  const lastActivityRef = useRef(Date.now());
+  const warnedRef = useRef(false);
+
+  useEffect(() => {
+    if (!user) return undefined;
+
+    const markActive = () => {
+      lastActivityRef.current = Date.now();
+      warnedRef.current = false;
+      setWarningOpen(false);
+    };
+    const events = ['pointerdown', 'pointermove', 'keydown', 'wheel', 'touchstart', 'scroll'];
+    events.forEach((event) => window.addEventListener(event, markActive, { passive: true }));
+    return () => events.forEach((event) => window.removeEventListener(event, markActive));
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return undefined;
+    if (isPlaying) {
+      lastActivityRef.current = Date.now();
+      warnedRef.current = false;
+      setWarningOpen(false);
+      return undefined;
+    }
+
+    const timer = window.setInterval(() => {
+      const idleFor = Date.now() - lastActivityRef.current;
+      if (idleFor >= IDLE_LIMIT_MS) {
+        onLogout();
+        return;
+      }
+      if (idleFor >= IDLE_LIMIT_MS - IDLE_WARNING_MS && !warnedRef.current) {
+        warnedRef.current = true;
+        setWarningOpen(true);
+      }
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [isPlaying, onLogout, user]);
+
+  if (!user || !warningOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/45 px-4 backdrop-blur-sm">
+      <div className="w-full max-w-sm rounded-2xl border border-border bg-[#1c1c1e] p-5 text-center shadow-2xl animate-slide-up">
+        <h2 className="text-lg font-semibold text-primary-label">Still there?</h2>
+        <p className="mt-2 text-sm leading-relaxed text-secondary-label">
+          You have been inactive for a while. Move, click, or press any key to stay signed in.
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            lastActivityRef.current = Date.now();
+            warnedRef.current = false;
+            setWarningOpen(false);
+          }}
+          className="mt-5 h-11 w-full rounded-full bg-primary-label text-sm font-semibold text-primary-background transition-transform hover:scale-[1.01]"
+        >
+          Keep me signed in
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function App() {
   const [user, setUser] = useState(() => {
     try {
@@ -236,6 +307,7 @@ function App() {
             setJustAuthenticated={setJustAuthenticated}
           />
           <GlobalAudioPlayer />
+          <IdleLogoutGuard user={user} onLogout={handleLogout} />
           <ServerStatus />
         </BrowserRouter>
       </AudioProvider>

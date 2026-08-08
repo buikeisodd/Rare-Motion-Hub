@@ -431,7 +431,7 @@ function ProfilePanel({ isOpen, user, theme, onThemeChange, onEditProfile, onLog
           <div className="my-1 rounded-xl px-3 py-3">
             <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-primary-label">
               <Palette className="h-5 w-5" />
-              Theme setting
+              Theme
             </div>
             <div className="grid grid-cols-2 gap-3">
               {['dark', 'light'].map((mode) => (
@@ -717,7 +717,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
     setProfileSaving(true);
     setProfileError('');
     try {
-      const profileRes = await fetch(`${apiUrl}/api/users/${user.id}`, {
+      const profileRes = await fetch(`${apiUrl}/api/auth/${user.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name })
@@ -729,7 +729,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
       if (avatarFile) {
         const formData = new FormData();
         formData.append('avatar', avatarFile);
-        const avatarRes = await fetch(`${apiUrl}/api/users/${user.id}/avatar`, {
+        const avatarRes = await fetch(`${apiUrl}/api/auth/${user.id}/avatar`, {
           method: 'POST',
           body: formData
         });
