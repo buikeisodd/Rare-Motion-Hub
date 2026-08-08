@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Wifi, WifiOff, RefreshCw } from 'lucide-react';
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
 export default function ServerStatus() {
   const [status, setStatus] = useState('online'); // 'online' | 'slow' | 'offline'

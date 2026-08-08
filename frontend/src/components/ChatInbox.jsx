@@ -3,7 +3,7 @@ import { useAudio } from '../context/AudioContext';
 import AudioPlayer from './AudioPlayer';
 import { ArrowLeft, CheckCheck, Copy, Forward, MessageCircle, Mic, MicOff, MonitorUp, MoreHorizontal, Paperclip, PhoneCall, PhoneOff, Pin, PinOff, Reply, Send, Smile, Trash2, Users, Video, VideoOff, Volume2, X } from 'lucide-react';
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 const emojis = ['😀', '😂', '😍', '🥹', '🔥', '🙏', '❤️', '🎧', '🎵', '✅', '😭', '😤', '🤝', '✨', '💿', '🚀'];
 
 function requestDesktopNotificationPermission() {

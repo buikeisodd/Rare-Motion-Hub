@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, Folder, Music, Play, Plus } from 'lucide-react';
 import { useAudio } from '../context/AudioContext';
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
 function OwnerAvatar({ owner }) {
   if (owner?.avatarUrl) {

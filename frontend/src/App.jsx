@@ -251,7 +251,7 @@ function App() {
     }
   });
   const [justAuthenticated, setJustAuthenticated] = useState(false);
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
   useEffect(() => {
     if (!user?.id) return;

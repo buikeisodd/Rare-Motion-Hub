@@ -119,7 +119,7 @@ export default function UploadModal({ isOpen, onClose, onSuccess, userId, projec
       setError('Upload cancelled.');
     };
 
-    xhr.open('POST', `${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/upload`);
+    xhr.open('POST', `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api/upload`);
     const token = localStorage.getItem('token');
     if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
     xhr.send(formData);

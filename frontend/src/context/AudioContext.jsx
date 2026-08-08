@@ -37,7 +37,10 @@ export function AudioProvider({ children }) {
     const audio = audioRef.current;
     if (!currentTrack?.url) return;
     if (isPlaying && audio.paused) {
-      audio.play().catch(() => setIsPlaying(false));
+      audio.play().catch((err) => {
+        console.error('Audio playback failed:', err, 'for track URL:', currentTrack.url);
+        setIsPlaying(false);
+      });
     } else if (!isPlaying && !audio.paused) {
       audio.pause();
     }
@@ -51,17 +54,24 @@ export function AudioProvider({ children }) {
     const onCanPlay = () => setIsBuffering(false);
     const onWait    = () => setIsBuffering(true);
     const onPlaying = () => setIsBuffering(false);
+    const onError   = (e) => {
+      console.error('Audio element error:', audio.error?.code, audio.error?.message, 'src:', audio.src);
+      setIsBuffering(false);
+      setIsPlaying(false);
+    };
     audio.addEventListener('timeupdate',     onTime);
     audio.addEventListener('loadedmetadata', onMeta);
     audio.addEventListener('canplay',        onCanPlay);
     audio.addEventListener('waiting',        onWait);
     audio.addEventListener('playing',        onPlaying);
+    audio.addEventListener('error',          onError);
     return () => {
       audio.removeEventListener('timeupdate',     onTime);
       audio.removeEventListener('loadedmetadata', onMeta);
       audio.removeEventListener('canplay',        onCanPlay);
       audio.removeEventListener('waiting',        onWait);
       audio.removeEventListener('playing',        onPlaying);
+      audio.removeEventListener('error',          onError);
     };
   }, []);
 

@@ -10,7 +10,7 @@ import MarqueeInput from '../components/MarqueeInput';
 import TrackOptionsMenu, { replaceTrackAudio } from '../components/TrackOptionsMenu';
 import { useAudio } from '../context/AudioContext';
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
 function timeAgo(dateStr) {
   const uploaded = new Date(dateStr);

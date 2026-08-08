@@ -9,7 +9,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import ShareLinkModal from '../components/ShareLinkModal';
 import MarqueeInput from '../components/MarqueeInput';
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
 export default function Folder({ user, onLogout }) {
   const { id } = useParams();

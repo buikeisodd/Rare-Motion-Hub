@@ -9,7 +9,7 @@ import MarqueeInput from '../components/MarqueeInput';
 import { useAudio } from '../context/AudioContext';
 import { gradientFor } from '../utils/gradients';
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
 export function LibraryProject({ project, tracks, onDragStart, isDragging, onDelete }) {
   const { addTracksToQueue, playTrack, currentTrack, isPlaying, setIsPlaying } = useAudio();

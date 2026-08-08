@@ -2,7 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const { uploadDir } = require('./fileHelper');
 
-const BASE_URL = process.env.BASE_URL || process.env.RENDER_EXTERNAL_URL || 'http://localhost:3001';
+const BASE_URL = process.env.BASE_URL || process.env.RENDER_EXTERNAL_URL || `http://localhost:${process.env.PORT || 4000}`;
 
 const makeId = () => `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
 
