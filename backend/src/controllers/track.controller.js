@@ -133,7 +133,7 @@ const uploadTrackController = async (req, res, next) => {
     await writeDB(db);
     invalidateCache(`workspace:${userId}`);
     if (projectId) invalidateCache(`project:${projectId}:${userId}`);
-    res.json({ track: newTrack });
+    res.json({ track: normalizeTrack(newTrack) });
     promoteTrackToCloudinary(newTrack, storedFile.path, userId);
   } catch (error) {
     next(error);
