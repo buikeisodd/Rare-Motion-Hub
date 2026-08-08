@@ -8,10 +8,15 @@ const { invalidateCache } = require('../config/redis');
 const { AppError } = require('../middlewares/error.middleware');
 const { BASE_URL } = require('../utils/helpers');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret';
+const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV === 'production' ? null : 'fallback_secret');
+
+const ensureAuthConfig = () => {
+  if (!JWT_SECRET) throw new AppError('Server authentication is not configured.', 500);
+};
 
 const register = async (req, res, next) => {
   try {
+    ensureAuthConfig();
     const email = req.body.email?.trim().toLowerCase();
     const password = req.body.password;
     if (!email || !password) return next(new AppError('Email and password are required.', 400));
@@ -44,6 +49,7 @@ const register = async (req, res, next) => {
 
 const login = async (req, res, next) => {
   try {
+    ensureAuthConfig();
     const email = req.body.email?.trim().toLowerCase();
     const password = req.body.password;
     if (!email || !password) return next(new AppError('Email and password are required.', 400));

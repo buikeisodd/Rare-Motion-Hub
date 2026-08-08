@@ -53,7 +53,7 @@ const getCallGroup = async (req, res, next) => {
 const joinCallGroup = async (req, res, next) => {
   try {
     const db = ensureDBShape(await readDB());
-    const { userId } = req.body;
+    const userId = req.userId;
     const caller = db.users.find((user) => user.id === userId);
     if (!caller) return next(new AppError('Unauthorized user.', 401));
 
@@ -84,7 +84,7 @@ const joinCallGroup = async (req, res, next) => {
 const leaveCallGroup = async (req, res, next) => {
   try {
     const db = ensureDBShape(await readDB());
-    const { userId } = req.body;
+    const userId = req.userId;
     if (!userExists(db, userId)) return next(new AppError('Unauthorized user.', 401));
     const call = db.calls.find((item) => item.type === 'group' && item.active);
     if (!call) return res.json({ call: null });
@@ -123,7 +123,8 @@ const getCallSignals = async (req, res, next) => {
 const sendCallSignal = async (req, res, next) => {
   try {
     const db = ensureDBShape(await readDB());
-    const { userId, toUserId, type, payload } = req.body;
+    const { toUserId, type, payload } = req.body;
+    const userId = req.userId;
     if (!userExists(db, userId) || !userExists(db, toUserId)) return next(new AppError('Unauthorized user.', 401));
     const call = db.calls.find((item) => item.type === 'group' && item.active);
     if (!call) return next(new AppError('No active call.', 404));
@@ -162,7 +163,7 @@ const getUsers = async (req, res, next) => {
 
 const getMessages = async (req, res, next) => {
   try {
-    const userId = req.query.userId;
+    const userId = req.userId;
     if (!userId) return next(new AppError('userId required.', 400));
     const { type, partnerId } = req.query;
 
@@ -215,8 +216,9 @@ const getMessages = async (req, res, next) => {
 
 const sendMessageController = async (req, res, next) => {
   try {
-    const { senderId, recipientId, conversationType, text, replyToMessageId } = req.body;
-    if (!senderId || !text?.trim()) return next(new AppError('senderId and text required.', 400));
+    const { recipientId, conversationType, text, replyToMessageId } = req.body;
+    const senderId = req.userId;
+    if (!text?.trim()) return next(new AppError('text required.', 400));
     if (conversationType === 'dm' && !recipientId) return next(new AppError('recipientId required for DM.', 400));
 
     const sender = await User.findOne({ id: senderId }).lean();
@@ -261,8 +263,9 @@ const sendMediaMessage = async (req, res, next) => {
   try {
     if (!req.file) return next(new AppError('No media uploaded.', 400));
     const db = ensureDBShape(await readDB());
-    const { senderId, recipientId, conversationType, text, replyToMessageId, mediaKind } = req.body;
-    if (!senderId || !userExists(db, senderId)) {
+    const { recipientId, conversationType, text, replyToMessageId, mediaKind } = req.body;
+    const senderId = req.userId;
+    if (!userExists(db, senderId)) {
       if (req.file) removeFileIfExists(req.file.path);
       return next(new AppError('Unauthorized user.', 401));
     }
@@ -311,7 +314,8 @@ const sendMediaMessage = async (req, res, next) => {
 const pinMessage = async (req, res, next) => {
   try {
     const db = ensureDBShape(await readDB());
-    const { userId, pinned } = req.body;
+    const { pinned } = req.body;
+    const userId = req.userId;
     const message = db.messages.find((item) => item.id === req.params.id);
     if (!message) return next(new AppError('Message not found.', 404));
     if (!userExists(db, userId)) return next(new AppError('Unauthorized user.', 401));
@@ -348,7 +352,8 @@ const deleteMessage = async (req, res, next) => {
 const forwardMessage = async (req, res, next) => {
   try {
     const db = ensureDBShape(await readDB());
-    const { senderId, targetType, recipientId } = req.body;
+    const { targetType, recipientId } = req.body;
+    const senderId = req.userId;
     const source = db.messages.find((item) => item.id === req.params.id);
     if (!source) return next(new AppError('Message not found.', 404));
     if (!userExists(db, senderId)) return next(new AppError('Unauthorized user.', 401));

@@ -11,8 +11,22 @@ const chatRoutes = require('./routes/chat.routes');
 
 const app = express();
 
-app.use(cors());
-app.use(express.json());
+const allowedOrigins = (process.env.CORS_ORIGINS || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.use(cors({
+  origin: allowedOrigins.length
+    ? (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+        return callback(new Error('Origin is not allowed by CORS'));
+      }
+    : true,
+  credentials: false
+}));
+app.disable('x-powered-by');
+app.use(express.json({ limit: '2mb' }));
 app.use('/uploads', express.static(uploadDir));
 app.use('/covers', express.static(coverDir));
 app.use('/avatars', express.static(avatarDir));

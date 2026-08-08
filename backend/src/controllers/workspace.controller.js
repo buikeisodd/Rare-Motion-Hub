@@ -143,7 +143,8 @@ const getFolder = async (req, res, next) => {
 
 const createFolder = async (req, res, next) => {
   try {
-    const { name, title, artist, userId, parentFolderId } = req.body;
+    const { name, title, artist, parentFolderId } = req.body;
+    const userId = req.userId;
     const db = ensureDBShape(await readDB());
     const ownerName = ownerNameFor(db, userId);
     if (!userExists(db, userId)) return next(new AppError('Unauthorized user.', 401));
@@ -171,7 +172,8 @@ const createFolder = async (req, res, next) => {
 
 const moveFolder = async (req, res, next) => {
   try {
-    const { userId, parentFolderId } = req.body;
+    const { parentFolderId } = req.body;
+    const userId = req.userId;
     const db = ensureDBShape(await readDB());
     const folderIndex = db.folders.findIndex((f) => f.id === req.params.id && f.userId === userId);
     if (folderIndex === -1) return next(new AppError('Folder not found', 404));
@@ -209,7 +211,8 @@ const moveFolder = async (req, res, next) => {
 
 const updateFolder = async (req, res, next) => {
   try {
-    const { userId, title, name, artist } = req.body;
+    const { title, name, artist } = req.body;
+    const userId = req.userId;
     const db = ensureDBShape(await readDB());
     const folderIndex = db.folders.findIndex((folder) => folder.id === req.params.id && folder.userId === userId);
     if (folderIndex === -1) return next(new AppError('Folder not found', 404));
@@ -258,7 +261,8 @@ const deleteFolder = async (req, res, next) => {
 
 const createProject = async (req, res, next) => {
   try {
-    const { name, title, artist, userId, folderId } = req.body;
+    const { name, title, artist, folderId } = req.body;
+    const userId = req.userId;
     const db = ensureDBShape(await readDB());
     const ownerName = ownerNameFor(db, userId);
     if (!userExists(db, userId)) return next(new AppError('Unauthorized user.', 401));
@@ -287,7 +291,8 @@ const createProject = async (req, res, next) => {
 
 const updateProject = async (req, res, next) => {
   try {
-    const { userId, title, name, artist } = req.body;
+    const { title, name, artist } = req.body;
+    const userId = req.userId;
     const db = ensureDBShape(await readDB());
     const projectIndex = db.projects.findIndex((project) => project.id === req.params.id && project.userId === userId);
     if (projectIndex === -1) return next(new AppError('Project not found', 404));
@@ -312,7 +317,8 @@ const updateProject = async (req, res, next) => {
 
 const moveProject = async (req, res, next) => {
   try {
-    const { folderId, userId } = req.body;
+    const { folderId } = req.body;
+    const userId = req.userId;
     const db = ensureDBShape(await readDB());
     const projIndex = db.projects.findIndex(p => p.id === req.params.id && p.userId === userId);
     if (projIndex === -1) return next(new AppError('Project not found', 404));
@@ -375,8 +381,7 @@ const deleteProject = async (req, res, next) => {
 
 const getCovers = async (req, res, next) => {
   try {
-    const { userId } = req.query;
-    if (!userId) return next(new AppError('userId required.', 400));
+    const userId = req.userId;
     const db = ensureDBShape(await readDB());
     const covers = db.coverArts
       .filter(c => c.userId === userId)
@@ -389,7 +394,8 @@ const getCovers = async (req, res, next) => {
 
 const updateProjectCover = async (req, res, next) => {
   try {
-    const { coverUrl, userId } = req.body;
+    const { coverUrl } = req.body;
+    const userId = req.userId;
     const db = ensureDBShape(await readDB());
     const projIndex = db.projects.findIndex(p => p.id === req.params.id && p.userId === userId);
     if (projIndex === -1) return next(new AppError('Project not found', 404));
@@ -425,7 +431,7 @@ const getProject = async (req, res, next) => {
 const uploadCover = async (req, res, next) => {
   try {
     if (!req.file) return next(new AppError('No image file uploaded', 400));
-    const { userId } = req.body;
+    const userId = req.userId;
     const db = ensureDBShape(await readDB());
     if (!userExists(db, userId)) {
       if (req.file.filename) {

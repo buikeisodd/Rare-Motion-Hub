@@ -1,6 +1,4 @@
 const multer = require('multer');
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const { cloudinary, hasCloudinaryConfig } = require('../config/cloudinary');
 const fs = require('fs');
 const { uploadDir, coverDir, avatarDir } = require('../utils/fileHelper');
 [uploadDir, coverDir, avatarDir].forEach((dir) => {
@@ -16,17 +14,6 @@ const diskStorage = (destination) => multer.diskStorage({
   destination: (req, file, cb) => cb(null, destination),
   filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname.replace(/\s+/g, '_'))
 });
-
-// Direct Cloudinary storage for small images
-const makeCloudinaryStorage = (folderName, resourceType = 'auto') => {
-  return new CloudinaryStorage({
-    cloudinary,
-    params: {
-      folder: `raremotionhub/${folderName}`,
-      resource_type: resourceType,
-    },
-  });
-};
 
 const uploadTrack = multer({
   storage: localDiskStorage,

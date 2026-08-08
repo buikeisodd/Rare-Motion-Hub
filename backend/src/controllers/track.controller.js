@@ -99,7 +99,8 @@ const promoteTrackToCloudinary = async (track, localPath, userId) => {
 const uploadTrackController = async (req, res, next) => {
   try {
     if (!req.file) return next(new AppError('No audio file uploaded', 400));
-    const { title, userId, projectId, artist, producer } = req.body;
+    const { title, projectId, artist, producer } = req.body;
+    const userId = req.userId;
     const db = ensureDBShape(await readDB());
     const uploader = db.users.find(u => u.id === userId);
     if (!uploader) {
@@ -142,8 +143,7 @@ const uploadTrackController = async (req, res, next) => {
 
 const deleteTrack = async (req, res, next) => {
   try {
-    const userId = req.query.userId || req.body.userId;
-    if (!userId) return next(new AppError('userId required.', 400));
+    const userId = req.userId;
 
     const track = await Track.findOne({ id: req.params.id, $or: [{ userId }, { 'uploader.id': userId }] }).lean();
     if (!track) return next(new AppError('Track not found', 404));
@@ -170,8 +170,7 @@ const deleteTrack = async (req, res, next) => {
 
 const patchTrack = async (req, res, next) => {
   try {
-    const userId = req.body.userId || req.query.userId;
-    if (!userId) return next(new AppError('userId required.', 400));
+    const userId = req.userId;
 
     const track = await Track.findOne({ id: req.params.id }).lean();
     if (!track) return next(new AppError('Track not found', 404));
@@ -260,7 +259,8 @@ const replaceAudio = async (req, res, next) => {
       });
     }
 
-    const storedFile = await storeTrackFile(req.file, userId);
+    // Complete the request from local storage first; cloud promotion is best-effort.
+    const storedFile = storeTrackLocally(req.file, userId);
 
     track.filename = storedFile.filename;
     track.url = storedFile.url;
@@ -272,6 +272,7 @@ const replaceAudio = async (req, res, next) => {
     invalidateCache(`workspace:${userId}`);
     if (track.projectId) invalidateCache(`project:${track.projectId}:${userId}`);
     res.json({ track: normalizeTrack(track) });
+    promoteTrackToCloudinary(track, storedFile.path, userId);
   } catch (error) {
     next(error);
   }
@@ -573,7 +574,7 @@ const getStemStatus = async (req, res, next) => {
 const convertVideo = async (req, res, next) => {
   try {
     if (!req.file) return next(new AppError('No video file uploaded', 400));
-    const { userId } = req.body;
+    const userId = req.userId;
     const db = ensureDBShape(await readDB());
     const uploader = db.users.find(u => u.id === userId);
     if (!uploader) {
