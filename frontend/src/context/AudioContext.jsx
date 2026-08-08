@@ -1,6 +1,21 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useRef, useEffect } from 'react';
 
 const AudioPlayerContext = createContext(null);
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
+const resolveTrackUrl = (url) => {
+  if (!url) return url;
+  try {
+    const parsed = new URL(url, window.location.origin);
+    const isLocalBackend = ['localhost', '127.0.0.1', '0.0.0.0'].includes(parsed.hostname);
+    if (isLocalBackend || !/^https?:$/.test(parsed.protocol)) {
+      return `${apiUrl.replace(/\/$/, '')}${parsed.pathname}${parsed.search}`;
+    }
+    return parsed.toString();
+  } catch {
+    return url.startsWith('/') ? `${apiUrl.replace(/\/$/, '')}${url}` : url;
+  }
+};
 
 export function AudioProvider({ children }) {
   const [currentTrack, setCurrentTrack] = useState(null);
@@ -28,7 +43,7 @@ export function AudioProvider({ children }) {
     setDuration(0);
     setIsBuffering(true);
     audio.pause();
-    audio.src = currentTrack.url;
+    audio.src = resolveTrackUrl(currentTrack.url);
     audio.load();
   }, [currentTrack?.url]);
 

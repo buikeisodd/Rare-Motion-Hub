@@ -83,7 +83,7 @@ function Artwork({ item, size = 'large', children }) {
     );
   }
   return (
-    <LinearGradient colors={gradientFor(item?.id)} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={boxStyle}>
+    <LinearGradient colors={item?.coverArt ? gradientFor(item?.id) : ['#43E97B', '#38F9D7', '#4FACFE']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={boxStyle}>
       {children || <Ionicons name="disc" size={size === 'small' ? 28 : 52} color="rgba(5,5,5,0.58)" />}
     </LinearGradient>
   );

@@ -13,7 +13,7 @@ export const colors = {
 };
 
 export const gradients = [
-  ['#F96F6E', '#FFD166', '#8AE9C1'],
+  ['#43E97B', '#38F9D7', '#4FACFE'],
   ['#80ED99', '#57CC99', '#38A3A5'],
   ['#FF9F1C', '#FFBF69', '#CBF3F0'],
   ['#A78BFA', '#F0ABFC', '#FDE68A'],

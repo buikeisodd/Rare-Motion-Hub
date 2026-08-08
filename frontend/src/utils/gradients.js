@@ -14,6 +14,8 @@ const palettes = [
   ['#667eea', '#764ba2', '#f093fb'],
 ];
 
+export const defaultGradient = 'linear-gradient(135deg, #43e97b 0%, #38f9d7 48%, #4facfe 100%)';
+
 export function gradientFor(id) {
   const sum = String(id).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   const colors = palettes[sum % palettes.length];

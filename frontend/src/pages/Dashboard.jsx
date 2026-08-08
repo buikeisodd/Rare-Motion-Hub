@@ -7,7 +7,7 @@ import StarlightLogo from '../components/StarlightLogo';
 import ConfirmModal from '../components/ConfirmModal';
 import MarqueeInput from '../components/MarqueeInput';
 import { useAudio } from '../context/AudioContext';
-import { gradientFor } from '../utils/gradients';
+import { defaultGradient, gradientFor } from '../utils/gradients';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
@@ -58,7 +58,7 @@ export function LibraryProject({ project, tracks, onDragStart, isDragging, onDel
       <Link to={`/project/${project.id}`} className="group block w-full" draggable={false}>
         <div
           className="relative aspect-square overflow-hidden rounded-[1.25rem]"
-          style={{ background: gradientFor(project.id) }}
+          style={{ background: project.coverArt ? undefined : defaultGradient }}
         >
           {project.coverArt ? (
             <img
