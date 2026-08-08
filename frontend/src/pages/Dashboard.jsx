@@ -10,6 +10,10 @@ import { useAudio } from '../context/AudioContext';
 import { defaultGradient, gradientFor } from '../utils/gradients';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const authHeaders = (json = false) => {
+  const token = localStorage.getItem('token');
+  return { ...(json ? { 'Content-Type': 'application/json' } : {}), ...(token ? { Authorization: `Bearer ${token}` } : {}) };
+};
 
 export function LibraryProject({ project, tracks, onDragStart, isDragging, onDelete }) {
   const { addTracksToQueue, playTrack, currentTrack, isPlaying, setIsPlaying } = useAudio();
@@ -552,7 +556,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
   const location = useLocation();
 
   const refreshWorkspace = () => {
-    fetch(`${apiUrl}/api/workspace?userId=${encodeURIComponent(user.id)}&_t=${Date.now()}`)
+    fetch(`${apiUrl}/api/workspace?userId=${encodeURIComponent(user.id)}&_t=${Date.now()}`, { headers: authHeaders() })
       .then((res) => res.json())
       .then((data) => {
         setWorkspace({
@@ -580,7 +584,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
   const saveFolderMetadata = async (folderId, updates) => {
     const res = await fetch(`${apiUrl}/api/folders/${folderId}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(true),
       body: JSON.stringify(updates),
     });
     if (res.ok) {
@@ -596,7 +600,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
     setIsAddMenuOpen(false);
     const res = await fetch(`${apiUrl}/api/projects`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(true),
       body: JSON.stringify({ userId: user.id, title: 'Untitled project', artist: user.name }),
     });
     const data = await res.json();
@@ -607,7 +611,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
     setIsAddMenuOpen(false);
     const res = await fetch(`${apiUrl}/api/folders`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(true),
       body: JSON.stringify({ userId: user.id, title: 'Untitled folder', artist: user.name }),
     });
     const data = await res.json();
