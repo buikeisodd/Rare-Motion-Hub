@@ -2,8 +2,8 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
 const fallbackLocalUrl = Platform.OS === 'android'
-  ? 'http://10.0.2.2:3001'
-  : 'http://localhost:3001';
+  ? 'http://10.0.2.2:4000'
+  : 'http://localhost:4000';
 
 export const API_URL =
   process.env.EXPO_PUBLIC_API_URL ||

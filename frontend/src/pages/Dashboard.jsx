@@ -597,25 +597,35 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
 
 
   const createProject = async () => {
-    setIsAddMenuOpen(false);
-    const res = await fetch(`${apiUrl}/api/projects`, {
-      method: 'POST',
-      headers: authHeaders(true),
-      body: JSON.stringify({ userId: user.id, title: 'Untitled project', artist: user.name }),
-    });
-    const data = await res.json();
-    if (res.ok) navigate(`/project/${data.id}`);
+    try {
+      setIsAddMenuOpen(false);
+      const res = await fetch(`${apiUrl}/api/projects`, {
+        method: 'POST',
+        headers: authHeaders(true),
+        body: JSON.stringify({ userId: user.id, title: 'Untitled project', artist: user.name }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not create project.');
+      navigate(`/project/${data.id}`);
+    } catch (error) {
+      alert(error.message);
+    }
   };
 
   const createFolder = async () => {
-    setIsAddMenuOpen(false);
-    const res = await fetch(`${apiUrl}/api/folders`, {
-      method: 'POST',
-      headers: authHeaders(true),
-      body: JSON.stringify({ userId: user.id, title: 'Untitled folder', artist: user.name }),
-    });
-    const data = await res.json();
-    if (res.ok) setWorkspace((prev) => ({ ...prev, folders: [data, ...prev.folders] }));
+    try {
+      setIsAddMenuOpen(false);
+      const res = await fetch(`${apiUrl}/api/folders`, {
+        method: 'POST',
+        headers: authHeaders(true),
+        body: JSON.stringify({ userId: user.id, title: 'Untitled folder', artist: user.name }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not create folder.');
+      setWorkspace((prev) => ({ ...prev, folders: [data, ...prev.folders] }));
+    } catch (error) {
+      alert(error.message);
+    }
   };
 
   const moveItem = async (itemId, itemType, targetFolderId) => {
