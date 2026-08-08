@@ -77,7 +77,7 @@ export default function ServerStatus() {
   const c = configs[status];
 
   return (
-    <div className={`fixed bottom-20 left-1/2 z-[60] -translate-x-1/2 flex items-center gap-3 rounded-2xl border px-4 py-2.5 shadow-2xl backdrop-blur-xl animate-slide-up ${c.bg}`}>
+    <div className={`fixed top-5 right-5 z-[60] flex max-w-[calc(100vw-2.5rem)] items-center gap-3 rounded-2xl border px-4 py-2.5 shadow-2xl backdrop-blur-xl animate-slide-up ${c.bg}`}>
       {/* Animated dots for slow/offline */}
       {status !== 'online' && (
         <div className="flex gap-1">

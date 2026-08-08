@@ -923,7 +923,7 @@ function ProjectScreen({
 
   return (
     <SafeAreaView style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.projectContent}>
+      <ScrollView contentContainerStyle={[styles.projectContent, playback?.track && styles.projectContentWithPlayback]}>
         <View style={styles.projectTopBar}>
           <IconButton name="chevron-back" label="Back" onPress={onBack} />
           <View style={styles.projectTopActions}>
@@ -1376,6 +1376,7 @@ export default function App() {
   };
 
   const closePlayer = async () => {
+    playerRef.current?.pause?.();
     playerRef.current?.clearLockScreenControls?.();
     playerRef.current?.remove?.();
     playerRef.current = null;
@@ -2177,7 +2178,7 @@ const styles = StyleSheet.create({
   createWrapPlayback: {
     position: 'absolute',
     right: 14,
-    bottom: 40,
+    bottom: 128,
     alignItems: 'flex-end',
     justifyContent: 'flex-end'
   },
@@ -2234,6 +2235,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 10,
     paddingBottom: 140
+  },
+  projectContentWithPlayback: {
+    paddingBottom: 240
   },
   projectTopBar: {
     minHeight: 64,
