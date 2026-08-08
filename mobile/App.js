@@ -1121,6 +1121,7 @@ export default function App() {
   };
 
   const openFolder = async (folderId) => {
+    setProjectData(null);
     setRoute({ name: 'folder', id: folderId });
     setLoading(true);
     try {
@@ -1135,6 +1136,7 @@ export default function App() {
   };
 
   const openProject = async (projectId) => {
+    setProjectData(null);
     setRoute({ name: 'project', id: projectId });
     setLoading(true);
     try {
@@ -1161,7 +1163,7 @@ export default function App() {
         })
       });
       await refreshWorkspace();
-      openProject(project.id);
+      await openProject(project.id);
     } catch (error) {
       Alert.alert('Could not create project', error.message);
     }
