@@ -68,6 +68,34 @@ const storeTrackFile = async (file, userId, folder = 'raremotionhub/tracks') => 
   };
 };
 
+const storeTrackLocally = (file, userId) => {
+  const userDir = ensureUserDir(uploadDir, userId);
+  const safeName = path.basename(file.filename || `${Date.now()}-${file.originalname || 'track'}`).replace(/\s+/g, '_');
+  const finalPath = path.join(userDir, safeName);
+  if (path.resolve(file.path) !== path.resolve(finalPath)) fs.renameSync(file.path, finalPath);
+  return { filename: safeName, url: `${BASE_URL}/uploads/${userId}/${safeName}`, path: finalPath };
+};
+
+const promoteTrackToCloudinary = async (track, localPath, userId) => {
+  if (!hasCloudinaryConfig) return;
+  try {
+    const uploadResult = await cloudinary.uploader.upload_large(localPath, {
+      resource_type: 'video',
+      folder: 'raremotionhub/tracks'
+    });
+    const db = ensureDBShape(await readDB());
+    const index = db.tracks.findIndex((item) => item.id === track.id);
+    if (index === -1) return;
+    db.tracks[index] = { ...db.tracks[index], filename: null, url: uploadResult.secure_url };
+    await writeDB(db);
+    invalidateCache(`workspace:${userId}`);
+    if (track.projectId) invalidateCache(`project:${track.projectId}:${userId}`);
+    removeFileIfExists(localPath);
+  } catch (error) {
+    console.error('Background Cloudinary track upload failed; local playback remains active:', error.message);
+  }
+};
+
 const uploadTrackController = async (req, res, next) => {
   try {
     if (!req.file) return next(new AppError('No audio file uploaded', 400));
@@ -83,7 +111,7 @@ const uploadTrackController = async (req, res, next) => {
       return next(new AppError('Project not found', 404));
     }
     
-    const storedFile = await storeTrackFile(req.file, userId);
+    const storedFile = storeTrackLocally(req.file, userId);
     
     const trackId = makeId();
     const newTrack = {
@@ -106,6 +134,7 @@ const uploadTrackController = async (req, res, next) => {
     invalidateCache(`workspace:${userId}`);
     if (projectId) invalidateCache(`project:${projectId}:${userId}`);
     res.json({ track: newTrack });
+    promoteTrackToCloudinary(newTrack, storedFile.path, userId);
   } catch (error) {
     next(error);
   }
