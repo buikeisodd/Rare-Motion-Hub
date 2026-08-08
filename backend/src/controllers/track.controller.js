@@ -21,6 +21,27 @@ const { AppError } = require('../middlewares/error.middleware');
 const conversionJobs = {};
 const stemJobs = {};
 
+const storeMemoFile = async (file, userId, trackId) => {
+  if (hasCloudinaryConfig) {
+    try {
+      const uploadResult = await cloudinary.uploader.upload_large(file.path, {
+        resource_type: 'video',
+        folder: 'raremotionhub/memos'
+      });
+      removeFileIfExists(file.path);
+      return { filename: null, url: uploadResult.secure_url };
+    } catch (err) {
+      console.error('Cloudinary memo upload failed, using local storage fallback:', err.message);
+    }
+  }
+  const memoDir = noteMemoDir({ userId, uploader: { id: userId }, id: trackId });
+  fs.mkdirSync(memoDir, { recursive: true });
+  const filename = path.basename(file.filename || `${Date.now()}-${file.originalname || 'memo'}`).replace(/\s+/g, '_');
+  const destination = path.join(memoDir, filename);
+  if (path.resolve(file.path) !== path.resolve(destination)) fs.renameSync(file.path, destination);
+  return { filename, url: null };
+};
+
 const storeTrackFile = async (file, userId, folder = 'raremotionhub/tracks') => {
   if (hasCloudinaryConfig) {
     try {
@@ -330,21 +351,17 @@ const createNoteMemo = async (req, res, next) => {
       return next(new AppError('Track not found', 404));
     }
 
-    const uploadResult = await cloudinary.uploader.upload_large(req.file.path, {
-      resource_type: 'video',
-      folder: 'raremotionhub/memos'
-    });
+    const storedMemo = await storeMemoFile(req.file, userId, track.id);
 
     track.noteMemos ||= [];
     const memo = {
       id: makeId(),
-      filename: null,
-      url: uploadResult.secure_url, // Cloudinary URL
+      filename: storedMemo.filename,
+      url: storedMemo.url,
       mimeType: req.file.mimetype,
       size: req.file.size,
       uploadedAt: new Date().toISOString()
     };
-    removeFileIfExists(req.file.path);
     track.noteMemos.push(memo);
     db.tracks[trackIndex] = track;
     await writeDB(db);

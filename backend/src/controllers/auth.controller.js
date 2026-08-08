@@ -106,9 +106,20 @@ const uploadUserAvatar = async (req, res, next) => {
       return next(new AppError('User not found.', 404));
     }
 
-    db.users[userIndex].avatarUrl = /^https?:\/\//i.test(req.file.path || '')
-      ? req.file.path
-      : `${BASE_URL}/avatars/${req.file.filename}`;
+    let avatarUrl = `${BASE_URL}/avatars/${req.file.filename}`;
+    if (hasCloudinaryConfig) {
+      try {
+        const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+          folder: 'raremotionhub/avatars',
+          resource_type: 'image'
+        });
+        avatarUrl = uploadResult.secure_url;
+        removeFileIfExists(req.file.path);
+      } catch (uploadError) {
+        console.error('Cloudinary avatar upload failed, keeping local file:', uploadError.message);
+      }
+    }
+    db.users[userIndex].avatarUrl = avatarUrl;
     db.users[userIndex].avatarUpdatedAt = new Date().toISOString();
     db.users[userIndex].updatedAt = db.users[userIndex].avatarUpdatedAt;
     await writeDB(db);

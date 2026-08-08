@@ -34,12 +34,12 @@ const uploadTrack = multer({
 });
 
 const uploadCover = multer({
-  storage: hasCloudinaryConfig ? makeCloudinaryStorage('covers', 'image') : diskStorage(coverDir),
+  storage: diskStorage(coverDir),
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB
 });
 
 const uploadAvatar = multer({
-  storage: hasCloudinaryConfig ? makeCloudinaryStorage('avatars', 'image') : diskStorage(avatarDir),
+  storage: diskStorage(avatarDir),
   limits: { fileSize: 5 * 1024 * 1024 } // 5MB
 });
 

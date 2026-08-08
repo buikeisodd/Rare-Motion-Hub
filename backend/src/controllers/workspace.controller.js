@@ -17,7 +17,7 @@ const {
   BASE_URL
 } = require('../utils/helpers');
 const { getOrSetCache, invalidateCache } = require('../config/redis');
-const { cloudinary } = require('../config/cloudinary');
+const { cloudinary, hasCloudinaryConfig } = require('../config/cloudinary');
 const { removeDirIfExists, removeFileIfExists, stemsDir, coverDir } = require('../utils/fileHelper');
 const { AppError } = require('../middlewares/error.middleware');
 
@@ -434,13 +434,24 @@ const uploadCover = async (req, res, next) => {
       return next(new AppError('Unauthorized user.', 401));
     }
 
-    const isRemoteUpload = /^https?:\/\//i.test(req.file.path || '');
-    const url = isRemoteUpload ? req.file.path : `${BASE_URL}/covers/${req.file.filename}`;
+    let url = `${BASE_URL}/covers/${req.file.filename}`;
+    if (hasCloudinaryConfig) {
+      try {
+        const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+          folder: 'raremotionhub/covers',
+          resource_type: 'image'
+        });
+        url = uploadResult.secure_url;
+        removeFileIfExists(req.file.path);
+      } catch (uploadError) {
+        console.error('Cloudinary cover upload failed, keeping local file:', uploadError.message);
+      }
+    }
     const newCover = {
       id: Date.now().toString(),
       userId,
       url,
-      filename: isRemoteUpload ? null : req.file.filename,
+      filename: url.startsWith(`${BASE_URL}/covers/`) ? req.file.filename : null,
       mimeType: req.file.mimetype,
       uploadedAt: new Date().toISOString()
     };
