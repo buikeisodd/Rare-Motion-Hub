@@ -21,15 +21,21 @@ const streamTrack = async (req, res, next) => {
     const mediaOwnerId = trackOwnerId(track);
     const filePath = path.join(uploadDir, mediaOwnerId, track.filename || '');
     if (!track.filename || !fs.existsSync(filePath)) {
+      // A promotion/redeploy can leave the legacy filename alongside a valid
+      // Cloudinary URL. Prefer the durable remote asset in that case.
+      if (track.url) return res.redirect(track.url);
       return next(new AppError('Track media file not found on local disk.', 404));
     }
 
     const stat = fs.statSync(filePath);
     const fileSize = stat.size;
-    const contentType = track.mimeType || 'audio/mpeg';
+    const contentType = /^audio\//i.test(track.mimeType || '')
+      ? track.mimeType
+      : (track.mimeType === 'video/mp4' ? 'audio/mp4' : 'audio/mpeg');
     const range = req.headers.range;
 
     res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', 'inline');
     res.setHeader('Accept-Ranges', 'bytes');
     res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
 
