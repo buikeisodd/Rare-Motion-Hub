@@ -43,7 +43,10 @@ export function AudioProvider({ children }) {
     setDuration(0);
     setIsBuffering(true);
     audio.pause();
-    audio.src = resolveTrackUrl(currentTrack.url);
+    const sourceUrl = currentTrack.filename
+      ? `${apiUrl.replace(/\/$/, '')}/api/media/tracks/${encodeURIComponent(currentTrack.id)}`
+      : resolveTrackUrl(currentTrack.url);
+    audio.src = sourceUrl;
     audio.load();
   }, [currentTrack?.url]);
 
