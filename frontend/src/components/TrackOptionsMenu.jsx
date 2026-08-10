@@ -97,6 +97,44 @@ function TrackInsightsModal({ isOpen, onClose, track, userId }) {
   );
 }
 
+function FeedPreviewModal({ isOpen, onClose, track, onSaved }) {
+  const [caption, setCaption] = useState(track?.feedCaption || '');
+  const [start, setStart] = useState(track?.previewStart ?? 0);
+  const [end, setEnd] = useState(track?.previewEnd ?? '');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setCaption(track?.feedCaption || '');
+    setStart(track?.previewStart ?? 0);
+    setEnd(track?.previewEnd ?? '');
+  }, [isOpen, track]);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(`${apiUrl}/api/tracks/${track.id}/publish`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ published: true, caption, previewStart: start, previewEnd: end })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not save preview.');
+      onSaved?.(data.track);
+      onClose();
+    } catch (error) { alert(error.message); }
+    finally { setSaving(false); }
+  };
+
+  return <ModalShell isOpen={isOpen} onClose={onClose} className="max-w-md">
+    <div className="p-5">
+      <div className="mb-5 flex items-center justify-between"><div><h3 className="text-lg font-semibold">Feed preview</h3><p className="mt-1 text-sm text-secondary-label">Choose the moment people hear.</p></div><button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-full bg-shading"><X className="h-4 w-4" /></button></div>
+      <label className="mb-4 block text-sm font-semibold">Caption<textarea value={caption} onChange={(event) => setCaption(event.target.value)} maxLength={500} rows={3} placeholder="Say something about this preview..." className="mt-2 w-full resize-none rounded-xl border border-border bg-shading p-3 text-sm outline-none focus:border-primary-label" /></label>
+      <div className="grid grid-cols-2 gap-3"><label className="text-sm font-semibold">Start (seconds)<input type="number" min="0" step="0.1" value={start} onChange={(event) => setStart(event.target.value)} className="mt-2 w-full rounded-xl border border-border bg-shading p-3 text-sm outline-none" /></label><label className="text-sm font-semibold">End (seconds)<input type="number" min="0" step="0.1" value={end} onChange={(event) => setEnd(event.target.value)} placeholder="Track end" className="mt-2 w-full rounded-xl border border-border bg-shading p-3 text-sm outline-none" /></label></div>
+      <button onClick={save} disabled={saving} className="mt-5 w-full rounded-xl bg-primary-label px-4 py-3 text-sm font-semibold text-primary-background disabled:opacity-50">{saving ? 'Saving...' : 'Publish preview'}</button>
+    </div>
+  </ModalShell>;
+}
+
 function TrackRenameModal({ isOpen, onClose, track, userId, onSaved }) {
   const [title, setTitle] = useState('');
   const [saving, setSaving] = useState(false);
@@ -623,6 +661,7 @@ function TrackDetailsModal({
   onOpenSubModal
 }) {
   const [showVersions, setShowVersions] = useState(false);
+  const [showFeedEditor, setShowFeedEditor] = useState(false);
   const [duration, setDuration] = useState(null);
   const [publishing, setPublishing] = useState(false);
 
@@ -679,7 +718,8 @@ function TrackDetailsModal({
     { id: 'replace', label: 'Replace audio', icon: FileAudio, onClick: () => onOpenSubModal('replace') },
     { id: 'stems', label: 'Split stems', icon: Layers, onClick: () => onOpenSubModal('stems') },
     { id: 'queue', label: 'Add to queue', icon: ListPlus, onClick: () => { onAddToQueue(track); onClose(); } },
-    { id: 'feed', label: publishing ? 'Updating feed...' : (track.isPublished ? 'Remove from feed' : 'Publish to feed'), icon: Radio, onClick: toggleFeedPublication },
+    { id: 'feed', label: track.isPublished ? 'Edit feed preview' : 'Publish to feed', icon: Radio, onClick: () => setShowFeedEditor(true) },
+    ...(track.isPublished ? [{ id: 'remove-feed', label: publishing ? 'Removing preview...' : 'Delete feed preview', icon: Trash2, onClick: toggleFeedPublication, danger: true }] : []),
     { id: 'export', label: 'Export', icon: Download, onClick: exportTrack },
     { id: 'delete', label: 'Delete', icon: Trash2, onClick: () => onOpenSubModal('delete'), danger: true }
   ];
@@ -741,6 +781,7 @@ function TrackDetailsModal({
         onTrackUpdate={onTrackUpdate}
         onPlay={onPlay}
       />
+      <FeedPreviewModal isOpen={showFeedEditor} onClose={() => setShowFeedEditor(false)} track={track} onSaved={onTrackUpdate} />
     </>
   );
 }

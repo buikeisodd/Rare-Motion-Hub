@@ -245,9 +245,20 @@ const publishTrack = async (req, res, next) => {
     if (!track || trackOwnerId(track) !== userId) return next(new AppError('Track not found', 404));
 
     const published = req.body.published !== false;
+    const start = Number(req.body.previewStart ?? track.previewStart ?? 0);
+    const end = req.body.previewEnd === '' || req.body.previewEnd === null || req.body.previewEnd === undefined
+      ? track.previewEnd
+      : Number(req.body.previewEnd);
+    if (!Number.isFinite(start) || start < 0 || (end !== undefined && end !== null && (!Number.isFinite(end) || end <= start))) {
+      return next(new AppError('Preview timing is invalid.', 400));
+    }
     track.isPublished = published;
     track.publishedAt = published ? new Date().toISOString() : null;
     if (req.body.caption !== undefined) track.feedCaption = String(req.body.caption).slice(0, 500);
+    track.previewStart = start;
+    track.previewEnd = end ?? null;
+    track.likes ||= [];
+    track.comments ||= [];
     await writeDB(db);
     invalidateCache(`workspace:${userId}`);
     if (track.projectId) invalidateCache(`project:${track.projectId}:${userId}`);
@@ -261,7 +272,7 @@ const getFeed = async (req, res, next) => {
   try {
     const db = ensureDBShape(await readDB());
     const items = db.tracks
-      .filter((track) => track.isPublished && track.url)
+      .filter((track) => track.isPublished && (track.url || track.filename))
       .sort((a, b) => new Date(b.publishedAt || b.uploadedAt) - new Date(a.publishedAt || a.uploadedAt))
       .slice(0, 50)
       .map((track) => {
@@ -270,13 +281,62 @@ const getFeed = async (req, res, next) => {
         return {
           ...normalizeTrack(track),
           owner: owner ? { id: owner.id, name: owner.name, avatarUrl: owner.avatarUrl || null } : null,
-          project: project ? { id: project.id, title: project.title || project.name, coverArt: project.coverArt || null } : null
+          project: project ? { id: project.id, title: project.title || project.name, coverArt: project.coverArt || null } : null,
+          likeCount: (track.likes || []).length,
+          likedByMe: (track.likes || []).includes(req.userId),
+          comments: (track.comments || []).map((comment) => {
+            const commenter = db.users.find((user) => user.id === comment.userId);
+            return { ...comment, user: commenter ? { id: commenter.id, name: commenter.name, avatarUrl: commenter.avatarUrl || null } : null };
+          })
         };
       });
     res.json({ items });
   } catch (error) {
     next(error);
   }
+};
+
+const toggleFeedLike = async (req, res, next) => {
+  try {
+    const db = ensureDBShape(await readDB());
+    const track = db.tracks.find((item) => item.id === req.params.id && item.isPublished);
+    if (!track) return next(new AppError('Preview not found', 404));
+    track.likes ||= [];
+    const index = track.likes.indexOf(req.userId);
+    if (index >= 0) track.likes.splice(index, 1);
+    else track.likes.push(req.userId);
+    await writeDB(db);
+    res.json({ liked: index < 0, likeCount: track.likes.length });
+  } catch (error) { next(error); }
+};
+
+const addFeedComment = async (req, res, next) => {
+  try {
+    const text = String(req.body.text || '').trim();
+    if (!text || text.length > 500) return next(new AppError('Comment must be between 1 and 500 characters.', 400));
+    const db = ensureDBShape(await readDB());
+    const track = db.tracks.find((item) => item.id === req.params.id && item.isPublished);
+    if (!track) return next(new AppError('Preview not found', 404));
+    const comment = { id: makeId(), userId: req.userId, text, createdAt: new Date().toISOString() };
+    track.comments ||= [];
+    track.comments.push(comment);
+    await writeDB(db);
+    const commenter = db.users.find((user) => user.id === req.userId);
+    res.status(201).json({ comment: { ...comment, user: commenter ? { id: commenter.id, name: commenter.name, avatarUrl: commenter.avatarUrl || null } : null } });
+  } catch (error) { next(error); }
+};
+
+const deleteFeedComment = async (req, res, next) => {
+  try {
+    const db = ensureDBShape(await readDB());
+    const track = db.tracks.find((item) => item.id === req.params.id);
+    if (!track) return next(new AppError('Preview not found', 404));
+    const index = (track.comments || []).findIndex((comment) => comment.id === req.params.commentId && comment.userId === req.userId);
+    if (index < 0) return next(new AppError('Comment not found', 404));
+    track.comments.splice(index, 1);
+    await writeDB(db);
+    res.json({ success: true });
+  } catch (error) { next(error); }
 };
 
 const getTrackInsights = async (req, res, next) => {
@@ -856,6 +916,9 @@ module.exports = {
   patchTrack,
   publishTrack,
   getFeed,
+  toggleFeedLike,
+  addFeedComment,
+  deleteFeedComment,
   getTrackInsights,
   replaceAudio,
   switchVersion,

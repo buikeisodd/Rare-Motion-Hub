@@ -50,6 +50,10 @@ const TrackSchema = new Schema({
   isPublished: { type: Boolean, default: false },
   publishedAt: String,
   feedCaption: String,
+  previewStart: { type: Number, default: 0 },
+  previewEnd: Number,
+  likes: [String],
+  comments: [{ id: String, userId: String, text: String, createdAt: String }],
 });
 
 const FolderSchema = new Schema({
