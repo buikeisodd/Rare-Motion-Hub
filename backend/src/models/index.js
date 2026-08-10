@@ -47,6 +47,9 @@ const TrackSchema = new Schema({
   stemOf: String,
   stemType: String,
   stems: [{ name: String, url: String, filename: String }],
+  isPublished: { type: Boolean, default: false },
+  publishedAt: String,
+  feedCaption: String,
 });
 
 const FolderSchema = new Schema({

@@ -237,6 +237,48 @@ const patchTrack = async (req, res, next) => {
   }
 };
 
+const publishTrack = async (req, res, next) => {
+  try {
+    const userId = req.userId;
+    const db = ensureDBShape(await readDB());
+    const track = db.tracks.find((item) => item.id === req.params.id);
+    if (!track || trackOwnerId(track) !== userId) return next(new AppError('Track not found', 404));
+
+    const published = req.body.published !== false;
+    track.isPublished = published;
+    track.publishedAt = published ? new Date().toISOString() : null;
+    if (req.body.caption !== undefined) track.feedCaption = String(req.body.caption).slice(0, 500);
+    await writeDB(db);
+    invalidateCache(`workspace:${userId}`);
+    if (track.projectId) invalidateCache(`project:${track.projectId}:${userId}`);
+    res.json({ track: normalizeTrack(track) });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getFeed = async (req, res, next) => {
+  try {
+    const db = ensureDBShape(await readDB());
+    const items = db.tracks
+      .filter((track) => track.isPublished && track.url)
+      .sort((a, b) => new Date(b.publishedAt || b.uploadedAt) - new Date(a.publishedAt || a.uploadedAt))
+      .slice(0, 50)
+      .map((track) => {
+        const owner = db.users.find((user) => user.id === trackOwnerId(track));
+        const project = db.projects.find((item) => item.id === track.projectId);
+        return {
+          ...normalizeTrack(track),
+          owner: owner ? { id: owner.id, name: owner.name, avatarUrl: owner.avatarUrl || null } : null,
+          project: project ? { id: project.id, title: project.title || project.name, coverArt: project.coverArt || null } : null
+        };
+      });
+    res.json({ items });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const getTrackInsights = async (req, res, next) => {
   try {
     const db = ensureDBShape(await readDB());
@@ -812,6 +854,8 @@ module.exports = {
   createCloudinaryTrack,
   deleteTrack,
   patchTrack,
+  publishTrack,
+  getFeed,
   getTrackInsights,
   replaceAudio,
   switchVersion,

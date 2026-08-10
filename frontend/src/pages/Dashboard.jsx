@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bell, ChevronRight, Circle, Disc3, Edit3, Folder, FolderOpen, FolderPlus, LogOut, MessageSquare, MoreHorizontal, Music, Palette, Play, Pause, Plus, Trash2, UploadCloud, Video, X, User } from 'lucide-react';
-import ChatInbox from '../components/ChatInbox';
 import StarlightLogo from '../components/StarlightLogo';
 import ConfirmModal from '../components/ConfirmModal';
 import MarqueeInput from '../components/MarqueeInput';
@@ -545,7 +544,6 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const { currentTrack } = useAudio();
-  const [isChatOpen, setIsChatOpen] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileError, setProfileError] = useState('');
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
@@ -789,7 +787,6 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
     setIsNotificationsOpen((open) => !open);
     setIsProfileOpen(false);
     setIsAddMenuOpen(false);
-    setIsChatOpen(false);
 
     if (!isNotificationsOpen && unreadNotificationsCount > 0) {
       fetch(`${apiUrl}/api/notifications/read?userId=${user.id}`, { method: 'POST' })
@@ -848,7 +845,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
           </div>
 
           <div className="relative">
-            <button onClick={() => { setIsProfileOpen((open) => !open); setIsNotificationsOpen(false); setIsAddMenuOpen(false); setIsChatOpen(false); }} className="grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label={`Open ${user.name} profile`}>
+            <button onClick={() => { setIsProfileOpen((open) => !open); setIsNotificationsOpen(false); setIsAddMenuOpen(false); }} className="grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label={`Open ${user.name} profile`}>
               <ProfileAvatar user={user} size="h-8 w-8" />
             </button>
             <ProfilePanel
@@ -862,7 +859,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
             />
           </div>
 
-          <button onClick={() => { setIsChatOpen((open) => !open); setIsProfileOpen(false); setIsNotificationsOpen(false); setIsAddMenuOpen(false); }} className="grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Open messages">
+          <button onClick={() => navigate('/feed')} className="grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Open feed">
             <MessageSquare className="h-6 w-6" />
           </button>
           <button onClick={onLogout} className="grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Log out">
@@ -938,7 +935,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
         </AnimatePresence>
 
         <button
-          onClick={() => { setIsAddMenuOpen(o => !o); setIsProfileOpen(false); setIsNotificationsOpen(false); setIsChatOpen(false); }}
+          onClick={() => { setIsAddMenuOpen(o => !o); setIsProfileOpen(false); setIsNotificationsOpen(false); }}
           className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-shading border border-border px-5 text-sm font-semibold text-primary-label shadow-xl backdrop-blur-md transition-colors hover:bg-highlight"
         >
           <Plus className={`h-4 w-4 transition-transform duration-200 ${isAddMenuOpen ? 'rotate-45' : ''}`} />
@@ -969,8 +966,6 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
         </div>
       )}
       <input ref={convertInputRef} type="file" accept="audio/*,video/*,.mp3,.wav,.m4a,.mp4,.mov,.webm" className="hidden" onChange={(event) => setConvertFile(event.target.files?.[0] || null)} />
-
-      <ChatInbox user={user} isOpen={isChatOpen} onToggle={() => setIsChatOpen((open) => !open)} onConversationsChange={setConversations} />
 
       <EditProfileModal
         isOpen={isEditProfileOpen}

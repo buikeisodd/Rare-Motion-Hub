@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft, BarChart3, Download, FileAudio, FileText, Layers,
-  ListPlus, MoreHorizontal, Pencil, Play, Share2, Trash2, Upload, X
+  ListPlus, MoreHorizontal, Pencil, Play, Radio, Share2, Trash2, Upload, X
 } from 'lucide-react';
 import ConfirmModal from './ConfirmModal';
 
@@ -624,6 +624,7 @@ function TrackDetailsModal({
 }) {
   const [showVersions, setShowVersions] = useState(false);
   const [duration, setDuration] = useState(null);
+  const [publishing, setPublishing] = useState(false);
 
   useEffect(() => {
     if (!isOpen || !track?.url) return;
@@ -652,6 +653,25 @@ function TrackDetailsModal({
     }
   };
 
+  const toggleFeedPublication = async () => {
+    setPublishing(true);
+    try {
+      const res = await fetch(`${apiUrl}/api/tracks/${track.id}/publish`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ published: !track.isPublished })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not update feed publication.');
+      onTrackUpdate?.(data.track);
+      onClose();
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      setPublishing(false);
+    }
+  };
+
   const actions = [
     { id: 'rename', label: 'Rename', icon: Pencil, onClick: () => onOpenSubModal('rename') },
     { id: 'insights', label: 'Insights', icon: BarChart3, onClick: () => onOpenSubModal('insights') },
@@ -659,6 +679,7 @@ function TrackDetailsModal({
     { id: 'replace', label: 'Replace audio', icon: FileAudio, onClick: () => onOpenSubModal('replace') },
     { id: 'stems', label: 'Split stems', icon: Layers, onClick: () => onOpenSubModal('stems') },
     { id: 'queue', label: 'Add to queue', icon: ListPlus, onClick: () => { onAddToQueue(track); onClose(); } },
+    { id: 'feed', label: publishing ? 'Updating feed...' : (track.isPublished ? 'Remove from feed' : 'Publish to feed'), icon: Radio, onClick: toggleFeedPublication },
     { id: 'export', label: 'Export', icon: Download, onClick: exportTrack },
     { id: 'delete', label: 'Delete', icon: Trash2, onClick: () => onOpenSubModal('delete'), danger: true }
   ];

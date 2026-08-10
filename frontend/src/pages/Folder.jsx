@@ -3,7 +3,6 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft, Bell, ChevronRight, Circle, Copy, Disc3, FolderPlus, FolderOpen, Home, LogOut, MessageSquare, MoreHorizontal, Plus, Trash2, Video, X } from 'lucide-react';
 import { LibraryProject, LibraryFolder } from './Dashboard';
-import ChatInbox from '../components/ChatInbox';
 import StarlightLogo from '../components/StarlightLogo';
 import ConfirmModal from '../components/ConfirmModal';
 import ShareLinkModal from '../components/ShareLinkModal';
@@ -20,7 +19,6 @@ export default function Folder({ user, onLogout }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [draggingId, setDraggingId] = useState(null);
-  const [isChatOpen, setIsChatOpen] = useState(false);
   const [isFolderMenuOpen, setIsFolderMenuOpen] = useState(false);
   const [editableTitle, setEditableTitle] = useState('');
   const [editableArtist, setEditableArtist] = useState('');
@@ -349,7 +347,6 @@ export default function Folder({ user, onLogout }) {
         </button>
       </div>
 
-      <ChatInbox user={user} isOpen={isChatOpen} onToggle={() => setIsChatOpen((o) => !o)} />
       
       <ConfirmModal
         isOpen={isConfirmOpen}

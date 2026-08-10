@@ -5,6 +5,8 @@ const {
   createCloudinaryTrack,
   deleteTrack,
   patchTrack,
+  publishTrack,
+  getFeed,
   getTrackInsights,
   replaceAudio,
   switchVersion,
@@ -28,6 +30,8 @@ router.get('/upload/signature', requireUserId, getTrackUploadSignature);
 router.post('/upload/cloudinary', requireUserId, createCloudinaryTrack);
 router.delete('/tracks/:id', requireUserId, deleteTrack);
 router.patch('/tracks/:id', requireUserId, patchTrack);
+router.patch('/tracks/:id/publish', requireUserId, publishTrack);
+router.get('/feed', requireUserId, getFeed);
 router.get('/tracks/:id/insights', requireUserId, getTrackInsights);
 router.post('/tracks/:id/replace-audio', requireUserId, uploadTrack.single('track'), replaceAudio);
 
