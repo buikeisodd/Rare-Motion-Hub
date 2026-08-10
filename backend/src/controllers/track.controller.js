@@ -660,8 +660,11 @@ const convertVideo = async (req, res, next) => {
       return next(new AppError('Unauthorized user.', 401));
     }
 
+    const outputFormat = ['mp3', 'wav', 'm4a'].includes(String(req.body.format || '').toLowerCase())
+      ? String(req.body.format).toLowerCase()
+      : 'mp3';
     const originalNameNoExt = path.basename(req.file.originalname, path.extname(req.file.originalname));
-    const newFilename = Date.now() + '-' + Math.round(Math.random() * 1e9) + '.wav';
+    const newFilename = Date.now() + '-' + Math.round(Math.random() * 1e9) + `.${outputFormat}`;
     const userDir = path.join(uploadDir, userId);
     fs.mkdirSync(userDir, { recursive: true });
     const outputPath = path.join(userDir, newFilename);
@@ -670,10 +673,11 @@ const convertVideo = async (req, res, next) => {
     res.json({ jobId });
 
     const { ffmpeg } = require('../services/audio.service');
-    ffmpeg(req.file.path)
-      .noVideo()
-      .audioCodec('pcm_s16le')
-      .audioFrequency(44100)
+    const conversion = ffmpeg(req.file.path).noVideo().audioFrequency(44100);
+    if (outputFormat === 'mp3') conversion.audioCodec('libmp3lame').audioBitrate('192k');
+    if (outputFormat === 'wav') conversion.audioCodec('pcm_s16le');
+    if (outputFormat === 'm4a') conversion.audioCodec('aac').audioBitrate('192k');
+    conversion
       .on('progress', (progress) => {
         if (progress.percent && conversionJobs[jobId]) {
           conversionJobs[jobId].progress = Math.round(progress.percent);
@@ -703,7 +707,7 @@ const convertVideo = async (req, res, next) => {
           artist: uploader.name,
           producer: '',
           filename: null,
-          mimeType: 'audio/wav',
+          mimeType: outputFormat === 'wav' ? 'audio/wav' : outputFormat === 'm4a' ? 'audio/mp4' : 'audio/mpeg',
           size: fs.statSync(outputPath).size,
           url: '',
           uploader: { id: uploader.id, name: uploader.name },

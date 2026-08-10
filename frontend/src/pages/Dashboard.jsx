@@ -550,6 +550,8 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
   const [profileError, setProfileError] = useState('');
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
   const [conversionProgress, setConversionProgress] = useState(null);
+  const [isConvertPickerOpen, setIsConvertPickerOpen] = useState(false);
+  const [convertFormat, setConvertFormat] = useState('mp3');
   const [draggingId, setDraggingId] = useState(null);
   const convertInputRef = useRef(null);
   const navigate = useNavigate();
@@ -685,6 +687,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
     const formData = new FormData();
     formData.append('video', file);
     formData.append('userId', user.id);
+    formData.append('format', convertFormat);
     
     try {
       const res = await fetch(`${apiUrl}/api/convert`, {
@@ -724,6 +727,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
 
   const showComingSoon = (feature) => {
     setIsAddMenuOpen(false);
+    setIsConvertPickerOpen(false);
     alert(`${feature} is coming soon.`);
   };
 
@@ -918,7 +922,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
               transition={{ duration: 0.15 }}
               className="absolute bottom-full mb-3 left-0 w-52 rounded-2xl panel-bg border border-border p-2 shadow-2xl backdrop-blur-xl"
             >
-              <button onClick={() => convertInputRef.current?.click()} disabled={conversionProgress !== null} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors disabled:opacity-50">
+              <button onClick={() => setIsConvertPickerOpen(true)} disabled={conversionProgress !== null} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors disabled:opacity-50">
                 <Video className="h-4 w-4 shrink-0" />
                 {conversionProgress !== null ? 'Converting...' : 'Convert'}
               </button>
@@ -943,7 +947,22 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
         </button>
       </div>
 
-      <input ref={convertInputRef} type="file" accept="video/*" className="hidden" onChange={handleConvert} />
+      {isConvertPickerOpen && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 p-4" onClick={() => setIsConvertPickerOpen(false)}>
+          <div className="w-full max-w-sm rounded-2xl border border-border panel-bg p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}>
+            <h3 className="mb-1 text-lg font-semibold text-primary-label">Convert file</h3>
+            <p className="mb-4 text-sm text-secondary-label">Choose the output audio format.</p>
+            <div className="grid grid-cols-3 gap-2">
+              {['mp3', 'wav', 'm4a'].map((format) => (
+                <button key={format} onClick={() => { setConvertFormat(format); setIsConvertPickerOpen(false); window.setTimeout(() => convertInputRef.current?.click(), 0); }} className={`rounded-xl border px-3 py-3 text-sm font-semibold uppercase transition-colors ${convertFormat === format ? 'border-primary-label bg-primary-label text-primary-background' : 'border-border text-primary-label hover:bg-highlight'}`}>
+                  {format}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      <input ref={convertInputRef} type="file" accept="audio/*,video/*" className="hidden" onChange={handleConvert} />
 
       <ChatInbox user={user} isOpen={isChatOpen} onToggle={() => setIsChatOpen((open) => !open)} onConversationsChange={setConversations} />
 
