@@ -684,7 +684,8 @@ const convertVideo = async (req, res, next) => {
         }
       })
       .on('end', async () => {
-        const currentDb = await readDB();
+        try {
+        const currentDb = ensureDBShape(await readDB());
         const projectId = makeId();
         const newProject = {
           id: projectId,
@@ -718,7 +719,7 @@ const convertVideo = async (req, res, next) => {
           path: outputPath,
           filename: newFilename,
           originalname: newFilename,
-          mimetype: 'audio/wav'
+          mimetype: outputFormat === 'wav' ? 'audio/wav' : outputFormat === 'm4a' ? 'audio/mp4' : 'audio/mpeg'
         }, userId);
         newTrack.filename = storedFile.filename;
         newTrack.url = storedFile.url;
@@ -733,6 +734,15 @@ const convertVideo = async (req, res, next) => {
           conversionJobs[jobId].project = newProject;
           conversionJobs[jobId].track = newTrack;
           setTimeout(() => delete conversionJobs[jobId], 60000);
+        }
+        } catch (err) {
+          console.error('Conversion finalization failed:', err);
+          removeFileIfExists(req.file.path);
+          removeFileIfExists(outputPath);
+          if (conversionJobs[jobId]) {
+            conversionJobs[jobId].error = err.message || 'Conversion finalization failed';
+            setTimeout(() => delete conversionJobs[jobId], 60000);
+          }
         }
       })
       .on('error', (err) => {
