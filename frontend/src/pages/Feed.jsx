@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Bookmark, Compass, Heart, Library, MessageCircle, MoreHorizontal, Pause, Play, Radio, Send, Settings, Trash2, UserRound, Volume2, VolumeX } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link as RouterLink } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import StarlightLogo from '../components/StarlightLogo';
 import { defaultGradient, gradientFor } from '../utils/gradients';
 import ChatInbox from '../components/ChatInbox';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const Link = (props) => <RouterLink {...props} to={props.children === 'Settings' ? '/settings' : props.to} />;
 const dateLabel = (value) => value ? new Date(value).toLocaleDateString([], { month: 'short', day: 'numeric' }) : '';
 
 function FeedCard({ item, user, onUpdate, onDelete }) {

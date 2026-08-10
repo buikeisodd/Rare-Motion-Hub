@@ -850,7 +850,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
           </div>
 
           <div className="relative">
-            <button onClick={() => navigate('/settings')} className="grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Open settings">
+            <button onClick={() => navigate('/settings')} className="hidden" aria-hidden="true">
               <Settings className="h-6 w-6" />
             </button>
           </div>
