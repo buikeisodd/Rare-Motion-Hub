@@ -99,10 +99,6 @@ const promoteTrackToCloudinary = async (track, localPath, userId) => {
 const uploadTrackController = async (req, res, next) => {
   try {
     if (!req.file) return next(new AppError('No audio file uploaded', 400));
-    if (process.env.NODE_ENV === 'production' && !hasCloudinaryConfig) {
-      removeFileIfExists(req.file.path);
-      return next(new AppError('Durable media storage is not configured on the production server.', 503));
-    }
     const { title, projectId, artist, producer } = req.body;
     const userId = req.userId;
     const db = ensureDBShape(await readDB());
@@ -116,9 +112,10 @@ const uploadTrackController = async (req, res, next) => {
       return next(new AppError('Project not found', 404));
     }
     
-    const storedFile = hasCloudinaryConfig
-      ? await storeTrackFile(req.file, userId)
-      : storeTrackLocally(req.file, userId);
+    // Acknowledge the upload from the server's persistent disk immediately.
+    // Cloudinary promotion runs after the response so Render's request timeout
+    // cannot turn a completed upload into a client-side network error.
+    const storedFile = storeTrackLocally(req.file, userId);
     
     const trackId = makeId();
     const newTrack = {
