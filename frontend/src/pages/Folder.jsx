@@ -8,12 +8,14 @@ import StarlightLogo from '../components/StarlightLogo';
 import ConfirmModal from '../components/ConfirmModal';
 import ShareLinkModal from '../components/ShareLinkModal';
 import MarqueeInput from '../components/MarqueeInput';
+import { useAudio } from '../context/AudioContext';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
 export default function Folder({ user, onLogout }) {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { currentTrack } = useAudio();
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -299,7 +301,7 @@ export default function Folder({ user, onLogout }) {
       </main>
 
       {/* Desktop Add Button */}
-      <div className="fixed bottom-4 right-4 sm:bottom-7 sm:right-8 lg:right-12 z-40 hidden md:flex flex-col items-end">
+      <div className={`fixed right-4 sm:right-8 lg:right-12 z-[60] hidden md:flex flex-col items-end ${currentTrack ? 'bottom-28' : 'bottom-4 sm:bottom-7'}`}>
         <AnimatePresence>
           {isAddMenuOpen && (
             <motion.div
@@ -330,7 +332,7 @@ export default function Folder({ user, onLogout }) {
       </div>
 
       {/* Mobile Add Button */}
-      <div className="fixed bottom-4 right-4 z-40 md:hidden flex flex-col items-end">
+      <div className={`fixed right-4 z-[60] md:hidden flex flex-col items-end ${currentTrack ? 'bottom-28' : 'bottom-4'}`}>
         <AnimatePresence>
           {isAddMenuOpen && (
             <motion.div

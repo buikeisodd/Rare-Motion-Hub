@@ -553,7 +553,38 @@ const splitStems = async (req, res, next) => {
           };
         }));
 
-        stemJobs[jobId].stems = stems.filter(Boolean);
+        const completedStems = stems.filter(Boolean);
+        const stemTracks = completedStems.map((stem) => ({
+          id: makeId(),
+          userId,
+          projectId: track.projectId || null,
+          title: `${track.title} - ${stem.name}`,
+          artist: track.artist || '',
+          producer: track.producer || '',
+          filename: null,
+          mimeType: 'audio/wav',
+          size: 0,
+          url: stem.url,
+          uploader: track.uploader,
+          uploadedAt: new Date().toISOString(),
+          isStem: true,
+          stemOf: track.id,
+          stemType: stem.name
+        }));
+        const latestDb = ensureDBShape(await readDB());
+        const originalIndex = latestDb.tracks.findIndex((item) => item.id === track.id);
+        if (originalIndex !== -1) {
+          latestDb.tracks[originalIndex] = {
+            ...latestDb.tracks[originalIndex],
+            stems: completedStems.map((stem) => ({ name: stem.name, url: stem.url, filename: null }))
+          };
+          latestDb.tracks.push(...stemTracks);
+          await writeDB(latestDb);
+          invalidateCache(`workspace:${userId}`);
+          if (track.projectId) invalidateCache(`project:${track.projectId}:${userId}`);
+        }
+        stemJobs[jobId].stems = completedStems;
+        stemJobs[jobId].trackIds = stemTracks.map((stem) => stem.id);
         stemJobs[jobId].done = true;
         stemJobs[jobId].progress = 100;
         removeDirIfExists(outputRoot);
