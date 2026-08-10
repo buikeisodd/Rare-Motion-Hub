@@ -8,6 +8,7 @@ import Folder from './pages/Folder';
 import SharedItem from './pages/SharedItem';
 import ProjectInsights from './pages/ProjectInsights';
 import Feed from './pages/Feed';
+import Saved from './pages/Saved';
 import Profile from './pages/Profile';
 import StarlightLogo from './components/StarlightLogo';
 import { AudioProvider, useAudio } from './context/AudioContext';
@@ -116,6 +117,7 @@ function AnimatedRoutes({ user, handleLogin, handleLogout, handleUserUpdate, jus
         <Route path="/login" element={<Navigate to="/" replace />} />
         <Route path="/library" element={<DesktopOnly><motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><Dashboard user={user} onLogout={handleLogout} onUserUpdate={handleUserUpdate} /></motion.div></DesktopOnly>} />
         <Route path="/feed" element={<DesktopOnly><motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><Feed user={user} /></motion.div></DesktopOnly>} />
+        <Route path="/saved" element={<DesktopOnly><motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><Saved /></motion.div></DesktopOnly>} />
         <Route path="/profile/:id" element={<DesktopOnly><motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><Profile user={user} /></motion.div></DesktopOnly>} />
         <Route path="/folder/:id" element={<DesktopOnly><motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><Folder user={user} onLogout={handleLogout} /></motion.div></DesktopOnly>} />
         <Route path="/project/:id" element={<DesktopOnly><motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><Project user={user} onLogout={handleLogout} /></motion.div></DesktopOnly>} />
