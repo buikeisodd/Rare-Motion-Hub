@@ -7,7 +7,7 @@ import { defaultGradient, gradientFor } from '../utils/gradients';
 import ChatInbox from '../components/ChatInbox';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-const Link = (props) => <RouterLink {...props} to={props.children === 'Settings' ? '/settings' : props.to} />;
+const Link = (props) => <RouterLink {...props} to={(props.children === 'Settings' || (Array.isArray(props.children) && props.children.includes('Settings'))) ? '/settings' : props.to} />;
 const dateLabel = (value) => value ? new Date(value).toLocaleDateString([], { month: 'short', day: 'numeric' }) : '';
 
 function FeedCard({ item, user, onUpdate, onDelete }) {
