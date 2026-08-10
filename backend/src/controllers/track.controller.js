@@ -490,11 +490,14 @@ const splitStems = async (req, res, next) => {
     const outputRoot = path.join(stemsDir, userId, track.id, jobId);
     fs.mkdirSync(outputRoot, { recursive: true });
 
-    let sourcePath = trackMediaPath(track);
-    let isCloudinary = !track.filename && track.url;
+    const isCloudinary = !track.filename && Boolean(track.url);
+    let sourcePath = track.filename ? trackMediaPath(track) : null;
     
-    if (!isCloudinary && !fs.existsSync(sourcePath)) {
+    if (!isCloudinary && (!sourcePath || !fs.existsSync(sourcePath))) {
       return next(new AppError('Track audio file is missing on the server. Try re-uploading this track.', 404));
+    }
+    if (!isCloudinary && !sourcePath) {
+      return next(new AppError('Track has no playable media source.', 422));
     }
 
     stemJobs[jobId] = { progress: 5, done: false, error: null, stems: null };
