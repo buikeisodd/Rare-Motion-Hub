@@ -9,6 +9,7 @@ const {
   getFeed,
   deleteFeed,
   toggleFeedLike,
+  toggleFeedSave,
   addFeedComment,
   deleteFeedComment,
   toggleCommentLike,
@@ -39,6 +40,7 @@ router.patch('/tracks/:id/publish', requireUserId, publishTrack);
 router.get('/feed', requireUserId, getFeed);
 router.delete('/feed/tracks/:id', requireUserId, deleteFeed);
 router.post('/feed/tracks/:id/like', requireUserId, toggleFeedLike);
+router.post('/feed/tracks/:id/save', requireUserId, toggleFeedSave);
 router.post('/feed/tracks/:id/comments', requireUserId, addFeedComment);
 router.delete('/feed/tracks/:id/comments/:commentId', requireUserId, deleteFeedComment);
 router.post('/feed/tracks/:id/comments/:commentId/like', requireUserId, toggleCommentLike);

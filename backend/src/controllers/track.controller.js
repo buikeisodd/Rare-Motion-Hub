@@ -285,6 +285,7 @@ const getFeed = async (req, res, next) => {
           project: project ? { id: project.id, title: project.title || project.name, coverArt: project.coverArt || null } : null,
           likeCount: (track.likes || []).length,
           likedByMe: (track.likes || []).includes(req.userId),
+          savedByMe: (track.savedBy || []).includes(req.userId),
           comments: (track.comments || []).map((comment) => {
             const commenter = db.users.find((user) => user.id === comment.userId);
             return { ...comment, likes: comment.likes || [], likeCount: (comment.likes || []).length, likedByMe: (comment.likes || []).includes(req.userId), user: commenter ? { id: commenter.id, name: commenter.name, avatarUrl: commenter.avatarUrl || null } : null };
@@ -295,6 +296,19 @@ const getFeed = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
+};
+
+const toggleFeedSave = async (req, res, next) => {
+  try {
+    const db = ensureDBShape(await readDB());
+    const track = db.tracks.find((item) => item.id === req.params.id && item.isPublished);
+    if (!track) return next(new AppError('Preview not found', 404));
+    track.savedBy ||= [];
+    const index = track.savedBy.indexOf(req.userId);
+    if (index >= 0) track.savedBy.splice(index, 1); else track.savedBy.push(req.userId);
+    await writeDB(db);
+    res.json({ saved: index < 0 });
+  } catch (error) { next(error); }
 };
 
 const deleteFeed = async (req, res, next) => {
@@ -974,6 +988,7 @@ module.exports = {
   getFeed,
   deleteFeed,
   toggleFeedLike,
+  toggleFeedSave,
   addFeedComment,
   deleteFeedComment,
   toggleCommentLike,
