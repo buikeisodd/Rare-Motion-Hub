@@ -228,7 +228,7 @@ const patchTrack = async (req, res, next) => {
     }
     if (notes !== undefined) updates.notes = notes.toString();
 
-    const updated = await Track.findOneAndUpdate({ id: req.params.id }, updates, { new: true }).lean();
+    const updated = await Track.findOneAndUpdate({ id: req.params.id }, updates, { returnDocument: 'after' }).lean();
     invalidateCache(`workspace:${userId}`);
     if (track.projectId) invalidateCache(`project:${track.projectId}:${userId}`);
     res.json({ track: normalizeTrack(updated) });

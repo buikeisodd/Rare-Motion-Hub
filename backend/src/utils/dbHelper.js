@@ -22,17 +22,17 @@ const readDB = async () => {
 
 const writeDB = async (db) => {
   const ops = [
-    ...( db.users        || [] ).map(d => User.findOneAndUpdate(        { id: d.id }, d, { upsert: true, new: true, lean: true } )),
-    ...( db.projects     || [] ).map(d => Project.findOneAndUpdate(     { id: d.id }, d, { upsert: true, new: true, lean: true } )),
-    ...( db.tracks       || [] ).map(d => Track.findOneAndUpdate(       { id: d.id }, d, { upsert: true, new: true, lean: true } )),
-    ...( db.folders      || [] ).map(d => Folder.findOneAndUpdate(      { id: d.id }, d, { upsert: true, new: true, lean: true } )),
-    ...( db.coverArts    || [] ).map(d => CoverArt.findOneAndUpdate(    { id: d.id }, d, { upsert: true, new: true, lean: true } )),
-    ...( db.notifications|| [] ).map(d => Notification.findOneAndUpdate({ id: d.id }, d, { upsert: true, new: true, lean: true } )),
-    ...( db.playEvents   || [] ).map(d => PlayEvent.findOneAndUpdate(   { id: d.id }, d, { upsert: true, new: true, lean: true } )),
-    ...( db.messages     || [] ).map(d => Message.findOneAndUpdate(     { id: d.id }, d, { upsert: true, new: true, lean: true } )),
-    ...( db.calls        || [] ).map(d => Call.findOneAndUpdate(        { id: d.id }, d, { upsert: true, new: true, lean: true } )),
-    ...( db.callSignals  || [] ).map(d => CallSignal.findOneAndUpdate(  { id: d.id }, d, { upsert: true, new: true, lean: true } )),
-    ...( db.shareLinks   || [] ).map(d => ShareLink.findOneAndUpdate(   { id: d.id }, d, { upsert: true, new: true, lean: true } )),
+    ...( db.users        || [] ).map(d => User.findOneAndUpdate(        { id: d.id }, d, { upsert: true, returnDocument: 'after', lean: true } )),
+    ...( db.projects     || [] ).map(d => Project.findOneAndUpdate(     { id: d.id }, d, { upsert: true, returnDocument: 'after', lean: true } )),
+    ...( db.tracks       || [] ).map(d => Track.findOneAndUpdate(       { id: d.id }, d, { upsert: true, returnDocument: 'after', lean: true } )),
+    ...( db.folders      || [] ).map(d => Folder.findOneAndUpdate(      { id: d.id }, d, { upsert: true, returnDocument: 'after', lean: true } )),
+    ...( db.coverArts    || [] ).map(d => CoverArt.findOneAndUpdate(    { id: d.id }, d, { upsert: true, returnDocument: 'after', lean: true } )),
+    ...( db.notifications|| [] ).map(d => Notification.findOneAndUpdate({ id: d.id }, d, { upsert: true, returnDocument: 'after', lean: true } )),
+    ...( db.playEvents   || [] ).map(d => PlayEvent.findOneAndUpdate(   { id: d.id }, d, { upsert: true, returnDocument: 'after', lean: true } )),
+    ...( db.messages     || [] ).map(d => Message.findOneAndUpdate(     { id: d.id }, d, { upsert: true, returnDocument: 'after', lean: true } )),
+    ...( db.calls        || [] ).map(d => Call.findOneAndUpdate(        { id: d.id }, d, { upsert: true, returnDocument: 'after', lean: true } )),
+    ...( db.callSignals  || [] ).map(d => CallSignal.findOneAndUpdate(  { id: d.id }, d, { upsert: true, returnDocument: 'after', lean: true } )),
+    ...( db.shareLinks   || [] ).map(d => ShareLink.findOneAndUpdate(   { id: d.id }, d, { upsert: true, returnDocument: 'after', lean: true } )),
   ];
   await Promise.all(ops);
 };
