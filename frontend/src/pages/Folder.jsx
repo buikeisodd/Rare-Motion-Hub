@@ -245,19 +245,6 @@ export default function Folder({ user, onLogout }) {
           textClassName="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-primary-label"
           placeholder="Folder title"
         />
-        <p className="mt-4 flex items-center gap-2 text-base md:text-lg text-secondary-label">
-          <FolderOpen className="h-4 w-4 md:h-5 md:w-5 shrink-0" />
-          <span className="min-w-0 flex-1 overflow-hidden">
-            <MarqueeInput
-              value={editableArtist}
-              onChange={(event) => setEditableArtist(event.target.value)}
-              onBlur={saveCurrentFolder}
-              className="w-full"
-              textClassName="text-secondary-label"
-              placeholder="Add artist..."
-            />
-          </span>
-        </p>
       </div>
 
       {/* Grid */}
@@ -301,7 +288,7 @@ export default function Folder({ user, onLogout }) {
       </main>
 
       {/* Desktop Add Button */}
-      <div className={`fixed right-4 sm:right-8 lg:right-12 z-[60] hidden md:flex flex-col items-end ${currentTrack ? 'bottom-28' : 'bottom-4 sm:bottom-7'}`}>
+      <div className={`fixed z-[60] hidden md:flex flex-col items-end ${currentTrack ? 'bottom-28 left-6' : 'bottom-4 right-4 sm:bottom-7 sm:right-8 lg:right-12'}`}>
         <AnimatePresence>
           {isAddMenuOpen && (
             <motion.div
@@ -332,7 +319,7 @@ export default function Folder({ user, onLogout }) {
       </div>
 
       {/* Mobile Add Button */}
-      <div className={`fixed right-4 z-[60] md:hidden flex flex-col items-end ${currentTrack ? 'bottom-28' : 'bottom-4'}`}>
+      <div className={`fixed z-[60] md:hidden flex flex-col items-end ${currentTrack ? 'bottom-28 left-5' : 'bottom-4 right-4'}`}>
         <AnimatePresence>
           {isAddMenuOpen && (
             <motion.div

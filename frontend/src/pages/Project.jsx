@@ -403,7 +403,7 @@ export default function Project({ user }) {
       {/* Add Tracks Button — fixed position, never moves */}
       <button
         onClick={() => setIsUploadOpen(true)}
-        className="fixed bottom-6 right-8 z-50 flex items-center gap-2 rounded-full bg-primary-label px-5 py-3 text-sm font-semibold text-primary-background shadow-2xl transition-transform hover:scale-105"
+        className={`fixed z-[60] flex items-center gap-2 rounded-full bg-primary-label px-5 py-3 text-sm font-semibold text-primary-background shadow-2xl transition-transform hover:scale-105 ${currentTrack ? 'bottom-28 left-6' : 'bottom-6 right-8'}`}
         aria-label="Add tracks"
       >
         <Plus className="h-4 w-4" />
