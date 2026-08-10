@@ -698,26 +698,23 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
-      const eventSource = new EventSource(`${apiUrl}/api/convert/status/${data.jobId}`);
-      eventSource.onmessage = (e) => {
-        const parsed = JSON.parse(e.data);
-        if (parsed.error) {
-          eventSource.close();
-          setConversionProgress(null);
-          alert(parsed.error);
-        } else if (parsed.done) {
-          eventSource.close();
+      const pollStatus = async () => {
+        const statusRes = await fetch(`${apiUrl}/api/convert/status/${data.jobId}?poll=1`);
+        const parsed = await statusRes.json();
+        if (!statusRes.ok) throw new Error(parsed.error || 'Conversion job is no longer available.');
+        if (parsed.error) throw new Error(parsed.error);
+        setConversionProgress(parsed.progress || 0);
+        if (parsed.done) {
           setConversionProgress(null);
           navigate(`/project/${parsed.project.id}`);
-        } else {
-          setConversionProgress(parsed.progress || 0);
+          return;
         }
+        window.setTimeout(pollStatus, 1500);
       };
-      eventSource.onerror = () => {
-        eventSource.close();
+      pollStatus().catch((error) => {
         setConversionProgress(null);
-        alert('Lost connection to server during conversion.');
-      };
+        alert(error.message || 'Conversion status could not be loaded.');
+      });
     } catch (err) {
       setConversionProgress(null);
       alert('Upload failed: ' + err.message);

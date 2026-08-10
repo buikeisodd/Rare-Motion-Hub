@@ -763,6 +763,11 @@ const convertVideo = async (req, res, next) => {
 const getConvertStatus = async (req, res, next) => {
   try {
     const { jobId } = req.params;
+    if (req.query.poll === '1') {
+      const job = conversionJobs[jobId];
+      if (!job) return res.status(404).json({ error: 'Job not found or already expired.' });
+      return res.json({ progress: job.progress, done: job.done, project: job.project, track: job.track, error: job.error });
+    }
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
