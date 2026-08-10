@@ -5,6 +5,10 @@ const { Schema } = mongoose;
 const UserSchema = new Schema({
   id: { type: String, required: true, unique: true },
   name: String,
+  username: String,
+  bio: String,
+  followers: [String],
+  following: [String],
   email: { type: String, required: true, unique: true },
   passwordHash: String,
   avatarUrl: String,

@@ -6,7 +6,7 @@ const { removeDirIfExists, getUserDir, uploadDir, coverDir, avatarDir } = requir
 const { cloudinary, hasCloudinaryConfig } = require('../config/cloudinary');
 const { invalidateCache } = require('../config/redis');
 const { AppError } = require('../middlewares/error.middleware');
-const { BASE_URL } = require('../utils/helpers');
+const { BASE_URL, publicUser } = require('../utils/helpers');
 
 const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV === 'production' ? null : 'fallback_secret');
 
@@ -31,6 +31,10 @@ const register = async (req, res, next) => {
     const newUser = {
       id,
       name,
+      username: name.toLowerCase().replace(/[^a-z0-9_]/g, '_'),
+      bio: '',
+      followers: [],
+      following: [],
       email,
       passwordHash,
       avatarUrl: '',
@@ -40,7 +44,7 @@ const register = async (req, res, next) => {
     await User.create(newUser);
     
     const token = jwt.sign({ userId: id }, JWT_SECRET, { expiresIn: '7d' });
-    const userSafe = { id: newUser.id, name: newUser.name, email: newUser.email, avatarUrl: newUser.avatarUrl };
+    const userSafe = { ...publicUser(newUser), email: newUser.email };
     res.json({ user: userSafe, token });
   } catch (error) {
     next(error);
@@ -61,7 +65,7 @@ const login = async (req, res, next) => {
     if (!isMatch) return next(new AppError('Invalid email or password.', 401));
 
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
-    const userSafe = { id: user.id, name: user.name, email: user.email, avatarUrl: user.avatarUrl };
+    const userSafe = { ...publicUser(user), email: user.email };
     res.json({ user: userSafe, token });
   } catch (error) {
     next(error);
@@ -75,8 +79,12 @@ const getUser = async (req, res, next) => {
     if (!user) return next(new AppError('User not found.', 404));
     
     // Don't return password hash
-    const { passwordHash, ...userSafe } = user;
-    res.json({ user: userSafe });
+    const { passwordHash, email, ...userSafe } = user;
+    const tracks = db.tracks.filter((track) => track.userId === user.id && track.isPublished).map((track) => {
+      const project = db.projects.find((item) => item.id === track.projectId);
+      return { id: track.id, title: track.title, url: track.url, projectId: track.projectId, coverArt: project?.coverArt || null, publishedAt: track.publishedAt };
+    });
+    res.json({ user: { ...publicUser(userSafe), email }, isFollowing: (user.followers || []).includes(req.userId), posts: tracks });
   } catch (error) {
     next(error);
   }
@@ -84,7 +92,7 @@ const getUser = async (req, res, next) => {
 
 const updateUser = async (req, res, next) => {
   try {
-    const { name } = req.body;
+    const { name, username, bio } = req.body;
     const db = ensureDBShape(await readDB());
     const userIndex = db.users.findIndex((user) => user.id === req.params.id);
     if (userIndex === -1) return next(new AppError('User not found.', 404));
@@ -92,12 +100,29 @@ const updateUser = async (req, res, next) => {
     const nextName = name?.trim();
     if (!nextName) return next(new AppError('Username is required.', 400));
 
-    db.users[userIndex] = { ...db.users[userIndex], name: nextName, updatedAt: new Date().toISOString() };
+    const nextUsername = String(username || db.users[userIndex].username || nextName).trim().toLowerCase().replace(/[^a-z0-9_]/g, '_');
+    db.users[userIndex] = { ...db.users[userIndex], name: nextName, username: nextUsername, bio: String(bio || '').trim().slice(0, 160), updatedAt: new Date().toISOString() };
     await writeDB(db);
     res.json({ user: db.users[userIndex] });
   } catch (error) {
     next(error);
   }
+};
+
+const toggleFollow = async (req, res, next) => {
+  try {
+    const db = ensureDBShape(await readDB());
+    if (req.params.id === req.userId) return next(new AppError('You cannot follow yourself.', 400));
+    const target = db.users.find((item) => item.id === req.params.id);
+    const actor = db.users.find((item) => item.id === req.userId);
+    if (!target || !actor) return next(new AppError('User not found.', 404));
+    target.followers ||= []; actor.following ||= [];
+    const index = target.followers.indexOf(req.userId);
+    if (index >= 0) { target.followers.splice(index, 1); actor.following = actor.following.filter((id) => id !== target.id); }
+    else { target.followers.push(req.userId); actor.following.push(target.id); }
+    await writeDB(db);
+    res.json({ following: index < 0, followerCount: target.followers.length });
+  } catch (error) { next(error); }
 };
 
 const uploadUserAvatar = async (req, res, next) => {
@@ -167,6 +192,7 @@ module.exports = {
   login,
   getUser,
   updateUser,
+  toggleFollow,
   uploadUserAvatar,
   deleteUser
 };

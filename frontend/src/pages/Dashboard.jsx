@@ -461,13 +461,15 @@ function ProfilePanel({ isOpen, user, theme, onThemeChange, onEditProfile, onLog
 
 function EditProfileModal({ isOpen, user, onClose, onSave, saving, error }) {
   const [name, setName] = useState(user.name);
+  const [username, setUsername] = useState(user.username || user.name?.toLowerCase().replace(/\s+/g, '_'));
+  const [bio, setBio] = useState(user.bio || '');
   const [avatarFile, setAvatarFile] = useState(null);
   const fileInputRef = useRef(null);
   const avatarPreview = avatarFile ? URL.createObjectURL(avatarFile) : user.avatarUrl;
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    onSave({ name, avatarFile });
+    onSave({ name, username, bio, avatarFile });
   };
 
   return (
@@ -521,6 +523,9 @@ function EditProfileModal({ isOpen, user, onClose, onSave, saving, error }) {
                 <Edit3 className="h-4 w-4 text-secondary-label" />
               </span>
             </label>
+
+            <label className="w-full"><span className="mb-2 block text-center text-xs text-secondary-label">Handle</span><input value={username} onChange={(event) => setUsername(event.target.value)} className="h-11 w-full rounded-xl panel-input-bg px-4 text-sm text-primary-label outline-none" /></label>
+            <label className="w-full"><span className="mb-2 block text-center text-xs text-secondary-label">Bio</span><textarea value={bio} onChange={(event) => setBio(event.target.value)} maxLength={160} rows={3} className="w-full resize-none rounded-xl panel-input-bg p-3 text-sm text-primary-label outline-none" placeholder="Tell people about yourself" /></label>
 
             {error && <p className="text-center text-xs text-red-400">{error}</p>}
 
@@ -728,14 +733,14 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
     alert(`${feature} is coming soon.`);
   };
 
-  const saveProfile = async ({ name, avatarFile }) => {
+  const saveProfile = async ({ name, username, bio, avatarFile }) => {
     setProfileSaving(true);
     setProfileError('');
     try {
       const profileRes = await fetch(`${apiUrl}/api/auth/${user.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name })
+        body: JSON.stringify({ name, username, bio })
       });
       const profileData = await profileRes.json();
       if (!profileRes.ok) throw new Error(profileData.error || 'Could not update profile.');
