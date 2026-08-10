@@ -117,6 +117,7 @@ const MessageSchema = new Schema({
   forwarded: Boolean,
   createdAt: { type: String, default: () => new Date().toISOString() },
   readBy: [String],
+  messageKind: String,
 });
 
 const CallSchema = new Schema({

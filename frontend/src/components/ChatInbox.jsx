@@ -59,7 +59,7 @@ function ConvoItem({ convo, isActive, onClick }) {
       <ProfileAvatar user={convo.partner} isGroup={isGroup} size="h-11 w-11" />
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
-          <span className={`truncate text-sm text-primary-label ${hasUnread ? 'font-extrabold' : 'font-semibold'}`}>{name}</span>
+          <span className={`truncate text-sm text-primary-label ${hasUnread ? 'font-extrabold' : 'font-semibold'}`}>{name}{convo.isRequest && <span className="ml-2 rounded-full bg-highlight px-2 py-0.5 text-[10px] font-semibold text-secondary-label">Request</span>}</span>
           {time && <span className="shrink-0 text-[11px] text-secondary-label">{time}</span>}
         </div>
         {lastText ? (

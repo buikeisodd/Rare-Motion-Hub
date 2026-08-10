@@ -18,6 +18,19 @@ const { ensureUserDir, removeFileIfExists, chatDir } = require('../utils/fileHel
 const fs = require('fs');
 const path = require('path');
 
+const getDirectMessageAccess = async (senderId, recipientId) => {
+  const [sender, recipient, previous] = await Promise.all([
+    User.findOne({ id: senderId }).lean(),
+    User.findOne({ id: recipientId }).lean(),
+    Message.find({ conversationType: 'dm', senderId, recipientId }).lean()
+  ]);
+  if (!sender || !recipient) return { error: 'User not found.', status: 404 };
+  const connected = (sender.following || []).includes(recipientId) || (recipient.following || []).includes(senderId);
+  if (connected) return { kind: 'message' };
+  if (previous.length) return { error: 'You have already sent a message request to this user.', status: 403 };
+  return { kind: 'request' };
+};
+
 const storeChatMedia = async (file, userId) => {
   if (hasCloudinaryConfig) {
     try {
@@ -225,11 +238,16 @@ const sendMessageController = async (req, res, next) => {
     if (!sender) return next(new AppError('Unauthorized user.', 401));
 
     const type = conversationType || 'dm';
+
+    const access = type === 'dm' ? await getDirectMessageAccess(senderId, recipientId) : { kind: 'message' };
+    if (access.error) return next(new AppError(access.error, access.status));
+
     const msg = {
       id: makeId(),
       senderId,
       recipientId: type === 'group' ? null : recipientId,
       conversationType: type,
+      messageKind: access.kind,
       text: text.trim(),
       attachments: [],
       replyToMessageId: replyToMessageId || null,
@@ -274,6 +292,9 @@ const sendMediaMessage = async (req, res, next) => {
       return next(new AppError('recipientId required for DM.', 400));
     }
 
+    const access = conversationType === 'dm' ? await getDirectMessageAccess(senderId, recipientId) : { kind: 'message' };
+    if (access.error) { removeFileIfExists(req.file.path); return next(new AppError(access.error, access.status)); }
+
     const attachmentType = req.file.mimetype.startsWith('image/')
       ? 'image'
       : req.file.mimetype.startsWith('video/')
@@ -290,6 +311,7 @@ const sendMediaMessage = async (req, res, next) => {
       senderId,
       recipientId,
       conversationType,
+      messageKind: access.kind,
       text: text || '',
       replyToMessageId: replyToMessageId || null,
       attachments: [{
@@ -417,6 +439,7 @@ const getConversations = async (req, res, next) => {
         type: 'dm',
         partner: publicUser(other),
         lastMessage: last ? hydrateMessage(db, last) : null,
+        isRequest: Boolean(last?.messageKind === 'request' && last.senderId === other.id),
         unreadCount,
         updatedAt: last?.createdAt || null
       });
