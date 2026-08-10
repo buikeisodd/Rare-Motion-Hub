@@ -341,6 +341,22 @@ const addFeedComment = async (req, res, next) => {
     const comment = { id: makeId(), userId: req.userId, text, parentId, likes: [], createdAt: new Date().toISOString() };
     track.comments ||= [];
     track.comments.push(comment);
+    if (parentId) {
+      const parent = track.comments.find((entry) => entry.id === parentId);
+      const actor = db.users.find((user) => user.id === req.userId);
+      if (parent?.userId && parent.userId !== req.userId) {
+        db.notifications.push({
+          id: makeId(),
+          userId: parent.userId,
+          type: 'comment_reply',
+          actor: publicUser(actor),
+          track: { id: track.id, title: track.title },
+          message: `${actor?.name || 'Someone'} replied to your comment`,
+          read: false,
+          createdAt: new Date().toISOString()
+        });
+      }
+    }
     await writeDB(db);
     const commenter = db.users.find((user) => user.id === req.userId);
     res.status(201).json({ comment: { ...comment, likeCount: 0, likedByMe: false, user: commenter ? { id: commenter.id, name: commenter.name, avatarUrl: commenter.avatarUrl || null } : null } });
