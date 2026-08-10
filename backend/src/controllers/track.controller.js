@@ -99,6 +99,10 @@ const promoteTrackToCloudinary = async (track, localPath, userId) => {
 const uploadTrackController = async (req, res, next) => {
   try {
     if (!req.file) return next(new AppError('No audio file uploaded', 400));
+    if (process.env.NODE_ENV === 'production' && !hasCloudinaryConfig) {
+      removeFileIfExists(req.file.path);
+      return next(new AppError('Durable media storage is not configured on the production server.', 503));
+    }
     const { title, projectId, artist, producer } = req.body;
     const userId = req.userId;
     const db = ensureDBShape(await readDB());
@@ -112,7 +116,9 @@ const uploadTrackController = async (req, res, next) => {
       return next(new AppError('Project not found', 404));
     }
     
-    const storedFile = storeTrackLocally(req.file, userId);
+    const storedFile = hasCloudinaryConfig
+      ? await storeTrackFile(req.file, userId)
+      : storeTrackLocally(req.file, userId);
     
     const trackId = makeId();
     const newTrack = {
@@ -135,7 +141,7 @@ const uploadTrackController = async (req, res, next) => {
     invalidateCache(`workspace:${userId}`);
     if (projectId) invalidateCache(`project:${projectId}:${userId}`);
     res.json({ track: normalizeTrack(newTrack) });
-    promoteTrackToCloudinary(newTrack, storedFile.path, userId);
+    if (storedFile.path) promoteTrackToCloudinary(newTrack, storedFile.path, userId);
   } catch (error) {
     next(error);
   }
