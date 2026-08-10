@@ -55,74 +55,64 @@ export default function UploadModal({ isOpen, onClose, onSuccess, userId, projec
     setUploadProgress(0);
     setError('');
 
-    const formData = new FormData();
-    formData.append('track', file);
-    formData.append('title', title);
-    formData.append('artist', artist);
-    formData.append('producer', producer);
-    formData.append('userId', userId);
-    if (projectId) formData.append('projectId', projectId);
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+      const token = localStorage.getItem('token');
+      const auth = token ? { Authorization: `Bearer ${token}` } : {};
+      const signatureRes = await fetch(`${apiUrl}/api/upload/signature`, { headers: auth });
+      const signature = await signatureRes.json();
+      if (!signatureRes.ok) throw new Error(signature.error || 'Cloudinary storage is unavailable.');
 
-    const xhr = new XMLHttpRequest();
-    xhrRef.current = xhr;
+      const cloudForm = new FormData();
+      cloudForm.append('file', file);
+      cloudForm.append('api_key', signature.apiKey);
+      cloudForm.append('timestamp', String(signature.timestamp));
+      cloudForm.append('folder', signature.folder);
+      cloudForm.append('signature', signature.signature);
+      const cloudinaryResult = await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhrRef.current = xhr;
+        xhr.open('POST', `https://api.cloudinary.com/v1_1/${signature.cloudName}/${signature.resourceType}/upload`);
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) setUploadProgress(Math.round((event.loaded / event.total) * 100));
+        };
+        xhr.onload = () => {
+          xhrRef.current = null;
+          let data;
+          try { data = JSON.parse(xhr.responseText || '{}'); } catch { return reject(new Error('Cloudinary returned an invalid response.')); }
+          if (xhr.status >= 200 && xhr.status < 300) resolve(data);
+          else reject(new Error(data.error?.message || 'Cloudinary upload failed.'));
+        };
+        xhr.onerror = () => reject(new Error('Could not connect to Cloudinary. Check your network or Cloudinary upload settings.'));
+        xhr.ontimeout = () => reject(new Error('Cloudinary upload timed out.'));
+        xhr.send(cloudForm);
+      });
 
-    // Minimum timeout of 5 minutes. If file is large, allow more time (assume 50KB/s minimum transfer speed)
-    xhr.timeout = Math.max(300000, Math.ceil((file.size / 50000) * 1000));
-
-    xhr.upload.onprogress = (event) => {
-      if (event.lengthComputable) {
-        setUploadProgress(Math.round((event.loaded / event.total) * 100));
-      }
-    };
-
-    xhr.onload = () => {
-      setLoading(false);
+      const finalizeRes = await fetch(`${apiUrl}/api/upload/cloudinary`, {
+        method: 'POST', headers: { ...auth, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title, artist, producer, projectId,
+          secureUrl: cloudinaryResult.secure_url,
+          publicId: cloudinaryResult.public_id,
+          resourceType: cloudinaryResult.resource_type,
+          format: cloudinaryResult.format,
+          bytes: cloudinaryResult.bytes,
+          duration: cloudinaryResult.duration
+        })
+      });
+      const data = await finalizeRes.json();
+      if (!finalizeRes.ok) throw new Error(data.error || 'Could not save uploaded track.');
+      setUploadProgress(100);
+      setUploadComplete(true);
+      window.setTimeout(() => {
+        setFile(null); setTitle(''); setArtist(''); setProducer(''); setUploadProgress(0); setUploadComplete(false); onSuccess(data.track);
+      }, 650);
+    } catch (error) {
       xhrRef.current = null;
-      try {
-        const data = JSON.parse(xhr.responseText || '{}');
-        if (xhr.status >= 200 && xhr.status < 300) {
-          setUploadProgress(100);
-          setUploadComplete(true);
-          window.setTimeout(() => {
-            setFile(null);
-            setTitle('');
-            setArtist('');
-            setProducer('');
-            setUploadProgress(0);
-            setUploadComplete(false);
-            onSuccess(data.track);
-          }, 650);
-        } else {
-          setError(data.error || 'Upload failed');
-        }
-      } catch (err) {
-        setError('Failed to parse server response.');
-      }
-    };
-
-    xhr.onerror = () => {
+      setError(error.message || 'Upload failed.');
+    } finally {
       setLoading(false);
-      xhrRef.current = null;
-      setError('Network error: Could not connect to the server. Please check your internet connection or server status.');
-    };
-
-    xhr.ontimeout = () => {
-      setLoading(false);
-      xhrRef.current = null;
-      setError('Upload timed out. The server took too long to respond or your connection is too slow.');
-    };
-
-    xhr.onabort = () => {
-      setLoading(false);
-      xhrRef.current = null;
-      setUploadProgress(0);
-      setError('Upload cancelled.');
-    };
-
-    xhr.open('POST', `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api/upload`);
-    const token = localStorage.getItem('token');
-    if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-    xhr.send(formData);
+    }
   };
 
   return (

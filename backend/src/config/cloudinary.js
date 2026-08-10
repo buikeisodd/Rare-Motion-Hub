@@ -18,4 +18,4 @@ const configCloudinary = () => {
   }
 };
 
-module.exports = { cloudinary, configCloudinary, hasCloudinaryConfig };
+module.exports = { cloudinary, configCloudinary, hasCloudinaryConfig, cloudName: process.env.CLOUDINARY_CLOUD_NAME || '' };

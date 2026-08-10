@@ -1,6 +1,8 @@
 const express = require('express');
 const {
   uploadTrackController,
+  getTrackUploadSignature,
+  createCloudinaryTrack,
   deleteTrack,
   patchTrack,
   getTrackInsights,
@@ -22,6 +24,8 @@ const router = express.Router();
 
 // Track operations
 router.post('/upload', requireUserId, uploadTrack.single('track'), uploadTrackController);
+router.get('/upload/signature', requireUserId, getTrackUploadSignature);
+router.post('/upload/cloudinary', requireUserId, createCloudinaryTrack);
 router.delete('/tracks/:id', requireUserId, deleteTrack);
 router.patch('/tracks/:id', requireUserId, patchTrack);
 router.get('/tracks/:id/insights', requireUserId, getTrackInsights);

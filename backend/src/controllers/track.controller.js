@@ -14,7 +14,7 @@ const {
 } = require('../utils/helpers');
 const { runDemucs, convertToWav, findStemOutputDir } = require('../services/audio.service');
 const { getOrSetCache, invalidateCache } = require('../config/redis');
-const { cloudinary, hasCloudinaryConfig } = require('../config/cloudinary');
+const { cloudinary, hasCloudinaryConfig, cloudName } = require('../config/cloudinary');
 const { ensureUserDir, removeDirIfExists, removeFileIfExists, uploadDir, stemsDir } = require('../utils/fileHelper');
 const { AppError } = require('../middlewares/error.middleware');
 
@@ -139,6 +139,47 @@ const uploadTrackController = async (req, res, next) => {
     if (projectId) invalidateCache(`project:${projectId}:${userId}`);
     res.json({ track: normalizeTrack(newTrack) });
     if (storedFile.path) promoteTrackToCloudinary(newTrack, storedFile.path, userId);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getTrackUploadSignature = (req, res, next) => {
+  try {
+    if (!hasCloudinaryConfig) return next(new AppError('Cloudinary storage is not configured.', 503));
+    const timestamp = Math.floor(Date.now() / 1000);
+    const folder = 'raremotionhub/tracks';
+    const signature = cloudinary.utils.api_sign_request({ folder, timestamp }, process.env.CLOUDINARY_API_SECRET);
+    res.json({ timestamp, folder, signature, apiKey: process.env.CLOUDINARY_API_KEY, cloudName, resourceType: 'video' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const createCloudinaryTrack = async (req, res, next) => {
+  try {
+    const { title, artist, producer, projectId, secureUrl, publicId, resourceType, format, bytes, duration } = req.body;
+    const userId = req.userId;
+    if (!secureUrl || !publicId) return next(new AppError('Cloudinary upload metadata is incomplete.', 400));
+    const db = ensureDBShape(await readDB());
+    const uploader = db.users.find((user) => user.id === userId);
+    if (!uploader) return next(new AppError('Unauthorized user.', 401));
+    if (projectId && !db.projects.some((project) => project.id === projectId && project.userId === userId)) {
+      return next(new AppError('Project not found', 404));
+    }
+    const track = {
+      id: makeId(), userId, projectId: projectId || null,
+      title: title || publicId.split('/').pop(), artist: artist || '', producer: producer || '',
+      filename: null, url: secureUrl, publicId, resourceType: resourceType || 'video',
+      format: format || null, size: Number(bytes) || 0, duration: Number(duration) || 0,
+      mimeType: format === 'wav' ? 'audio/wav' : 'audio/mpeg',
+      uploader: { id: uploader.id, name: uploader.name }, uploadedAt: new Date().toISOString()
+    };
+    db.tracks.push(track);
+    await writeDB(db);
+    invalidateCache(`workspace:${userId}`);
+    if (projectId) invalidateCache(`project:${projectId}:${userId}`);
+    res.status(201).json({ track: normalizeTrack(track) });
   } catch (error) {
     next(error);
   }
@@ -714,6 +755,8 @@ const getConvertStatus = async (req, res, next) => {
 
 module.exports = {
   uploadTrackController,
+  getTrackUploadSignature,
+  createCloudinaryTrack,
   deleteTrack,
   patchTrack,
   getTrackInsights,
