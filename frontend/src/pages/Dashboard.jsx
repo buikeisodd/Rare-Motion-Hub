@@ -552,6 +552,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
   const [conversionProgress, setConversionProgress] = useState(null);
   const [isConvertPickerOpen, setIsConvertPickerOpen] = useState(false);
   const [convertFormat, setConvertFormat] = useState('mp3');
+  const [convertFile, setConvertFile] = useState(null);
   const [draggingId, setDraggingId] = useState(null);
   const convertInputRef = useRef(null);
   const navigate = useNavigate();
@@ -677,8 +678,8 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
     }
   };
 
-  const handleConvert = async (event) => {
-    const file = event.target.files?.[0];
+  const handleConvert = async () => {
+    const file = convertFile;
     if (!file) return;
     
     setIsAddMenuOpen(false);
@@ -727,6 +728,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
 
   const showComingSoon = (feature) => {
     setIsAddMenuOpen(false);
+    setIsConvertPickerOpen(false);
     setIsConvertPickerOpen(false);
     alert(`${feature} is coming soon.`);
   };
@@ -951,18 +953,25 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 p-4" onClick={() => setIsConvertPickerOpen(false)}>
           <div className="w-full max-w-sm rounded-2xl border border-border panel-bg p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}>
             <h3 className="mb-1 text-lg font-semibold text-primary-label">Convert file</h3>
-            <p className="mb-4 text-sm text-secondary-label">Choose the output audio format.</p>
+            <p className="mb-4 text-sm text-secondary-label">Choose a source file and output format.</p>
+            <button onClick={() => convertInputRef.current?.click()} className="mb-4 flex w-full items-center gap-3 rounded-xl border border-dashed border-border px-3 py-3 text-left text-sm text-primary-label hover:bg-highlight">
+              <UploadCloud className="h-4 w-4" />
+              <span className="min-w-0 truncate">{convertFile?.name || 'Choose audio or video file'}</span>
+            </button>
             <div className="grid grid-cols-3 gap-2">
               {['mp3', 'wav', 'm4a'].map((format) => (
-                <button key={format} onClick={() => { setConvertFormat(format); setIsConvertPickerOpen(false); window.setTimeout(() => convertInputRef.current?.click(), 0); }} className={`rounded-xl border px-3 py-3 text-sm font-semibold uppercase transition-colors ${convertFormat === format ? 'border-primary-label bg-primary-label text-primary-background' : 'border-border text-primary-label hover:bg-highlight'}`}>
+                <button key={format} onClick={() => setConvertFormat(format)} className={`rounded-xl border px-3 py-3 text-sm font-semibold uppercase transition-colors ${convertFormat === format ? 'border-primary-label bg-primary-label text-primary-background' : 'border-border text-primary-label hover:bg-highlight'}`}>
                   {format}
                 </button>
               ))}
             </div>
+            <button onClick={handleConvert} disabled={!convertFile} className="mt-4 w-full rounded-xl bg-primary-label px-4 py-3 text-sm font-semibold text-primary-background disabled:cursor-not-allowed disabled:opacity-40">
+              Convert to {convertFormat.toUpperCase()}
+            </button>
           </div>
         </div>
       )}
-      <input ref={convertInputRef} type="file" accept="audio/*,video/*" className="hidden" onChange={handleConvert} />
+      <input ref={convertInputRef} type="file" accept="audio/*,video/*,.mp3,.wav,.m4a,.mp4,.mov,.webm" className="hidden" onChange={(event) => setConvertFile(event.target.files?.[0] || null)} />
 
       <ChatInbox user={user} isOpen={isChatOpen} onToggle={() => setIsChatOpen((open) => !open)} onConversationsChange={setConversations} />
 
