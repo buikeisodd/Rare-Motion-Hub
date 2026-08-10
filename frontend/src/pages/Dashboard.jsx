@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bell, ChevronRight, Circle, Compass, Disc3, Edit3, Folder, FolderOpen, FolderPlus, LogOut, MoreHorizontal, Music, Palette, Play, Pause, Plus, Trash2, UploadCloud, Video, X, User } from 'lucide-react';
+import { Bell, ChevronRight, Circle, Compass, Disc3, Edit3, Folder, FolderOpen, FolderPlus, LogOut, MoreHorizontal, Music, Palette, Play, Pause, Plus, Settings, Trash2, UploadCloud, Video, X, User } from 'lucide-react';
 import StarlightLogo from '../components/StarlightLogo';
 import ConfirmModal from '../components/ConfirmModal';
 import MarqueeInput from '../components/MarqueeInput';
@@ -850,18 +850,9 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
           </div>
 
           <div className="relative">
-            <button onClick={() => { setIsProfileOpen((open) => !open); setIsNotificationsOpen(false); setIsAddMenuOpen(false); }} className="grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label={`Open ${user.name} profile`}>
-              <ProfileAvatar user={user} size="h-8 w-8" />
+            <button onClick={() => navigate('/settings')} className="grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Open settings">
+              <Settings className="h-6 w-6" />
             </button>
-            <ProfilePanel
-              isOpen={isProfileOpen}
-              user={user}
-              theme={theme}
-              onThemeChange={setTheme}
-              onEditProfile={() => setIsEditProfileOpen(true)}
-              onLogout={onLogout}
-              onDeleteAccount={deleteAccount}
-            />
           </div>
 
           <button onClick={() => navigate('/feed')} className="grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Open feed">
