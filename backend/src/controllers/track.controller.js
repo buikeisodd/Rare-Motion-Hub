@@ -286,7 +286,7 @@ const getFeed = async (req, res, next) => {
           likedByMe: (track.likes || []).includes(req.userId),
           comments: (track.comments || []).map((comment) => {
             const commenter = db.users.find((user) => user.id === comment.userId);
-            return { ...comment, user: commenter ? { id: commenter.id, name: commenter.name, avatarUrl: commenter.avatarUrl || null } : null };
+            return { ...comment, likes: comment.likes || [], likeCount: (comment.likes || []).length, likedByMe: (comment.likes || []).includes(req.userId), user: commenter ? { id: commenter.id, name: commenter.name, avatarUrl: commenter.avatarUrl || null } : null };
           })
         };
       });
@@ -294,6 +294,19 @@ const getFeed = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
+};
+
+const deleteFeed = async (req, res, next) => {
+  try {
+    const db = ensureDBShape(await readDB());
+    const track = db.tracks.find((item) => item.id === req.params.id);
+    if (!track || trackOwnerId(track) !== req.userId) return next(new AppError('Preview not found', 404));
+    track.isPublished = false;
+    track.publishedAt = null;
+    await writeDB(db);
+    invalidateCache(`workspace:${req.userId}`);
+    res.json({ success: true });
+  } catch (error) { next(error); }
 };
 
 const toggleFeedLike = async (req, res, next) => {
@@ -317,12 +330,28 @@ const addFeedComment = async (req, res, next) => {
     const db = ensureDBShape(await readDB());
     const track = db.tracks.find((item) => item.id === req.params.id && item.isPublished);
     if (!track) return next(new AppError('Preview not found', 404));
-    const comment = { id: makeId(), userId: req.userId, text, createdAt: new Date().toISOString() };
+    const parentId = req.body.parentId ? String(req.body.parentId) : null;
+    if (parentId && !(track.comments || []).some((entry) => entry.id === parentId)) return next(new AppError('Comment not found', 404));
+    const comment = { id: makeId(), userId: req.userId, text, parentId, likes: [], createdAt: new Date().toISOString() };
     track.comments ||= [];
     track.comments.push(comment);
     await writeDB(db);
     const commenter = db.users.find((user) => user.id === req.userId);
-    res.status(201).json({ comment: { ...comment, user: commenter ? { id: commenter.id, name: commenter.name, avatarUrl: commenter.avatarUrl || null } : null } });
+    res.status(201).json({ comment: { ...comment, likeCount: 0, likedByMe: false, user: commenter ? { id: commenter.id, name: commenter.name, avatarUrl: commenter.avatarUrl || null } : null } });
+  } catch (error) { next(error); }
+};
+
+const toggleCommentLike = async (req, res, next) => {
+  try {
+    const db = ensureDBShape(await readDB());
+    const track = db.tracks.find((item) => item.id === req.params.id && item.isPublished);
+    const comment = track?.comments?.find((entry) => entry.id === req.params.commentId);
+    if (!comment) return next(new AppError('Comment not found', 404));
+    comment.likes ||= [];
+    const index = comment.likes.indexOf(req.userId);
+    if (index >= 0) comment.likes.splice(index, 1); else comment.likes.push(req.userId);
+    await writeDB(db);
+    res.json({ liked: index < 0, likeCount: comment.likes.length });
   } catch (error) { next(error); }
 };
 
@@ -916,9 +945,11 @@ module.exports = {
   patchTrack,
   publishTrack,
   getFeed,
+  deleteFeed,
   toggleFeedLike,
   addFeedComment,
   deleteFeedComment,
+  toggleCommentLike,
   getTrackInsights,
   replaceAudio,
   switchVersion,

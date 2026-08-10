@@ -7,9 +7,11 @@ const {
   patchTrack,
   publishTrack,
   getFeed,
+  deleteFeed,
   toggleFeedLike,
   addFeedComment,
   deleteFeedComment,
+  toggleCommentLike,
   getTrackInsights,
   replaceAudio,
   switchVersion,
@@ -35,9 +37,11 @@ router.delete('/tracks/:id', requireUserId, deleteTrack);
 router.patch('/tracks/:id', requireUserId, patchTrack);
 router.patch('/tracks/:id/publish', requireUserId, publishTrack);
 router.get('/feed', requireUserId, getFeed);
+router.delete('/feed/tracks/:id', requireUserId, deleteFeed);
 router.post('/feed/tracks/:id/like', requireUserId, toggleFeedLike);
 router.post('/feed/tracks/:id/comments', requireUserId, addFeedComment);
 router.delete('/feed/tracks/:id/comments/:commentId', requireUserId, deleteFeedComment);
+router.post('/feed/tracks/:id/comments/:commentId/like', requireUserId, toggleCommentLike);
 router.get('/tracks/:id/insights', requireUserId, getTrackInsights);
 router.post('/tracks/:id/replace-audio', requireUserId, uploadTrack.single('track'), replaceAudio);
 

@@ -53,7 +53,7 @@ const TrackSchema = new Schema({
   previewStart: { type: Number, default: 0 },
   previewEnd: Number,
   likes: [String],
-  comments: [{ id: String, userId: String, text: String, createdAt: String }],
+  comments: [{ id: String, userId: String, text: String, parentId: String, createdAt: String, likes: [String] }],
 });
 
 const FolderSchema = new Schema({
