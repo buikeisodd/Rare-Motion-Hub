@@ -1,5 +1,5 @@
 const express = require('express');
-const { register, login, getUser, updateUser, toggleFollow, uploadUserAvatar, deleteUser } = require('../controllers/auth.controller');
+const { register, login, getUser, updateUser, toggleFollow, uploadUserAvatar, deleteUser, deactivateUser } = require('../controllers/auth.controller');
 const { requireUserId } = require('../middlewares/auth.middleware');
 const { uploadAvatar } = require('../middlewares/upload.middleware');
 
@@ -13,5 +13,6 @@ router.put('/:id', requireUserId, updateUser);
 router.post('/:id/follow', requireUserId, toggleFollow);
 router.post('/:id/avatar', requireUserId, uploadAvatar.single('avatar'), uploadUserAvatar);
 router.delete('/:id', requireUserId, deleteUser);
+router.post('/:id/deactivate', requireUserId, deactivateUser);
 
 module.exports = router;

@@ -60,6 +60,7 @@ const login = async (req, res, next) => {
 
     const user = await User.findOne({ email }).lean();
     if (!user || !user.passwordHash) return next(new AppError('Invalid email or password.', 401));
+    if (user.isDeactivated) return next(new AppError('This account is deactivated.', 403));
 
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) return next(new AppError('Invalid email or password.', 401));
@@ -187,6 +188,19 @@ const deleteUser = async (req, res, next) => {
   }
 };
 
+const deactivateUser = async (req, res, next) => {
+  try {
+    const db = ensureDBShape(await readDB());
+    const index = db.users.findIndex((item) => item.id === req.params.id);
+    if (index < 0) return next(new AppError('User not found.', 404));
+    const deactivatedAt = new Date().toISOString();
+    db.users[index] = { ...db.users[index], isDeactivated: true, deactivatedAt, updatedAt: deactivatedAt };
+    await writeDB(db);
+    await User.updateOne({ id: req.params.id }, { isDeactivated: true, deactivatedAt });
+    res.json({ success: true });
+  } catch (error) { next(error); }
+};
+
 module.exports = {
   register,
   login,
@@ -194,5 +208,6 @@ module.exports = {
   updateUser,
   toggleFollow,
   uploadUserAvatar,
-  deleteUser
+  deleteUser,
+  deactivateUser
 };

@@ -9,6 +9,8 @@ const UserSchema = new Schema({
   bio: String,
   followers: [String],
   following: [String],
+  isDeactivated: { type: Boolean, default: false },
+  deactivatedAt: String,
   email: { type: String, required: true, unique: true },
   passwordHash: String,
   avatarUrl: String,
