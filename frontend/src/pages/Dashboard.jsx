@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bell, ChevronRight, Circle, Disc3, Edit3, Folder, FolderOpen, FolderPlus, LogOut, MessageSquare, MoreHorizontal, Music, Palette, Play, Pause, Plus, Trash2, UploadCloud, Video, X, User } from 'lucide-react';
+import { Bell, ChevronRight, Circle, Compass, Disc3, Edit3, Folder, FolderOpen, FolderPlus, LogOut, MoreHorizontal, Music, Palette, Play, Pause, Plus, Trash2, UploadCloud, Video, X, User } from 'lucide-react';
 import StarlightLogo from '../components/StarlightLogo';
 import ConfirmModal from '../components/ConfirmModal';
 import MarqueeInput from '../components/MarqueeInput';
@@ -865,7 +865,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
           </div>
 
           <button onClick={() => navigate('/feed')} className="grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Open feed">
-            <MessageSquare className="h-6 w-6" />
+            <Compass className="h-6 w-6" />
           </button>
           <button onClick={onLogout} className="grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Log out">
             <LogOut className="h-6 w-6" />
