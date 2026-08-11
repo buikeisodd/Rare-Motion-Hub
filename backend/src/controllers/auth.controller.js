@@ -1,17 +1,63 @@
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const { User, Folder, Project, Track, CoverArt, Notification, PlayEvent } = require('../models');
 const { readDB, writeDB, ensureDBShape } = require('../utils/dbHelper');
-const { removeDirIfExists, getUserDir, uploadDir, coverDir, avatarDir } = require('../utils/fileHelper');
+const { removeDirIfExists, removeFileIfExists, getUserDir, uploadDir, coverDir, avatarDir } = require('../utils/fileHelper');
 const { cloudinary, hasCloudinaryConfig } = require('../config/cloudinary');
 const { invalidateCache } = require('../config/redis');
 const { AppError } = require('../middlewares/error.middleware');
 const { BASE_URL, publicUser } = require('../utils/helpers');
+const { hasSmtpConfig, sendVerificationEmail, sendPasswordResetEmail } = require('../utils/email');
 
 const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV === 'production' ? null : 'fallback_secret');
 
 const ensureAuthConfig = () => {
   if (!JWT_SECRET) throw new AppError('Server authentication is not configured.', 500);
+};
+
+const FRONTEND_URL = process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:5173';
+const hashToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
+const makeVerificationToken = () => crypto.randomBytes(32).toString('hex');
+const tokenForUser = (id) => jwt.sign({ userId: id }, JWT_SECRET, { expiresIn: '7d' });
+const userResponse = (user) => ({ ...publicUser(user), email: user.email, emailVerified: user.emailVerified !== false, authProvider: user.authProvider || 'password' });
+
+const createEmailVerification = async (user) => {
+  const verificationToken = makeVerificationToken();
+  const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString();
+  const verificationUrl = `${FRONTEND_URL.replace(/\/$/, '')}/verify-email?token=${verificationToken}`;
+  await User.updateOne(
+    { id: user.id },
+    {
+      emailVerificationTokenHash: hashToken(verificationToken),
+      emailVerificationExpiresAt: expiresAt,
+      updatedAt: new Date().toISOString()
+    }
+  );
+  const emailResult = await sendVerificationEmail({ to: user.email, name: user.name, verificationUrl });
+  return {
+    sent: emailResult.sent,
+    verificationUrl: process.env.NODE_ENV === 'production' ? undefined : verificationUrl
+  };
+};
+
+const createPasswordReset = async (user) => {
+  const resetToken = makeVerificationToken();
+  const expiresAt = new Date(Date.now() + 1000 * 60 * 30).toISOString();
+  const resetUrl = `${FRONTEND_URL.replace(/\/$/, '')}/login?resetToken=${resetToken}`;
+  await User.updateOne(
+    { id: user.id },
+    {
+      passwordResetTokenHash: hashToken(resetToken),
+      passwordResetExpiresAt: expiresAt,
+      updatedAt: new Date().toISOString()
+    }
+  );
+  const emailResult = await sendPasswordResetEmail({ to: user.email, name: user.name, resetUrl });
+  return {
+    sent: emailResult.sent,
+    resetUrl: process.env.NODE_ENV === 'production' ? undefined : resetUrl
+  };
 };
 
 const register = async (req, res, next) => {
@@ -20,6 +66,7 @@ const register = async (req, res, next) => {
     const email = req.body.email?.trim().toLowerCase();
     const password = req.body.password;
     if (!email || !password) return next(new AppError('Email and password are required.', 400));
+    if (String(password).length < 8) return next(new AppError('Password must be at least 8 characters.', 400));
 
     let user = await User.findOne({ email }).lean();
     if (user) return next(new AppError('Email already exists.', 400));
@@ -37,15 +84,23 @@ const register = async (req, res, next) => {
       following: [],
       email,
       passwordHash,
+      emailVerified: false,
+      authProvider: 'password',
       avatarUrl: '',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
     await User.create(newUser);
-    
-    const token = jwt.sign({ userId: id }, JWT_SECRET, { expiresIn: '7d' });
-    const userSafe = { ...publicUser(newUser), email: newUser.email };
-    res.json({ user: userSafe, token });
+
+    const verification = await createEmailVerification(newUser);
+    res.status(201).json({
+      requiresVerification: true,
+      emailSent: verification.sent,
+      verificationUrl: verification.verificationUrl,
+      message: hasSmtpConfig
+        ? 'Check your email to verify your account before signing in.'
+        : 'Account created. Email sending is not configured, so verification cannot be delivered yet.'
+    });
   } catch (error) {
     next(error);
   }
@@ -64,14 +119,118 @@ const login = async (req, res, next) => {
 
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) return next(new AppError('Invalid email or password.', 401));
+    if (user.emailVerified === false) {
+      return next(new AppError('Please verify your email before signing in.', 403));
+    }
 
-    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
-    const userSafe = { ...publicUser(user), email: user.email };
-    res.json({ user: userSafe, token });
+    const token = tokenForUser(user.id);
+    res.json({ user: userResponse(user), token });
   } catch (error) {
     next(error);
   }
 };
+
+const verifyEmail = async (req, res, next) => {
+  try {
+    ensureAuthConfig();
+    const token = req.body.token || req.query.token;
+    if (!token) return next(new AppError('Verification token is required.', 400));
+    const tokenHash = hashToken(token);
+    const user = await User.findOne({ emailVerificationTokenHash: tokenHash }).lean();
+    if (!user) return next(new AppError('Invalid verification link.', 400));
+    if (user.emailVerificationExpiresAt && new Date(user.emailVerificationExpiresAt).getTime() < Date.now()) {
+      return next(new AppError('Verification link has expired. Request a new one.', 400));
+    }
+    const updates = {
+      emailVerified: true,
+      emailVerificationTokenHash: null,
+      emailVerificationExpiresAt: null,
+      updatedAt: new Date().toISOString()
+    };
+    await User.updateOne({ id: user.id }, updates);
+    const verifiedUser = { ...user, ...updates };
+    res.json({ user: userResponse(verifiedUser), token: tokenForUser(user.id) });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const resendVerification = async (req, res, next) => {
+  try {
+    ensureAuthConfig();
+    const email = req.body.email?.trim().toLowerCase();
+    if (!email) return next(new AppError('Email is required.', 400));
+    const user = await User.findOne({ email }).lean();
+    if (!user) return next(new AppError('Account not found.', 404));
+    if (user.emailVerified !== false) return res.json({ message: 'Email is already verified.' });
+    const verification = await createEmailVerification(user);
+    res.json({
+      emailSent: verification.sent,
+      verificationUrl: verification.verificationUrl,
+      message: verification.sent ? 'Verification email sent.' : 'Email sending is not configured.'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const requestPasswordReset = async (req, res, next) => {
+  try {
+    ensureAuthConfig();
+    const email = req.body.email?.trim().toLowerCase();
+    if (!email) return next(new AppError('Email is required.', 400));
+    const user = await User.findOne({ email }).lean();
+    if (user && user.passwordHash && !user.isDeactivated) {
+      const reset = await createPasswordReset(user);
+      return res.json({
+        emailSent: reset.sent,
+        resetUrl: reset.resetUrl,
+        message: reset.sent
+          ? 'Password reset email sent.'
+          : 'Password reset created. Email sending is not configured.'
+      });
+    }
+    res.json({ message: 'If this email exists, a password reset link has been sent.' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const resetPassword = async (req, res, next) => {
+  try {
+    ensureAuthConfig();
+    const { token, password } = req.body;
+    if (!token || !password) return next(new AppError('Reset token and new password are required.', 400));
+    if (String(password).length < 8) return next(new AppError('Password must be at least 8 characters.', 400));
+    const user = await User.findOne({ passwordResetTokenHash: hashToken(token) }).lean();
+    if (!user) return next(new AppError('Invalid reset link.', 400));
+    if (user.passwordResetExpiresAt && new Date(user.passwordResetExpiresAt).getTime() < Date.now()) {
+      return next(new AppError('Reset link has expired. Request a new one.', 400));
+    }
+    const passwordHash = await bcrypt.hash(password, 10);
+    const updates = {
+      passwordHash,
+      passwordResetTokenHash: null,
+      passwordResetExpiresAt: null,
+      emailVerified: true,
+      updatedAt: new Date().toISOString()
+    };
+    await User.updateOne({ id: user.id }, updates);
+    const nextUser = { ...user, ...updates };
+    res.json({ user: userResponse(nextUser), token: tokenForUser(user.id) });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const providerIntent = (req, res, next) => {
+  const provider = String(req.body.provider || 'provider').toLowerCase();
+  return next(new AppError(`${provider} sign-in needs an external OAuth provider. Starlight core auth is configured for email and password.`, 501));
+};
+
+const phoneIntent = (req, res, next) => (
+  next(new AppError('Phone sign-in needs an SMS/OTP provider. Starlight core auth is configured for email and password.', 501))
+);
 
 const getUser = async (req, res, next) => {
   try {
@@ -85,7 +244,7 @@ const getUser = async (req, res, next) => {
       const project = db.projects.find((item) => item.id === track.projectId);
       return { id: track.id, title: track.title, url: track.url, projectId: track.projectId, coverArt: project?.coverArt || null, publishedAt: track.publishedAt };
     });
-    res.json({ user: { ...publicUser(userSafe), email }, isFollowing: (user.followers || []).includes(req.userId), posts: tracks });
+    res.json({ user: { ...publicUser(userSafe), email, emailVerified: user.emailVerified !== false }, isFollowing: (user.followers || []).includes(req.userId), posts: tracks });
   } catch (error) {
     next(error);
   }
@@ -204,6 +363,12 @@ const deactivateUser = async (req, res, next) => {
 module.exports = {
   register,
   login,
+  verifyEmail,
+  resendVerification,
+  requestPasswordReset,
+  resetPassword,
+  providerIntent,
+  phoneIntent,
   getUser,
   updateUser,
   toggleFollow,

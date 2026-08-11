@@ -166,6 +166,10 @@ function LoginScreen({ onLogin }) {
         body: JSON.stringify({ email: cleanEmail, password })
       });
       await storeLastEmail(cleanEmail);
+      if (data.requiresVerification) {
+        Alert.alert('Verify your email', data.message || 'Check your email to verify your account before signing in.');
+        return;
+      }
       await storeUser(data.user);
       if (data.token) await storeToken(data.token);
       onLogin(data.user);

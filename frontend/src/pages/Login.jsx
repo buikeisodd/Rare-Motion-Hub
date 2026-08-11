@@ -26,14 +26,20 @@ export default function Login({ onLogin }) {
   const [email, setEmail] = useState(() => localStorage.getItem('lastEmail') || '');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [resetToken, setResetToken] = useState(() => new URLSearchParams(window.location.search).get('resetToken') || '');
+  const [resetMode, setResetMode] = useState(() => Boolean(new URLSearchParams(window.location.search).get('resetToken')));
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [loading, setLoading] = useState(false);
+  const [providerLoading, setProviderLoading] = useState('');
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setNotice('');
     if (isRegister && password !== confirmPassword) {
       setError('Passwords do not match.');
       return;
@@ -41,8 +47,20 @@ export default function Login({ onLogin }) {
     setLoading(true);
 
     try {
+      if (resetMode) {
+        const res = await fetch(`${apiUrl}/api/auth/reset-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: resetToken, password }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Could not reset password.');
+        onLogin(data.user, data.token);
+        return;
+      }
+
       const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000'}${endpoint}`, {
+      const res = await fetch(`${apiUrl}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -52,19 +70,105 @@ export default function Login({ onLogin }) {
 
       if (res.ok) {
         localStorage.setItem('lastEmail', email);
-        onLogin(data.user, data.token);
+        if (data.requiresVerification) {
+          setNotice(data.message || 'Check your email to verify your account before signing in.');
+          if (data.verificationUrl) setNotice(`${data.message} Dev link: ${data.verificationUrl}`);
+        } else {
+          onLogin(data.user, data.token);
+        }
       } else {
         setError(data.error || 'Authentication failed');
       }
-    } catch {
-      setError('Could not connect to the server. Make sure the backend is running.');
+    } catch (err) {
+      setError(err.message || (resetMode ? 'Could not reset password. Check the link and try again.' : 'Could not connect to the server. Make sure the backend is running.'));
     } finally {
       setLoading(false);
     }
   };
 
-  const handleProviderAuth = (provider) => {
-    setError(provider + ' sign-in is not connected yet. Use email and password for now.');
+  const requestPasswordReset = async () => {
+    setError('');
+    setNotice('');
+    if (!email.trim()) {
+      setError('Enter your email address first.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch(`${apiUrl}/api/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase() })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not request password reset.');
+      setNotice(data.resetUrl ? `${data.message} Dev link: ${data.resetUrl}` : data.message);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resendVerification = async () => {
+    setError('');
+    setNotice('');
+    setLoading(true);
+    try {
+      const res = await fetch(`${apiUrl}/api/auth/resend-verification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase() })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not resend verification email.');
+      setNotice(data.verificationUrl ? `${data.message} Dev link: ${data.verificationUrl}` : data.message);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleProviderAuth = async (provider) => {
+    setError('');
+    setNotice('');
+    setProviderLoading(provider);
+    try {
+      const res = await fetch(`${apiUrl}/api/auth/provider-intent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider: provider.toLowerCase() })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `${provider} sign-in is not configured yet.`);
+      if (data.url) window.location.href = data.url;
+      else setNotice(data.message || `${provider} sign-in will be available after OAuth credentials are configured.`);
+    } catch (err) {
+      setError(err.message || `${provider} sign-in is not configured yet.`);
+    } finally {
+      setProviderLoading('');
+    }
+  };
+
+  const handlePhoneAuth = async () => {
+    setError('');
+    setNotice('');
+    setProviderLoading('Phone');
+    try {
+      const res = await fetch(`${apiUrl}/api/auth/phone-intent`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+    });
+    const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Phone sign-in is not configured yet.');
+      setNotice(data.message || 'Phone sign-in is not configured yet.');
+    } catch (err) {
+      setError(err.message || 'Phone sign-in is not configured yet.');
+    } finally {
+      setProviderLoading('');
+    }
   };
 
   return (
@@ -78,13 +182,13 @@ export default function Login({ onLogin }) {
 
         <div className="flex space-x-4 mb-6">
           <button 
-            onClick={() => setIsRegister(false)}
-            className={`text-lg font-semibold transition-colors ${!isRegister ? 'text-primary-label' : 'text-secondary-label'}`}>
+            onClick={() => { setIsRegister(false); setResetMode(false); setResetToken(''); }}
+            className={`text-lg font-semibold transition-colors ${!isRegister && !resetMode ? 'text-primary-label' : 'text-secondary-label'}`}>
             Login
           </button>
           <button 
-            onClick={() => setIsRegister(true)}
-            className={`text-lg font-semibold transition-colors ${isRegister ? 'text-primary-label' : 'text-secondary-label'}`}>
+            onClick={() => { setIsRegister(true); setResetMode(false); setResetToken(''); }}
+            className={`text-lg font-semibold transition-colors ${isRegister && !resetMode ? 'text-primary-label' : 'text-secondary-label'}`}>
             Register
           </button>
         </div>
@@ -99,7 +203,8 @@ export default function Login({ onLogin }) {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email address"
                 className="h-12 w-full rounded-full bg-shading border border-border pl-12 pr-6 text-center text-base font-semibold text-primary-label placeholder:text-secondary-label focus:outline-none focus:ring-2 focus:ring-primary-label/20 transition-all"
-                required
+                required={!resetMode}
+                disabled={resetMode}
               />
             </label>
             <label className="relative block">
@@ -108,7 +213,8 @@ export default function Login({ onLogin }) {
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
+                placeholder={resetMode ? 'New password' : 'Password'}
+                minLength={8}
                 className="h-12 w-full rounded-full bg-shading border border-border pl-12 pr-14 text-center text-base font-semibold text-primary-label placeholder:text-secondary-label focus:outline-none focus:ring-2 focus:ring-primary-label/20 transition-all"
                 required
               />
@@ -117,7 +223,7 @@ export default function Login({ onLogin }) {
               </button>
             </label>
 
-            {isRegister && <label className="relative block">
+            {isRegister && !resetMode && <label className="relative block">
               <Lock className="absolute left-6 top-1/2 h-5 w-5 -translate-y-1/2 text-secondary-label" />
               <input
                 type={showConfirmPassword ? 'text' : 'password'}
@@ -137,13 +243,23 @@ export default function Login({ onLogin }) {
                 {error}
               </div>
             )}
+            {notice && (
+              <div className="rounded-2xl border border-primary-label/10 bg-primary-label/10 px-4 py-3 text-center text-sm text-primary-label">
+                {notice}
+                {notice.toLowerCase().includes('verify') && (
+                  <button type="button" onClick={resendVerification} className="mt-2 block w-full text-xs font-semibold text-primary-label underline underline-offset-4">
+                    Resend verification email
+                  </button>
+                )}
+              </div>
+            )}
 
             <button
               type="submit"
               disabled={loading}
               className="flex h-12 w-full items-center justify-center rounded-full bg-primary-label text-base font-semibold text-primary-background transition-transform hover:scale-[1.01] disabled:opacity-70"
             >
-              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (isRegister ? 'Create Account' : 'Login')}
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (resetMode ? 'Reset password' : isRegister ? 'Create Account' : 'Login')}
             </button>
           </form>
 
@@ -157,25 +273,38 @@ export default function Login({ onLogin }) {
             <button
               type="button"
               onClick={() => handleProviderAuth('Google')}
+              disabled={Boolean(providerLoading)}
               className="flex min-h-12 w-full items-center justify-center gap-3 rounded-full border border-border bg-shading px-4 py-3 text-sm font-semibold text-primary-label transition-all hover:border-primary-label/30 hover:bg-highlight hover:scale-[1.01]"
             >
-              <GoogleIcon className="h-5 w-5" />
+              {providerLoading === 'Google' ? <Loader2 className="h-5 w-5 animate-spin" /> : <GoogleIcon className="h-5 w-5" />}
               Continue with Google
             </button>
+            {!isRegister && !resetMode && (
+              <button type="button" onClick={requestPasswordReset} className="block w-full text-center text-xs font-semibold text-secondary-label underline-offset-4 transition-colors hover:text-primary-label hover:underline">
+                Forgot password?
+              </button>
+            )}
+            {resetMode && (
+              <button type="button" onClick={() => { setResetMode(false); setResetToken(''); window.history.replaceState(null, '', '/login'); }} className="block w-full text-center text-xs font-semibold text-secondary-label underline-offset-4 transition-colors hover:text-primary-label hover:underline">
+                Back to login
+              </button>
+            )}
             <button
               type="button"
               onClick={() => handleProviderAuth('Apple')}
+              disabled={Boolean(providerLoading)}
               className="flex min-h-12 w-full items-center justify-center gap-3 rounded-full border border-border bg-shading px-4 py-3 text-sm font-semibold text-primary-label transition-all hover:border-primary-label/30 hover:bg-highlight hover:scale-[1.01]"
             >
-              <AppleIcon className="h-5 w-5" />
+              {providerLoading === 'Apple' ? <Loader2 className="h-5 w-5 animate-spin" /> : <AppleIcon className="h-5 w-5" />}
               Continue with Apple
             </button>
             <button
               type="button"
-              onClick={() => handleProviderAuth('Phone number')}
+              onClick={handlePhoneAuth}
+              disabled={Boolean(providerLoading)}
               className="flex min-h-12 w-full items-center justify-center gap-3 rounded-full border border-border bg-shading px-4 py-3 text-sm font-semibold text-primary-label transition-all hover:border-primary-label/30 hover:bg-highlight hover:scale-[1.01]"
             >
-              <Phone className="h-5 w-5" />
+              {providerLoading === 'Phone' ? <Loader2 className="h-5 w-5 animate-spin" /> : <Phone className="h-5 w-5" />}
               Continue with phone number
             </button>
           </div>
