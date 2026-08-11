@@ -4,6 +4,12 @@ import AudioPlayer from './AudioPlayer';
 import { ArrowLeft, Check, CheckCheck, Copy, Forward, Inbox, MessageCircle, Mic, MicOff, MonitorUp, MoreHorizontal, Paperclip, PhoneCall, PhoneOff, Pin, PinOff, Reply, Search, Send, Smile, Trash2, Users, UserPlus, Video, VideoOff, Volume2, X } from 'lucide-react';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const authFetch = (url, options = {}) => {
+  const token = localStorage.getItem('token');
+  const headers = new Headers(options.headers || {});
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+  return fetch(url, { ...options, headers });
+};
 const emojis = ['😀', '😂', '😍', '🥹', '🔥', '🙏', '❤️', '🎧', '🎵', '✅', '😭', '😤', '🤝', '✨', '💿', '🚀'];
 
 function requestDesktopNotificationPermission() {
@@ -108,7 +114,7 @@ function GroupStreamPanel({ currentUser, participants, activeCall, onJoinCall, o
   const pendingCandidatesRef = useRef({});
 
   const sendSignal = useCallback(async (toUserId, type, payload) => {
-    await fetch(`${apiUrl}/api/calls/group/signals`, {
+    await authFetch(`${apiUrl}/api/calls/group/signals`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: currentUser.id, toUserId, type, payload })
@@ -281,7 +287,7 @@ function GroupStreamPanel({ currentUser, participants, activeCall, onJoinCall, o
     if (!joined || !activeCall) return undefined;
     const fetchSignals = async () => {
       try {
-        const res = await fetch(`${apiUrl}/api/calls/group/signals?userId=${encodeURIComponent(currentUser.id)}`);
+        const res = await authFetch(`${apiUrl}/api/calls/group/signals?userId=${encodeURIComponent(currentUser.id)}`);
         const data = await res.json();
         for (const signal of data.signals || []) await handleSignal(signal);
       } catch (err) {
@@ -611,7 +617,7 @@ function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall,
         : `${apiUrl}/api/messages?type=dm&userId=${currentUser.id}&partnerId=${partnerId}`;
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 8000);
-      const res = await fetch(url, { signal: controller.signal });
+      const res = await authFetch(url, { signal: controller.signal });
       clearTimeout(timeout);
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -652,7 +658,7 @@ function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall,
     setSending(true);
     try {
       setChatError('');
-      const res = await fetch(`${apiUrl}/api/messages`, {
+      const res = await authFetch(`${apiUrl}/api/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -701,7 +707,7 @@ function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall,
     setSending(true);
     try {
       setChatError('');
-      const res = await fetch(`${apiUrl}/api/messages/media`, { method: 'POST', body: formData });
+      const res = await authFetch(`${apiUrl}/api/messages/media`, { method: 'POST', body: formData });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Media could not be sent.');
       if (data.message) setMessages((prev) => [...prev, normalizeChatMessage(data.message)]);
@@ -733,7 +739,7 @@ function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall,
   const stopRecording = () => recorderRef.current?.stop();
 
   const handlePin = async (message) => {
-    const res = await fetch(`${apiUrl}/api/messages/${message.id}/pin`, {
+    const res = await authFetch(`${apiUrl}/api/messages/${message.id}/pin`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: currentUser.id, pinned: !message.pinned })
@@ -743,13 +749,13 @@ function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall,
 
   const handleDelete = async (message) => {
     if (!confirm('Delete this message?')) return;
-    const res = await fetch(`${apiUrl}/api/messages/${message.id}?userId=${currentUser.id}`, { method: 'DELETE' });
+    const res = await authFetch(`${apiUrl}/api/messages/${message.id}?userId=${currentUser.id}`, { method: 'DELETE' });
     if (res.ok) fetchMessages();
   };
 
   const handleForward = async (target) => {
     if (!forwarding) return;
-    await fetch(`${apiUrl}/api/messages/${forwarding.id}/forward`, {
+    await authFetch(`${apiUrl}/api/messages/${forwarding.id}/forward`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -943,7 +949,7 @@ export default function ChatInbox({ user, isOpen, onToggle, onConversationsChang
   // Keepalive — prevents Render free tier from sleeping while chat is open
   useEffect(() => {
     if (!isOpen) return;
-    const ping = () => fetch(`${apiUrl}/api/ping`).catch(() => {});
+    const ping = () => authFetch(`${apiUrl}/api/ping`).catch(() => {});
     ping();
     const interval = setInterval(ping, 25000);
     return () => clearInterval(interval);
@@ -956,7 +962,7 @@ export default function ChatInbox({ user, isOpen, onToggle, onConversationsChang
 
   const fetchConvos = useCallback(async () => {
     try {
-      const res = await fetch(`${apiUrl}/api/conversations?userId=${user.id}`);
+      const res = await authFetch(`${apiUrl}/api/conversations?userId=${user.id}`);
       const data = await res.json();
       const nextConversations = Array.isArray(data.conversations) ? data.conversations.map(normalizeConversation).filter(Boolean) : [];
       if (didPrimeNotificationsRef.current) {
@@ -991,7 +997,7 @@ export default function ChatInbox({ user, isOpen, onToggle, onConversationsChang
 
   const fetchContacts = useCallback(async () => {
     try {
-      const res = await fetch(`${apiUrl}/api/users`);
+      const res = await authFetch(`${apiUrl}/api/users`);
       const data = await res.json();
       setContacts(data.users || []);
     } catch (err) {
@@ -1001,7 +1007,7 @@ export default function ChatInbox({ user, isOpen, onToggle, onConversationsChang
 
   const fetchActiveCall = useCallback(async () => {
     try {
-      const res = await fetch(`${apiUrl}/api/calls/group?userId=${encodeURIComponent(user.id)}`);
+      const res = await authFetch(`${apiUrl}/api/calls/group?userId=${encodeURIComponent(user.id)}`);
       const data = await res.json();
       const nextCall = data.call || null;
       const callToken = nextCall?.id || '';
@@ -1067,7 +1073,7 @@ export default function ChatInbox({ user, isOpen, onToggle, onConversationsChang
   }, [fetchActiveCall]);
 
   const joinGroupCall = async () => {
-    const res = await fetch(`${apiUrl}/api/calls/group/join`, {
+    const res = await authFetch(`${apiUrl}/api/calls/group/join`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: user.id })
@@ -1078,7 +1084,7 @@ export default function ChatInbox({ user, isOpen, onToggle, onConversationsChang
   };
 
   const leaveGroupCall = async () => {
-    const res = await fetch(`${apiUrl}/api/calls/group/leave`, {
+    const res = await authFetch(`${apiUrl}/api/calls/group/leave`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: user.id })
@@ -1104,7 +1110,7 @@ export default function ChatInbox({ user, isOpen, onToggle, onConversationsChang
     }
     setCreatingGroup(true);
     try {
-      const res = await fetch(`${apiUrl}/api/groups`, {
+      const res = await authFetch(`${apiUrl}/api/groups`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: groupName.trim() || 'New group', participantIds: selectedMembers })
