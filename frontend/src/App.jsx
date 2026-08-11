@@ -265,6 +265,33 @@ function App() {
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
   useEffect(() => {
+    if (user) return;
+    let cancelled = false;
+
+    async function restoreSession() {
+      try {
+        const res = await fetch(`${apiUrl}/api/auth/refresh`, {
+          method: 'POST',
+          credentials: 'include'
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled || !data.user) return;
+        setUser(data.user);
+        setJustAuthenticated(false);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        if (data.token) localStorage.setItem('token', data.token);
+        if (data.csrfToken) localStorage.setItem('csrfToken', data.csrfToken);
+      } catch (err) {
+        console.error('Failed to restore session', err);
+      }
+    }
+
+    restoreSession();
+    return () => { cancelled = true; };
+  }, [apiUrl, user]);
+
+  useEffect(() => {
     if (!user?.id) return;
     let cancelled = false;
 
