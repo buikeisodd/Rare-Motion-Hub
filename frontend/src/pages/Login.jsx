@@ -51,6 +51,7 @@ export default function Login({ onLogin }) {
         const res = await fetch(`${apiUrl}/api/auth/reset-password`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({ token: resetToken, password }),
         });
         const data = await res.json();
@@ -63,6 +64,7 @@ export default function Login({ onLogin }) {
       const res = await fetch(`${apiUrl}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email, password }),
       });
 
@@ -98,6 +100,7 @@ export default function Login({ onLogin }) {
       const res = await fetch(`${apiUrl}/api/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email: email.trim().toLowerCase() })
       });
       const data = await res.json();
@@ -118,6 +121,7 @@ export default function Login({ onLogin }) {
       const res = await fetch(`${apiUrl}/api/auth/resend-verification`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email: email.trim().toLowerCase() })
       });
       const data = await res.json();

@@ -23,7 +23,7 @@ app.use(cors({
         return callback(new Error('Origin is not allowed by CORS'));
       }
     : true,
-  credentials: false
+  credentials: true
 }));
 app.disable('x-powered-by');
 app.use(express.json({ limit: '2mb' }));

@@ -9,7 +9,13 @@ const { invalidateCache } = require('../config/redis');
 const { AppError } = require('../middlewares/error.middleware');
 const { BASE_URL, publicUser } = require('../utils/helpers');
 const { hasSmtpConfig, sendVerificationEmail, sendPasswordResetEmail } = require('../utils/email');
-const { recordSecurityEvent } = require('../services/security.service');
+const {
+  recordSecurityEvent,
+  createRefreshSession,
+  rotateRefreshSession,
+  revokeRefreshSession,
+  REFRESH_TOKEN_TTL_MS
+} = require('../services/security.service');
 
 const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV === 'production' ? null : 'fallback_secret');
 
@@ -20,8 +26,40 @@ const ensureAuthConfig = () => {
 const FRONTEND_URL = process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:5173';
 const hashToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
 const makeVerificationToken = () => crypto.randomBytes(32).toString('hex');
-const tokenForUser = (id) => jwt.sign({ userId: id }, JWT_SECRET, { expiresIn: '7d' });
+const ACCESS_TOKEN_TTL_MS = Number(process.env.ACCESS_TOKEN_TTL_MS || 1000 * 60 * 15);
+const tokenForUser = (id, sessionId, expiresIn = '7d') => jwt.sign({ userId: id, sessionId }, JWT_SECRET, { expiresIn });
 const userResponse = (user) => ({ ...publicUser(user), email: user.email, emailVerified: user.emailVerified !== false, authProvider: user.authProvider || 'password' });
+
+const cookieOptions = (maxAge) => ({
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+  path: '/',
+  maxAge
+});
+
+const clearAuthCookies = (res) => {
+  res.clearCookie('accessToken', cookieOptions(0));
+  res.clearCookie('refreshToken', cookieOptions(0));
+};
+
+const readCookie = (req, name) => {
+  const cookieHeader = req.headers.cookie || '';
+  const match = cookieHeader
+    .split(';')
+    .map((value) => value.trim())
+    .find((value) => value.startsWith(`${name}=`));
+  if (!match) return '';
+  return decodeURIComponent(match.slice(name.length + 1));
+};
+
+const issueAuthSession = async (req, res, user) => {
+  const { session, refreshToken } = await createRefreshSession({ req, userId: user.id });
+  const accessToken = tokenForUser(user.id, session.sessionId, Math.floor(ACCESS_TOKEN_TTL_MS / 1000));
+  res.cookie('accessToken', accessToken, cookieOptions(ACCESS_TOKEN_TTL_MS));
+  res.cookie('refreshToken', refreshToken, cookieOptions(REFRESH_TOKEN_TTL_MS));
+  return { token: tokenForUser(user.id, session.sessionId), sessionId: session.sessionId };
+};
 
 const createEmailVerification = async (user) => {
   const verificationToken = makeVerificationToken();
@@ -140,8 +178,8 @@ const login = async (req, res, next) => {
       return next(new AppError('Please verify your email before signing in.', 403));
     }
 
-    const token = tokenForUser(user.id);
-    await recordSecurityEvent({ req, userId: user.id, type: 'login_success' });
+    const { token, sessionId } = await issueAuthSession(req, res, user);
+    await recordSecurityEvent({ req, userId: user.id, sessionId, type: 'login_success' });
     res.json({ user: userResponse(user), token });
   } catch (error) {
     next(error);
@@ -172,9 +210,10 @@ const verifyEmail = async (req, res, next) => {
       await recordSecurityEvent({ req, type: 'email_verification_failed', metadata: { reason: 'invalid_or_expired' } });
       return next(new AppError('Invalid or expired verification link. Request a new one.', 400));
     }
-    await recordSecurityEvent({ req, userId: user.id, type: 'email_verified' });
+    const { token: authToken, sessionId } = await issueAuthSession(req, res, user);
+    await recordSecurityEvent({ req, userId: user.id, sessionId, type: 'email_verified' });
     const verifiedUser = { ...user, ...updates };
-    res.json({ user: userResponse(verifiedUser), token: tokenForUser(user.id) });
+    res.json({ user: userResponse(verifiedUser), token: authToken });
   } catch (error) {
     next(error);
   }
@@ -259,9 +298,48 @@ const resetPassword = async (req, res, next) => {
       await recordSecurityEvent({ req, type: 'password_reset_failed', metadata: { reason: 'invalid_or_expired' } });
       return next(new AppError('Invalid or expired reset link. Request a new one.', 400));
     }
-    await recordSecurityEvent({ req, userId: user.id, type: 'password_reset_completed' });
+    const { token: authToken, sessionId } = await issueAuthSession(req, res, user);
+    await recordSecurityEvent({ req, userId: user.id, sessionId, type: 'password_reset_completed' });
     const nextUser = { ...user, ...updates };
-    res.json({ user: userResponse(nextUser), token: tokenForUser(user.id) });
+    res.json({ user: userResponse(nextUser), token: authToken });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const refreshSession = async (req, res, next) => {
+  try {
+    ensureAuthConfig();
+    const incomingRefreshToken = req.body?.refreshToken || readCookie(req, 'refreshToken');
+    if (!incomingRefreshToken) return next(new AppError('Unauthorized: Missing refresh token', 401));
+    const rotated = await rotateRefreshSession({ req, refreshToken: incomingRefreshToken });
+    if (!rotated) {
+      clearAuthCookies(res);
+      await recordSecurityEvent({ req, type: 'refresh_failed', metadata: { reason: 'invalid_or_expired' } });
+      return next(new AppError('Unauthorized: Invalid refresh token', 401));
+    }
+    const user = await User.findOne({ id: rotated.session.userId }).lean();
+    if (!user || user.isDeactivated) {
+      clearAuthCookies(res);
+      return next(new AppError('Unauthorized: Account unavailable', 401));
+    }
+    const accessToken = tokenForUser(user.id, rotated.session.sessionId, Math.floor(ACCESS_TOKEN_TTL_MS / 1000));
+    res.cookie('accessToken', accessToken, cookieOptions(ACCESS_TOKEN_TTL_MS));
+    res.cookie('refreshToken', rotated.refreshToken, cookieOptions(REFRESH_TOKEN_TTL_MS));
+    await recordSecurityEvent({ req, userId: user.id, sessionId: rotated.session.sessionId, type: 'session_refreshed' });
+    res.json({ user: userResponse(user), token: tokenForUser(user.id, rotated.session.sessionId) });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const logout = async (req, res, next) => {
+  try {
+    const refreshToken = req.body?.refreshToken || readCookie(req, 'refreshToken');
+    const session = await revokeRefreshSession({ refreshToken, reason: 'logout' });
+    clearAuthCookies(res);
+    await recordSecurityEvent({ req, userId: session?.userId, sessionId: session?.sessionId, type: 'logout' });
+    res.json({ message: 'Logged out.' });
   } catch (error) {
     next(error);
   }
@@ -413,6 +491,8 @@ module.exports = {
   resendVerification,
   requestPasswordReset,
   resetPassword,
+  refreshSession,
+  logout,
   providerIntent,
   phoneIntent,
   getUser,

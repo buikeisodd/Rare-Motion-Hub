@@ -1,5 +1,5 @@
 const express = require('express');
-const { register, login, verifyEmail, resendVerification, requestPasswordReset, resetPassword, providerIntent, phoneIntent, getUser, updateUser, toggleFollow, uploadUserAvatar, deleteUser, deactivateUser } = require('../controllers/auth.controller');
+const { register, login, verifyEmail, resendVerification, requestPasswordReset, resetPassword, refreshSession, logout, providerIntent, phoneIntent, getUser, updateUser, toggleFollow, uploadUserAvatar, deleteUser, deactivateUser } = require('../controllers/auth.controller');
 const { requireUserId } = require('../middlewares/auth.middleware');
 const { uploadAvatar } = require('../middlewares/upload.middleware');
 
@@ -12,6 +12,8 @@ router.get('/verify-email', verifyEmail);
 router.post('/resend-verification', resendVerification);
 router.post('/forgot-password', requestPasswordReset);
 router.post('/reset-password', resetPassword);
+router.post('/refresh', refreshSession);
+router.post('/logout', logout);
 router.post('/provider-intent', providerIntent);
 router.post('/phone-intent', phoneIntent);
 

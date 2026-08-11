@@ -272,7 +272,8 @@ function App() {
       try {
         const token = localStorage.getItem('token');
         const res = await fetch(`${apiUrl}/api/auth/${user.id}`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {}
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          credentials: 'include'
         });
         const data = await res.json();
         if (!cancelled && res.ok && data.user) {
@@ -295,7 +296,15 @@ function App() {
     if (token) localStorage.setItem('token', token);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await fetch(`${apiUrl}/api/auth/logout`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+    } catch (err) {
+      console.error('Failed to revoke server session', err);
+    }
     setUser(null);
     setJustAuthenticated(false);
     localStorage.removeItem('user');
