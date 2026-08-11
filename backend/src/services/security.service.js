@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const { SecurityEvent, Session } = require('../models');
+const { getRedisClient } = require('../config/redis');
 
 const createOpaqueToken = (bytes = 32) => crypto.randomBytes(bytes).toString('base64url');
 const hashOpaqueToken = (token) => crypto.createHash('sha256').update(String(token)).digest('hex');
@@ -36,6 +37,69 @@ const recordSecurityEvent = async ({ req, userId, sessionId, category = 'auth', 
 };
 
 const REFRESH_TOKEN_TTL_MS = Number(process.env.REFRESH_TOKEN_TTL_MS || 1000 * 60 * 60 * 24 * 30);
+const localRateStore = new Map();
+
+const redisKey = (key) => `security:${key}`;
+
+const incrementWindowCounter = async (key, ttlSeconds) => {
+  const client = getRedisClient();
+  const namespacedKey = redisKey(key);
+  if (client && client.isReady) {
+    const count = await client.incr(namespacedKey);
+    if (count === 1) await client.expire(namespacedKey, ttlSeconds);
+    const ttl = await client.ttl(namespacedKey);
+    return { count, ttl: ttl > 0 ? ttl : ttlSeconds };
+  }
+
+  const now = Date.now();
+  const current = localRateStore.get(namespacedKey);
+  if (!current || current.expiresAt <= now) {
+    localRateStore.set(namespacedKey, { count: 1, expiresAt: now + ttlSeconds * 1000 });
+    return { count: 1, ttl: ttlSeconds };
+  }
+  current.count += 1;
+  return { count: current.count, ttl: Math.ceil((current.expiresAt - now) / 1000) };
+};
+
+const getSecurityValue = async (key) => {
+  const client = getRedisClient();
+  const namespacedKey = redisKey(key);
+  if (client && client.isReady) return client.get(namespacedKey);
+  const current = localRateStore.get(namespacedKey);
+  if (!current || current.expiresAt <= Date.now()) {
+    localRateStore.delete(namespacedKey);
+    return null;
+  }
+  return current.value ?? String(current.count ?? '');
+};
+
+const setSecurityValue = async (key, value, ttlSeconds) => {
+  const client = getRedisClient();
+  const namespacedKey = redisKey(key);
+  if (client && client.isReady) {
+    await client.setEx(namespacedKey, ttlSeconds, String(value));
+    return;
+  }
+  localRateStore.set(namespacedKey, { value: String(value), expiresAt: Date.now() + ttlSeconds * 1000 });
+};
+
+const clearSecurityValue = async (key) => {
+  const client = getRedisClient();
+  const namespacedKey = redisKey(key);
+  if (client && client.isReady) {
+    await client.del(namespacedKey);
+    return;
+  }
+  localRateStore.delete(namespacedKey);
+};
+
+const revokeAllSessionsForUser = async ({ userId, reason = 'revoked' }) => {
+  if (!userId) return { modifiedCount: 0 };
+  return Session.updateMany(
+    { userId, revokedAt: { $exists: false } },
+    { $set: { revokedAt: new Date().toISOString(), revokedReason: reason } }
+  );
+};
 
 const createRefreshSession = async ({ req, userId }) => {
   const refreshToken = createOpaqueToken(48);
@@ -93,5 +157,10 @@ module.exports = {
   createRefreshSession,
   rotateRefreshSession,
   revokeRefreshSession,
+  revokeAllSessionsForUser,
+  incrementWindowCounter,
+  getSecurityValue,
+  setSecurityValue,
+  clearSecurityValue,
   REFRESH_TOKEN_TTL_MS
 };

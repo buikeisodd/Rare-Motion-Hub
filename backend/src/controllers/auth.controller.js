@@ -14,6 +14,11 @@ const {
   createRefreshSession,
   rotateRefreshSession,
   revokeRefreshSession,
+  revokeAllSessionsForUser,
+  incrementWindowCounter,
+  getSecurityValue,
+  setSecurityValue,
+  clearSecurityValue,
   REFRESH_TOKEN_TTL_MS
 } = require('../services/security.service');
 
@@ -29,6 +34,11 @@ const makeVerificationToken = () => crypto.randomBytes(32).toString('hex');
 const ACCESS_TOKEN_TTL_MS = Number(process.env.ACCESS_TOKEN_TTL_MS || 1000 * 60 * 15);
 const tokenForUser = (id, sessionId, expiresIn = '7d') => jwt.sign({ userId: id, sessionId }, JWT_SECRET, { expiresIn });
 const userResponse = (user) => ({ ...publicUser(user), email: user.email, emailVerified: user.emailVerified !== false, authProvider: user.authProvider || 'password' });
+const LOGIN_MAX_ATTEMPTS = Number(process.env.LOGIN_MAX_ATTEMPTS || 5);
+const LOGIN_WINDOW_SECONDS = Number(process.env.LOGIN_WINDOW_SECONDS || 15 * 60);
+const LOGIN_LOCK_SECONDS = Number(process.env.LOGIN_LOCK_SECONDS || 15 * 60);
+const AUTH_ACTION_MAX_ATTEMPTS = Number(process.env.AUTH_ACTION_MAX_ATTEMPTS || 5);
+const AUTH_ACTION_WINDOW_SECONDS = Number(process.env.AUTH_ACTION_WINDOW_SECONDS || 10 * 60);
 
 const cookieOptions = (maxAge) => ({
   httpOnly: true,
@@ -59,6 +69,54 @@ const issueAuthSession = async (req, res, user) => {
   res.cookie('accessToken', accessToken, cookieOptions(ACCESS_TOKEN_TTL_MS));
   res.cookie('refreshToken', refreshToken, cookieOptions(REFRESH_TOKEN_TTL_MS));
   return { token: tokenForUser(user.id, session.sessionId), sessionId: session.sessionId };
+};
+
+const securitySubject = (value) => hashToken(String(value || '').trim().toLowerCase());
+const clientSubject = (req) => securitySubject(req.ip || req.headers['x-forwarded-for'] || 'unknown');
+
+const enforceActionLimit = async (req, action, subject, maxAttempts = AUTH_ACTION_MAX_ATTEMPTS, windowSeconds = AUTH_ACTION_WINDOW_SECONDS) => {
+  const key = `rate:${action}:${subject || clientSubject(req)}`;
+  const { count, ttl } = await incrementWindowCounter(key, windowSeconds);
+  if (count > maxAttempts) {
+    resRetryAfter(req, ttl);
+    throw new AppError(`Too many ${action.replace(/-/g, ' ')} attempts. Try again in ${Math.ceil(ttl / 60)} minute(s).`, 429);
+  }
+};
+
+const resRetryAfter = (req, seconds) => {
+  if (req.res && seconds > 0) req.res.set('Retry-After', String(seconds));
+};
+
+const ensureLoginNotLocked = async (req, email) => {
+  const lockKey = `lock:login:${securitySubject(email)}`;
+  const lockUntil = await getSecurityValue(lockKey);
+  if (!lockUntil) return;
+  const remainingSeconds = Math.ceil((Number(lockUntil) - Date.now()) / 1000);
+  if (remainingSeconds > 0) {
+    resRetryAfter(req, remainingSeconds);
+    throw new AppError(`Too many failed login attempts. Try again in ${Math.ceil(remainingSeconds / 60)} minute(s).`, 429);
+  }
+  await clearSecurityValue(lockKey);
+};
+
+const noteLoginFailure = async (req, email) => {
+  const subject = securitySubject(email);
+  const { count } = await incrementWindowCounter(`rate:login:${subject}`, LOGIN_WINDOW_SECONDS);
+  if (count >= LOGIN_MAX_ATTEMPTS) {
+    const lockUntil = Date.now() + LOGIN_LOCK_SECONDS * 1000;
+    await setSecurityValue(`lock:login:${subject}`, lockUntil, LOGIN_LOCK_SECONDS);
+    await recordSecurityEvent({
+      req,
+      type: 'login_locked',
+      metadata: { email, attempts: count, lockSeconds: LOGIN_LOCK_SECONDS }
+    });
+  }
+};
+
+const noteLoginSuccess = async (email) => {
+  const subject = securitySubject(email);
+  await clearSecurityValue(`rate:login:${subject}`);
+  await clearSecurityValue(`lock:login:${subject}`);
 };
 
 const createEmailVerification = async (user) => {
@@ -105,6 +163,7 @@ const register = async (req, res, next) => {
     const email = req.body.email?.trim().toLowerCase();
     const password = req.body.password;
     if (!email || !password) return next(new AppError('Email and password are required.', 400));
+    await enforceActionLimit(req, 'register', `${clientSubject(req)}:${securitySubject(email)}`, 3, AUTH_ACTION_WINDOW_SECONDS);
     if (String(password).length < 8) return next(new AppError('Password must be at least 8 characters.', 400));
 
     let user = await User.findOne({ email }).lean();
@@ -157,9 +216,11 @@ const login = async (req, res, next) => {
     const email = req.body.email?.trim().toLowerCase();
     const password = req.body.password;
     if (!email || !password) return next(new AppError('Email and password are required.', 400));
+    await ensureLoginNotLocked(req, email);
 
     const user = await User.findOne({ email }).lean();
     if (!user || !user.passwordHash) {
+      await noteLoginFailure(req, email);
       await recordSecurityEvent({ req, type: 'login_failed', metadata: { email, reason: 'invalid_credentials' } });
       return next(new AppError('Invalid email or password.', 401));
     }
@@ -170,6 +231,7 @@ const login = async (req, res, next) => {
 
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
+      await noteLoginFailure(req, email);
       await recordSecurityEvent({ req, userId: user.id, type: 'login_failed', metadata: { reason: 'invalid_credentials' } });
       return next(new AppError('Invalid email or password.', 401));
     }
@@ -179,6 +241,7 @@ const login = async (req, res, next) => {
     }
 
     const { token, sessionId } = await issueAuthSession(req, res, user);
+    await noteLoginSuccess(email);
     await recordSecurityEvent({ req, userId: user.id, sessionId, type: 'login_success' });
     res.json({ user: userResponse(user), token });
   } catch (error) {
@@ -224,6 +287,7 @@ const resendVerification = async (req, res, next) => {
     ensureAuthConfig();
     const email = req.body.email?.trim().toLowerCase();
     if (!email) return next(new AppError('Email is required.', 400));
+    await enforceActionLimit(req, 'resend-verification', securitySubject(email));
     const user = await User.findOne({ email }).lean();
     if (!user) return next(new AppError('Account not found.', 404));
     if (user.emailVerified !== false) return res.json({ message: 'Email is already verified.' });
@@ -249,6 +313,7 @@ const requestPasswordReset = async (req, res, next) => {
     ensureAuthConfig();
     const email = req.body.email?.trim().toLowerCase();
     if (!email) return next(new AppError('Email is required.', 400));
+    await enforceActionLimit(req, 'password-reset-request', securitySubject(email));
     const user = await User.findOne({ email }).lean();
     if (user && user.passwordHash && !user.isDeactivated) {
       const reset = await createPasswordReset(user);
@@ -266,6 +331,7 @@ const requestPasswordReset = async (req, res, next) => {
           : 'Password reset created. Email sending is not configured.'
       });
     }
+    await recordSecurityEvent({ req, type: 'password_reset_requested_unknown', metadata: { email } });
     res.json({ message: 'If this email exists, a password reset link has been sent.' });
   } catch (error) {
     next(error);
@@ -298,6 +364,7 @@ const resetPassword = async (req, res, next) => {
       await recordSecurityEvent({ req, type: 'password_reset_failed', metadata: { reason: 'invalid_or_expired' } });
       return next(new AppError('Invalid or expired reset link. Request a new one.', 400));
     }
+    await revokeAllSessionsForUser({ userId: user.id, reason: 'password_reset' });
     const { token: authToken, sessionId } = await issueAuthSession(req, res, user);
     await recordSecurityEvent({ req, userId: user.id, sessionId, type: 'password_reset_completed' });
     const nextUser = { ...user, ...updates };
@@ -340,6 +407,17 @@ const logout = async (req, res, next) => {
     clearAuthCookies(res);
     await recordSecurityEvent({ req, userId: session?.userId, sessionId: session?.sessionId, type: 'logout' });
     res.json({ message: 'Logged out.' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const logoutAll = async (req, res, next) => {
+  try {
+    await revokeAllSessionsForUser({ userId: req.userId, reason: 'logout_all' });
+    clearAuthCookies(res);
+    await recordSecurityEvent({ req, userId: req.userId, sessionId: req.sessionId, type: 'logout_all' });
+    res.json({ message: 'Logged out on all devices.' });
   } catch (error) {
     next(error);
   }
@@ -447,6 +525,7 @@ const uploadUserAvatar = async (req, res, next) => {
 
 const deleteUser = async (req, res, next) => {
   try {
+    if (req.params.id !== req.userId) return next(new AppError('You can only delete your own account.', 403));
     const db = ensureDBShape(await readDB());
     const user = db.users.find((item) => item.id === req.params.id);
     if (!user) return next(new AppError('User not found.', 404));
@@ -460,11 +539,14 @@ const deleteUser = async (req, res, next) => {
       CoverArt.deleteMany({ userId: uid }),
       Notification.deleteMany({ $or: [{ userId: uid }, { 'actor.id': uid }] }),
       PlayEvent.deleteMany({ $or: [{ ownerId: uid }, { actorId: uid }] }),
+      revokeAllSessionsForUser({ userId: uid, reason: 'account_deleted' }),
     ]);
 
     removeDirIfExists(getUserDir(uploadDir, req.params.id));
     removeDirIfExists(getUserDir(coverDir, req.params.id));
     removeDirIfExists(getUserDir(avatarDir, req.params.id));
+    clearAuthCookies(res);
+    await recordSecurityEvent({ req, userId: uid, type: 'account_deleted' });
     res.json({ success: true });
   } catch (error) {
     next(error);
@@ -473,6 +555,7 @@ const deleteUser = async (req, res, next) => {
 
 const deactivateUser = async (req, res, next) => {
   try {
+    if (req.params.id !== req.userId) return next(new AppError('You can only deactivate your own account.', 403));
     const db = ensureDBShape(await readDB());
     const index = db.users.findIndex((item) => item.id === req.params.id);
     if (index < 0) return next(new AppError('User not found.', 404));
@@ -480,6 +563,9 @@ const deactivateUser = async (req, res, next) => {
     db.users[index] = { ...db.users[index], isDeactivated: true, deactivatedAt, updatedAt: deactivatedAt };
     await writeDB(db);
     await User.updateOne({ id: req.params.id }, { isDeactivated: true, deactivatedAt });
+    await revokeAllSessionsForUser({ userId: req.params.id, reason: 'account_deactivated' });
+    clearAuthCookies(res);
+    await recordSecurityEvent({ req, userId: req.params.id, type: 'account_deactivated' });
     res.json({ success: true });
   } catch (error) { next(error); }
 };
@@ -493,6 +579,7 @@ module.exports = {
   resetPassword,
   refreshSession,
   logout,
+  logoutAll,
   providerIntent,
   phoneIntent,
   getUser,
