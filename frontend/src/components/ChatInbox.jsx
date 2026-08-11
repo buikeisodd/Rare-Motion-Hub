@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAudio } from '../context/AudioContext';
 import AudioPlayer from './AudioPlayer';
-import { ArrowLeft, CheckCheck, Copy, Forward, Inbox, MessageCircle, Mic, MicOff, MonitorUp, MoreHorizontal, Paperclip, PhoneCall, PhoneOff, Pin, PinOff, Reply, Search, Send, Smile, Trash2, Users, UserPlus, Video, VideoOff, Volume2, X } from 'lucide-react';
+import { ArrowLeft, Check, CheckCheck, Copy, Forward, Inbox, MessageCircle, Mic, MicOff, MonitorUp, MoreHorizontal, Paperclip, PhoneCall, PhoneOff, Pin, PinOff, Reply, Search, Send, Smile, Trash2, Users, UserPlus, Video, VideoOff, Volume2, X } from 'lucide-react';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 const emojis = ['😀', '😂', '😍', '🥹', '🔥', '🙏', '❤️', '🎧', '🎵', '✅', '😭', '😤', '🤝', '✨', '💿', '🚀'];
@@ -45,7 +45,7 @@ function MessageTicks({ message }) {
 
 function ConvoItem({ convo, isActive, onClick }) {
   const isGroup = convo.type === 'group';
-  const name = isGroup ? 'Rare Motion HQ' : convo.partner?.name || 'Unknown';
+  const name = isGroup ? convo.group?.name || 'Group' : convo.partner?.name || 'Unknown';
   const lastText = convo.lastMessage?.deleted
     ? 'Message deleted'
     : convo.lastMessage?.text || (convo.lastMessage?.attachments?.length ? 'Media message' : null);
@@ -515,13 +515,13 @@ function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall,
   const chunksRef = useRef([]);
 
   const isGroup = convo.type === 'group';
-  const chatName = isGroup ? 'Rare Motion HQ' : convo.partner?.name || 'Unknown';
+  const chatName = isGroup ? convo.group?.name || 'Group' : convo.partner?.name || 'Unknown';
   const participants = convo.participants || [];
 
   const fetchMessages = useCallback(async () => {
     try {
       const url = isGroup
-        ? `${apiUrl}/api/messages?type=group&userId=${currentUser.id}`
+        ? `${apiUrl}/api/messages?type=group&userId=${currentUser.id}&groupId=${convo.group?.id}`
         : `${apiUrl}/api/messages?type=dm&userId=${currentUser.id}&partnerId=${convo.partner.id}`;
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 8000);
@@ -538,7 +538,7 @@ function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall,
     } finally {
       setLoading(false);
     }
-  }, [isGroup, currentUser.id, convo.partner]);
+  }, [isGroup, currentUser.id, convo.partner?.id, convo.group?.id]);
 
   useEffect(() => {
     // Initial load immediately
@@ -562,6 +562,7 @@ function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall,
         body: JSON.stringify({
           senderId: currentUser.id,
           recipientId: isGroup ? null : convo.partner.id,
+          groupId: isGroup ? convo.group?.id : null,
           conversationType: isGroup ? 'group' : 'dm',
           replyToMessageId: replyTo?.id || null,
           ...payload
@@ -588,6 +589,7 @@ function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall,
     formData.append('media', file);
     formData.append('senderId', currentUser.id);
     formData.append('recipientId', isGroup ? '' : convo.partner.id);
+    if (isGroup) formData.append('groupId', convo.group?.id || '');
     formData.append('conversationType', isGroup ? 'group' : 'dm');
     formData.append('text', text.trim());
     formData.append('mediaKind', mediaKind);
@@ -647,7 +649,8 @@ function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall,
       body: JSON.stringify({
         senderId: currentUser.id,
         targetType: target.type,
-        recipientId: target.type === 'dm' ? target.partner.id : null
+        recipientId: target.type === 'dm' ? target.partner.id : null,
+        groupId: target.type === 'group' ? target.group?.id : null
       })
     });
     setForwarding(null);
@@ -761,8 +764,8 @@ function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall,
           <div className="mb-2 flex items-center justify-between text-sm font-semibold"><span>Forward to</span><button onClick={() => setForwarding(null)}><X className="h-4 w-4" /></button></div>
           <div className="grid grid-cols-2 gap-2">
             {conversations.map((target) => (
-              <button key={target.type === 'group' ? 'group' : target.partner.id} onClick={() => handleForward(target)} className="truncate rounded-xl bg-shading px-3 py-2 text-left text-xs hover:bg-highlight">
-                {target.type === 'group' ? 'Rare Motion HQ' : target.partner.name}
+              <button key={target.type === 'group' ? target.group?.id : target.partner.id} onClick={() => handleForward(target)} className="truncate rounded-xl bg-shading px-3 py-2 text-left text-xs hover:bg-highlight">
+                {target.type === 'group' ? target.group?.name || 'Group' : target.partner.name}
               </button>
             ))}
           </div>
@@ -813,11 +816,17 @@ function MiniPlayer() {
   );
 }
 
-export default function ChatInbox({ user, isOpen, onToggle, onConversationsChange }) {
+export default function ChatInbox({ user, isOpen, onToggle, onConversationsChange, startConversationWith }) {
   const [conversations, setConversations] = useState([]);
   const [activeConvo, setActiveConvo] = useState(null);
   const [inboxTab, setInboxTab] = useState('inbox');
   const [searchTerm, setSearchTerm] = useState('');
+  const [contacts, setContacts] = useState([]);
+  const [groupOpen, setGroupOpen] = useState(false);
+  const [groupName, setGroupName] = useState('');
+  const [selectedMembers, setSelectedMembers] = useState([]);
+  const [groupError, setGroupError] = useState('');
+  const [creatingGroup, setCreatingGroup] = useState(false);
 
   // Keepalive — prevents Render free tier from sleeping while chat is open
   useEffect(() => {
@@ -840,13 +849,13 @@ export default function ChatInbox({ user, isOpen, onToggle, onConversationsChang
       const nextConversations = data.conversations || [];
       if (didPrimeNotificationsRef.current) {
         nextConversations.forEach((convo) => {
-          const key = convo.type === 'group' ? 'group' : convo.partner?.id;
+          const key = convo.type === 'group' ? convo.group?.id : convo.partner?.id;
           const lastMessage = convo.lastMessage;
           if (!key || !lastMessage) return;
           const previousId = lastMessageRef.current.get(key);
           const isIncoming = lastMessage.senderId !== user.id && lastMessage.id !== previousId;
           if (isIncoming) {
-            const title = convo.type === 'group' ? 'New message in Rare Motion HQ' : `${lastMessage.sender?.name || convo.partner?.name || 'Someone'} sent a message`;
+            const title = convo.type === 'group' ? `New message in ${convo.group?.name || 'group'}` : `${lastMessage.sender?.name || convo.partner?.name || 'Someone'} sent a message`;
             const body = lastMessage.deleted ? 'Message deleted' : lastMessage.text || (lastMessage.attachments?.length ? 'Media message' : 'New message');
             showDesktopNotification(title, { body });
           }
@@ -854,7 +863,7 @@ export default function ChatInbox({ user, isOpen, onToggle, onConversationsChang
         });
       } else {
         nextConversations.forEach((convo) => {
-          const key = convo.type === 'group' ? 'group' : convo.partner?.id;
+          const key = convo.type === 'group' ? convo.group?.id : convo.partner?.id;
           if (key && convo.lastMessage?.id) lastMessageRef.current.set(key, convo.lastMessage.id);
         });
         didPrimeNotificationsRef.current = true;
@@ -867,6 +876,16 @@ export default function ChatInbox({ user, isOpen, onToggle, onConversationsChang
       setLoadingConvos(false);
     }
   }, [user.id]);
+
+  const fetchContacts = useCallback(async () => {
+    try {
+      const res = await fetch(`${apiUrl}/api/users`);
+      const data = await res.json();
+      setContacts(data.users || []);
+    } catch (err) {
+      console.error('Failed to fetch contacts', err);
+    }
+  }, []);
 
   const fetchActiveCall = useCallback(async () => {
     try {
@@ -900,6 +919,25 @@ export default function ChatInbox({ user, isOpen, onToggle, onConversationsChang
       window.clearInterval(interval);
     };
   }, [fetchConvos]);
+
+  useEffect(() => {
+    if (isOpen) fetchContacts();
+  }, [fetchContacts, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !startConversationWith?.id || startConversationWith.id === user.id) return;
+    const existing = conversations.find((convo) => convo.type !== 'group' && convo.partner?.id === startConversationWith.id);
+    const starterConvo = existing || {
+      type: 'dm',
+      partner: startConversationWith,
+      lastMessage: null,
+      unreadCount: 0,
+      isRequest: false,
+      updatedAt: new Date().toISOString()
+    };
+    setInboxTab(starterConvo.isRequest ? 'requests' : 'inbox');
+    setActiveConvo(starterConvo);
+  }, [conversations, isOpen, startConversationWith, user.id]);
 
   useEffect(() => {
     const firstLoad = window.setTimeout(fetchActiveCall, 0);
@@ -936,6 +974,47 @@ export default function ChatInbox({ user, isOpen, onToggle, onConversationsChang
     fetchConvos();
   };
 
+  const followerContacts = contacts.filter((person) => person.isFollowing || person.followsYou);
+  const toggleGroupMember = (id) => {
+    setSelectedMembers((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
+  };
+  const createNewGroup = async () => {
+    setGroupError('');
+    if (selectedMembers.length === 0) {
+      setGroupError('Select at least one follower.');
+      return;
+    }
+    setCreatingGroup(true);
+    try {
+      const res = await fetch(`${apiUrl}/api/groups`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: groupName.trim() || 'New group', participantIds: selectedMembers })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not create group.');
+      const groupConvo = {
+        type: 'group',
+        group: { id: data.group.id, name: data.group.name },
+        participants: data.group.participants || [],
+        lastMessage: null,
+        unreadCount: 0,
+        updatedAt: data.group.updatedAt || data.group.createdAt
+      };
+      setConversations((current) => [groupConvo, ...current]);
+      setActiveConvo(groupConvo);
+      setGroupOpen(false);
+      setGroupName('');
+      setSelectedMembers([]);
+      setInboxTab('inbox');
+      fetchConvos();
+    } catch (err) {
+      setGroupError(err.message || 'Could not create group.');
+    } finally {
+      setCreatingGroup(false);
+    }
+  };
+
   const requestCount = conversations.filter((convo) => convo.isRequest).length;
   const unreadCount = conversations.reduce((sum, convo) => sum + (convo.unreadCount || 0), 0);
   const visibleConversations = conversations.filter((convo) => {
@@ -943,7 +1022,7 @@ export default function ChatInbox({ user, isOpen, onToggle, onConversationsChang
     if (!matchesTab) return false;
     const query = searchTerm.trim().toLowerCase();
     if (!query) return true;
-    const name = convo.type === 'group' ? 'rare motion hq' : `${convo.partner?.name || ''} ${convo.partner?.username || ''}`;
+    const name = convo.type === 'group' ? `${convo.group?.name || ''}` : `${convo.partner?.name || ''} ${convo.partner?.username || ''}`;
     const last = convo.lastMessage?.text || '';
     return `${name} ${last}`.toLowerCase().includes(query);
   });
@@ -963,6 +1042,49 @@ export default function ChatInbox({ user, isOpen, onToggle, onConversationsChang
                   <X className="h-5 w-5" />
                 </button>
               </div>
+
+              <button
+                onClick={() => setGroupOpen((value) => !value)}
+                className="mt-4 flex h-10 w-full items-center justify-center gap-2 rounded-full border border-border bg-shading/60 text-sm font-semibold text-primary-label transition-colors hover:bg-highlight"
+              >
+                <Users className="h-4 w-4" />
+                New group
+              </button>
+
+              {groupOpen && (
+                <div className="mt-3 rounded-2xl border border-border bg-shading/35 p-3">
+                  <input
+                    value={groupName}
+                    onChange={(event) => setGroupName(event.target.value)}
+                    placeholder="Group name"
+                    maxLength={60}
+                    className="h-10 w-full rounded-full border border-border bg-primary-background px-4 text-sm outline-none focus:border-primary-label/30"
+                  />
+                  <div className="mt-3 max-h-44 space-y-1 overflow-y-auto">
+                    {followerContacts.length === 0 ? (
+                      <p className="px-2 py-3 text-center text-xs text-secondary-label">Follow someone first to create a group.</p>
+                    ) : followerContacts.map((person) => {
+                      const selected = selectedMembers.includes(person.id);
+                      return (
+                        <button key={person.id} onClick={() => toggleGroupMember(person.id)} className="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left hover:bg-highlight">
+                          <ProfileAvatar user={person} size="h-8 w-8" />
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-xs font-semibold">{person.name}</span>
+                            <span className="block truncate text-[11px] text-secondary-label">@{person.username || person.name}</span>
+                          </span>
+                          <span className={`grid h-5 w-5 place-items-center rounded-full border ${selected ? 'border-primary-label bg-primary-label text-primary-background' : 'border-border text-transparent'}`}>
+                            <Check className="h-3 w-3" />
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {groupError && <p className="mt-2 text-xs text-red-300">{groupError}</p>}
+                  <button onClick={createNewGroup} disabled={creatingGroup || selectedMembers.length === 0} className="mt-3 h-10 w-full rounded-full bg-primary-label text-sm font-semibold text-primary-background transition-opacity disabled:opacity-40">
+                    {creatingGroup ? 'Creating...' : 'Create group'}
+                  </button>
+                </div>
+              )}
 
               <label className="mt-4 flex h-11 items-center gap-3 rounded-full border border-border bg-shading/70 px-4 transition-colors focus-within:border-primary-label/30">
                 <Search className="h-4 w-4 shrink-0 text-secondary-label" />
@@ -998,9 +1120,9 @@ export default function ChatInbox({ user, isOpen, onToggle, onConversationsChang
               )}
               {!loadingConvos && visibleConversations.map((convo) => (
                 <ConvoItem
-                  key={convo.type === 'group' ? 'group' : convo.partner?.id}
+                  key={convo.type === 'group' ? convo.group?.id : convo.partner?.id}
                   convo={convo}
-                  isActive={activeConvo?.type === 'group' ? convo.type === 'group' : activeConvo?.partner?.id === convo.partner?.id}
+                  isActive={activeConvo?.type === 'group' ? activeConvo?.group?.id === convo.group?.id : activeConvo?.partner?.id === convo.partner?.id}
                   onClick={() => setActiveConvo(convo)}
                 />
               ))}
@@ -1009,7 +1131,7 @@ export default function ChatInbox({ user, isOpen, onToggle, onConversationsChang
           </div>
           {activeConvo ? (
             <div className="flex flex-1 flex-col overflow-hidden bg-primary-background">
-              <ChatWindow key={activeConvo?.type === "group" ? "group" : activeConvo?.partner?.id} convo={activeConvo} currentUser={user} conversations={conversations} activeCall={activeCall} onJoinCall={joinGroupCall} onLeaveCall={leaveGroupCall} onClose={handleCloseChat} />
+              <ChatWindow key={activeConvo?.type === "group" ? activeConvo?.group?.id : activeConvo?.partner?.id} convo={activeConvo} currentUser={user} conversations={conversations} activeCall={activeCall} onJoinCall={joinGroupCall} onLeaveCall={leaveGroupCall} onClose={handleCloseChat} />
             </div>
           ) : (
             <div className="hidden flex-1 flex-col items-center justify-center bg-primary-background px-8 text-center text-secondary-label md:flex">

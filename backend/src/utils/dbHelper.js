@@ -1,10 +1,10 @@
 const {
   User, Project, Track, Folder, CoverArt,
-  Notification, PlayEvent, Message, Call, CallSignal, ShareLink
+  Notification, PlayEvent, Message, ChatGroup, Call, CallSignal, ShareLink
 } = require('../models');
 
 const readDB = async () => {
-  const [users, projects, tracks, folders, coverArts, notifications, playEvents, messages, calls, callSignals, shareLinks] = await Promise.all([
+  const [users, projects, tracks, folders, coverArts, notifications, playEvents, messages, groups, calls, callSignals, shareLinks] = await Promise.all([
     User.find().lean(),
     Project.find().lean(),
     Track.find().lean(),
@@ -13,11 +13,12 @@ const readDB = async () => {
     Notification.find().lean(),
     PlayEvent.find().lean(),
     Message.find().lean(),
+    ChatGroup.find().lean(),
     Call.find().lean(),
     CallSignal.find().lean(),
     ShareLink.find().lean(),
   ]);
-  return { users, projects, tracks, folders, coverArts, notifications, playEvents, messages, calls, callSignals, shareLinks };
+  return { users, projects, tracks, folders, coverArts, notifications, playEvents, messages, groups, calls, callSignals, shareLinks };
 };
 
 const writeDB = async (db) => {
@@ -30,6 +31,7 @@ const writeDB = async (db) => {
     ...( db.notifications|| [] ).map(d => Notification.findOneAndUpdate({ id: d.id }, d, { upsert: true, returnDocument: 'after', lean: true } )),
     ...( db.playEvents   || [] ).map(d => PlayEvent.findOneAndUpdate(   { id: d.id }, d, { upsert: true, returnDocument: 'after', lean: true } )),
     ...( db.messages     || [] ).map(d => Message.findOneAndUpdate(     { id: d.id }, d, { upsert: true, returnDocument: 'after', lean: true } )),
+    ...( db.groups       || [] ).map(d => ChatGroup.findOneAndUpdate(   { id: d.id }, d, { upsert: true, returnDocument: 'after', lean: true } )),
     ...( db.calls        || [] ).map(d => Call.findOneAndUpdate(        { id: d.id }, d, { upsert: true, returnDocument: 'after', lean: true } )),
     ...( db.callSignals  || [] ).map(d => CallSignal.findOneAndUpdate(  { id: d.id }, d, { upsert: true, returnDocument: 'after', lean: true } )),
     ...( db.shareLinks   || [] ).map(d => ShareLink.findOneAndUpdate(   { id: d.id }, d, { upsert: true, returnDocument: 'after', lean: true } )),
@@ -46,6 +48,7 @@ const ensureDBShape = (db) => {
   db.notifications ||= [];
   db.playEvents    ||= [];
   db.messages      ||= [];
+  db.groups        ||= [];
   db.calls         ||= [];
   db.callSignals   ||= [];
   db.shareLinks    ||= [];

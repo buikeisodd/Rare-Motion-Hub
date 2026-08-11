@@ -6,6 +6,7 @@ const {
   getCallSignals,
   sendCallSignal,
   getUsers,
+  createGroup,
   getMessages,
   sendMessageController,
   sendMediaMessage,
@@ -29,6 +30,9 @@ router.post('/calls/group/signals', requireUserId, sendCallSignal);
 
 // Users (contacts)
 router.get('/users', requireUserId, getUsers);
+
+// Groups
+router.post('/groups', requireUserId, createGroup);
 
 // Messages
 router.get('/messages', requireUserId, getMessages);

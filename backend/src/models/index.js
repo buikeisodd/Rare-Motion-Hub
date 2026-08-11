@@ -114,6 +114,15 @@ const PlayEventSchema = new Schema({
 
 const MessageSchema = new Schema({
   id: { type: String, required: true, unique: true },
+  senderId: String,
+  recipientId: String,
+  conversationType: String,
+  messageKind: String,
+  attachments: [Schema.Types.Mixed],
+  replyToMessageId: String,
+  forwardedFrom: Schema.Types.Mixed,
+  deleted: Boolean,
+  deliveredTo: [String],
   fromId: String,
   toId: String,
   groupId: String,
@@ -128,13 +137,24 @@ const MessageSchema = new Schema({
   forwarded: Boolean,
   createdAt: { type: String, default: () => new Date().toISOString() },
   readBy: [String],
-  messageKind: String,
+});
+
+const ChatGroupSchema = new Schema({
+  id: { type: String, required: true, unique: true },
+  name: String,
+  createdById: String,
+  participantIds: [String],
+  createdAt: { type: String, default: () => new Date().toISOString() },
+  updatedAt: String,
 });
 
 const CallSchema = new Schema({
   id: { type: String, required: true, unique: true },
   fromId: String,
   toId: String,
+  startedById: String,
+  participantIds: [String],
+  active: Boolean,
   type: String,
   status: String,
   startedAt: String,
@@ -147,6 +167,8 @@ const CallSignalSchema = new Schema({
   callId: String,
   fromId: String,
   toId: String,
+  fromUserId: String,
+  toUserId: String,
   type: String,
   payload: Schema.Types.Mixed,
   createdAt: { type: String, default: () => new Date().toISOString() },
@@ -170,6 +192,7 @@ module.exports = {
   Notification: mongoose.model('Notification', NotificationSchema),
   PlayEvent:    mongoose.model('PlayEvent',    PlayEventSchema),
   Message:      mongoose.model('Message',      MessageSchema),
+  ChatGroup:    mongoose.model('ChatGroup',    ChatGroupSchema),
   Call:         mongoose.model('Call',         CallSchema),
   CallSignal:   mongoose.model('CallSignal',   CallSignalSchema),
   ShareLink:    mongoose.model('ShareLink',    ShareLinkSchema),

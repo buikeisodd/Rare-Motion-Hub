@@ -102,11 +102,14 @@ const notifyListen = (db, { ownerId, actorId, project, folder, track }) => {
   });
 };
 
-const groupParticipantIds = (db) => db.users.map((user) => user.id);
+const groupParticipantIds = (db, groupId) => {
+  const group = db.groups?.find((item) => item.id === groupId);
+  return group ? (group.participantIds || []) : [];
+};
 
 const chatRecipientIds = (db, message) => {
   if (message.conversationType === 'group') {
-    return groupParticipantIds(db).filter((id) => id !== message.senderId);
+    return groupParticipantIds(db, message.groupId).filter((id) => id !== message.senderId);
   }
   return message.recipientId ? [message.recipientId] : [];
 };
@@ -135,14 +138,16 @@ const hydrateCall = (db, call) => call ? {
   participants: (call.participantIds || []).map((id) => publicUser(db.users.find((user) => user.id === id)))
 } : null;
 
-const createMessage = (db, { senderId, recipientId, conversationType, text = '', attachments = [], replyToMessageId = null, forwardedFrom = null }) => {
+const createMessage = (db, { senderId, recipientId, groupId = null, conversationType, messageKind = 'message', text = '', attachments = [], replyToMessageId = null, forwardedFrom = null }) => {
   const type = conversationType || 'dm';
-  const recipients = type === 'group' ? groupParticipantIds(db).filter((id) => id !== senderId) : [recipientId].filter(Boolean);
+  const recipients = type === 'group' ? groupParticipantIds(db, groupId).filter((id) => id !== senderId) : [recipientId].filter(Boolean);
   return {
     id: makeId(),
     senderId,
     recipientId: type === 'group' ? null : recipientId,
+    groupId: type === 'group' ? groupId : null,
     conversationType: type,
+    messageKind,
     text: text.trim(),
     attachments,
     replyToMessageId,
@@ -170,7 +175,7 @@ const notifyMessage = (db, message) => {
         partnerId: message.conversationType === 'dm' ? message.senderId : null
       },
       message: message.conversationType === 'group'
-        ? `${sender.name} sent a message in Group Chat`
+        ? `${sender.name} sent a message in ${db.groups?.find((group) => group.id === message.groupId)?.name || 'a group'}`
         : `${sender.name} sent you a message`,
       preview: message.text || (message.attachments?.length ? 'Media message' : ''),
       read: false,

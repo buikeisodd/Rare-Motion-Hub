@@ -1,4 +1,4 @@
-const { Message, User, CallSignal, Call, Notification } = require('../models');
+const { Message, User, ChatGroup, CallSignal, Call, Notification } = require('../models');
 const { readDB, writeDB, ensureDBShape } = require('../utils/dbHelper');
 const {
   makeId,
@@ -193,6 +193,44 @@ const getUsers = async (req, res, next) => {
   }
 };
 
+const areConnected = (a, b) => (
+  (a.following || []).includes(b.id) ||
+  (a.followers || []).includes(b.id) ||
+  (b.following || []).includes(a.id) ||
+  (b.followers || []).includes(a.id)
+);
+
+const createGroup = async (req, res, next) => {
+  try {
+    const db = ensureDBShape(await readDB());
+    const userId = req.userId;
+    const actor = db.users.find((user) => user.id === userId);
+    if (!actor) return next(new AppError('Unauthorized user.', 401));
+
+    const name = String(req.body.name || 'New group').trim().slice(0, 60);
+    const requestedIds = [...new Set(req.body.participantIds || [])].filter((id) => id && id !== userId);
+    const participants = requestedIds
+      .map((id) => db.users.find((user) => user.id === id))
+      .filter(Boolean);
+    const blocked = participants.find((participant) => !areConnected(actor, participant));
+    if (blocked) return next(new AppError('You can only add followers to a group.', 403));
+    if (participants.length === 0) return next(new AppError('Add at least one follower to create a group.', 400));
+
+    const group = {
+      id: makeId(),
+      name,
+      createdById: userId,
+      participantIds: [userId, ...participants.map((participant) => participant.id)],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    await ChatGroup.create(group);
+    res.status(201).json({ group: { ...group, participants: group.participantIds.map((id) => publicUser(db.users.find((user) => user.id === id))) } });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const getMessages = async (req, res, next) => {
   try {
     const userId = req.userId;
@@ -201,7 +239,11 @@ const getMessages = async (req, res, next) => {
 
     let msgs;
     if (type === 'group') {
-      msgs = await Message.find({ conversationType: 'group' }).lean().sort({ createdAt: 1 });
+      const groupId = req.query.groupId;
+      if (!groupId) return next(new AppError('groupId required for group messages.', 400));
+      const group = await ChatGroup.findOne({ id: groupId }).lean();
+      if (!group || !(group.participantIds || []).includes(userId)) return next(new AppError('Group not found.', 404));
+      msgs = await Message.find({ conversationType: 'group', groupId }).lean().sort({ createdAt: 1 });
     } else {
       if (!partnerId) return next(new AppError('partnerId required for DM.', 400));
       msgs = await Message.find({
@@ -229,14 +271,15 @@ const getMessages = async (req, res, next) => {
 
     Message.updateMany(
       type === 'group'
-        ? { conversationType: 'group', readBy: { $ne: userId } }
+        ? { conversationType: 'group', groupId: req.query.groupId, readBy: { $ne: userId } }
         : { conversationType: 'dm', senderId: partnerId, recipientId: userId, readBy: { $ne: userId } },
       { $addToSet: { readBy: userId } }
     ).catch(() => {});
 
     let participants = [];
     if (type === 'group') {
-      const users = await User.find({}).lean();
+      const group = await ChatGroup.findOne({ id: req.query.groupId }).lean();
+      const users = await User.find({ id: { $in: group?.participantIds || [] } }).lean();
       participants = users.map(u => ({ id: u.id, name: u.name, avatarUrl: u.avatarUrl || '' }));
     }
 
@@ -248,23 +291,29 @@ const getMessages = async (req, res, next) => {
 
 const sendMessageController = async (req, res, next) => {
   try {
-    const { recipientId, conversationType, text, replyToMessageId } = req.body;
+    const { recipientId, groupId, conversationType, text, replyToMessageId } = req.body;
     const senderId = req.userId;
     if (!text?.trim()) return next(new AppError('text required.', 400));
-    if (conversationType === 'dm' && !recipientId) return next(new AppError('recipientId required for DM.', 400));
+    const type = conversationType || 'dm';
+    if (type === 'dm' && !recipientId) return next(new AppError('recipientId required for DM.', 400));
+    if (type === 'group' && !groupId) return next(new AppError('groupId required for group message.', 400));
 
     const sender = await User.findOne({ id: senderId }).lean();
     if (!sender) return next(new AppError('Unauthorized user.', 401));
 
-    const type = conversationType || 'dm';
-
-    const access = type === 'dm' ? await getDirectMessageAccess(senderId, recipientId) : { kind: 'message' };
+    let access = { kind: 'message' };
+    if (type === 'dm') access = await getDirectMessageAccess(senderId, recipientId);
+    if (type === 'group') {
+      const group = await ChatGroup.findOne({ id: groupId }).lean();
+      if (!group || !(group.participantIds || []).includes(senderId)) return next(new AppError('Group not found.', 404));
+    }
     if (access.error) return next(new AppError(access.error, access.status));
 
     const msg = {
       id: makeId(),
       senderId,
       recipientId: type === 'group' ? null : recipientId,
+      groupId: type === 'group' ? groupId : null,
       conversationType: type,
       messageKind: access.kind,
       text: text.trim(),
@@ -283,8 +332,8 @@ const sendMessageController = async (req, res, next) => {
       sender: { id: sender.id, name: sender.name, avatarUrl: sender.avatarUrl || '' },
     };
 
-    User.find({}).lean().then(users => {
-      const db = ensureDBShape({ users, messages: [msg], notifications: [] });
+    Promise.all([User.find({}).lean(), ChatGroup.find({}).lean()]).then(([users, groups]) => {
+      const db = ensureDBShape({ users, groups, messages: [msg], notifications: [] });
       notifyMessage(db, msg);
       const newNotifs = db.notifications.filter(n => n.id);
       newNotifs.forEach(n => Notification.findOneAndUpdate({ id: n.id }, n, { upsert: true }).catch(() => {}));
@@ -300,18 +349,26 @@ const sendMediaMessage = async (req, res, next) => {
   try {
     if (!req.file) return next(new AppError('No media uploaded.', 400));
     const db = ensureDBShape(await readDB());
-    const { recipientId, conversationType, text, replyToMessageId, mediaKind } = req.body;
+    const { recipientId, groupId, conversationType, text, replyToMessageId, mediaKind } = req.body;
     const senderId = req.userId;
+    const type = conversationType || 'dm';
     if (!userExists(db, senderId)) {
       if (req.file) removeFileIfExists(req.file.path);
       return next(new AppError('Unauthorized user.', 401));
     }
-    if (conversationType === 'dm' && !recipientId) {
+    if (type === 'dm' && !recipientId) {
       if (req.file) removeFileIfExists(req.file.path);
       return next(new AppError('recipientId required for DM.', 400));
     }
 
-    const access = conversationType === 'dm' ? await getDirectMessageAccess(senderId, recipientId) : { kind: 'message' };
+    let access = type === 'dm' ? await getDirectMessageAccess(senderId, recipientId) : { kind: 'message' };
+    if (type === 'group') {
+      const group = db.groups.find((item) => item.id === groupId);
+      if (!group || !(group.participantIds || []).includes(senderId)) {
+        removeFileIfExists(req.file.path);
+        return next(new AppError('Group not found.', 404));
+      }
+    }
     if (access.error) { removeFileIfExists(req.file.path); return next(new AppError(access.error, access.status)); }
 
     const attachmentType = req.file.mimetype.startsWith('image/')
@@ -329,7 +386,8 @@ const sendMediaMessage = async (req, res, next) => {
     const msg = createMessage(db, {
       senderId,
       recipientId,
-      conversationType,
+      groupId,
+      conversationType: type,
       messageKind: access.kind,
       text: text || '',
       replyToMessageId: replyToMessageId || null,
@@ -393,17 +451,22 @@ const deleteMessage = async (req, res, next) => {
 const forwardMessage = async (req, res, next) => {
   try {
     const db = ensureDBShape(await readDB());
-    const { targetType, recipientId } = req.body;
+    const { targetType, recipientId, groupId } = req.body;
     const senderId = req.userId;
     const source = db.messages.find((item) => item.id === req.params.id);
     if (!source) return next(new AppError('Message not found.', 404));
     if (!userExists(db, senderId)) return next(new AppError('Unauthorized user.', 401));
     if (targetType === 'dm' && !recipientId) return next(new AppError('recipientId required for DM forward.', 400));
+    if (targetType === 'group') {
+      const group = db.groups.find((item) => item.id === groupId);
+      if (!group || !(group.participantIds || []).includes(senderId)) return next(new AppError('Group not found.', 404));
+    }
 
     const msg = createMessage(db, {
       senderId,
       recipientId,
       conversationType: targetType,
+      groupId: targetType === 'group' ? groupId : null,
       text: source.text || '',
       attachments: source.attachments || [],
       forwardedFrom: { id: source.id, senderId: source.senderId }
@@ -423,30 +486,38 @@ const getConversations = async (req, res, next) => {
     const userId = req.userId;
     if (!userExists(db, userId)) return next(new AppError('Unauthorized user.', 401));
 
-    const others = db.users.filter((u) => u.id !== userId);
     const conversations = [];
 
+    const userGroupIds = db.groups
+      .filter((group) => (group.participantIds || []).includes(userId))
+      .map((group) => group.id);
     const allMessages = await Message.find({
       $or: [
-        { conversationType: 'group' },
+        { conversationType: 'group', groupId: { $in: userGroupIds } },
         { conversationType: 'dm', $or: [{ senderId: userId }, { recipientId: userId }] }
       ]
     }).lean();
     db.messages = allMessages;
 
-    const groupMsgs = db.messages.filter((m) => m.conversationType === 'group');
-    const lastGroup = groupMsgs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] || null;
-    const groupUnreadCount = groupMsgs.filter((m) => m.senderId !== userId && !(m.readBy || []).includes(userId)).length;
-    conversations.push({
-      type: 'group',
-      partner: null,
-      participants: db.users.map(publicUser),
-      lastMessage: lastGroup ? hydrateMessage(db, lastGroup) : null,
-      unreadCount: groupUnreadCount,
-      updatedAt: lastGroup?.createdAt || '9999'
-    });
+    for (const group of db.groups.filter((item) => (item.participantIds || []).includes(userId))) {
+      const groupMsgs = db.messages.filter((m) => m.conversationType === 'group' && m.groupId === group.id);
+      const lastGroup = groupMsgs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] || null;
+      const groupUnreadCount = groupMsgs.filter((m) => m.senderId !== userId && !(m.readBy || []).includes(userId)).length;
+      conversations.push({
+        type: 'group',
+        group: { id: group.id, name: group.name },
+        partner: null,
+        participants: (group.participantIds || []).map((id) => publicUser(db.users.find((user) => user.id === id))).filter(Boolean),
+        lastMessage: lastGroup ? hydrateMessage(db, lastGroup) : null,
+        unreadCount: groupUnreadCount,
+        updatedAt: lastGroup?.createdAt || group.updatedAt || group.createdAt
+      });
+    }
 
-    for (const other of others) {
+    const partnerIds = [...new Set(db.messages.flatMap((m) => m.conversationType === 'dm' ? [m.senderId, m.recipientId] : []).filter((id) => id && id !== userId))];
+    for (const partnerId of partnerIds) {
+      const other = db.users.find((user) => user.id === partnerId);
+      if (!other) continue;
       const msgs = db.messages.filter(
         (m) => m.conversationType === 'dm' &&
           ((m.senderId === userId && m.recipientId === other.id) ||
@@ -502,6 +573,7 @@ module.exports = {
   getCallSignals,
   sendCallSignal,
   getUsers,
+  createGroup,
   getMessages,
   sendMessageController,
   sendMediaMessage,
