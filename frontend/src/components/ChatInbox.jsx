@@ -35,7 +35,6 @@ function ProfileAvatar({ user, size = 'h-10 w-10', isGroup = false }) {
     </div>
   );
 }
-
 function MessageTicks({ message }) {
   if (!message.delivery?.delivered) return null;
   return (
@@ -502,6 +501,7 @@ function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall,
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(true);
+  const [chatError, setChatError] = useState('');
   const [sending, setSending] = useState(false);
   const [replyTo, setReplyTo] = useState(null);
   const [forwarding, setForwarding] = useState(null);
@@ -515,30 +515,43 @@ function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall,
   const chunksRef = useRef([]);
 
   const isGroup = convo.type === 'group';
+  const partnerId = !isGroup ? convo.partner?.id : null;
+  const groupId = isGroup ? convo.group?.id : null;
+  const canLoadConversation = isGroup ? Boolean(groupId) : Boolean(partnerId);
   const chatName = isGroup ? convo.group?.name || 'Group' : convo.partner?.name || 'Unknown';
   const participants = convo.participants || [];
 
   const fetchMessages = useCallback(async () => {
+    if (!canLoadConversation) {
+      setLoading(false);
+      setChatError('This conversation could not be opened. Please go back and try again.');
+      return;
+    }
     try {
+      setChatError('');
       const url = isGroup
-        ? `${apiUrl}/api/messages?type=group&userId=${currentUser.id}&groupId=${convo.group?.id}`
-        : `${apiUrl}/api/messages?type=dm&userId=${currentUser.id}&partnerId=${convo.partner.id}`;
+        ? `${apiUrl}/api/messages?type=group&userId=${currentUser.id}&groupId=${groupId}`
+        : `${apiUrl}/api/messages?type=dm&userId=${currentUser.id}&partnerId=${partnerId}`;
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 8000);
       const res = await fetch(url, { signal: controller.signal });
       clearTimeout(timeout);
-      if (!res.ok) return;
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setChatError(data.error || 'Could not load this conversation.');
+        return;
+      }
       const data = await res.json();
       const incoming = data.messages;
       if (!Array.isArray(incoming)) return;
       // Only replace if server returned MORE or EQUAL messages — never wipe with fewer
       setMessages(prev => incoming.length >= prev.length ? incoming : prev);
     } catch (err) {
-      // Silently ignore — abort, network error, Render sleeping
+      setChatError(err.name === 'AbortError' ? 'The server took too long to respond. Please try again.' : 'Could not connect to the chat server.');
     } finally {
       setLoading(false);
     }
-  }, [isGroup, currentUser.id, convo.partner?.id, convo.group?.id]);
+  }, [canLoadConversation, isGroup, currentUser.id, partnerId, groupId]);
 
   useEffect(() => {
     // Initial load immediately
@@ -554,23 +567,31 @@ function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall,
   const pinned = useMemo(() => messages.find((message) => message.pinned && !message.deleted), [messages]);
 
   const sendPayload = async (payload) => {
+    if (!canLoadConversation) {
+      setChatError('This conversation could not be opened. Please go back and try again.');
+      return;
+    }
     setSending(true);
     try {
+      setChatError('');
       const res = await fetch(`${apiUrl}/api/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           senderId: currentUser.id,
-          recipientId: isGroup ? null : convo.partner.id,
-          groupId: isGroup ? convo.group?.id : null,
+          recipientId: isGroup ? null : partnerId,
+          groupId: isGroup ? groupId : null,
           conversationType: isGroup ? 'group' : 'dm',
           replyToMessageId: replyTo?.id || null,
           ...payload
         })
       });
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Message could not be sent.');
       if (data.message) setMessages((prev) => [...prev, data.message]);
       setReplyTo(null);
+    } catch (err) {
+      setChatError(err.message || 'Message could not be sent.');
     } finally {
       setSending(false);
     }
@@ -585,11 +606,15 @@ function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall,
 
   const sendMedia = async (file, mediaKind = '') => {
     if (!file) return;
+    if (!canLoadConversation) {
+      setChatError('This conversation could not be opened. Please go back and try again.');
+      return;
+    }
     const formData = new FormData();
     formData.append('media', file);
     formData.append('senderId', currentUser.id);
-    formData.append('recipientId', isGroup ? '' : convo.partner.id);
-    if (isGroup) formData.append('groupId', convo.group?.id || '');
+    formData.append('recipientId', isGroup ? '' : partnerId);
+    if (isGroup) formData.append('groupId', groupId || '');
     formData.append('conversationType', isGroup ? 'group' : 'dm');
     formData.append('text', text.trim());
     formData.append('mediaKind', mediaKind);
@@ -597,12 +622,15 @@ function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall,
     setText('');
     setSending(true);
     try {
+      setChatError('');
       const res = await fetch(`${apiUrl}/api/messages/media`, { method: 'POST', body: formData });
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Media could not be sent.');
       if (data.message) setMessages((prev) => [...prev, data.message]);
       setReplyTo(null);
     } catch (err) {
       console.error('Media send failed', err);
+      setChatError(err.message || 'Media could not be sent.');
     } finally {
       setSending(false);
     }
@@ -703,6 +731,12 @@ function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall,
       </div>
 
       {isGroup && <GroupStreamPanel currentUser={currentUser} participants={participants} activeCall={activeCall} onJoinCall={onJoinCall} onLeaveCall={onLeaveCall} />}
+
+      {chatError && (
+        <div className="mx-4 mt-3 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200 sm:mx-5">
+          {chatError}
+        </div>
+      )}
 
       {pinned && (
         <button onClick={() => setReplyTo(pinned)} className="flex shrink-0 items-center gap-3 border-b border-border bg-shading px-4 py-2 text-left text-xs">
@@ -926,10 +960,16 @@ export default function ChatInbox({ user, isOpen, onToggle, onConversationsChang
 
   useEffect(() => {
     if (!isOpen || !startConversationWith?.id || startConversationWith.id === user.id) return;
+    const normalizedTarget = {
+      id: startConversationWith.id,
+      name: startConversationWith.name || startConversationWith.username || 'Unknown',
+      username: startConversationWith.username || startConversationWith.name || 'unknown',
+      avatarUrl: startConversationWith.avatarUrl || null
+    };
     const existing = conversations.find((convo) => convo.type !== 'group' && convo.partner?.id === startConversationWith.id);
     const starterConvo = existing || {
       type: 'dm',
-      partner: startConversationWith,
+      partner: normalizedTarget,
       lastMessage: null,
       unreadCount: 0,
       isRequest: false,
