@@ -289,11 +289,12 @@ function App() {
     return () => { cancelled = true; };
   }, [apiUrl, user?.id]);
 
-  const handleLogin = (userData, token) => {
+  const handleLogin = (userData, token, csrfToken) => {
     setUser(userData);
     setJustAuthenticated(true);
     localStorage.setItem('user', JSON.stringify(userData));
     if (token) localStorage.setItem('token', token);
+    if (csrfToken) localStorage.setItem('csrfToken', csrfToken);
   };
 
   const handleLogout = async () => {
@@ -309,6 +310,7 @@ function App() {
     setJustAuthenticated(false);
     localStorage.removeItem('user');
     localStorage.removeItem('token');
+    localStorage.removeItem('csrfToken');
     // Audio cleanup is handled by AudioContext unmounting
   };
 

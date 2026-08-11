@@ -56,7 +56,7 @@ export default function Login({ onLogin }) {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Could not reset password.');
-        onLogin(data.user, data.token);
+        onLogin(data.user, data.token, data.csrfToken);
         return;
       }
 
@@ -76,7 +76,7 @@ export default function Login({ onLogin }) {
           setNotice(data.message || 'Check your email to verify your account before signing in.');
           if (data.verificationUrl) setNotice(`${data.message} Dev link: ${data.verificationUrl}`);
         } else {
-          onLogin(data.user, data.token);
+          onLogin(data.user, data.token, data.csrfToken);
         }
       } else {
         setError(data.error || 'Authentication failed');

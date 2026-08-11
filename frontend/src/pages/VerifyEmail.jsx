@@ -28,7 +28,7 @@ export default function VerifyEmail({ onLogin }) {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Could not verify email.');
         if (cancelled) return;
-        onLogin(data.user, data.token);
+        onLogin(data.user, data.token, data.csrfToken);
         setState({ status: 'success', message: 'Email verified. Opening your library...' });
         window.setTimeout(() => navigate('/library', { replace: true }), 700);
       } catch (error) {

@@ -13,6 +13,8 @@ const readCookie = (req, name) => {
   return decodeURIComponent(match.slice(name.length + 1));
 };
 
+const unsafeMethods = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
 const requireUserId = (req, res, next) => {
   if (!JWT_SECRET) return next(new AppError('Server authentication is not configured.', 500));
   const authHeader = req.headers.authorization;
@@ -24,8 +26,16 @@ const requireUserId = (req, res, next) => {
   
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
+    if (!bearerToken && unsafeMethods.has(req.method)) {
+      const csrfCookie = readCookie(req, 'csrfToken');
+      const csrfHeader = req.get('x-csrf-token');
+      if (!csrfCookie || !csrfHeader || csrfCookie !== csrfHeader) {
+        return next(new AppError('Unauthorized: Invalid CSRF token', 401));
+      }
+    }
     req.userId = decoded.userId;
     req.sessionId = decoded.sessionId;
+    req.authTransport = bearerToken ? 'bearer' : 'cookie';
     next();
   } catch (error) {
     return next(new AppError('Unauthorized: Invalid token', 401));

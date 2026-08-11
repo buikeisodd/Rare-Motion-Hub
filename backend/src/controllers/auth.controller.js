@@ -11,6 +11,7 @@ const { BASE_URL, publicUser } = require('../utils/helpers');
 const { hasSmtpConfig, sendVerificationEmail, sendPasswordResetEmail } = require('../utils/email');
 const {
   recordSecurityEvent,
+  createOpaqueToken,
   createRefreshSession,
   rotateRefreshSession,
   revokeRefreshSession,
@@ -51,6 +52,7 @@ const cookieOptions = (maxAge) => ({
 const clearAuthCookies = (res) => {
   res.clearCookie('accessToken', cookieOptions(0));
   res.clearCookie('refreshToken', cookieOptions(0));
+  res.clearCookie('csrfToken', { ...cookieOptions(0), httpOnly: false });
 };
 
 const readCookie = (req, name) => {
@@ -65,10 +67,12 @@ const readCookie = (req, name) => {
 
 const issueAuthSession = async (req, res, user) => {
   const { session, refreshToken } = await createRefreshSession({ req, userId: user.id });
+  const csrfToken = createOpaqueToken(24);
   const accessToken = tokenForUser(user.id, session.sessionId, Math.floor(ACCESS_TOKEN_TTL_MS / 1000));
   res.cookie('accessToken', accessToken, cookieOptions(ACCESS_TOKEN_TTL_MS));
   res.cookie('refreshToken', refreshToken, cookieOptions(REFRESH_TOKEN_TTL_MS));
-  return { token: tokenForUser(user.id, session.sessionId), sessionId: session.sessionId };
+  res.cookie('csrfToken', csrfToken, { ...cookieOptions(REFRESH_TOKEN_TTL_MS), httpOnly: false });
+  return { token: tokenForUser(user.id, session.sessionId), csrfToken, sessionId: session.sessionId };
 };
 
 const securitySubject = (value) => hashToken(String(value || '').trim().toLowerCase());
@@ -240,10 +244,10 @@ const login = async (req, res, next) => {
       return next(new AppError('Please verify your email before signing in.', 403));
     }
 
-    const { token, sessionId } = await issueAuthSession(req, res, user);
+    const { token, csrfToken, sessionId } = await issueAuthSession(req, res, user);
     await noteLoginSuccess(email);
     await recordSecurityEvent({ req, userId: user.id, sessionId, type: 'login_success' });
-    res.json({ user: userResponse(user), token });
+    res.json({ user: userResponse(user), token, csrfToken });
   } catch (error) {
     next(error);
   }
@@ -273,10 +277,10 @@ const verifyEmail = async (req, res, next) => {
       await recordSecurityEvent({ req, type: 'email_verification_failed', metadata: { reason: 'invalid_or_expired' } });
       return next(new AppError('Invalid or expired verification link. Request a new one.', 400));
     }
-    const { token: authToken, sessionId } = await issueAuthSession(req, res, user);
+    const { token: authToken, csrfToken, sessionId } = await issueAuthSession(req, res, user);
     await recordSecurityEvent({ req, userId: user.id, sessionId, type: 'email_verified' });
     const verifiedUser = { ...user, ...updates };
-    res.json({ user: userResponse(verifiedUser), token: authToken });
+    res.json({ user: userResponse(verifiedUser), token: authToken, csrfToken });
   } catch (error) {
     next(error);
   }
@@ -365,10 +369,10 @@ const resetPassword = async (req, res, next) => {
       return next(new AppError('Invalid or expired reset link. Request a new one.', 400));
     }
     await revokeAllSessionsForUser({ userId: user.id, reason: 'password_reset' });
-    const { token: authToken, sessionId } = await issueAuthSession(req, res, user);
+    const { token: authToken, csrfToken, sessionId } = await issueAuthSession(req, res, user);
     await recordSecurityEvent({ req, userId: user.id, sessionId, type: 'password_reset_completed' });
     const nextUser = { ...user, ...updates };
-    res.json({ user: userResponse(nextUser), token: authToken });
+    res.json({ user: userResponse(nextUser), token: authToken, csrfToken });
   } catch (error) {
     next(error);
   }
@@ -391,10 +395,12 @@ const refreshSession = async (req, res, next) => {
       return next(new AppError('Unauthorized: Account unavailable', 401));
     }
     const accessToken = tokenForUser(user.id, rotated.session.sessionId, Math.floor(ACCESS_TOKEN_TTL_MS / 1000));
+    const csrfToken = createOpaqueToken(24);
     res.cookie('accessToken', accessToken, cookieOptions(ACCESS_TOKEN_TTL_MS));
     res.cookie('refreshToken', rotated.refreshToken, cookieOptions(REFRESH_TOKEN_TTL_MS));
+    res.cookie('csrfToken', csrfToken, { ...cookieOptions(REFRESH_TOKEN_TTL_MS), httpOnly: false });
     await recordSecurityEvent({ req, userId: user.id, sessionId: rotated.session.sessionId, type: 'session_refreshed' });
-    res.json({ user: userResponse(user), token: tokenForUser(user.id, rotated.session.sessionId) });
+    res.json({ user: userResponse(user), token: tokenForUser(user.id, rotated.session.sessionId), csrfToken });
   } catch (error) {
     next(error);
   }

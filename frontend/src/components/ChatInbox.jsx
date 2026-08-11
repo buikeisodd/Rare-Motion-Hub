@@ -6,9 +6,11 @@ import { ArrowLeft, Check, CheckCheck, Copy, Forward, Inbox, MessageCircle, Mic,
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 const authFetch = (url, options = {}) => {
   const token = localStorage.getItem('token');
+  const csrfToken = localStorage.getItem('csrfToken');
   const headers = new Headers(options.headers || {});
   if (token) headers.set('Authorization', `Bearer ${token}`);
-  return fetch(url, { ...options, headers });
+  if (csrfToken) headers.set('X-CSRF-Token', csrfToken);
+  return fetch(url, { ...options, headers, credentials: 'include' });
 };
 const emojis = ['😀', '😂', '😍', '🥹', '🔥', '🙏', '❤️', '🎧', '🎵', '✅', '😭', '😤', '🤝', '✨', '💿', '🚀'];
 
