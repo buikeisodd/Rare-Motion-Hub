@@ -167,7 +167,16 @@ const getUsers = async (req, res, next) => {
     const db = ensureDBShape(await readDB());
     const userId = req.userId;
     if (!userExists(db, userId)) return next(new AppError('Unauthorized user.', 401));
-    const others = db.users.filter((u) => u.id !== userId).map(publicUser);
+    const actor = db.users.find((user) => user.id === userId);
+    const following = new Set(actor?.following || []);
+    const followers = new Set(actor?.followers || []);
+    const others = db.users
+      .filter((u) => u.id !== userId)
+      .map((user) => ({
+        ...publicUser(user),
+        isFollowing: following.has(user.id),
+        followsYou: followers.has(user.id)
+      }));
     res.json({ users: others });
   } catch (error) {
     next(error);
