@@ -7,11 +7,12 @@ import { defaultGradient, gradientFor } from '../utils/gradients';
 import ChatInbox from '../components/ChatInbox';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const MAX_QUICK_ADD_SUGGESTIONS = 5;
 const Link = (props) => <RouterLink {...props} to={(props.children === 'Settings' || (Array.isArray(props.children) && props.children.includes('Settings'))) ? '/settings' : props.to} />;
 const dateLabel = (value) => value ? new Date(value).toLocaleDateString([], { month: 'short', day: 'numeric' }) : '';
 
 function QuickAdd({ suggestions, onFollow }) {
-  return <aside className="fixed right-8 top-28 hidden w-64 xl:block"><div className="rounded-2xl border border-border bg-shading/30 p-4"><div className="mb-4 flex items-center justify-between"><h2 className="text-sm font-semibold">Quick Add</h2><UserRound className="h-4 w-4 text-secondary-label" /></div>{suggestions.length === 0 ? <p className="text-xs text-secondary-label">You are all caught up.</p> : <div className="space-y-3">{suggestions.map((person) => <div key={person.id} className="flex items-center gap-2"><div className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-highlight text-sm font-semibold">{person.avatarUrl ? <img src={person.avatarUrl} alt="" className="h-full w-full object-cover" /> : (person.name || '?').slice(0, 1).toUpperCase()}</div><div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold">{person.name}</p><p className="truncate text-[11px] text-secondary-label">@{person.username || person.name}</p></div><button onClick={() => onFollow(person)} className="rounded-full bg-primary-label px-2.5 py-1 text-[11px] font-semibold text-primary-background">Follow</button></div>)}</div>}</div></aside>;
+  return <aside className="fixed right-8 top-28 hidden w-64 xl:block"><div className="rounded-2xl border border-border bg-shading/30 p-4"><div className="mb-4 flex items-center justify-between"><h2 className="text-sm font-semibold">Quick Add</h2><UserRound className="h-4 w-4 text-secondary-label" /></div>{suggestions.length === 0 ? <p className="text-xs text-secondary-label">You are all caught up.</p> : <div className="space-y-3">{suggestions.slice(0, MAX_QUICK_ADD_SUGGESTIONS).map((person) => <div key={person.id} className="flex items-center gap-2"><div className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-highlight text-sm font-semibold">{person.avatarUrl ? <img src={person.avatarUrl} alt="" className="h-full w-full object-cover" /> : (person.name || '?').slice(0, 1).toUpperCase()}</div><div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold">{person.name}</p><p className="truncate text-[11px] text-secondary-label">@{person.username || person.name}</p></div><button onClick={() => onFollow(person)} className="rounded-full bg-primary-label px-2.5 py-1 text-[11px] font-semibold text-primary-background">Follow</button></div>)}</div>}<p className="mt-4 border-t border-border pt-3 text-[11px] text-secondary-label/70">© 2026 Rare Motion Hub</p></div></aside>;
 }
 
 function CompactQuickAdd({ suggestions, onFollow }) {
@@ -19,12 +20,12 @@ function CompactQuickAdd({ suggestions, onFollow }) {
   return <section className="mb-6 xl:hidden" aria-label="Quick Add">
     <div className="mb-3 flex items-center justify-between"><h2 className="text-sm font-semibold">Quick Add</h2><UserRound className="h-4 w-4 text-secondary-label" /></div>
     <div className="flex snap-x gap-3 overflow-x-auto pb-1">
-      {suggestions.map((person) => <div key={person.id} className="flex min-w-[210px] snap-start items-center gap-2 rounded-2xl border border-border bg-shading/30 p-3">
+      {suggestions.slice(0, MAX_QUICK_ADD_SUGGESTIONS).map((person) => <div key={person.id} className="flex min-w-[210px] snap-start items-center gap-2 rounded-2xl border border-border bg-shading/30 p-3">
         <div className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-highlight text-sm font-semibold">{person.avatarUrl ? <img src={person.avatarUrl} alt="" className="h-full w-full object-cover" /> : (person.name || '?').slice(0, 1).toUpperCase()}</div>
         <div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold">{person.name}</p><p className="truncate text-[11px] text-secondary-label">@{person.username || person.name}</p></div>
         <button onClick={() => onFollow(person)} className="shrink-0 rounded-full bg-primary-label px-2.5 py-1 text-[11px] font-semibold text-primary-background">Follow</button>
       </div>)}
-    </div>
+    </div><p className="mt-3 text-[11px] text-secondary-label/70">© 2026 Rare Motion Hub</p>
   </section>;
 }
 
