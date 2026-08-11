@@ -298,48 +298,32 @@ const sendMessageController = async (req, res, next) => {
     if (type === 'dm' && !recipientId) return next(new AppError('recipientId required for DM.', 400));
     if (type === 'group' && !groupId) return next(new AppError('groupId required for group message.', 400));
 
-    const sender = await User.findOne({ id: senderId }).lean();
+    const db = ensureDBShape(await readDB());
+    const sender = db.users.find((user) => user.id === senderId);
     if (!sender) return next(new AppError('Unauthorized user.', 401));
 
     let access = { kind: 'message' };
     if (type === 'dm') access = await getDirectMessageAccess(senderId, recipientId);
     if (type === 'group') {
-      const group = await ChatGroup.findOne({ id: groupId }).lean();
+      const group = db.groups.find((item) => item.id === groupId);
       if (!group || !(group.participantIds || []).includes(senderId)) return next(new AppError('Group not found.', 404));
     }
     if (access.error) return next(new AppError(access.error, access.status));
 
-    const msg = {
-      id: makeId(),
+    const msg = createMessage(db, {
       senderId,
-      recipientId: type === 'group' ? null : recipientId,
-      groupId: type === 'group' ? groupId : null,
       conversationType: type,
+      recipientId,
+      groupId: type === 'group' ? groupId : null,
       messageKind: access.kind,
-      text: text.trim(),
-      attachments: [],
-      replyToMessageId: replyToMessageId || null,
-      pinned: false,
-      deleted: false,
-      readBy: [],
-      createdAt: new Date().toISOString()
-    };
+      text,
+      replyToMessageId: replyToMessageId || null
+    });
 
-    await Message.create(msg);
-
-    const hydrated = {
-      ...msg,
-      sender: { id: sender.id, name: sender.name, avatarUrl: sender.avatarUrl || '' },
-    };
-
-    Promise.all([User.find({}).lean(), ChatGroup.find({}).lean()]).then(([users, groups]) => {
-      const db = ensureDBShape({ users, groups, messages: [msg], notifications: [] });
-      notifyMessage(db, msg);
-      const newNotifs = db.notifications.filter(n => n.id);
-      newNotifs.forEach(n => Notification.findOneAndUpdate({ id: n.id }, n, { upsert: true }).catch(() => {}));
-    }).catch(() => {});
-
-    res.json({ message: hydrated });
+    db.messages.push(msg);
+    notifyMessage(db, msg);
+    await writeDB(db);
+    res.json({ message: hydrateMessage(db, msg) });
   } catch (error) {
     next(error);
   }

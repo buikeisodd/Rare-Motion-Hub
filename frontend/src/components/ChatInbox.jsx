@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Component, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAudio } from '../context/AudioContext';
 import AudioPlayer from './AudioPlayer';
 import { ArrowLeft, Check, CheckCheck, Copy, Forward, Inbox, MessageCircle, Mic, MicOff, MonitorUp, MoreHorizontal, Paperclip, PhoneCall, PhoneOff, Pin, PinOff, Reply, Search, Send, Smile, Trash2, Users, UserPlus, Video, VideoOff, Volume2, X } from 'lucide-react';
@@ -497,6 +497,60 @@ function MessageActions({ message, isOpen, onToggle, onClose, onReply, onCopy, o
   );
 }
 
+function normalizeChatMessage(message) {
+  return {
+    attachments: [],
+    readBy: [],
+    delivery: { delivered: true, read: false, readCount: 0, recipientCount: 0 },
+    ...message,
+    attachments: Array.isArray(message?.attachments) ? message.attachments : [],
+    sender: message?.sender || null,
+    replyTo: message?.replyTo || null,
+    createdAt: message?.createdAt || new Date().toISOString()
+  };
+}
+
+class ChatWindowBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+
+  componentDidUpdate(previousProps) {
+    if (previousProps.resetKey !== this.props.resetKey && this.state.error) {
+      this.setState({ error: null });
+    }
+  }
+
+  componentDidCatch(error) {
+    console.error('Chat window failed to render', error);
+  }
+
+  render() {
+    if (!this.state.error) return this.props.children;
+    return (
+      <div className="flex h-full flex-col bg-primary-background">
+        <div className="flex shrink-0 items-center gap-3 border-b border-border px-4 py-3 sm:px-5">
+          <button onClick={this.props.onClose} className="grid h-9 w-9 place-items-center rounded-xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Back to inbox">
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-primary-label">Chat could not open</p>
+            <p className="mt-0.5 text-xs text-secondary-label">Go back and try opening this conversation again.</p>
+          </div>
+        </div>
+        <div className="flex flex-1 items-center justify-center px-6 text-center text-sm text-secondary-label">
+          This conversation had an unexpected payload. The rest of your inbox is still available.
+        </div>
+      </div>
+    );
+  }
+}
+
 function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall, onLeaveCall, onClose }) {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
@@ -544,8 +598,9 @@ function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall,
       const data = await res.json();
       const incoming = data.messages;
       if (!Array.isArray(incoming)) return;
+      const normalized = incoming.map(normalizeChatMessage);
       // Only replace if server returned MORE or EQUAL messages — never wipe with fewer
-      setMessages(prev => incoming.length >= prev.length ? incoming : prev);
+      setMessages(prev => normalized.length >= prev.length ? normalized : prev);
     } catch (err) {
       setChatError(err.name === 'AbortError' ? 'The server took too long to respond. Please try again.' : 'Could not connect to the chat server.');
     } finally {
@@ -588,7 +643,7 @@ function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall,
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Message could not be sent.');
-      if (data.message) setMessages((prev) => [...prev, data.message]);
+      if (data.message) setMessages((prev) => [...prev, normalizeChatMessage(data.message)]);
       setReplyTo(null);
     } catch (err) {
       setChatError(err.message || 'Message could not be sent.');
@@ -626,7 +681,7 @@ function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall,
       const res = await fetch(`${apiUrl}/api/messages/media`, { method: 'POST', body: formData });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Media could not be sent.');
-      if (data.message) setMessages((prev) => [...prev, data.message]);
+      if (data.message) setMessages((prev) => [...prev, normalizeChatMessage(data.message)]);
       setReplyTo(null);
     } catch (err) {
       console.error('Media send failed', err);
@@ -1171,7 +1226,9 @@ export default function ChatInbox({ user, isOpen, onToggle, onConversationsChang
           </div>
           {activeConvo ? (
             <div className="flex flex-1 flex-col overflow-hidden bg-primary-background">
-              <ChatWindow key={activeConvo?.type === "group" ? activeConvo?.group?.id : activeConvo?.partner?.id} convo={activeConvo} currentUser={user} conversations={conversations} activeCall={activeCall} onJoinCall={joinGroupCall} onLeaveCall={leaveGroupCall} onClose={handleCloseChat} />
+              <ChatWindowBoundary resetKey={activeConvo?.type === 'group' ? activeConvo?.group?.id : activeConvo?.partner?.id} onClose={handleCloseChat}>
+                <ChatWindow key={activeConvo?.type === 'group' ? activeConvo?.group?.id || 'group' : activeConvo?.partner?.id || 'dm'} convo={activeConvo} currentUser={user} conversations={conversations} activeCall={activeCall} onJoinCall={joinGroupCall} onLeaveCall={leaveGroupCall} onClose={handleCloseChat} />
+              </ChatWindowBoundary>
             </div>
           ) : (
             <div className="hidden flex-1 flex-col items-center justify-center bg-primary-background px-8 text-center text-secondary-label md:flex">
