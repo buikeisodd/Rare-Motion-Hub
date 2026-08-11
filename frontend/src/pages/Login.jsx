@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Loader2, Mail, Lock, Phone } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Mail, Lock, Phone } from 'lucide-react';
 import StarlightLogo from '../components/StarlightLogo';
 
 function GoogleIcon({ className = '' }) {
@@ -25,12 +25,19 @@ export default function Login({ onLogin }) {
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState(() => localStorage.getItem('lastEmail') || '');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    if (isRegister && password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
     setLoading(true);
 
     try {
@@ -98,14 +105,32 @@ export default function Login({ onLogin }) {
             <label className="relative block">
               <Lock className="absolute left-6 top-1/2 h-5 w-5 -translate-y-1/2 text-secondary-label" />
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
-                className="h-12 w-full rounded-full bg-shading border border-border pl-12 pr-6 text-center text-base font-semibold text-primary-label placeholder:text-secondary-label focus:outline-none focus:ring-2 focus:ring-primary-label/20 transition-all"
+                className="h-12 w-full rounded-full bg-shading border border-border pl-12 pr-14 text-center text-base font-semibold text-primary-label placeholder:text-secondary-label focus:outline-none focus:ring-2 focus:ring-primary-label/20 transition-all"
                 required
               />
+              <button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute right-5 top-1/2 -translate-y-1/2 text-secondary-label transition-colors hover:text-primary-label" aria-label={showPassword ? 'Hide password' : 'Show password'}>
+                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
             </label>
+
+            {isRegister && <label className="relative block">
+              <Lock className="absolute left-6 top-1/2 h-5 w-5 -translate-y-1/2 text-secondary-label" />
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm password"
+                className="h-12 w-full rounded-full bg-shading border border-border pl-12 pr-14 text-center text-base font-semibold text-primary-label placeholder:text-secondary-label focus:outline-none focus:ring-2 focus:ring-primary-label/20 transition-all"
+                required
+              />
+              <button type="button" onClick={() => setShowConfirmPassword((value) => !value)} className="absolute right-5 top-1/2 -translate-y-1/2 text-secondary-label transition-colors hover:text-primary-label" aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}>
+                {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            </label>}
 
             {error && (
               <div className="rounded-2xl border border-red-300/10 bg-red-400/10 px-4 py-3 text-center text-sm text-red-300">
