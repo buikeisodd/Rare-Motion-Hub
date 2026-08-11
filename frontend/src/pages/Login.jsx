@@ -222,6 +222,17 @@ export default function Login({ onLogin }) {
                 {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>
             </label>
+            {!isRegister && !resetMode && (
+              <div className="flex justify-end px-2">
+                <button
+                  type="button"
+                  onClick={requestPasswordReset}
+                  className="text-xs font-semibold text-secondary-label underline-offset-4 transition-colors hover:text-primary-label hover:underline"
+                >
+                  Forgot password?
+                </button>
+              </div>
+            )}
 
             {isRegister && !resetMode && <label className="relative block">
               <Lock className="absolute left-6 top-1/2 h-5 w-5 -translate-y-1/2 text-secondary-label" />
@@ -279,16 +290,6 @@ export default function Login({ onLogin }) {
               {providerLoading === 'Google' ? <Loader2 className="h-5 w-5 animate-spin" /> : <GoogleIcon className="h-5 w-5" />}
               Continue with Google
             </button>
-            {!isRegister && !resetMode && (
-              <button type="button" onClick={requestPasswordReset} className="block w-full text-center text-xs font-semibold text-secondary-label underline-offset-4 transition-colors hover:text-primary-label hover:underline">
-                Forgot password?
-              </button>
-            )}
-            {resetMode && (
-              <button type="button" onClick={() => { setResetMode(false); setResetToken(''); window.history.replaceState(null, '', '/login'); }} className="block w-full text-center text-xs font-semibold text-secondary-label underline-offset-4 transition-colors hover:text-primary-label hover:underline">
-                Back to login
-              </button>
-            )}
             <button
               type="button"
               onClick={() => handleProviderAuth('Apple')}
@@ -307,6 +308,11 @@ export default function Login({ onLogin }) {
               {providerLoading === 'Phone' ? <Loader2 className="h-5 w-5 animate-spin" /> : <Phone className="h-5 w-5" />}
               Continue with phone number
             </button>
+            {resetMode && (
+              <button type="button" onClick={() => { setResetMode(false); setResetToken(''); window.history.replaceState(null, '', '/login'); }} className="block w-full text-center text-xs font-semibold text-secondary-label underline-offset-4 transition-colors hover:text-primary-label hover:underline">
+                Back to login
+              </button>
+            )}
           </div>
         </div>
 
