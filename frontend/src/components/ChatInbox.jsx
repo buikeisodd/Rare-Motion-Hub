@@ -459,6 +459,7 @@ function GroupStreamPanel({ currentUser, participants, activeCall, onJoinCall, o
 }
 
 function MediaPreview({ attachment }) {
+  if (!attachment || typeof attachment !== 'object' || !attachment.url) return null;
   if (attachment.type === 'image') return <img src={attachment.url} alt="" className="mt-2 max-h-64 w-full rounded-xl object-cover" />;
   if (attachment.type === 'video') return <video src={attachment.url} controls className="mt-2 max-h-64 w-full rounded-xl" />;
   if (attachment.type === 'voice') return <audio src={attachment.url} controls className="mt-2 w-full" />;
@@ -498,15 +499,37 @@ function MessageActions({ message, isOpen, onToggle, onClose, onReply, onCopy, o
 }
 
 function normalizeChatMessage(message) {
+  const safeMessage = message && typeof message === 'object' ? message : {};
   return {
     attachments: [],
     readBy: [],
     delivery: { delivered: true, read: false, readCount: 0, recipientCount: 0 },
-    ...message,
-    attachments: Array.isArray(message?.attachments) ? message.attachments : [],
-    sender: message?.sender || null,
-    replyTo: message?.replyTo || null,
-    createdAt: message?.createdAt || new Date().toISOString()
+    ...safeMessage,
+    id: safeMessage.id || `legacy-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    senderId: safeMessage.senderId || '',
+    text: typeof safeMessage.text === 'string' ? safeMessage.text : '',
+    deleted: Boolean(safeMessage.deleted),
+    attachments: Array.isArray(safeMessage.attachments) ? safeMessage.attachments.filter((attachment) => attachment && typeof attachment === 'object') : [],
+    sender: safeMessage.sender && typeof safeMessage.sender === 'object' ? safeMessage.sender : null,
+    replyTo: safeMessage.replyTo && typeof safeMessage.replyTo === 'object' ? safeMessage.replyTo : null,
+    createdAt: safeMessage.createdAt && !Number.isNaN(new Date(safeMessage.createdAt).getTime()) ? safeMessage.createdAt : new Date().toISOString()
+  };
+}
+
+function normalizeConversation(convo) {
+  if (!convo || typeof convo !== 'object') return null;
+  const type = convo.type === 'group' ? 'group' : 'dm';
+  const group = convo.group && typeof convo.group === 'object' ? convo.group : null;
+  const partner = convo.partner && typeof convo.partner === 'object' ? convo.partner : null;
+  if (type === 'group' && !group?.id) return null;
+  if (type === 'dm' && !partner?.id) return null;
+  return {
+    ...convo,
+    type,
+    group,
+    partner,
+    participants: Array.isArray(convo.participants) ? convo.participants.filter(Boolean) : [],
+    lastMessage: convo.lastMessage ? normalizeChatMessage(convo.lastMessage) : null
   };
 }
 
@@ -935,7 +958,7 @@ export default function ChatInbox({ user, isOpen, onToggle, onConversationsChang
     try {
       const res = await fetch(`${apiUrl}/api/conversations?userId=${user.id}`);
       const data = await res.json();
-      const nextConversations = data.conversations || [];
+      const nextConversations = Array.isArray(data.conversations) ? data.conversations.map(normalizeConversation).filter(Boolean) : [];
       if (didPrimeNotificationsRef.current) {
         nextConversations.forEach((convo) => {
           const key = convo.type === 'group' ? convo.group?.id : convo.partner?.id;
