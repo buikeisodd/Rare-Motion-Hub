@@ -270,7 +270,10 @@ function App() {
 
     async function refreshUser() {
       try {
-        const res = await fetch(`${apiUrl}/api/users/${user.id}`);
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${apiUrl}/api/auth/${user.id}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
         const data = await res.json();
         if (!cancelled && res.ok && data.user) {
           setUser(data.user);

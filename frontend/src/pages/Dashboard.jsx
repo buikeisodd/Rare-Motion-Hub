@@ -739,7 +739,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
     try {
       const profileRes = await fetch(`${apiUrl}/api/auth/${user.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(true),
         body: JSON.stringify({ name, username, bio })
       });
       const profileData = await profileRes.json();
@@ -751,6 +751,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
         formData.append('avatar', avatarFile);
         const avatarRes = await fetch(`${apiUrl}/api/auth/${user.id}/avatar`, {
           method: 'POST',
+          headers: authHeaders(),
           body: formData
         });
         const avatarData = await avatarRes.json();
