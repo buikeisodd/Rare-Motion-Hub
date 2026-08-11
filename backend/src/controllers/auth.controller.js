@@ -252,7 +252,8 @@ const getUser = async (req, res, next) => {
 
 const updateUser = async (req, res, next) => {
   try {
-    const { name, username, bio } = req.body;
+    const { name, username, bio } = req.body || {};
+    if (req.params.id !== req.userId) return next(new AppError('You can only edit your own profile.', 403));
     const db = ensureDBShape(await readDB());
     const userIndex = db.users.findIndex((user) => user.id === req.params.id);
     if (userIndex === -1) return next(new AppError('User not found.', 404));
