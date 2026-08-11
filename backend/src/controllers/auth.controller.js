@@ -9,6 +9,7 @@ const { invalidateCache } = require('../config/redis');
 const { AppError } = require('../middlewares/error.middleware');
 const { BASE_URL, publicUser } = require('../utils/helpers');
 const { hasSmtpConfig, sendVerificationEmail, sendPasswordResetEmail } = require('../utils/email');
+const { recordSecurityEvent } = require('../services/security.service');
 
 const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV === 'production' ? null : 'fallback_secret');
 
@@ -24,7 +25,7 @@ const userResponse = (user) => ({ ...publicUser(user), email: user.email, emailV
 
 const createEmailVerification = async (user) => {
   const verificationToken = makeVerificationToken();
-  const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString();
+  const expiresAt = new Date(Date.now() + 1000 * 60 * 5).toISOString();
   const verificationUrl = `${FRONTEND_URL.replace(/\/$/, '')}/verify-email?token=${verificationToken}`;
   await User.updateOne(
     { id: user.id },
@@ -93,6 +94,12 @@ const register = async (req, res, next) => {
     await User.create(newUser);
 
     const verification = await createEmailVerification(newUser);
+    await recordSecurityEvent({
+      req,
+      userId: newUser.id,
+      type: 'register_requires_email_verification',
+      metadata: { emailSent: verification.sent }
+    });
     res.status(201).json({
       requiresVerification: true,
       emailSent: verification.sent,
@@ -114,16 +121,27 @@ const login = async (req, res, next) => {
     if (!email || !password) return next(new AppError('Email and password are required.', 400));
 
     const user = await User.findOne({ email }).lean();
-    if (!user || !user.passwordHash) return next(new AppError('Invalid email or password.', 401));
-    if (user.isDeactivated) return next(new AppError('This account is deactivated.', 403));
+    if (!user || !user.passwordHash) {
+      await recordSecurityEvent({ req, type: 'login_failed', metadata: { email, reason: 'invalid_credentials' } });
+      return next(new AppError('Invalid email or password.', 401));
+    }
+    if (user.isDeactivated) {
+      await recordSecurityEvent({ req, userId: user.id, type: 'login_blocked', metadata: { reason: 'deactivated' } });
+      return next(new AppError('This account is deactivated.', 403));
+    }
 
     const isMatch = await bcrypt.compare(password, user.passwordHash);
-    if (!isMatch) return next(new AppError('Invalid email or password.', 401));
+    if (!isMatch) {
+      await recordSecurityEvent({ req, userId: user.id, type: 'login_failed', metadata: { reason: 'invalid_credentials' } });
+      return next(new AppError('Invalid email or password.', 401));
+    }
     if (user.emailVerified === false) {
+      await recordSecurityEvent({ req, userId: user.id, type: 'login_blocked', metadata: { reason: 'email_unverified' } });
       return next(new AppError('Please verify your email before signing in.', 403));
     }
 
     const token = tokenForUser(user.id);
+    await recordSecurityEvent({ req, userId: user.id, type: 'login_success' });
     res.json({ user: userResponse(user), token });
   } catch (error) {
     next(error);
@@ -136,18 +154,25 @@ const verifyEmail = async (req, res, next) => {
     const token = req.body.token || req.query.token;
     if (!token) return next(new AppError('Verification token is required.', 400));
     const tokenHash = hashToken(token);
-    const user = await User.findOne({ emailVerificationTokenHash: tokenHash }).lean();
-    if (!user) return next(new AppError('Invalid verification link.', 400));
-    if (user.emailVerificationExpiresAt && new Date(user.emailVerificationExpiresAt).getTime() < Date.now()) {
-      return next(new AppError('Verification link has expired. Request a new one.', 400));
-    }
     const updates = {
       emailVerified: true,
       emailVerificationTokenHash: null,
       emailVerificationExpiresAt: null,
       updatedAt: new Date().toISOString()
     };
-    await User.updateOne({ id: user.id }, updates);
+    const user = await User.findOneAndUpdate(
+      {
+        emailVerificationTokenHash: tokenHash,
+        emailVerificationExpiresAt: { $gt: new Date().toISOString() }
+      },
+      { $set: updates },
+      { returnDocument: 'after', lean: true }
+    );
+    if (!user) {
+      await recordSecurityEvent({ req, type: 'email_verification_failed', metadata: { reason: 'invalid_or_expired' } });
+      return next(new AppError('Invalid or expired verification link. Request a new one.', 400));
+    }
+    await recordSecurityEvent({ req, userId: user.id, type: 'email_verified' });
     const verifiedUser = { ...user, ...updates };
     res.json({ user: userResponse(verifiedUser), token: tokenForUser(user.id) });
   } catch (error) {
@@ -164,6 +189,12 @@ const resendVerification = async (req, res, next) => {
     if (!user) return next(new AppError('Account not found.', 404));
     if (user.emailVerified !== false) return res.json({ message: 'Email is already verified.' });
     const verification = await createEmailVerification(user);
+    await recordSecurityEvent({
+      req,
+      userId: user.id,
+      type: 'email_verification_resent',
+      metadata: { emailSent: verification.sent }
+    });
     res.json({
       emailSent: verification.sent,
       verificationUrl: verification.verificationUrl,
@@ -182,6 +213,12 @@ const requestPasswordReset = async (req, res, next) => {
     const user = await User.findOne({ email }).lean();
     if (user && user.passwordHash && !user.isDeactivated) {
       const reset = await createPasswordReset(user);
+      await recordSecurityEvent({
+        req,
+        userId: user.id,
+        type: 'password_reset_requested',
+        metadata: { emailSent: reset.sent }
+      });
       return res.json({
         emailSent: reset.sent,
         resetUrl: reset.resetUrl,
@@ -202,11 +239,6 @@ const resetPassword = async (req, res, next) => {
     const { token, password } = req.body;
     if (!token || !password) return next(new AppError('Reset token and new password are required.', 400));
     if (String(password).length < 8) return next(new AppError('Password must be at least 8 characters.', 400));
-    const user = await User.findOne({ passwordResetTokenHash: hashToken(token) }).lean();
-    if (!user) return next(new AppError('Invalid reset link.', 400));
-    if (user.passwordResetExpiresAt && new Date(user.passwordResetExpiresAt).getTime() < Date.now()) {
-      return next(new AppError('Reset link has expired. Request a new one.', 400));
-    }
     const passwordHash = await bcrypt.hash(password, 10);
     const updates = {
       passwordHash,
@@ -215,7 +247,19 @@ const resetPassword = async (req, res, next) => {
       emailVerified: true,
       updatedAt: new Date().toISOString()
     };
-    await User.updateOne({ id: user.id }, updates);
+    const user = await User.findOneAndUpdate(
+      {
+        passwordResetTokenHash: hashToken(token),
+        passwordResetExpiresAt: { $gt: new Date().toISOString() }
+      },
+      { $set: updates },
+      { returnDocument: 'after', lean: true }
+    );
+    if (!user) {
+      await recordSecurityEvent({ req, type: 'password_reset_failed', metadata: { reason: 'invalid_or_expired' } });
+      return next(new AppError('Invalid or expired reset link. Request a new one.', 400));
+    }
+    await recordSecurityEvent({ req, userId: user.id, type: 'password_reset_completed' });
     const nextUser = { ...user, ...updates };
     res.json({ user: userResponse(nextUser), token: tokenForUser(user.id) });
   } catch (error) {
