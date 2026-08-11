@@ -5,6 +5,12 @@ import StarlightLogo from '../components/StarlightLogo';
 import ChatInbox from '../components/ChatInbox';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const authFetch = (url, options = {}) => {
+  const token = localStorage.getItem('token');
+  const headers = new Headers(options.headers || {});
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+  return fetch(url, { ...options, headers });
+};
 
 export default function Profile({ user }) {
   const { id } = useParams();
@@ -17,7 +23,7 @@ export default function Profile({ user }) {
   const [draft, setDraft] = useState({ name: '', username: '', bio: '' });
 
   useEffect(() => {
-    fetch(`${apiUrl}/api/auth/${id}`)
+    authFetch(`${apiUrl}/api/auth/${id}`)
       .then((res) => res.json())
       .then((data) => {
         setProfile(data.user);
@@ -31,13 +37,13 @@ export default function Profile({ user }) {
     const next = !following;
     setFollowing(next);
     setProfile((current) => ({ ...current, followerCount: Math.max(0, (current.followerCount || 0) + (next ? 1 : -1)) }));
-    const res = await fetch(`${apiUrl}/api/auth/${id}/follow`, { method: 'POST' });
+    const res = await authFetch(`${apiUrl}/api/auth/${id}/follow`, { method: 'POST' });
     if (!res.ok) setFollowing(!next);
   };
 
   const saveProfile = async (event) => {
     event.preventDefault();
-    const res = await fetch(`${apiUrl}/api/auth/${id}`, {
+    const res = await authFetch(`${apiUrl}/api/auth/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(draft)
