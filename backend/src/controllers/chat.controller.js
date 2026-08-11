@@ -22,12 +22,22 @@ const getDirectMessageAccess = async (senderId, recipientId) => {
   const [sender, recipient, previous] = await Promise.all([
     User.findOne({ id: senderId }).lean(),
     User.findOne({ id: recipientId }).lean(),
-    Message.find({ conversationType: 'dm', senderId, recipientId }).lean()
+    Message.find({
+      conversationType: 'dm',
+      $or: [
+        { senderId, recipientId },
+        { senderId: recipientId, recipientId: senderId }
+      ]
+    }).lean()
   ]);
   if (!sender || !recipient) return { error: 'User not found.', status: 404 };
   const connected = (sender.following || []).includes(recipientId) || (recipient.following || []).includes(senderId);
   if (connected) return { kind: 'message' };
-  if (previous.length) return { error: 'You have already sent a message request to this user.', status: 403 };
+  const hasIncomingRequest = previous.some((message) => message.senderId === recipientId && message.recipientId === senderId && message.messageKind === 'request');
+  if (hasIncomingRequest) return { kind: 'message' };
+  if (previous.some((message) => message.senderId === senderId && message.recipientId === recipientId)) {
+    return { error: 'You have already sent a message request to this user.', status: 403 };
+  }
   return { kind: 'request' };
 };
 

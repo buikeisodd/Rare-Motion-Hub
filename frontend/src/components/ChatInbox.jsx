@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAudio } from '../context/AudioContext';
 import AudioPlayer from './AudioPlayer';
-import { ArrowLeft, CheckCheck, Copy, Forward, MessageCircle, Mic, MicOff, MonitorUp, MoreHorizontal, Paperclip, PhoneCall, PhoneOff, Pin, PinOff, Reply, Send, Smile, Trash2, Users, Video, VideoOff, Volume2, X } from 'lucide-react';
+import { ArrowLeft, CheckCheck, Copy, Forward, Inbox, MessageCircle, Mic, MicOff, MonitorUp, MoreHorizontal, Paperclip, PhoneCall, PhoneOff, Pin, PinOff, Reply, Search, Send, Smile, Trash2, Users, UserPlus, Video, VideoOff, Volume2, X } from 'lucide-react';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 const emojis = ['😀', '😂', '😍', '🥹', '🔥', '🙏', '❤️', '🎧', '🎵', '✅', '😭', '😤', '🤝', '✨', '💿', '🚀'];
@@ -55,11 +55,11 @@ function ConvoItem({ convo, isActive, onClick }) {
   const hasUnread = (convo.unreadCount || 0) > 0;
 
   return (
-    <button onClick={onClick} className={`flex w-full items-center gap-3 px-4 py-3 text-left transition-colors ${isActive ? 'bg-highlight' : hasUnread ? 'bg-primary-label/10 hover:bg-primary-label/15' : 'hover:bg-shading'}`}>
+    <button onClick={onClick} className={`mx-2 flex w-[calc(100%-1rem)] items-center gap-3 rounded-2xl px-3 py-3 text-left transition-all ${isActive ? 'bg-highlight shadow-inner' : hasUnread ? 'bg-primary-label/10 hover:bg-primary-label/15' : 'hover:bg-shading/80'}`}>
       <ProfileAvatar user={convo.partner} isGroup={isGroup} size="h-11 w-11" />
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
-          <span className={`truncate text-sm text-primary-label ${hasUnread ? 'font-extrabold' : 'font-semibold'}`}>{name}{convo.isRequest && <span className="ml-2 rounded-full bg-highlight px-2 py-0.5 text-[10px] font-semibold text-secondary-label">Request</span>}</span>
+          <span className={`truncate text-sm text-primary-label ${hasUnread ? 'font-extrabold' : 'font-semibold'}`}>{name}</span>
           {time && <span className="shrink-0 text-[11px] text-secondary-label">{time}</span>}
         </div>
         {lastText ? (
@@ -68,7 +68,10 @@ function ConvoItem({ convo, isActive, onClick }) {
           <p className="mt-0.5 text-xs italic text-secondary-label/50">No messages yet</p>
         )}
       </div>
-      {hasUnread && <span className="grid h-5 min-w-5 place-items-center rounded-full bg-green-400 px-1.5 text-[10px] font-bold text-black">{convo.unreadCount}</span>}
+      <div className="flex shrink-0 flex-col items-end gap-1">
+        {convo.isRequest && <span className="rounded-full bg-primary-label/10 px-2 py-0.5 text-[10px] font-bold text-primary-label">Request</span>}
+        {hasUnread && <span className="grid h-5 min-w-5 place-items-center rounded-full bg-primary-label px-1.5 text-[10px] font-bold text-primary-background">{convo.unreadCount}</span>}
+      </div>
     </button>
   );
 }
@@ -813,6 +816,8 @@ function MiniPlayer() {
 export default function ChatInbox({ user, isOpen, onToggle, onConversationsChange }) {
   const [conversations, setConversations] = useState([]);
   const [activeConvo, setActiveConvo] = useState(null);
+  const [inboxTab, setInboxTab] = useState('inbox');
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Keepalive — prevents Render free tier from sleeping while chat is open
   useEffect(() => {
@@ -931,22 +936,67 @@ export default function ChatInbox({ user, isOpen, onToggle, onConversationsChang
     fetchConvos();
   };
 
+  const requestCount = conversations.filter((convo) => convo.isRequest).length;
+  const unreadCount = conversations.reduce((sum, convo) => sum + (convo.unreadCount || 0), 0);
+  const visibleConversations = conversations.filter((convo) => {
+    const matchesTab = inboxTab === 'requests' ? convo.isRequest : !convo.isRequest;
+    if (!matchesTab) return false;
+    const query = searchTerm.trim().toLowerCase();
+    if (!query) return true;
+    const name = convo.type === 'group' ? 'rare motion hq' : `${convo.partner?.name || ''} ${convo.partner?.username || ''}`;
+    const last = convo.lastMessage?.text || '';
+    return `${name} ${last}`.toLowerCase().includes(query);
+  });
+
   return (
     <>
-      <div className={`fixed left-0 top-0 z-[60] flex h-full w-full flex-col bg-primary-background transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <div className={`fixed left-0 top-0 z-[60] flex h-full w-full flex-col bg-primary-background text-primary-label transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex h-full overflow-hidden">
-          <div className={`flex-col border-r border-border transition-all duration-300 ${activeConvo ? 'hidden sm:flex sm:w-[24rem]' : 'flex w-full sm:w-[24rem]'}`}>
-            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-6 py-5">
-              <div className="flex flex-col">
-                <span className="text-xl font-bold tracking-tight text-primary-label">Messages</span>
+          <div className={`flex-col border-r border-border/70 bg-primary-background transition-all duration-300 ${activeConvo ? 'hidden md:flex md:w-[25rem] xl:w-[27rem]' : 'flex w-full md:w-[25rem] xl:w-[27rem]'}`}>
+            <div className="shrink-0 border-b border-border/70 px-4 py-4 sm:px-5">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <span className="block text-2xl font-semibold tracking-tight text-primary-label">Inbox</span>
+                  <span className="mt-1 block text-xs text-secondary-label">{unreadCount ? `${unreadCount} unread` : 'All caught up'}</span>
+                </div>
+                <button onClick={onToggle} className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Close inbox">
+                  <X className="h-5 w-5" />
+                </button>
               </div>
-              <button onClick={onToggle} className="grid h-10 w-10 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Close inbox">
-                <X className="h-5 w-5" />
-              </button>
+
+              <label className="mt-4 flex h-11 items-center gap-3 rounded-full border border-border bg-shading/70 px-4 transition-colors focus-within:border-primary-label/30">
+                <Search className="h-4 w-4 shrink-0 text-secondary-label" />
+                <input
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  placeholder="Search messages"
+                  className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-secondary-label/55"
+                />
+              </label>
+
+              <div className="mt-4 grid grid-cols-2 gap-2 rounded-full bg-shading/50 p-1">
+                <button onClick={() => setInboxTab('inbox')} className={`flex h-10 items-center justify-center gap-2 rounded-full text-sm font-semibold transition-colors ${inboxTab === 'inbox' ? 'bg-primary-label text-primary-background' : 'text-secondary-label hover:text-primary-label'}`}>
+                  <Inbox className="h-4 w-4" />
+                  Inbox
+                </button>
+                <button onClick={() => setInboxTab('requests')} className={`flex h-10 items-center justify-center gap-2 rounded-full text-sm font-semibold transition-colors ${inboxTab === 'requests' ? 'bg-primary-label text-primary-background' : 'text-secondary-label hover:text-primary-label'}`}>
+                  <UserPlus className="h-4 w-4" />
+                  Requests
+                  {requestCount > 0 && <span className={`grid h-5 min-w-5 place-items-center rounded-full px-1 text-[10px] ${inboxTab === 'requests' ? 'bg-primary-background text-primary-label' : 'bg-highlight text-primary-label'}`}>{requestCount}</span>}
+                </button>
+              </div>
             </div>
-            <div className="flex-1 overflow-y-auto py-2">
+
+            <div className="flex-1 overflow-y-auto py-3">
               {loadingConvos && <div className="flex items-center justify-center pt-10"><div className="h-5 w-5 animate-spin rounded-full border-2 border-secondary-label border-t-transparent" /></div>}
-              {!loadingConvos && conversations.map((convo) => (
+              {!loadingConvos && visibleConversations.length === 0 && (
+                <div className="flex h-full flex-col items-center justify-center px-8 text-center text-secondary-label">
+                  {inboxTab === 'requests' ? <UserPlus className="mb-3 h-10 w-10 opacity-30" /> : <MessageCircle className="mb-3 h-10 w-10 opacity-30" />}
+                  <p className="text-sm font-semibold text-primary-label">{searchTerm ? 'No matches found' : inboxTab === 'requests' ? 'No message requests' : 'No conversations yet'}</p>
+                  <p className="mt-1 text-xs">{inboxTab === 'requests' ? 'One-time messages from non-followers will land here.' : 'Follow people from the feed to start cleaner conversations.'}</p>
+                </div>
+              )}
+              {!loadingConvos && visibleConversations.map((convo) => (
                 <ConvoItem
                   key={convo.type === 'group' ? 'group' : convo.partner?.id}
                   convo={convo}
@@ -962,9 +1012,12 @@ export default function ChatInbox({ user, isOpen, onToggle, onConversationsChang
               <ChatWindow key={activeConvo?.type === "group" ? "group" : activeConvo?.partner?.id} convo={activeConvo} currentUser={user} conversations={conversations} activeCall={activeCall} onJoinCall={joinGroupCall} onLeaveCall={leaveGroupCall} onClose={handleCloseChat} />
             </div>
           ) : (
-            <div className="hidden sm:flex flex-1 flex-col items-center justify-center text-secondary-label bg-primary-background">
-              <MessageCircle className="h-16 w-16 mb-4 opacity-20" />
-              <p className="text-lg">Select a conversation</p>
+            <div className="hidden flex-1 flex-col items-center justify-center bg-primary-background px-8 text-center text-secondary-label md:flex">
+              <div className="grid h-20 w-20 place-items-center rounded-full border border-border bg-shading/40">
+                <MessageCircle className="h-9 w-9 opacity-45" />
+              </div>
+              <p className="mt-5 text-lg font-semibold text-primary-label">Choose a conversation</p>
+              <p className="mt-2 max-w-sm text-sm">Messages, requests, media, and calls now live in one cleaner workspace.</p>
             </div>
           )}
         </div>
