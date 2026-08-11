@@ -183,6 +183,33 @@ const ShareLinkSchema = new Schema({
   createdAt: { type: String, default: () => new Date().toISOString() },
 });
 
+const SessionSchema = new Schema({
+  sessionId: { type: String, required: true, unique: true, index: true },
+  userId: { type: String, required: true, index: true },
+  refreshTokenHash: { type: String, required: true },
+  tokenFamilyId: { type: String, required: true, index: true },
+  createdAt: { type: String, default: () => new Date().toISOString() },
+  lastUsedAt: { type: String, default: () => new Date().toISOString() },
+  expiresAt: { type: String, required: true, index: true },
+  revokedAt: String,
+  revokedReason: String,
+  userAgent: String,
+  ipAddress: String,
+  device: Schema.Types.Mixed,
+});
+
+const SecurityEventSchema = new Schema({
+  eventId: { type: String, required: true, unique: true },
+  userId: { type: String, index: true },
+  sessionId: String,
+  category: { type: String, required: true, index: true },
+  type: { type: String, required: true, index: true },
+  ipAddress: String,
+  userAgent: String,
+  metadata: Schema.Types.Mixed,
+  createdAt: { type: String, default: () => new Date().toISOString(), index: true },
+});
+
 module.exports = {
   User:         mongoose.model('User',         UserSchema),
   Project:      mongoose.model('Project',      ProjectSchema),
@@ -196,4 +223,6 @@ module.exports = {
   Call:         mongoose.model('Call',         CallSchema),
   CallSignal:   mongoose.model('CallSignal',   CallSignalSchema),
   ShareLink:    mongoose.model('ShareLink',    ShareLinkSchema),
+  Session:      mongoose.model('Session',      SessionSchema),
+  SecurityEvent: mongoose.model('SecurityEvent', SecurityEventSchema),
 };
