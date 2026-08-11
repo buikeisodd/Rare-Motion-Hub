@@ -16,12 +16,17 @@ const {
   rotateRefreshSession,
   revokeRefreshSession,
   revokeAllSessionsForUser,
-  incrementWindowCounter,
-  getSecurityValue,
-  setSecurityValue,
-  clearSecurityValue,
   REFRESH_TOKEN_TTL_MS
 } = require('../services/security.service');
+const {
+  AUTH_ACTION_WINDOW_SECONDS,
+  clientSubject,
+  enforceActionLimit,
+  ensureLoginNotLocked,
+  noteLoginFailure,
+  noteLoginSuccess,
+  securitySubject
+} = require('../services/auth-rate-limit.service');
 
 const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV === 'production' ? null : 'fallback_secret');
 
@@ -33,13 +38,9 @@ const FRONTEND_URL = process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http
 const hashToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
 const makeVerificationToken = () => crypto.randomBytes(32).toString('hex');
 const ACCESS_TOKEN_TTL_MS = Number(process.env.ACCESS_TOKEN_TTL_MS || 1000 * 60 * 15);
-const tokenForUser = (id, sessionId, expiresIn = '7d') => jwt.sign({ userId: id, sessionId }, JWT_SECRET, { expiresIn });
+const accessTokenSeconds = () => Math.max(1, Math.floor(ACCESS_TOKEN_TTL_MS / 1000));
+const tokenForUser = (id, sessionId, expiresIn = accessTokenSeconds()) => jwt.sign({ userId: id, sessionId }, JWT_SECRET, { expiresIn });
 const userResponse = (user) => ({ ...publicUser(user), email: user.email, emailVerified: user.emailVerified !== false, authProvider: user.authProvider || 'password' });
-const LOGIN_MAX_ATTEMPTS = Number(process.env.LOGIN_MAX_ATTEMPTS || 5);
-const LOGIN_WINDOW_SECONDS = Number(process.env.LOGIN_WINDOW_SECONDS || 15 * 60);
-const LOGIN_LOCK_SECONDS = Number(process.env.LOGIN_LOCK_SECONDS || 15 * 60);
-const AUTH_ACTION_MAX_ATTEMPTS = Number(process.env.AUTH_ACTION_MAX_ATTEMPTS || 5);
-const AUTH_ACTION_WINDOW_SECONDS = Number(process.env.AUTH_ACTION_WINDOW_SECONDS || 10 * 60);
 
 const cookieOptions = (maxAge) => ({
   httpOnly: true,
@@ -66,61 +67,16 @@ const readCookie = (req, name) => {
 };
 
 const issueAuthSession = async (req, res, user) => {
+  if (!user || user.emailVerified === false) {
+    throw new AppError('Please verify your email before signing in.', 403);
+  }
   const { session, refreshToken } = await createRefreshSession({ req, userId: user.id });
   const csrfToken = createOpaqueToken(24);
-  const accessToken = tokenForUser(user.id, session.sessionId, Math.floor(ACCESS_TOKEN_TTL_MS / 1000));
+  const accessToken = tokenForUser(user.id, session.sessionId);
   res.cookie('accessToken', accessToken, cookieOptions(ACCESS_TOKEN_TTL_MS));
   res.cookie('refreshToken', refreshToken, cookieOptions(REFRESH_TOKEN_TTL_MS));
   res.cookie('csrfToken', csrfToken, { ...cookieOptions(REFRESH_TOKEN_TTL_MS), httpOnly: false });
   return { token: tokenForUser(user.id, session.sessionId), csrfToken, sessionId: session.sessionId };
-};
-
-const securitySubject = (value) => hashToken(String(value || '').trim().toLowerCase());
-const clientSubject = (req) => securitySubject(req.ip || req.headers['x-forwarded-for'] || 'unknown');
-
-const enforceActionLimit = async (req, action, subject, maxAttempts = AUTH_ACTION_MAX_ATTEMPTS, windowSeconds = AUTH_ACTION_WINDOW_SECONDS) => {
-  const key = `rate:${action}:${subject || clientSubject(req)}`;
-  const { count, ttl } = await incrementWindowCounter(key, windowSeconds);
-  if (count > maxAttempts) {
-    resRetryAfter(req, ttl);
-    throw new AppError(`Too many ${action.replace(/-/g, ' ')} attempts. Try again in ${Math.ceil(ttl / 60)} minute(s).`, 429);
-  }
-};
-
-const resRetryAfter = (req, seconds) => {
-  if (req.res && seconds > 0) req.res.set('Retry-After', String(seconds));
-};
-
-const ensureLoginNotLocked = async (req, email) => {
-  const lockKey = `lock:login:${securitySubject(email)}`;
-  const lockUntil = await getSecurityValue(lockKey);
-  if (!lockUntil) return;
-  const remainingSeconds = Math.ceil((Number(lockUntil) - Date.now()) / 1000);
-  if (remainingSeconds > 0) {
-    resRetryAfter(req, remainingSeconds);
-    throw new AppError(`Too many failed login attempts. Try again in ${Math.ceil(remainingSeconds / 60)} minute(s).`, 429);
-  }
-  await clearSecurityValue(lockKey);
-};
-
-const noteLoginFailure = async (req, email) => {
-  const subject = securitySubject(email);
-  const { count } = await incrementWindowCounter(`rate:login:${subject}`, LOGIN_WINDOW_SECONDS);
-  if (count >= LOGIN_MAX_ATTEMPTS) {
-    const lockUntil = Date.now() + LOGIN_LOCK_SECONDS * 1000;
-    await setSecurityValue(`lock:login:${subject}`, lockUntil, LOGIN_LOCK_SECONDS);
-    await recordSecurityEvent({
-      req,
-      type: 'login_locked',
-      metadata: { email, attempts: count, lockSeconds: LOGIN_LOCK_SECONDS }
-    });
-  }
-};
-
-const noteLoginSuccess = async (email) => {
-  const subject = securitySubject(email);
-  await clearSecurityValue(`rate:login:${subject}`);
-  await clearSecurityValue(`lock:login:${subject}`);
 };
 
 const createEmailVerification = async (user) => {
@@ -394,13 +350,19 @@ const refreshSession = async (req, res, next) => {
       clearAuthCookies(res);
       return next(new AppError('Unauthorized: Account unavailable', 401));
     }
-    const accessToken = tokenForUser(user.id, rotated.session.sessionId, Math.floor(ACCESS_TOKEN_TTL_MS / 1000));
+    if (user.emailVerified === false) {
+      await revokeAllSessionsForUser({ userId: user.id, reason: 'email_unverified' });
+      clearAuthCookies(res);
+      await recordSecurityEvent({ req, userId: user.id, sessionId: rotated.session.sessionId, type: 'refresh_blocked', metadata: { reason: 'email_unverified' } });
+      return next(new AppError('Please verify your email before signing in.', 403));
+    }
+    const accessToken = tokenForUser(user.id, rotated.session.sessionId);
     const csrfToken = createOpaqueToken(24);
     res.cookie('accessToken', accessToken, cookieOptions(ACCESS_TOKEN_TTL_MS));
     res.cookie('refreshToken', rotated.refreshToken, cookieOptions(REFRESH_TOKEN_TTL_MS));
     res.cookie('csrfToken', csrfToken, { ...cookieOptions(REFRESH_TOKEN_TTL_MS), httpOnly: false });
     await recordSecurityEvent({ req, userId: user.id, sessionId: rotated.session.sessionId, type: 'session_refreshed' });
-    res.json({ user: userResponse(user), token: tokenForUser(user.id, rotated.session.sessionId), csrfToken });
+    res.json({ user: userResponse(user), token: accessToken, csrfToken });
   } catch (error) {
     next(error);
   }
