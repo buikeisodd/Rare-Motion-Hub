@@ -1,6 +1,7 @@
 const nodemailer = require('nodemailer');
 
-const hasSmtpConfig = Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
+const smtpPassword = process.env.SMTP_PASS || process.env.SMTP_PASSWORD;
+const hasSmtpConfig = Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && smtpPassword);
 
 const getTransport = () => nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -11,7 +12,7 @@ const getTransport = () => nodemailer.createTransport({
   socketTimeout: 10000,
   auth: {
     user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS
+    pass: smtpPassword
   }
 });
 
