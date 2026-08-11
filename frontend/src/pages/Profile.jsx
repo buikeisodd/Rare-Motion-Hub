@@ -12,7 +12,7 @@ const authFetch = (url, options = {}) => {
   return fetch(url, { ...options, headers });
 };
 
-export default function Profile({ user }) {
+export default function Profile({ user, onUserUpdate }) {
   const { id } = useParams();
   const [profile, setProfile] = useState(null);
   const [posts, setPosts] = useState([]);
@@ -68,6 +68,11 @@ export default function Profile({ user }) {
         nextProfile = { ...nextProfile, ...avatarData.user };
       }
       setProfile(nextProfile);
+      if (profile.id === user?.id) {
+        const nextUser = { ...user, ...nextProfile };
+        localStorage.setItem('user', JSON.stringify(nextUser));
+        onUserUpdate?.(nextUser);
+      }
       setAvatarFile(null);
       setSaveNotice('Profile updated successfully.');
       window.setTimeout(() => setEditing(false), 700);
