@@ -258,11 +258,12 @@ const updateUser = async (req, res, next) => {
     const userIndex = db.users.findIndex((user) => user.id === req.params.id);
     if (userIndex === -1) return next(new AppError('User not found.', 404));
 
-    const nextName = name?.trim();
-    if (!nextName) return next(new AppError('Username is required.', 400));
+    const currentUser = db.users[userIndex];
+    const nextName = name?.trim() || currentUser.name?.trim();
+    if (!nextName) return next(new AppError('Name is required.', 400));
 
-    const nextUsername = String(username || db.users[userIndex].username || nextName).trim().toLowerCase().replace(/[^a-z0-9_]/g, '_');
-    db.users[userIndex] = { ...db.users[userIndex], name: nextName, username: nextUsername, bio: String(bio || '').trim().slice(0, 160), updatedAt: new Date().toISOString() };
+    const nextUsername = String(username || currentUser.username || nextName).trim().toLowerCase().replace(/[^a-z0-9_]/g, '_');
+    db.users[userIndex] = { ...currentUser, name: nextName, username: nextUsername, bio: bio === undefined ? String(currentUser.bio || '').trim().slice(0, 160) : String(bio || '').trim().slice(0, 160), updatedAt: new Date().toISOString() };
     await writeDB(db);
     res.json({ user: db.users[userIndex] });
   } catch (error) {
