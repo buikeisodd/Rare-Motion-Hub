@@ -6,11 +6,24 @@ const getTransport = () => nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: Number(process.env.SMTP_PORT || 587),
   secure: process.env.SMTP_SECURE === 'true',
+  connectionTimeout: 8000,
+  greetingTimeout: 8000,
+  socketTimeout: 10000,
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS
   }
 });
+
+const sendMailSafely = async (message) => {
+  try {
+    await getTransport().sendMail(message);
+    return true;
+  } catch (error) {
+    console.error('SMTP email delivery failed:', error.message);
+    return false;
+  }
+};
 
 const sendVerificationEmail = async ({ to, name, verificationUrl }) => {
   if (!hasSmtpConfig) {
@@ -20,7 +33,7 @@ const sendVerificationEmail = async ({ to, name, verificationUrl }) => {
     return { sent: false };
   }
 
-  await getTransport().sendMail({
+  const sent = await sendMailSafely({
     from: process.env.SMTP_FROM || process.env.SMTP_USER,
     to,
     subject: 'Verify your Starlight Station email',
@@ -34,7 +47,7 @@ const sendVerificationEmail = async ({ to, name, verificationUrl }) => {
     `
   });
 
-  return { sent: true };
+  return { sent };
 };
 
 const sendPasswordResetEmail = async ({ to, name, resetUrl }) => {
@@ -45,7 +58,7 @@ const sendPasswordResetEmail = async ({ to, name, resetUrl }) => {
     return { sent: false };
   }
 
-  await getTransport().sendMail({
+  const sent = await sendMailSafely({
     from: process.env.SMTP_FROM || process.env.SMTP_USER,
     to,
     subject: 'Reset your Starlight Station password',
@@ -59,7 +72,7 @@ const sendPasswordResetEmail = async ({ to, name, resetUrl }) => {
     `
   });
 
-  return { sent: true };
+  return { sent };
 };
 
 module.exports = { hasSmtpConfig, sendVerificationEmail, sendPasswordResetEmail };
