@@ -44,50 +44,6 @@ app.get('/api/status', (req, res) => {
   });
 });
 
-// TEMPORARY DEBUG ENDPOINT — gated behind DEBUG_KEY env var so it isn't
-// publicly reachable. Remove entirely once the Cloudinary issue is resolved.
-app.get('/api/debug/cloudinary-test', async (req, res) => {
-  if (!process.env.DEBUG_KEY || req.query.key !== process.env.DEBUG_KEY) {
-    return res.status(404).json({ error: 'Not found.' });
-  }
-  const { cloudinary, hasCloudinaryConfig } = require('./config/cloudinary');
-  if (!hasCloudinaryConfig) {
-    return res.json({ ok: false, stage: 'config', reason: 'Cloudinary env vars not set on this server.' });
-  }
-
-  // Show exactly what's loaded into the SDK at runtime, byte for byte,
-  // without leaking the full secret. Wrapped in JSON.stringify + quotes
-  // so any leading/trailing whitespace or hidden characters become visible.
-  const cfg = cloudinary.config();
-  const inspect = {
-    cloud_name: JSON.stringify(cfg.cloud_name),
-    cloud_name_length: (cfg.cloud_name || '').length,
-    api_key: JSON.stringify(cfg.api_key),
-    api_key_length: (cfg.api_key || '').length,
-    api_secret_length: (cfg.api_secret || '').length,
-    api_secret_first4: (cfg.api_secret || '').slice(0, 4),
-    api_secret_last4: (cfg.api_secret || '').slice(-4),
-  };
-
-  try {
-    const tinyPng = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
-    const result = await cloudinary.uploader.upload(tinyPng, {
-      folder: 'raremotionhub/debug-test'
-    });
-    return res.json({ ok: true, url: result.secure_url, public_id: result.public_id, config: inspect });
-  } catch (err) {
-    return res.json({
-      ok: false,
-      stage: 'upload',
-      message: err.message,
-      http_code: err.http_code || err.error?.http_code,
-      name: err.name,
-      raw: err.error || err,
-      config: inspect
-    });
-  }
-});
-
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/media', mediaRoutes);
