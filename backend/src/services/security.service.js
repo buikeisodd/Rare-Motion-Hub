@@ -93,6 +93,30 @@ const clearSecurityValue = async (key) => {
   localRateStore.delete(namespacedKey);
 };
 
+// Atomically read-and-delete a value so that concurrent callers racing on the
+// same key cannot both "consume" it. Used for single-use tokens (email
+// verification, password reset) where reuse after consumption must be
+// impossible even under concurrent requests.
+//
+// Real Redis: GETDEL is a single atomic command on the server — Redis
+// processes commands serially, so of two concurrent GETDEL calls for the
+// same key, exactly one returns the value and the other returns null.
+//
+// In-memory fallback: the read + delete happen synchronously with no
+// `await` between them, so no other request handler can interleave inside
+// this function body (Node only yields the event loop at an await point).
+const consumeSecurityValue = async (key) => {
+  const client = getRedisClient();
+  const namespacedKey = redisKey(key);
+  if (client && client.isReady) {
+    return client.getDel(namespacedKey);
+  }
+  const current = localRateStore.get(namespacedKey);
+  localRateStore.delete(namespacedKey);
+  if (!current || current.expiresAt <= Date.now()) return null;
+  return current.value ?? String(current.count ?? '');
+};
+
 const revokeAllSessionsForUser = async ({ userId, reason = 'revoked' }) => {
   if (!userId) return { modifiedCount: 0 };
   return Session.updateMany(
@@ -162,5 +186,6 @@ module.exports = {
   getSecurityValue,
   setSecurityValue,
   clearSecurityValue,
+  consumeSecurityValue,
   REFRESH_TOKEN_TTL_MS
 };

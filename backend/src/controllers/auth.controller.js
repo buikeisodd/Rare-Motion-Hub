@@ -18,6 +18,7 @@ const {
   getSecurityValue,
   setSecurityValue,
   clearSecurityValue,
+  consumeSecurityValue,
   REFRESH_TOKEN_TTL_MS
 } = require('../services/security.service');
 const {
@@ -222,12 +223,17 @@ const verifyEmail = async (req, res, next) => {
     if (!token) return next(new AppError('Verification token is required.', 400));
     const tokenHash = hashToken(token);
 
-    // Look up the ephemeral, Redis-backed token → userId mapping first.
-    const userId = await getSecurityValue(`verify:${tokenHash}`);
+    // Atomically read-and-delete the token in one step. If two requests race
+    // on the same token, only one GETDEL call returns the userId — the other
+    // gets null, so it can never successfully verify using the same token.
+    const userId = await consumeSecurityValue(`verify:${tokenHash}`);
     if (!userId) {
       await recordSecurityEvent({ req, type: 'email_verification_failed', metadata: { reason: 'invalid_or_expired' } });
       return next(new AppError('Invalid or expired verification link. Request a new one.', 400));
     }
+    // Best-effort cleanup of the reverse pointer used to invalidate old
+    // tokens on reissue; the primary token above is already consumed.
+    clearSecurityValue(`verify-user:${userId}`).catch(() => {});
 
     const updates = { emailVerified: true, updatedAt: new Date().toISOString() };
     const user = await User.findOneAndUpdate(
@@ -239,8 +245,6 @@ const verifyEmail = async (req, res, next) => {
       await recordSecurityEvent({ req, type: 'email_verification_failed', metadata: { reason: 'user_not_found' } });
       return next(new AppError('Invalid or expired verification link. Request a new one.', 400));
     }
-    await clearSecurityValue(`verify:${tokenHash}`);
-    await clearSecurityValue(`verify-user:${userId}`);
 
     const { token: authToken, csrfToken, sessionId } = await issueAuthSession(req, res, user);
     await recordSecurityEvent({ req, userId: user.id, sessionId, type: 'email_verified' });
@@ -315,11 +319,12 @@ const resetPassword = async (req, res, next) => {
     if (String(password).length < 8) return next(new AppError('Password must be at least 8 characters.', 400));
 
     const tokenHash = hashToken(token);
-    const userId = await getSecurityValue(`reset:${tokenHash}`);
+    const userId = await consumeSecurityValue(`reset:${tokenHash}`);
     if (!userId) {
       await recordSecurityEvent({ req, type: 'password_reset_failed', metadata: { reason: 'invalid_or_expired' } });
       return next(new AppError('Invalid or expired reset link. Request a new one.', 400));
     }
+    clearSecurityValue(`reset-user:${userId}`).catch(() => {});
 
     const passwordHash = await bcrypt.hash(password, 10);
     const updates = { passwordHash, emailVerified: true, updatedAt: new Date().toISOString() };
@@ -332,8 +337,6 @@ const resetPassword = async (req, res, next) => {
       await recordSecurityEvent({ req, type: 'password_reset_failed', metadata: { reason: 'user_not_found' } });
       return next(new AppError('Invalid or expired reset link. Request a new one.', 400));
     }
-    await clearSecurityValue(`reset:${tokenHash}`);
-    await clearSecurityValue(`reset-user:${userId}`);
 
     await revokeAllSessionsForUser({ userId: user.id, reason: 'password_reset' });
     const { token: authToken, csrfToken, sessionId } = await issueAuthSession(req, res, user);
