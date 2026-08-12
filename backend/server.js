@@ -1,13 +1,10 @@
 require('dotenv').config();
-const path = require('path');
-const fs = require('fs');
-const mongoose = require('mongoose');
 const app = require('./src/app');
 const { configCloudinary, hasCloudinaryConfig } = require('./src/config/cloudinary');
 const { connectRedis } = require('./src/config/redis');
+const { connectDB } = require('./src/config/db');
 
 const PORT = process.env.PORT || 4000;
-const MONGODB_URI = process.env.MONGODB_URI;
 
 async function startServer() {
   // Configure Cloudinary SDK with credentials from env
@@ -18,28 +15,9 @@ async function startServer() {
 
   // Connect to Redis (no-op if REDIS_URL isn't set)
   await connectRedis();
-  try {
-    console.log('Attempting to connect to MongoDB Atlas...');
-    await mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: 5000 });
-    console.log('Connected to MongoDB Atlas');
-  } catch (err) {
-    console.warn(`MongoDB Atlas connection failed (${err.message}). Falling back to local in-memory MongoDB...`);
-    try {
-      const { MongoMemoryServer } = require('mongodb-memory-server');
-      const dbPath = path.join(__dirname, '.data', 'local-mongo');
-      fs.mkdirSync(dbPath, { recursive: true });
-      
-      const mongod = await MongoMemoryServer.create({
-        instance: { dbPath, storageEngine: 'wiredTiger' }
-      });
-      const uri = mongod.getUri();
-      await mongoose.connect(uri);
-      console.log(`Connected to Local MongoDB Fallback at ${dbPath}`);
-    } catch (fallbackErr) {
-      console.error('Failed to start local MongoDB fallback:', fallbackErr);
-      process.exit(1);
-    }
-  }
+
+  // Connect to MongoDB Atlas, falling back to an in-memory instance locally
+  await connectDB();
 
   const server = app.listen(PORT, () => {
     console.log(`Backend server running on http://localhost:${PORT}`);

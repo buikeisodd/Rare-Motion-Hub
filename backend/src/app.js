@@ -44,11 +44,12 @@ app.get('/api/status', (req, res) => {
   });
 });
 
-// TEMPORARY DEBUG ENDPOINT — remove once Cloudinary issue is resolved.
-// Performs a real upload against Cloudinary using the live server's env vars
-// so we can see the exact raw error Cloudinary returns, without needing
-// local reproduction.
+// TEMPORARY DEBUG ENDPOINT — gated behind DEBUG_KEY env var so it isn't
+// publicly reachable. Remove entirely once the Cloudinary issue is resolved.
 app.get('/api/debug/cloudinary-test', async (req, res) => {
+  if (!process.env.DEBUG_KEY || req.query.key !== process.env.DEBUG_KEY) {
+    return res.status(404).json({ error: 'Not found.' });
+  }
   const { cloudinary, hasCloudinaryConfig } = require('./config/cloudinary');
   if (!hasCloudinaryConfig) {
     return res.json({ ok: false, stage: 'config', reason: 'Cloudinary env vars not set on this server.' });
