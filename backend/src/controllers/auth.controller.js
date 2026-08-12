@@ -2,7 +2,6 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const { User, Folder, Project, Track, CoverArt, Notification, PlayEvent } = require('../models');
-const { readDB, writeDB, ensureDBShape } = require('../utils/dbHelper');
 const { removeDirIfExists, removeFileIfExists, getUserDir, uploadDir, coverDir, avatarDir } = require('../utils/fileHelper');
 const { cloudinary, hasCloudinaryConfig } = require('../config/cloudinary');
 const { invalidateCache } = require('../config/redis');
@@ -16,6 +15,9 @@ const {
   rotateRefreshSession,
   revokeRefreshSession,
   revokeAllSessionsForUser,
+  getSecurityValue,
+  setSecurityValue,
+  clearSecurityValue,
   REFRESH_TOKEN_TTL_MS
 } = require('../services/security.service');
 const {
@@ -79,18 +81,23 @@ const issueAuthSession = async (req, res, user) => {
   return { token: tokenForUser(user.id, session.sessionId), csrfToken, sessionId: session.sessionId };
 };
 
+const EMAIL_VERIFICATION_TTL_SECONDS = 5 * 60;
+const PASSWORD_RESET_TTL_SECONDS = 30 * 60;
+
 const createEmailVerification = async (user) => {
+  // Invalidate any previously issued token for this user before issuing a new one.
+  const previousHash = await getSecurityValue(`verify-user:${user.id}`);
+  if (previousHash) await clearSecurityValue(`verify:${previousHash}`);
+
   const verificationToken = makeVerificationToken();
-  const expiresAt = new Date(Date.now() + 1000 * 60 * 5).toISOString();
+  const tokenHash = hashToken(verificationToken);
   const verificationUrl = `${FRONTEND_URL.replace(/\/$/, '')}/verify-email?token=${verificationToken}`;
-  await User.updateOne(
-    { id: user.id },
-    {
-      emailVerificationTokenHash: hashToken(verificationToken),
-      emailVerificationExpiresAt: expiresAt,
-      updatedAt: new Date().toISOString()
-    }
-  );
+
+  // Ephemeral, TTL-bound state lives in Redis (with in-memory fallback) —
+  // Mongo/User stays the source of truth for the account itself.
+  await setSecurityValue(`verify:${tokenHash}`, user.id, EMAIL_VERIFICATION_TTL_SECONDS);
+  await setSecurityValue(`verify-user:${user.id}`, tokenHash, EMAIL_VERIFICATION_TTL_SECONDS);
+
   const emailResult = await sendVerificationEmail({ to: user.email, name: user.name, verificationUrl });
   return {
     sent: emailResult.sent,
@@ -99,17 +106,16 @@ const createEmailVerification = async (user) => {
 };
 
 const createPasswordReset = async (user) => {
+  const previousHash = await getSecurityValue(`reset-user:${user.id}`);
+  if (previousHash) await clearSecurityValue(`reset:${previousHash}`);
+
   const resetToken = makeVerificationToken();
-  const expiresAt = new Date(Date.now() + 1000 * 60 * 30).toISOString();
+  const tokenHash = hashToken(resetToken);
   const resetUrl = `${FRONTEND_URL.replace(/\/$/, '')}/login?resetToken=${resetToken}`;
-  await User.updateOne(
-    { id: user.id },
-    {
-      passwordResetTokenHash: hashToken(resetToken),
-      passwordResetExpiresAt: expiresAt,
-      updatedAt: new Date().toISOString()
-    }
-  );
+
+  await setSecurityValue(`reset:${tokenHash}`, user.id, PASSWORD_RESET_TTL_SECONDS);
+  await setSecurityValue(`reset-user:${user.id}`, tokenHash, PASSWORD_RESET_TTL_SECONDS);
+
   const emailResult = await sendPasswordResetEmail({ to: user.email, name: user.name, resetUrl });
   return {
     sent: emailResult.sent,
@@ -215,24 +221,27 @@ const verifyEmail = async (req, res, next) => {
     const token = req.body.token || req.query.token;
     if (!token) return next(new AppError('Verification token is required.', 400));
     const tokenHash = hashToken(token);
-    const updates = {
-      emailVerified: true,
-      emailVerificationTokenHash: null,
-      emailVerificationExpiresAt: null,
-      updatedAt: new Date().toISOString()
-    };
+
+    // Look up the ephemeral, Redis-backed token → userId mapping first.
+    const userId = await getSecurityValue(`verify:${tokenHash}`);
+    if (!userId) {
+      await recordSecurityEvent({ req, type: 'email_verification_failed', metadata: { reason: 'invalid_or_expired' } });
+      return next(new AppError('Invalid or expired verification link. Request a new one.', 400));
+    }
+
+    const updates = { emailVerified: true, updatedAt: new Date().toISOString() };
     const user = await User.findOneAndUpdate(
-      {
-        emailVerificationTokenHash: tokenHash,
-        emailVerificationExpiresAt: { $gt: new Date().toISOString() }
-      },
+      { id: userId },
       { $set: updates },
       { returnDocument: 'after', lean: true }
     );
     if (!user) {
-      await recordSecurityEvent({ req, type: 'email_verification_failed', metadata: { reason: 'invalid_or_expired' } });
+      await recordSecurityEvent({ req, type: 'email_verification_failed', metadata: { reason: 'user_not_found' } });
       return next(new AppError('Invalid or expired verification link. Request a new one.', 400));
     }
+    await clearSecurityValue(`verify:${tokenHash}`);
+    await clearSecurityValue(`verify-user:${userId}`);
+
     const { token: authToken, csrfToken, sessionId } = await issueAuthSession(req, res, user);
     await recordSecurityEvent({ req, userId: user.id, sessionId, type: 'email_verified' });
     const verifiedUser = { ...user, ...updates };
@@ -304,26 +313,28 @@ const resetPassword = async (req, res, next) => {
     const { token, password } = req.body;
     if (!token || !password) return next(new AppError('Reset token and new password are required.', 400));
     if (String(password).length < 8) return next(new AppError('Password must be at least 8 characters.', 400));
+
+    const tokenHash = hashToken(token);
+    const userId = await getSecurityValue(`reset:${tokenHash}`);
+    if (!userId) {
+      await recordSecurityEvent({ req, type: 'password_reset_failed', metadata: { reason: 'invalid_or_expired' } });
+      return next(new AppError('Invalid or expired reset link. Request a new one.', 400));
+    }
+
     const passwordHash = await bcrypt.hash(password, 10);
-    const updates = {
-      passwordHash,
-      passwordResetTokenHash: null,
-      passwordResetExpiresAt: null,
-      emailVerified: true,
-      updatedAt: new Date().toISOString()
-    };
+    const updates = { passwordHash, emailVerified: true, updatedAt: new Date().toISOString() };
     const user = await User.findOneAndUpdate(
-      {
-        passwordResetTokenHash: hashToken(token),
-        passwordResetExpiresAt: { $gt: new Date().toISOString() }
-      },
+      { id: userId },
       { $set: updates },
       { returnDocument: 'after', lean: true }
     );
     if (!user) {
-      await recordSecurityEvent({ req, type: 'password_reset_failed', metadata: { reason: 'invalid_or_expired' } });
+      await recordSecurityEvent({ req, type: 'password_reset_failed', metadata: { reason: 'user_not_found' } });
       return next(new AppError('Invalid or expired reset link. Request a new one.', 400));
     }
+    await clearSecurityValue(`reset:${tokenHash}`);
+    await clearSecurityValue(`reset-user:${userId}`);
+
     await revokeAllSessionsForUser({ userId: user.id, reason: 'password_reset' });
     const { token: authToken, csrfToken, sessionId } = await issueAuthSession(req, res, user);
     await recordSecurityEvent({ req, userId: user.id, sessionId, type: 'password_reset_completed' });
@@ -402,17 +413,19 @@ const phoneIntent = (req, res, next) => (
 
 const getUser = async (req, res, next) => {
   try {
-    const db = ensureDBShape(await readDB());
-    const user = db.users.find((item) => item.id === req.params.id);
+    const user = await User.findOne({ id: req.params.id }).lean();
     if (!user) return next(new AppError('User not found.', 404));
-    
+
     // Don't return password hash
     const { passwordHash, email, ...userSafe } = user;
-    const tracks = db.tracks.filter((track) => track.userId === user.id && track.isPublished).map((track) => {
-      const project = db.projects.find((item) => item.id === track.projectId);
+    const tracks = await Track.find({ userId: user.id, isPublished: true }).lean();
+    const projectIds = [...new Set(tracks.map((track) => track.projectId).filter(Boolean))];
+    const projects = projectIds.length ? await Project.find({ id: { $in: projectIds } }).lean() : [];
+    const posts = tracks.map((track) => {
+      const project = projects.find((item) => item.id === track.projectId);
       return { id: track.id, title: track.title, url: track.url, projectId: track.projectId, coverArt: project?.coverArt || null, publishedAt: track.publishedAt };
     });
-    res.json({ user: { ...publicUser(userSafe), email, emailVerified: user.emailVerified !== false }, isFollowing: (user.followers || []).includes(req.userId), posts: tracks });
+    res.json({ user: { ...publicUser(userSafe), email, emailVerified: user.emailVerified !== false }, isFollowing: (user.followers || []).includes(req.userId), posts });
   } catch (error) {
     next(error);
   }
@@ -422,18 +435,20 @@ const updateUser = async (req, res, next) => {
   try {
     const { name, username, bio } = req.body || {};
     if (req.params.id !== req.userId) return next(new AppError('You can only edit your own profile.', 403));
-    const db = ensureDBShape(await readDB());
-    const userIndex = db.users.findIndex((user) => user.id === req.params.id);
-    if (userIndex === -1) return next(new AppError('User not found.', 404));
+    const currentUser = await User.findOne({ id: req.params.id }).lean();
+    if (!currentUser) return next(new AppError('User not found.', 404));
 
-    const currentUser = db.users[userIndex];
     const nextName = name?.trim() || currentUser.name?.trim();
     if (!nextName) return next(new AppError('Name is required.', 400));
 
     const nextUsername = String(username || currentUser.username || nextName).trim().toLowerCase().replace(/[^a-z0-9_]/g, '_');
-    db.users[userIndex] = { ...currentUser, name: nextName, username: nextUsername, bio: bio === undefined ? String(currentUser.bio || '').trim().slice(0, 160) : String(bio || '').trim().slice(0, 160), updatedAt: new Date().toISOString() };
-    await writeDB(db);
-    res.json({ user: db.users[userIndex] });
+    const nextBio = bio === undefined ? String(currentUser.bio || '').trim().slice(0, 160) : String(bio || '').trim().slice(0, 160);
+    const updatedUser = await User.findOneAndUpdate(
+      { id: req.params.id },
+      { $set: { name: nextName, username: nextUsername, bio: nextBio, updatedAt: new Date().toISOString() } },
+      { returnDocument: 'after', lean: true }
+    );
+    res.json({ user: updatedUser });
   } catch (error) {
     next(error);
   }
@@ -441,26 +456,35 @@ const updateUser = async (req, res, next) => {
 
 const toggleFollow = async (req, res, next) => {
   try {
-    const db = ensureDBShape(await readDB());
     if (req.params.id === req.userId) return next(new AppError('You cannot follow yourself.', 400));
-    const target = db.users.find((item) => item.id === req.params.id);
-    const actor = db.users.find((item) => item.id === req.userId);
+    const [target, actor] = await Promise.all([
+      User.findOne({ id: req.params.id }).lean(),
+      User.findOne({ id: req.userId }).lean()
+    ]);
     if (!target || !actor) return next(new AppError('User not found.', 404));
-    target.followers ||= []; actor.following ||= [];
-    const index = target.followers.indexOf(req.userId);
-    if (index >= 0) { target.followers.splice(index, 1); actor.following = actor.following.filter((id) => id !== target.id); }
-    else { target.followers.push(req.userId); actor.following.push(target.id); }
-    await writeDB(db);
-    res.json({ following: index < 0, followerCount: target.followers.length });
+
+    const isFollowing = (target.followers || []).includes(req.userId);
+    if (isFollowing) {
+      await Promise.all([
+        User.updateOne({ id: target.id }, { $pull: { followers: req.userId } }),
+        User.updateOne({ id: actor.id }, { $pull: { following: target.id } })
+      ]);
+    } else {
+      await Promise.all([
+        User.updateOne({ id: target.id }, { $addToSet: { followers: req.userId } }),
+        User.updateOne({ id: actor.id }, { $addToSet: { following: target.id } })
+      ]);
+    }
+    const followerCount = isFollowing ? (target.followers || []).length - 1 : (target.followers || []).length + 1;
+    res.json({ following: !isFollowing, followerCount });
   } catch (error) { next(error); }
 };
 
 const uploadUserAvatar = async (req, res, next) => {
   try {
     if (!req.file) return next(new AppError('No profile image uploaded.', 400));
-    const db = ensureDBShape(await readDB());
-    const userIndex = db.users.findIndex((user) => user.id === req.params.id);
-    if (userIndex === -1) {
+    const existingUser = await User.findOne({ id: req.params.id }).lean();
+    if (!existingUser) {
       if (req.file.filename) {
         cloudinary.uploader.destroy(req.file.filename).catch(console.error);
       }
@@ -480,12 +504,14 @@ const uploadUserAvatar = async (req, res, next) => {
         console.error('Cloudinary avatar upload failed, keeping local file:', uploadError.message);
       }
     }
-    db.users[userIndex].avatarUrl = avatarUrl;
-    db.users[userIndex].avatarUpdatedAt = new Date().toISOString();
-    db.users[userIndex].updatedAt = db.users[userIndex].avatarUpdatedAt;
-    await writeDB(db);
+    const avatarUpdatedAt = new Date().toISOString();
+    const updatedUser = await User.findOneAndUpdate(
+      { id: req.params.id },
+      { $set: { avatarUrl, avatarUpdatedAt, updatedAt: avatarUpdatedAt } },
+      { returnDocument: 'after', lean: true }
+    );
     invalidateCache(`workspace:${req.params.id}`);
-    res.json({ user: db.users[userIndex] });
+    res.json({ user: updatedUser });
   } catch (error) {
     next(error);
   }
@@ -494,8 +520,7 @@ const uploadUserAvatar = async (req, res, next) => {
 const deleteUser = async (req, res, next) => {
   try {
     if (req.params.id !== req.userId) return next(new AppError('You can only delete your own account.', 403));
-    const db = ensureDBShape(await readDB());
-    const user = db.users.find((item) => item.id === req.params.id);
+    const user = await User.findOne({ id: req.params.id }).lean();
     if (!user) return next(new AppError('User not found.', 404));
 
     const uid = req.params.id;
@@ -524,13 +549,13 @@ const deleteUser = async (req, res, next) => {
 const deactivateUser = async (req, res, next) => {
   try {
     if (req.params.id !== req.userId) return next(new AppError('You can only deactivate your own account.', 403));
-    const db = ensureDBShape(await readDB());
-    const index = db.users.findIndex((item) => item.id === req.params.id);
-    if (index < 0) return next(new AppError('User not found.', 404));
     const deactivatedAt = new Date().toISOString();
-    db.users[index] = { ...db.users[index], isDeactivated: true, deactivatedAt, updatedAt: deactivatedAt };
-    await writeDB(db);
-    await User.updateOne({ id: req.params.id }, { isDeactivated: true, deactivatedAt });
+    const updatedUser = await User.findOneAndUpdate(
+      { id: req.params.id },
+      { $set: { isDeactivated: true, deactivatedAt, updatedAt: deactivatedAt } },
+      { returnDocument: 'after', lean: true }
+    );
+    if (!updatedUser) return next(new AppError('User not found.', 404));
     await revokeAllSessionsForUser({ userId: req.params.id, reason: 'account_deactivated' });
     clearAuthCookies(res);
     await recordSecurityEvent({ req, userId: req.params.id, type: 'account_deactivated' });
