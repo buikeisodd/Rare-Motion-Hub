@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Eye, EyeOff, Loader2, Mail, Lock, Phone } from 'lucide-react';
 import StarlightLogo from '../components/StarlightLogo';
+import VerificationModal from '../components/VerificationModal';
 
 function GoogleIcon({ className = '' }) {
   return (
@@ -34,6 +35,7 @@ export default function Login({ onLogin }) {
   const [notice, setNotice] = useState('');
   const [loading, setLoading] = useState(false);
   const [providerLoading, setProviderLoading] = useState('');
+  const [verificationModal, setVerificationModal] = useState(null); // { email, expiresAt, verificationUrl } | null
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
   const handleSubmit = async (e) => {
@@ -73,11 +75,15 @@ export default function Login({ onLogin }) {
       if (res.ok) {
         localStorage.setItem('lastEmail', email);
         if (data.requiresVerification) {
-          setNotice(data.message || 'Check your email to verify your account before signing in.');
-          if (data.verificationUrl) setNotice(`${data.message} Dev link: ${data.verificationUrl}`);
+          setVerificationModal({ email: data.email || email, expiresAt: data.expiresAt, verificationUrl: data.verificationUrl });
         } else {
           onLogin(data.user, data.token, data.csrfToken);
         }
+      } else if (data.requiresVerification) {
+        // Login blocked because the account isn't verified yet — reuse the
+        // same modal. No expiresAt yet since we didn't just issue a token;
+        // the user can tap "resend" to get a fresh one from the backend.
+        setVerificationModal({ email: data.email || email, expiresAt: null, verificationUrl: null });
       } else {
         setError(data.error || 'Authentication failed');
       }
@@ -106,27 +112,6 @@ export default function Login({ onLogin }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not request password reset.');
       setNotice(data.resetUrl ? `${data.message} Dev link: ${data.resetUrl}` : data.message);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const resendVerification = async () => {
-    setError('');
-    setNotice('');
-    setLoading(true);
-    try {
-      const res = await fetch(`${apiUrl}/api/auth/resend-verification`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ email: email.trim().toLowerCase() })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Could not resend verification email.');
-      setNotice(data.verificationUrl ? `${data.message} Dev link: ${data.verificationUrl}` : data.message);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -261,11 +246,6 @@ export default function Login({ onLogin }) {
             {notice && (
               <div className="rounded-2xl border border-primary-label/10 bg-primary-label/10 px-4 py-3 text-center text-sm text-primary-label">
                 {notice}
-                {notice.toLowerCase().includes('verify') && (
-                  <button type="button" onClick={resendVerification} className="mt-2 block w-full text-xs font-semibold text-primary-label underline underline-offset-4">
-                    Resend verification email
-                  </button>
-                )}
               </div>
             )}
 
@@ -324,6 +304,16 @@ export default function Login({ onLogin }) {
           By continuing you confirm that this email belongs to an approved Starlight Station collaborator.
         </p>
       </div>
+
+      {verificationModal && (
+        <VerificationModal
+          email={verificationModal.email}
+          expiresAt={verificationModal.expiresAt || new Date().toISOString()}
+          verificationUrl={verificationModal.verificationUrl}
+          apiUrl={apiUrl}
+          onClose={() => setVerificationModal(null)}
+        />
+      )}
     </div>
   );
 }

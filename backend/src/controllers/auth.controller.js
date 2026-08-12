@@ -93,6 +93,7 @@ const createEmailVerification = async (user) => {
   const verificationToken = makeVerificationToken();
   const tokenHash = hashToken(verificationToken);
   const verificationUrl = `${FRONTEND_URL.replace(/\/$/, '')}/verify-email?token=${verificationToken}`;
+  const expiresAt = new Date(Date.now() + EMAIL_VERIFICATION_TTL_SECONDS * 1000).toISOString();
 
   // Ephemeral, TTL-bound state lives in Redis (with in-memory fallback) —
   // Mongo/User stays the source of truth for the account itself.
@@ -102,6 +103,12 @@ const createEmailVerification = async (user) => {
   const emailResult = await sendVerificationEmail({ to: user.email, name: user.name, verificationUrl });
   return {
     sent: emailResult.sent,
+    // expiresAt is safe to always expose — it reveals nothing secret, and
+    // is exactly what the frontend needs to drive an authoritative countdown.
+    expiresAt,
+    // The raw token itself must never appear in a production API response —
+    // only ever in the emailed link. This dev-only escape hatch exists so
+    // local/testing flows can work without a real SMTP provider configured.
     verificationUrl: process.env.NODE_ENV === 'production' ? undefined : verificationUrl
   };
 };
@@ -166,7 +173,9 @@ const register = async (req, res, next) => {
     });
     res.status(201).json({
       requiresVerification: true,
+      email,
       emailSent: verification.sent,
+      expiresAt: verification.expiresAt,
       verificationUrl: verification.verificationUrl,
       message: hasSmtpConfig
         ? 'Check your email to verify your account before signing in.'
@@ -204,7 +213,11 @@ const login = async (req, res, next) => {
     }
     if (user.emailVerified === false) {
       await recordSecurityEvent({ req, userId: user.id, type: 'login_blocked', metadata: { reason: 'email_unverified' } });
-      return next(new AppError('Please verify your email before signing in.', 403));
+      return res.status(403).json({
+        error: 'Please verify your email before signing in.',
+        requiresVerification: true,
+        email: user.email
+      });
     }
 
     const { token, csrfToken, sessionId } = await issueAuthSession(req, res, user);
@@ -272,7 +285,9 @@ const resendVerification = async (req, res, next) => {
       metadata: { emailSent: verification.sent }
     });
     res.json({
+      email,
       emailSent: verification.sent,
+      expiresAt: verification.expiresAt,
       verificationUrl: verification.verificationUrl,
       message: verification.sent ? 'Verification email sent.' : 'Email sending is not configured.'
     });
