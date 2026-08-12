@@ -43,7 +43,24 @@ const makeVerificationToken = () => crypto.randomBytes(32).toString('hex');
 const ACCESS_TOKEN_TTL_MS = Number(process.env.ACCESS_TOKEN_TTL_MS || 1000 * 60 * 15);
 const accessTokenSeconds = () => Math.max(1, Math.floor(ACCESS_TOKEN_TTL_MS / 1000));
 const tokenForUser = (id, sessionId, expiresIn = accessTokenSeconds()) => jwt.sign({ userId: id, sessionId }, JWT_SECRET, { expiresIn });
-const userResponse = (user) => ({ ...publicUser(user), email: user.email, emailVerified: user.emailVerified !== false, authProvider: user.authProvider || 'password' });
+
+// Explicit account lifecycle: pending_verification -> active, with
+// suspended/deactivated as terminal-ish states an admin/user action can move
+// into. This is a *derived* label — isDeactivated/isSuspended/emailVerified
+// remain the actual booleans everything is computed from, so any user
+// document (including ones written before this field existed) always
+// resolves to a correct status without needing a data migration.
+const deriveAccountStatus = (user) => {
+  if (!user) return null;
+  if (user.isDeactivated) return 'deactivated';
+  if (user.isSuspended) return 'suspended';
+  // Fail closed: anything other than an explicit `true` is treated as
+  // unverified, matching the User schema's own `default: false`.
+  if (!user.emailVerified) return 'pending_verification';
+  return 'active';
+};
+
+const userResponse = (user) => ({ ...publicUser(user), email: user.email, emailVerified: user.emailVerified !== false, accountStatus: user.accountStatus || deriveAccountStatus(user), authProvider: user.authProvider || 'password' });
 
 const cookieOptions = (maxAge) => ({
   httpOnly: true,
@@ -157,6 +174,7 @@ const register = async (req, res, next) => {
       email,
       passwordHash,
       emailVerified: false,
+      accountStatus: 'pending_verification',
       authProvider: 'password',
       avatarUrl: '',
       createdAt: new Date().toISOString(),
@@ -204,6 +222,10 @@ const login = async (req, res, next) => {
       await recordSecurityEvent({ req, userId: user.id, type: 'login_blocked', metadata: { reason: 'deactivated' } });
       return next(new AppError('This account is deactivated.', 403));
     }
+    if (user.isSuspended) {
+      await recordSecurityEvent({ req, userId: user.id, type: 'login_blocked', metadata: { reason: 'suspended' } });
+      return next(new AppError('This account is suspended.', 403));
+    }
 
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
@@ -248,7 +270,17 @@ const verifyEmail = async (req, res, next) => {
     // tokens on reissue; the primary token above is already consumed.
     clearSecurityValue(`verify-user:${userId}`).catch(() => {});
 
-    const updates = { emailVerified: true, updatedAt: new Date().toISOString() };
+    // Read current suspension/deactivation state first so verification
+    // can't silently reactivate a suspended/deactivated account — those
+    // states take precedence over the pending_verification -> active move.
+    const existing = await User.findOne({ id: userId }).select('isSuspended isDeactivated').lean();
+    if (!existing) {
+      await recordSecurityEvent({ req, type: 'email_verification_failed', metadata: { reason: 'user_not_found' } });
+      return next(new AppError('Invalid or expired verification link. Request a new one.', 400));
+    }
+    const nextStatus = existing.isDeactivated ? 'deactivated' : existing.isSuspended ? 'suspended' : 'active';
+
+    const updates = { emailVerified: true, accountStatus: nextStatus, updatedAt: new Date().toISOString() };
     const user = await User.findOneAndUpdate(
       { id: userId },
       { $set: updates },
@@ -303,7 +335,7 @@ const requestPasswordReset = async (req, res, next) => {
     if (!email) return next(new AppError('Email is required.', 400));
     await enforceActionLimit(req, 'password-reset-request', securitySubject(email));
     const user = await User.findOne({ email }).lean();
-    if (user && user.passwordHash && !user.isDeactivated) {
+    if (user && user.passwordHash && !user.isDeactivated && !user.isSuspended) {
       const reset = await createPasswordReset(user);
       await recordSecurityEvent({
         req,
@@ -341,8 +373,15 @@ const resetPassword = async (req, res, next) => {
     }
     clearSecurityValue(`reset-user:${userId}`).catch(() => {});
 
+    const existing = await User.findOne({ id: userId }).select('isSuspended isDeactivated').lean();
+    if (!existing) {
+      await recordSecurityEvent({ req, type: 'password_reset_failed', metadata: { reason: 'user_not_found' } });
+      return next(new AppError('Invalid or expired reset link. Request a new one.', 400));
+    }
+    const nextStatus = existing.isDeactivated ? 'deactivated' : existing.isSuspended ? 'suspended' : 'active';
+
     const passwordHash = await bcrypt.hash(password, 10);
-    const updates = { passwordHash, emailVerified: true, updatedAt: new Date().toISOString() };
+    const updates = { passwordHash, emailVerified: true, accountStatus: nextStatus, updatedAt: new Date().toISOString() };
     const user = await User.findOneAndUpdate(
       { id: userId },
       { $set: updates },
@@ -375,11 +414,16 @@ const refreshSession = async (req, res, next) => {
       return next(new AppError('Unauthorized: Invalid refresh token', 401));
     }
     const user = await User.findOne({ id: rotated.session.userId }).lean();
-    if (!user || user.isDeactivated) {
+    if (!user) {
       clearAuthCookies(res);
       return next(new AppError('Unauthorized: Account unavailable', 401));
     }
-    if (user.emailVerified === false) {
+    const status = user.accountStatus || deriveAccountStatus(user);
+    if (status === 'deactivated' || status === 'suspended') {
+      clearAuthCookies(res);
+      return next(new AppError('Unauthorized: Account unavailable', 401));
+    }
+    if (status === 'pending_verification') {
       await revokeAllSessionsForUser({ userId: user.id, reason: 'email_unverified' });
       clearAuthCookies(res);
       await recordSecurityEvent({ req, userId: user.id, sessionId: rotated.session.sessionId, type: 'refresh_blocked', metadata: { reason: 'email_unverified' } });
@@ -570,7 +614,7 @@ const deactivateUser = async (req, res, next) => {
     const deactivatedAt = new Date().toISOString();
     const updatedUser = await User.findOneAndUpdate(
       { id: req.params.id },
-      { $set: { isDeactivated: true, deactivatedAt, updatedAt: deactivatedAt } },
+      { $set: { isDeactivated: true, accountStatus: 'deactivated', deactivatedAt, updatedAt: deactivatedAt } },
       { returnDocument: 'after', lean: true }
     );
     if (!updatedUser) return next(new AppError('User not found.', 404));
@@ -598,5 +642,6 @@ module.exports = {
   toggleFollow,
   uploadUserAvatar,
   deleteUser,
-  deactivateUser
+  deactivateUser,
+  deriveAccountStatus
 };

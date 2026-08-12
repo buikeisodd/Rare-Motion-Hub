@@ -11,6 +11,19 @@ const UserSchema = new Schema({
   following: [String],
   isDeactivated: { type: Boolean, default: false },
   deactivatedAt: String,
+  isSuspended: { type: Boolean, default: false },
+  suspendedAt: String,
+  // Explicit account lifecycle label. Kept in sync with the underlying
+  // isDeactivated/isSuspended/emailVerified booleans at every transition
+  // point (see deriveAccountStatus in auth.controller.js) rather than
+  // replacing them, so existing documents/checks predating this field keep
+  // working — it's a derived, always-recomputable label, not a second
+  // independent source of truth.
+  accountStatus: {
+    type: String,
+    enum: ['pending_verification', 'active', 'suspended', 'deactivated'],
+    default: 'pending_verification'
+  },
   email: { type: String, unique: true, sparse: true },
   emailVerified: { type: Boolean, default: false },
   authProvider: { type: String, default: 'password' },

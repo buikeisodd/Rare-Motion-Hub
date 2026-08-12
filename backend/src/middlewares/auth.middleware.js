@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const { AppError } = require('./error.middleware');
 const { Session, User } = require('../models');
+const { deriveAccountStatus } = require('../controllers/auth.controller');
 
 const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV === 'production' ? null : 'fallback_secret');
 
@@ -40,8 +41,17 @@ const requireUserId = async (req, res, next) => {
       User.findOne({ id: decoded.userId }).lean()
     ]);
     if (!session) return next(new AppError('Unauthorized: Session expired', 401));
-    if (!user || user.isDeactivated) return next(new AppError('Unauthorized: Account unavailable', 401));
-    if (user.emailVerified === false) {
+    if (!user) return next(new AppError('Unauthorized: Account unavailable', 401));
+
+    // Single explicit lifecycle check, derived from the same booleans that
+    // gate everything else (isDeactivated/isSuspended/emailVerified) — see
+    // deriveAccountStatus in auth.controller.js. Falls back correctly for
+    // any user document written before accountStatus existed.
+    const status = user.accountStatus || deriveAccountStatus(user);
+    if (status === 'deactivated' || status === 'suspended') {
+      return next(new AppError('Unauthorized: Account unavailable', 401));
+    }
+    if (status === 'pending_verification') {
       return next(new AppError('Please verify your email before continuing.', 403));
     }
     if (!bearerToken && unsafeMethods.has(req.method)) {
