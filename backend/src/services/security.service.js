@@ -144,6 +144,13 @@ const createRefreshSession = async ({ req, userId }) => {
 const rotateRefreshSession = async ({ req, refreshToken }) => {
   const tokenHash = hashOpaqueToken(refreshToken);
   const nextRefreshToken = createOpaqueToken(48);
+  const nextHash = hashOpaqueToken(nextRefreshToken);
+
+  // Normal path: the presented token matches a session's CURRENT hash.
+  // Rotate it — the old hash is retained as previousRefreshTokenHash
+  // purely so a later replay of it can be recognized as reuse (see below),
+  // not because the raw token is stored anywhere (only its SHA-256 hash
+  // ever touches Mongo/Redis).
   const session = await Session.findOneAndUpdate(
     {
       refreshTokenHash: tokenHash,
@@ -152,15 +159,32 @@ const rotateRefreshSession = async ({ req, refreshToken }) => {
     },
     {
       $set: {
-        refreshTokenHash: hashOpaqueToken(nextRefreshToken),
+        refreshTokenHash: nextHash,
+        previousRefreshTokenHash: tokenHash,
         lastUsedAt: new Date().toISOString(),
         ...requestContext(req)
       }
     },
     { returnDocument: 'after', lean: true }
   );
-  if (!session) return null;
-  return { session, refreshToken: nextRefreshToken };
+  if (session) return { session, refreshToken: nextRefreshToken };
+
+  // Reuse detection: the token didn't match any session's current hash —
+  // but does it match a session's *previous* (already rotated-away) hash?
+  // If so, this exact token was valid once, got rotated out, and is now
+  // being replayed — a strong signal it was stolen at some point before
+  // the legitimate rotation happened. Treat this as compromise: revoke the
+  // session immediately rather than just rejecting the one request.
+  const reused = await Session.findOneAndUpdate(
+    { previousRefreshTokenHash: tokenHash, revokedAt: { $exists: false } },
+    { $set: { revokedAt: new Date().toISOString(), revokedReason: 'refresh_token_reuse_detected' } },
+    { returnDocument: 'after', lean: true }
+  );
+  if (reused) {
+    return { session: null, refreshToken: null, reused: true, userId: reused.userId, sessionId: reused.sessionId };
+  }
+
+  return null;
 };
 
 const revokeRefreshSession = async ({ refreshToken, reason = 'logout' }) => {

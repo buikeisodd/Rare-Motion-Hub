@@ -196,6 +196,11 @@ const SessionSchema = new Schema({
   sessionId: { type: String, required: true, unique: true, index: true },
   userId: { type: String, required: true, index: true },
   refreshTokenHash: { type: String, required: true },
+  // Hash the current refreshTokenHash replaced on the last rotation. Used
+  // purely for reuse detection: if a token matching THIS hash is ever
+  // presented again, it means someone is replaying an already-rotated-away
+  // (and therefore compromised) refresh token — see rotateRefreshSession.
+  previousRefreshTokenHash: { type: String, index: true },
   tokenFamilyId: { type: String, required: true, index: true },
   createdAt: { type: String, default: () => new Date().toISOString() },
   lastUsedAt: { type: String, default: () => new Date().toISOString() },

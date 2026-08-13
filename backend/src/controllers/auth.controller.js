@@ -445,6 +445,22 @@ const refreshSession = async (req, res, next) => {
       await recordSecurityEvent({ req, type: 'refresh_failed', metadata: { reason: 'invalid_or_expired' } });
       return next(new AppError('Unauthorized: Invalid refresh token', 401));
     }
+    if (rotated.reused) {
+      // A retired refresh token was just replayed — treat as confirmed
+      // compromise. Kill every session for this user, not just the one
+      // tied to the stolen token, since we don't know what else may have
+      // been exfiltrated alongside it.
+      clearAuthCookies(res);
+      await revokeAllSessionsForUser({ userId: rotated.userId, reason: 'refresh_token_reuse_detected' });
+      await recordSecurityEvent({
+        req,
+        userId: rotated.userId,
+        sessionId: rotated.sessionId,
+        type: 'refresh_token_reuse_detected',
+        metadata: { reason: 'rotated_token_replayed' }
+      });
+      return next(new AppError('Unauthorized: Invalid refresh token', 401));
+    }
     const user = await User.findOne({ id: rotated.session.userId }).lean();
     if (!user) {
       clearAuthCookies(res);
