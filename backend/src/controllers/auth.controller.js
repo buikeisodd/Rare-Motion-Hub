@@ -210,14 +210,31 @@ const login = async (req, res, next) => {
     const email = req.body.email?.trim().toLowerCase();
     const password = req.body.password;
     if (!email || !password) return next(new AppError('Email and password are required.', 400));
+
+    // 5. Rate-limit state — generic sliding-window throttle on login attempts,
+    // distinct from the account-lockout mechanism below.
+    await enforceActionLimit(req, 'login', securitySubject(email));
+    // 4. Lockout state — this account specifically locked after repeated failures.
     await ensureLoginNotLocked(req, email);
 
+    // 1. Credentials — existence + password must both check out before
+    // anything about the account is revealed, so a wrong password and a
+    // deactivated/suspended account return the same generic error.
     const user = await User.findOne({ email }).lean();
     if (!user || !user.passwordHash) {
       await noteLoginFailure(req, email);
       await recordSecurityEvent({ req, type: 'login_failed', metadata: { email, reason: 'invalid_credentials' } });
       return next(new AppError('Invalid email or password.', 401));
     }
+    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    if (!isMatch) {
+      await noteLoginFailure(req, email);
+      await recordSecurityEvent({ req, userId: user.id, type: 'login_failed', metadata: { reason: 'invalid_credentials' } });
+      return next(new AppError('Invalid email or password.', 401));
+    }
+
+    // 2. Account state — deactivated/suspended, checked only once credentials
+    // are already proven valid.
     if (user.isDeactivated) {
       await recordSecurityEvent({ req, userId: user.id, type: 'login_blocked', metadata: { reason: 'deactivated' } });
       return next(new AppError('This account is deactivated.', 403));
@@ -227,25 +244,21 @@ const login = async (req, res, next) => {
       return next(new AppError('This account is suspended.', 403));
     }
 
-    const isMatch = await bcrypt.compare(password, user.passwordHash);
-    if (!isMatch) {
-      await noteLoginFailure(req, email);
-      await recordSecurityEvent({ req, userId: user.id, type: 'login_failed', metadata: { reason: 'invalid_credentials' } });
-      return next(new AppError('Invalid email or password.', 401));
-    }
-    if (user.emailVerified === false) {
+    // 3. Email verification state — credentials are correct and the account
+    // is otherwise in good standing, but verification is still required.
+    // No session, cookies, or tokens are issued past this point.
+    if (!user.emailVerified) {
       await recordSecurityEvent({ req, userId: user.id, type: 'login_blocked', metadata: { reason: 'email_unverified' } });
       return res.status(403).json({
-        error: 'Please verify your email before signing in.',
-        requiresVerification: true,
-        email: user.email
+        success: false,
+        requiresEmailVerification: true
       });
     }
 
     const { token, csrfToken, sessionId } = await issueAuthSession(req, res, user);
     await noteLoginSuccess(email);
     await recordSecurityEvent({ req, userId: user.id, sessionId, type: 'login_success' });
-    res.json({ user: userResponse(user), token, csrfToken });
+    res.json({ success: true, user: userResponse(user), token, csrfToken });
   } catch (error) {
     next(error);
   }

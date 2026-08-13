@@ -79,11 +79,11 @@ export default function Login({ onLogin }) {
         } else {
           onLogin(data.user, data.token, data.csrfToken);
         }
-      } else if (data.requiresVerification) {
+      } else if (data.requiresEmailVerification) {
         // Login blocked because the account isn't verified yet — reuse the
         // same modal. No expiresAt yet since we didn't just issue a token;
         // the user can tap "resend" to get a fresh one from the backend.
-        setVerificationModal({ email: data.email || email, expiresAt: null, verificationUrl: null });
+        setVerificationModal({ email, expiresAt: null, verificationUrl: null });
       } else {
         setError(data.error || 'Authentication failed');
       }
