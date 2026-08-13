@@ -11,10 +11,38 @@ const safeTokenEqual = (left, right) => {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 };
 
-const requestContext = (req) => ({
-  ipAddress: req.ip || req.headers['x-forwarded-for']?.split(',')[0]?.trim() || '',
-  userAgent: req.get('user-agent') || ''
-});
+// Lightweight, dependency-free device summary parsed from the User-Agent
+// string — enough for a session-management UI to show "Chrome on macOS" /
+// "Starlight Station iOS app" without pulling in a full UA-parsing library
+// for what's explicitly a "where appropriate" nice-to-have field.
+const parseDeviceMetadata = (userAgent) => {
+  if (!userAgent) return null;
+  const ua = userAgent;
+  let platform = 'unknown';
+  if (/iPhone|iPad|iPod/i.test(ua)) platform = 'ios';
+  else if (/Android/i.test(ua)) platform = 'android';
+  else if (/Macintosh|Mac OS X/i.test(ua)) platform = 'macos';
+  else if (/Windows/i.test(ua)) platform = 'windows';
+  else if (/Linux/i.test(ua)) platform = 'linux';
+
+  let browser = 'unknown';
+  if (/Expo|okhttp|StarlightStation/i.test(ua)) browser = 'app';
+  else if (/Edg\//i.test(ua)) browser = 'edge';
+  else if (/Chrome\//i.test(ua) && !/Chromium/i.test(ua)) browser = 'chrome';
+  else if (/Firefox\//i.test(ua)) browser = 'firefox';
+  else if (/Safari\//i.test(ua) && !/Chrome/i.test(ua)) browser = 'safari';
+
+  return { platform, browser };
+};
+
+const requestContext = (req) => {
+  const userAgent = req.get?.('user-agent') || req.headers?.['user-agent'] || '';
+  return {
+    ipAddress: req.ip || req.headers?.['x-forwarded-for']?.split(',')[0]?.trim() || '',
+    userAgent,
+    device: parseDeviceMetadata(userAgent)
+  };
+};
 
 const recordSecurityEvent = async ({ req, userId, sessionId, category = 'auth', type, metadata = {} }) => {
   if (!type) return;
