@@ -28,17 +28,22 @@ const requireUserId = async (req, res, next) => {
   
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    if (!decoded.sessionId) {
+    if (decoded.type !== 'access') {
+      return next(new AppError('Unauthorized: Wrong token type', 401));
+    }
+    const userId = decoded.sub;
+    const sessionId = decoded.sid;
+    if (!userId || !sessionId) {
       return next(new AppError('Unauthorized: Session is required', 401));
     }
     const [session, user] = await Promise.all([
       Session.findOne({
-        sessionId: decoded.sessionId,
-        userId: decoded.userId,
+        sessionId,
+        userId,
         revokedAt: { $exists: false },
         expiresAt: { $gt: new Date().toISOString() }
       }).lean(),
-      User.findOne({ id: decoded.userId }).lean()
+      User.findOne({ id: userId }).lean()
     ]);
     if (!session) return next(new AppError('Unauthorized: Session expired', 401));
     if (!user) return next(new AppError('Unauthorized: Account unavailable', 401));
@@ -47,6 +52,12 @@ const requireUserId = async (req, res, next) => {
     // gate everything else (isDeactivated/isSuspended/emailVerified) — see
     // deriveAccountStatus in auth.controller.js. Falls back correctly for
     // any user document written before accountStatus existed.
+    //
+    // Deliberately re-derived from the live Mongo document on every request
+    // rather than trusted from the JWT itself — the access token carries no
+    // authorization state (see tokenForUser), so a suspension/deactivation/
+    // verification change takes effect on the very next request instead of
+    // waiting out the token's remaining lifetime.
     const status = user.accountStatus || deriveAccountStatus(user);
     if (status === 'deactivated' || status === 'suspended') {
       return next(new AppError('Unauthorized: Account unavailable', 401));
@@ -61,8 +72,8 @@ const requireUserId = async (req, res, next) => {
         return next(new AppError('Unauthorized: Invalid CSRF token', 401));
       }
     }
-    req.userId = decoded.userId;
-    req.sessionId = decoded.sessionId;
+    req.userId = userId;
+    req.sessionId = sessionId;
     req.user = user;
     req.authTransport = bearerToken ? 'bearer' : 'cookie';
     next();

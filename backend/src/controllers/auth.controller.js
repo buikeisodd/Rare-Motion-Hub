@@ -42,7 +42,26 @@ const hashToken = (token) => crypto.createHash('sha256').update(token).digest('h
 const makeVerificationToken = () => crypto.randomBytes(32).toString('hex');
 const ACCESS_TOKEN_TTL_MS = Number(process.env.ACCESS_TOKEN_TTL_MS || 1000 * 60 * 15);
 const accessTokenSeconds = () => Math.max(1, Math.floor(ACCESS_TOKEN_TTL_MS / 1000));
-const tokenForUser = (id, sessionId, expiresIn = accessTokenSeconds()) => jwt.sign({ userId: id, sessionId }, JWT_SECRET, { expiresIn });
+
+// Access token claims are deliberately minimal: sub (userId), sid
+// (sessionId), and type ('access', to distinguish it from any other token
+// kind that might ever be signed as a JWT — refresh tokens today are opaque,
+// not JWTs, but this guards against token confusion either way). iat/exp are
+// added automatically by jsonwebtoken via the `expiresIn` option.
+//
+// Deliberately NOT included: emailVerified, accountStatus, role, or any
+// other mutable authorization fact. Those can change the instant after
+// this token is issued (e.g. an admin suspends the account), and a JWT is
+// self-contained/stateless by design — trusting a stale mutable claim for
+// up to the token's full lifetime would let a suspended/deactivated/
+// unverified account keep acting as if nothing changed until the token
+// naturally expires. The middleware re-reads the User/Session documents
+// from Mongo on every request instead, so current state is always current.
+const tokenForUser = (id, sessionId, expiresIn = accessTokenSeconds()) => jwt.sign(
+  { sub: id, sid: sessionId, type: 'access' },
+  JWT_SECRET,
+  { expiresIn }
+);
 
 // Explicit account lifecycle: pending_verification -> active, with
 // suspended/deactivated as terminal-ish states an admin/user action can move
