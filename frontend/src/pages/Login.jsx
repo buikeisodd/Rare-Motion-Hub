@@ -76,7 +76,14 @@ export default function Login({ onLogin }) {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Could not reset password.');
-        onLogin(data.user);
+        // Password reset does not auto-login — fresh authentication is required.
+        // Clear the reset token from the URL, switch to normal login mode,
+        // and show a success notice so the user knows to sign in again.
+        setResetMode(false);
+        setResetToken('');
+        setPassword('');
+        window.history.replaceState({}, '', '/login');
+        setNotice(data.message || 'Password updated. Please sign in with your new password.');
         return;
       }
 

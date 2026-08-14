@@ -503,10 +503,14 @@ const resetPassword = async (req, res, next) => {
     }
 
     await revokeAllSessionsForUser({ userId: user.id, reason: 'password_reset' });
-    const { sessionId, ...mobileTokens } = await issueAuthSession(req, res, user);
-    await recordSecurityEvent({ req, userId: user.id, sessionId, type: 'password_reset_completed' });
-    const nextUser = { ...user, ...updates };
-    res.json({ user: userResponse(nextUser), ...mobileTokens });
+    clearAuthCookies(res);
+    await recordSecurityEvent({ req, userId: user.id, type: 'password_reset_completed' });
+    // Do NOT issue a new session here. The spec requires fresh authentication
+    // after a password reset — no auto-login. The attacker who triggered the
+    // reset (if any) must not end up with a valid session. All refresh-token
+    // families are now revoked: rotateRefreshSession checks revokedAt on every
+    // use, so any outstanding refresh tokens are immediately invalid.
+    res.json({ success: true, message: 'Password updated. Please sign in with your new password.' });
   } catch (error) {
     next(error);
   }
