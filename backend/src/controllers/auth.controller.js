@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
-const { User, Folder, Project, Track, CoverArt, Notification, PlayEvent } = require('../models');
+const { User, Session, Folder, Project, Track, CoverArt, Notification, PlayEvent } = require('../models');
 const { removeDirIfExists, removeFileIfExists, getUserDir, uploadDir, coverDir, avatarDir } = require('../utils/fileHelper');
 const { cloudinary, hasCloudinaryConfig } = require('../config/cloudinary');
 const { invalidateCache } = require('../config/redis');
@@ -583,11 +583,41 @@ const refreshSession = async (req, res, next) => {
 
 const logout = async (req, res, next) => {
   try {
+    // Identify the current session two ways:
+    // 1. via req.sessionId — set by requireAuth if the access token was valid
+    // 2. via the refresh token cookie/body — works even with an expired access
+    //    token, since logout is intentionally not behind requireAuth
     const refreshToken = req.body?.refreshToken || readCookie(req, 'refreshToken');
-    const session = await revokeRefreshSession({ refreshToken, reason: 'logout' });
+    let revokedSession = null;
+
+    if (req.sessionId) {
+      // Direct session revocation via sessionId from the validated JWT —
+      // this is the more reliable path since it requires no refresh token.
+      revokedSession = await Session.findOneAndUpdate(
+        { sessionId: req.sessionId, revokedAt: { $exists: false } },
+        { $set: { revokedAt: new Date().toISOString(), revokedReason: 'logout' } },
+        { returnDocument: 'after', lean: true }
+      );
+    }
+
+    if (!revokedSession && refreshToken) {
+      // Fallback: revoke via refresh token hash (expired access token path,
+      // or mobile client where sessionId may not be available).
+      revokedSession = await revokeRefreshSession({ refreshToken, reason: 'logout' });
+    }
+
+    // Clear all auth cookies regardless of whether a session was found —
+    // the client's cookies should always be cleared on a logout attempt.
     clearAuthCookies(res);
-    await recordSecurityEvent({ req, userId: session?.userId, sessionId: session?.sessionId, type: 'logout' });
-    res.json({ message: 'Logged out.' });
+
+    await recordSecurityEvent({
+      req,
+      userId: revokedSession?.userId ?? req.userId,
+      sessionId: revokedSession?.sessionId ?? req.sessionId,
+      type: 'AUTH_LOGOUT'
+    });
+
+    res.json({ success: true, message: 'Logged out.' });
   } catch (error) {
     next(error);
   }
@@ -595,10 +625,20 @@ const logout = async (req, res, next) => {
 
 const logoutAll = async (req, res, next) => {
   try {
-    await revokeAllSessionsForUser({ userId: req.userId, reason: 'logout_all' });
+    // Revoke every active session for this user. Each Session document holds
+    // a refresh token hash — revoking the document makes that refresh token
+    // permanently unusable (rotateRefreshSession filters revokedAt: { $exists: false }).
+    // All token families across all devices are therefore invalidated.
+    const { modifiedCount } = await revokeAllSessionsForUser({ userId: req.userId, reason: 'logout_all' });
     clearAuthCookies(res);
-    await recordSecurityEvent({ req, userId: req.userId, sessionId: req.sessionId, type: 'logout_all' });
-    res.json({ message: 'Logged out on all devices.' });
+    await recordSecurityEvent({
+      req,
+      userId: req.userId,
+      sessionId: req.sessionId,
+      type: 'AUTH_LOGOUT_ALL',
+      metadata: { sessionsRevoked: modifiedCount }
+    });
+    res.json({ success: true, message: 'Logged out on all devices.' });
   } catch (error) {
     next(error);
   }
