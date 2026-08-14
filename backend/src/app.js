@@ -11,19 +11,54 @@ const chatRoutes = require('./routes/chat.routes');
 
 const app = express();
 
-const allowedOrigins = (process.env.CORS_ORIGINS || '')
+const IS_PROD = process.env.NODE_ENV === 'production';
+
+// Origins that are allowed to make credentialed cross-origin requests.
+// Wildcards are never permitted with credentials:true — browsers will reject
+// the response anyway, but we enforce it here explicitly so a misconfigured
+// environment variable can't accidentally open a security hole.
+//
+// Production: CORS_ORIGINS must be set. Comma-separated list of exact
+// origins, e.g. "https://app.starlightstation.com,https://starlightstation.com".
+// The app will log a warning and serve no credentialed cross-origin requests
+// if this var is missing in production.
+//
+// Development: falls back to localhost on both common Vite ports (5173, 3000).
+// Never include these in the production list.
+
+const DEV_ORIGINS = ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:4000'];
+
+const explicitOrigins = (process.env.CORS_ORIGINS || '')
   .split(',')
-  .map((origin) => origin.trim())
+  .map((o) => o.trim())
   .filter(Boolean);
 
+if (IS_PROD && explicitOrigins.length === 0) {
+  console.warn(
+    '[CORS] WARNING: NODE_ENV=production but CORS_ORIGINS is not set. ' +
+    'No cross-origin requests with credentials will be permitted. ' +
+    'Set CORS_ORIGINS to a comma-separated list of allowed origins.'
+  );
+}
+
+const allowedOrigins = IS_PROD ? explicitOrigins : [...explicitOrigins, ...DEV_ORIGINS];
+
+// The origin callback follows the WHATWG fetch spec: a missing Origin header
+// (server-to-server, curl, native mobile apps) is allowed through — those
+// callers don't participate in CORS at all and the browser's SOP doesn't
+// apply to them. Only a browser-supplied Origin that is NOT in the allowlist
+// is rejected.
+const originCallback = (origin, callback) => {
+  if (!origin) return callback(null, true);
+  if (allowedOrigins.includes(origin)) return callback(null, true);
+  return callback(Object.assign(new Error('Not allowed by CORS'), { status: 403 }));
+};
+
 app.use(cors({
-  origin: allowedOrigins.length
-    ? (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
-        return callback(new Error('Origin is not allowed by CORS'));
-      }
-    : true,
-  credentials: true
+  origin: originCallback,
+  credentials: true,
+  // Preflight cache: 1 hour for prod, 0 for dev so changes take effect immediately
+  maxAge: IS_PROD ? 3600 : 0
 }));
 app.disable('x-powered-by');
 app.use(express.json({ limit: '2mb' }));
