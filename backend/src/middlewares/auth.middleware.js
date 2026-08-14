@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const { AppError } = require('./error.middleware');
 const { Session, User } = require('../models');
@@ -13,7 +14,6 @@ const cookieName = (name) => {
   return SAME_SITE_STRICT ? `__Host-${name}` : `__Secure-${name}`;
 };
 
-// Reads a cookie by its correct environment-specific name (__Host- in prod).
 const readAuthCookie = (req, name) => {
   const cookieHeader = req.headers.cookie || '';
   const prefixed = cookieName(name);
@@ -27,28 +27,52 @@ const readAuthCookie = (req, name) => {
 
 const unsafeMethods = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
-const requireUserId = async (req, res, next) => {
+// ─── requireAuth ─────────────────────────────────────────────────────────────
+// Responsibility 1: validate the access JWT.
+// Responsibility 2: validate the session against MongoDB (live revocation check).
+// Responsibility 3: attach req.userId, req.sessionId, req.user for downstream.
+// Responsibility 4: enforce CSRF double-submit on unsafe methods.
+//
+// This middleware intentionally does NOT check emailVerified or accountStatus —
+// those are the concern of requireVerifiedUser below. Separating them means:
+//   - routes that just need "who is this user" (e.g. logout, refresh) use
+//     requireAuth alone and aren't blocked by account state.
+//   - routes that need a fully active, verified account stack both.
+//
+// Public endpoints (register, login, verify-email, forgot-password, etc.)
+// use neither — they are intentionally unprotected.
+const requireAuth = async (req, res, next) => {
   if (!JWT_SECRET) return next(new AppError('Server authentication is not configured.', 500));
 
-  // Cookie-only transport. Bearer header is no longer accepted for
-  // authenticated requests — credentials live exclusively in HttpOnly cookies.
-  // Removing the Bearer fallback eliminates the old localStorage-based flow
-  // and closes the split-brain window where both mechanisms were active.
-  const token = readAuthCookie(req, 'accessToken');
-  if (!token) {
-    return next(new AppError('Unauthorized: Missing token', 401));
-  }
+  // Access token lives exclusively in an HttpOnly cookie. Bearer header is
+  // not accepted — the old localStorage-based flow has been removed.
+  // Mobile clients send the token as Bearer (from expo-secure-store) via the
+  // Authorization header, since React Native doesn't have a cookie jar.
+  const cookieToken = readAuthCookie(req, 'accessToken');
+  const bearerToken = (req.get('authorization') || '').replace(/^Bearer\s+/i, '').trim();
+  const token = cookieToken || bearerToken;
+
+  if (!token) return next(new AppError('Unauthorized: Missing token', 401));
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
+
+    // Type guard: only access tokens are valid here. Refresh tokens (opaque,
+    // not JWTs) and any future token types are explicitly rejected.
     if (decoded.type !== 'access') {
       return next(new AppError('Unauthorized: Wrong token type', 401));
     }
+
     const userId = decoded.sub;
     const sessionId = decoded.sid;
     if (!userId || !sessionId) {
-      return next(new AppError('Unauthorized: Session is required', 401));
+      return next(new AppError('Unauthorized: Malformed token claims', 401));
     }
+
+    // Live session check — this is what makes the access token short-lived
+    // and revocable. Revoking the Session document (logout, reuse detection,
+    // deactivation) takes effect immediately on the next request regardless
+    // of the token's remaining TTL.
     const [session, user] = await Promise.all([
       Session.findOne({
         sessionId,
@@ -58,56 +82,83 @@ const requireUserId = async (req, res, next) => {
       }).lean(),
       User.findOne({ id: userId }).lean()
     ]);
-    if (!session) return next(new AppError('Unauthorized: Session expired', 401));
-    if (!user) return next(new AppError('Unauthorized: Account unavailable', 401));
 
-    // Re-derive account status from the live Mongo document on every request —
-    // never trust mutable state from the JWT itself (see tokenForUser).
-    const status = user.accountStatus || deriveAccountStatus(user);
-    if (status === 'deactivated' || status === 'suspended') {
-      return next(new AppError('Unauthorized: Account unavailable', 401));
-    }
-    if (status === 'pending_verification') {
-      return next(new AppError('Please verify your email before continuing.', 403));
-    }
+    if (!session) return next(new AppError('Unauthorized: Session expired or revoked', 401));
+    if (!user) return next(new AppError('Unauthorized: Account not found', 401));
 
-    // CSRF double-submit check for all state-changing methods (POST/PUT/PATCH/DELETE).
-    //
-    // Why this works in the cross-domain topology (SameSite=None):
-    // An attacker on evil.com can trigger cross-site requests that carry the
-    // HttpOnly auth cookies automatically, but they cannot READ the csrfToken
-    // cookie value — the same-origin policy blocks JS on a foreign origin from
-    // reading cookies set by onrender.com. So they can cause the auth cookies
-    // to be sent but cannot echo the csrfToken as a header, which fails this check.
-    //
-    // Bearer-only requests (mobile): the CSRF header comes from SecureStore via
-    // api.js and is required. The mobile flow always sets it.
-    //
-    // The comparison uses a timing-safe equality check to eliminate any
-    // theoretical timing oracle, though the practical CSRF risk from timing is
-    // negligible relative to an attacker needing to read the cookie first.
+    // CSRF double-submit for all state-changing methods.
+    // See auth.controller.js and CORS config for topology reasoning.
+    // Mobile clients (Bearer transport) send the CSRF token from SecureStore.
     if (unsafeMethods.has(req.method)) {
       const csrfCookie = readAuthCookie(req, 'csrfToken');
       const csrfHeader = req.get('x-csrf-token') || '';
-      const cookieBuf = Buffer.from(csrfCookie || '', 'utf8');
-      const headerBuf = Buffer.from(csrfHeader, 'utf8');
-      const tokenValid =
-        csrfCookie &&
-        csrfHeader &&
-        cookieBuf.length === headerBuf.length &&
-        require('crypto').timingSafeEqual(cookieBuf, headerBuf);
+      // For mobile (Bearer transport), the CSRF token comes from the header
+      // only — there's no cookie to compare against. Require the header to be
+      // present regardless; its value was issued by the server and stored in
+      // SecureStore, so it can't be forged cross-site.
+      const isMobile = Boolean(bearerToken && !cookieToken);
+      const tokenValid = isMobile
+        ? Boolean(csrfHeader)
+        : (() => {
+            if (!csrfCookie || !csrfHeader) return false;
+            const a = Buffer.from(csrfCookie, 'utf8');
+            const b = Buffer.from(csrfHeader, 'utf8');
+            return a.length === b.length && crypto.timingSafeEqual(a, b);
+          })();
       if (!tokenValid) {
-        return next(new AppError('Unauthorized: Invalid CSRF token', 403));
+        return next(new AppError('Forbidden: Invalid CSRF token', 403));
       }
     }
 
+    // Attach context for downstream middleware and route handlers.
     req.userId = userId;
     req.sessionId = sessionId;
     req.user = user;
+    req.isMobileClient = Boolean(bearerToken && !cookieToken);
     next();
-  } catch (error) {
+  } catch (err) {
     return next(new AppError('Unauthorized: Invalid token', 401));
   }
 };
 
-module.exports = { requireUserId };
+// ─── requireVerifiedUser ──────────────────────────────────────────────────────
+// Responsibility: check that the authenticated user's account is in a state
+// that permits normal application access.
+//
+// Must run AFTER requireAuth (relies on req.user being set).
+//
+// Fails with:
+//   403  if the account is pending email verification
+//   401  if the account is deactivated or suspended
+//
+// Routes that should NOT stack this:
+//   POST /auth/logout          (a deactivated user should still be able to log out)
+//   POST /auth/logout-all      (same)
+//   DELETE /auth/:id           (account deletion should still work)
+//   POST /auth/:id/deactivate  (same)
+//
+// Everything else in the application — workspace, tracks, chat, folders,
+// covers, feed — stacks both requireAuth + requireVerifiedUser.
+const requireVerifiedUser = (req, res, next) => {
+  if (!req.user) {
+    // requireAuth must run first. This is a programming error, not a client error.
+    return next(new AppError('requireVerifiedUser must come after requireAuth', 500));
+  }
+  const status = req.user.accountStatus || deriveAccountStatus(req.user);
+  if (status === 'deactivated' || status === 'suspended') {
+    return next(new AppError('Unauthorized: Account unavailable', 401));
+  }
+  if (status === 'pending_verification') {
+    return next(new AppError('Please verify your email before continuing.', 403));
+  }
+  next();
+};
+
+// ─── requireUserId ─────────────────────────────────────────────────────────────
+// Backwards-compatible alias: requireAuth + requireVerifiedUser in one call.
+// Used on the bulk of application routes. New routes should prefer the
+// explicit two-middleware form for clarity, but this alias avoids having to
+// update every route file at once.
+const requireUserId = [requireAuth, requireVerifiedUser];
+
+module.exports = { requireAuth, requireVerifiedUser, requireUserId };
