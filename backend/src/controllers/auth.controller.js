@@ -25,7 +25,9 @@ const {
   AUTH_ACTION_WINDOW_SECONDS,
   clientSubject,
   enforceActionLimit,
-  ensureLoginNotLocked,
+  enforceAuthEndpointLimits,
+  enforceLoginLimits,
+  enforceRefreshLimits,
   noteLoginFailure,
   noteLoginSuccess,
   securitySubject
@@ -242,7 +244,7 @@ const register = async (req, res, next) => {
     const email = req.body.email?.trim().toLowerCase();
     const password = req.body.password;
     if (!email || !password) return next(new AppError('Email and password are required.', 400));
-    await enforceActionLimit(req, 'register', `${clientSubject(req)}:${securitySubject(email)}`, 3, AUTH_ACTION_WINDOW_SECONDS);
+    await enforceAuthEndpointLimits(req, 'register', email);
     if (String(password).length < 8) return next(new AppError('Password must be at least 8 characters.', 400));
 
     let user = await User.findOne({ email }).lean();
@@ -299,11 +301,12 @@ const login = async (req, res, next) => {
     const password = req.body.password;
     if (!email || !password) return next(new AppError('Email and password are required.', 400));
 
-    // 5. Rate-limit state — generic sliding-window throttle on login attempts,
-    // distinct from the account-lockout mechanism below.
-    await enforceActionLimit(req, 'login', securitySubject(email));
-    // 4. Lockout state — this account specifically locked after repeated failures.
-    await ensureLoginNotLocked(req, email);
+    // 4+5. Rate-limit state (IP layer + email layer) and lockout state.
+    // Order in the spec is conceptual; enforceLoginLimits applies all three
+    // controls — IP window, account lockout check, per-email window — in the
+    // correct sequence with the lockout check between the two rate layers
+    // so an expired lock is cleared before the per-email counter is checked.
+    await enforceLoginLimits(req, email);
 
     // 1. Credentials — existence + password must both check out before
     // anything about the account is revealed, so a wrong password and a
@@ -357,6 +360,10 @@ const verifyEmail = async (req, res, next) => {
     ensureAuthConfig();
     const token = req.body.token || req.query.token;
     if (!token) return next(new AppError('Verification token is required.', 400));
+    // IP-only: we don't have the email at this point (token is opaque), so
+    // only apply the IP layer. The token itself is single-use and short-lived,
+    // so brute-forcing it is infeasible regardless of rate limiting.
+    await enforceAuthEndpointLimits(req, 'verify-email');
     const tokenHash = hashToken(token);
 
     // Atomically read-and-delete the token in one step. If two requests race
@@ -406,7 +413,7 @@ const resendVerification = async (req, res, next) => {
     ensureAuthConfig();
     const email = req.body.email?.trim().toLowerCase();
     if (!email) return next(new AppError('Email is required.', 400));
-    await enforceActionLimit(req, 'resend-verification', securitySubject(email));
+    await enforceAuthEndpointLimits(req, 'resend-verification', email);
     const user = await User.findOne({ email }).lean();
     if (!user) return next(new AppError('Account not found.', 404));
     if (user.emailVerified !== false) return res.json({ message: 'Email is already verified.' });
@@ -434,7 +441,7 @@ const requestPasswordReset = async (req, res, next) => {
     ensureAuthConfig();
     const email = req.body.email?.trim().toLowerCase();
     if (!email) return next(new AppError('Email is required.', 400));
-    await enforceActionLimit(req, 'password-reset-request', securitySubject(email));
+    await enforceAuthEndpointLimits(req, 'forgot-password', email);
     const user = await User.findOne({ email }).lean();
     if (user && user.passwordHash && !user.isDeactivated && !user.isSuspended) {
       const reset = await createPasswordReset(user);
@@ -465,6 +472,8 @@ const resetPassword = async (req, res, next) => {
     const { token, password } = req.body;
     if (!token || !password) return next(new AppError('Reset token and new password are required.', 400));
     if (String(password).length < 8) return next(new AppError('Password must be at least 8 characters.', 400));
+    // IP-only: same reasoning as verifyEmail — token is opaque and single-use.
+    await enforceAuthEndpointLimits(req, 'reset-password');
 
     const tokenHash = hashToken(token);
     const userId = await consumeSecurityValue(`reset:${tokenHash}`);
@@ -508,6 +517,8 @@ const refreshSession = async (req, res, next) => {
     ensureAuthConfig();
     const incomingRefreshToken = req.body?.refreshToken || readCookie(req, 'refreshToken');
     if (!incomingRefreshToken) return next(new AppError('Unauthorized: Missing refresh token', 401));
+    // Looser IP-only limit — legitimate clients refresh every 15 min per tab.
+    await enforceRefreshLimits(req);
     const rotated = await rotateRefreshSession({ req, refreshToken: incomingRefreshToken });
     if (!rotated) {
       clearAuthCookies(res);
