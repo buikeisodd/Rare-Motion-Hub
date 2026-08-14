@@ -32,6 +32,10 @@ const errorHandler = (err, req, res, next) => {
 
   res.status(statusCode).json({
     error: message,
+    // Include machine-readable lockout fields when present so the frontend
+    // can drive a countdown timer without parsing the error message string.
+    ...(err.lockedUntil ? { lockedUntil: err.lockedUntil } : {}),
+    ...(err.retryAfterSeconds ? { retryAfterSeconds: err.retryAfterSeconds } : {}),
     stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
   });
 };

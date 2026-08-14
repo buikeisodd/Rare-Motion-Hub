@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Eye, EyeOff, Loader2, Mail, Lock, Phone } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Eye, EyeOff, Loader2, Mail, Lock, Phone, Timer } from 'lucide-react';
 import StarlightLogo from '../components/StarlightLogo';
 import VerificationModal from '../components/VerificationModal';
 
@@ -35,8 +35,26 @@ export default function Login({ onLogin }) {
   const [notice, setNotice] = useState('');
   const [loading, setLoading] = useState(false);
   const [providerLoading, setProviderLoading] = useState('');
-  const [verificationModal, setVerificationModal] = useState(null); // { email, expiresAt, verificationUrl } | null
+  const [verificationModal, setVerificationModal] = useState(null);
+  const [lockedUntil, setLockedUntil] = useState(null); // ISO timestamp from server
+  const [lockCountdown, setLockCountdown] = useState(0); // seconds remaining
+  const lockTimerRef = useRef(null);
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+
+  // Drive the lockout countdown from the server-provided lockedUntil timestamp.
+  // The timer is purely cosmetic — backend is authoritative on whether the
+  // lock has actually expired.
+  useEffect(() => {
+    if (!lockedUntil) { setLockCountdown(0); return; }
+    const tick = () => {
+      const remaining = Math.max(0, Math.ceil((new Date(lockedUntil).getTime() - Date.now()) / 1000));
+      setLockCountdown(remaining);
+      if (remaining === 0) setLockedUntil(null);
+    };
+    tick();
+    lockTimerRef.current = setInterval(tick, 1000);
+    return () => clearInterval(lockTimerRef.current);
+  }, [lockedUntil]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -80,11 +98,9 @@ export default function Login({ onLogin }) {
           onLogin(data.user);
         }
       } else if (data.requiresEmailVerification) {
-        // Login blocked because the account isn't verified yet — reuse the
-        // same modal. No expiresAt yet since we didn't just issue a token;
-        // the user can tap "resend" to get a fresh one from the backend.
         setVerificationModal({ email, expiresAt: null, verificationUrl: null });
       } else {
+        if (data.lockedUntil) setLockedUntil(data.lockedUntil);
         setError(data.error || 'Authentication failed');
       }
     } catch (err) {
@@ -243,6 +259,19 @@ export default function Login({ onLogin }) {
                 {error}
               </div>
             )}
+
+            {lockCountdown > 0 && (
+              <div className="flex items-center justify-center gap-2 rounded-2xl border border-amber-400/10 bg-amber-400/10 px-4 py-3 text-sm text-amber-300">
+                <Timer className="h-4 w-4 shrink-0" />
+                <span>
+                  Account locked — try again in{' '}
+                  <span className="tabular-nums font-semibold">
+                    {Math.floor(lockCountdown / 60)}:{String(lockCountdown % 60).padStart(2, '0')}
+                  </span>
+                </span>
+              </div>
+            )}
+
             {notice && (
               <div className="rounded-2xl border border-primary-label/10 bg-primary-label/10 px-4 py-3 text-center text-sm text-primary-label">
                 {notice}
@@ -251,7 +280,7 @@ export default function Login({ onLogin }) {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || lockCountdown > 0}
               className="flex h-12 w-full items-center justify-center rounded-full bg-primary-label text-base font-semibold text-primary-background transition-transform hover:scale-[1.01] disabled:opacity-70"
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (resetMode ? 'Reset password' : isRegister ? 'Create Account' : 'Login')}

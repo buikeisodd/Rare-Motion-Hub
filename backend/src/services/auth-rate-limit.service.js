@@ -16,21 +16,22 @@ const {
 const IP_AUTH_MAX = Number(process.env.IP_AUTH_MAX || 10);
 const IP_AUTH_WINDOW_SECONDS = Number(process.env.IP_AUTH_WINDOW_SECONDS || 15 * 60); // 15 min
 
-// Per-email sliding window for login credential checks specifically.
-// Intentionally higher than IP_AUTH_MAX — the IP limit is the primary
-// rate-control layer, the per-email limit is a secondary defence.
+// Per-email sliding window for login (separate from the lockout counter).
+// Secondary defence against distributed credential stuffing.
 const LOGIN_EMAIL_MAX = Number(process.env.LOGIN_EMAIL_MAX || 10);
 const LOGIN_EMAIL_WINDOW_SECONDS = Number(process.env.LOGIN_EMAIL_WINDOW_SECONDS || 15 * 60);
 
-// Account lockout: after LOGIN_LOCK_THRESHOLD failures from a SINGLE IP that
-// has already passed its own IP-layer check, lock the account. Requiring
-// the IP-layer check first means an attacker must spend IP_AUTH_MAX requests
-// before they can lock a victim's account — significantly raising the cost
-// of an account-DoS compared to a fixed per-email lockout threshold.
-// Must be > IP_AUTH_MAX so a single IP gets blocked before it can trigger
-// the account lock. If IP_AUTH_MAX is raised, raise this too.
-const LOGIN_LOCK_THRESHOLD = Number(process.env.LOGIN_LOCK_THRESHOLD || 15);
-const LOGIN_LOCK_SECONDS = Number(process.env.LOGIN_LOCK_SECONDS || 15 * 60);
+// Failed-login lockout thresholds (spec: 5 attempts → 5-minute lockout).
+// LOGIN_FAIL_MAX must stay > IP_AUTH_MAX so a single IP is blocked before
+// it can trigger the account lock — prevents trivial single-IP account-DoS.
+const LOGIN_FAIL_MAX = Number(process.env.LOGIN_FAIL_MAX || 5);
+const LOGIN_FAIL_WINDOW_SECONDS = Number(process.env.LOGIN_FAIL_WINDOW_SECONDS || 5 * 60);
+const LOGIN_LOCK_SECONDS = Number(process.env.LOGIN_LOCK_SECONDS || 5 * 60);
+
+// Key schema (auth:login:fail / auth:login:lock — hashed identifier so raw
+// email addresses are never stored as Redis keys).
+const failKey = (subject) => `auth:login:fail:${subject}`;
+const lockKey = (subject) => `auth:login:lock:${subject}`;
 
 // Per-email limits for other auth actions (register, verify, resend, reset).
 const AUTH_EMAIL_MAX = Number(process.env.AUTH_EMAIL_MAX || 5);
@@ -93,31 +94,37 @@ const enforceActionLimit = async (req, action, subject, max = AUTH_EMAIL_MAX, wi
 };
 
 // ── Layer 3: Account lockout ─────────────────────────────────────────────────
-// Locks a specific account after sustained failed logins. The threshold is
-// deliberately higher than the IP limit so an attacker must exhaust their IP
-// allowance before the account lock fires — preventing a trivial 5-request
-// account-DoS against a victim's account from any IP.
+// Called BEFORE password verification — a locked account and a non-existent
+// account return 429 without revealing which is the case.
+// On lockout, response includes lockedUntil ISO timestamp for frontend countdown.
 const ensureLoginNotLocked = async (req, email) => {
-  const lockKey = `lock:login:${securitySubject(email)}`;
-  const lockUntil = await getSecurityValue(lockKey);
-  if (!lockUntil) return;
-  const remainingSeconds = Math.ceil((Number(lockUntil) - Date.now()) / 1000);
+  const subject = securitySubject(email);
+  const rawLockUntil = await getSecurityValue(lockKey(subject));
+  if (!rawLockUntil) return;
+  const lockUntilMs = Number(rawLockUntil);
+  const remainingSeconds = Math.ceil((lockUntilMs - Date.now()) / 1000);
   if (remainingSeconds > 0) {
     setRetryAfter(req, remainingSeconds);
-    throw new AppError(
-      `Account temporarily locked. Try again in ${Math.ceil(remainingSeconds / 60)} minute(s).`,
-      429
-    );
+    const err = new AppError('Too many failed login attempts. Try again later.', 429);
+    err.lockedUntil = new Date(lockUntilMs).toISOString();
+    err.retryAfterSeconds = remainingSeconds;
+    throw err;
   }
-  await clearSecurityValue(lockKey);
+  // Lock expired — clear both lock and fail counter
+  await Promise.all([
+    clearSecurityValue(lockKey(subject)),
+    clearSecurityValue(failKey(subject))
+  ]);
 };
 
 const noteLoginFailure = async (req, email) => {
   const subject = securitySubject(email);
-  const { count } = await incrementWindowCounter(`rate:login:${subject}`, LOGIN_EMAIL_WINDOW_SECONDS);
-  if (count >= LOGIN_LOCK_THRESHOLD) {
-    const lockUntil = Date.now() + LOGIN_LOCK_SECONDS * 1000;
-    await setSecurityValue(`lock:login:${subject}`, String(lockUntil), LOGIN_LOCK_SECONDS);
+  // Failure counter TTL matches lockout window so counter self-expires
+  // even if the lock threshold is never reached.
+  const { count } = await incrementWindowCounter(failKey(subject), LOGIN_FAIL_WINDOW_SECONDS);
+  if (count >= LOGIN_FAIL_MAX) {
+    const lockUntilMs = Date.now() + LOGIN_LOCK_SECONDS * 1000;
+    await setSecurityValue(lockKey(subject), String(lockUntilMs), LOGIN_LOCK_SECONDS);
     await recordSecurityEvent({
       req,
       type: 'login_locked',
@@ -128,8 +135,11 @@ const noteLoginFailure = async (req, email) => {
 
 const noteLoginSuccess = async (email) => {
   const subject = securitySubject(email);
-  await clearSecurityValue(`rate:login:${subject}`);
-  await clearSecurityValue(`lock:login:${subject}`);
+  // Clear both counters on successful authentication.
+  await Promise.all([
+    clearSecurityValue(failKey(subject)),
+    clearSecurityValue(lockKey(subject))
+  ]);
 };
 
 // ── Composite: full auth endpoint limiting ───────────────────────────────────
