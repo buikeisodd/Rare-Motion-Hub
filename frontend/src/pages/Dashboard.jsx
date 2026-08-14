@@ -9,15 +9,11 @@ import { useAudio } from '../context/AudioContext';
 import { defaultGradient, gradientFor } from '../utils/gradients';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-const authHeaders = (json = false) => {
-  const token = localStorage.getItem('token');
-  const csrfToken = localStorage.getItem('csrfToken');
-  return {
-    ...(json ? { 'Content-Type': 'application/json' } : {}),
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {})
-  };
-};
+// Cookie-only auth — credentials:include sends HttpOnly cookies automatically.
+// The global fetch interceptor in main.jsx adds the CSRF header.
+const authHeaders = (json = false) => ({
+  ...(json ? { 'Content-Type': 'application/json' } : {})
+});
 
 export function LibraryProject({ project, tracks, onDragStart, isDragging, onDelete }) {
   const { addTracksToQueue, playTrack, currentTrack, isPlaying, setIsPlaying } = useAudio();

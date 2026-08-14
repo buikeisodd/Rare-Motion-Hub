@@ -4,13 +4,10 @@ import AudioPlayer from './AudioPlayer';
 import { ArrowLeft, Check, CheckCheck, Copy, Forward, Inbox, MessageCircle, Mic, MicOff, MonitorUp, MoreHorizontal, Paperclip, PhoneCall, PhoneOff, Pin, PinOff, Reply, Search, Send, Smile, Trash2, Users, UserPlus, Video, VideoOff, Volume2, X } from 'lucide-react';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+// Cookie-only auth — credentials:include sends HttpOnly cookies automatically.
+// The global fetch interceptor in main.jsx adds the CSRF header.
 const authFetch = (url, options = {}) => {
-  const token = localStorage.getItem('token');
-  const csrfToken = localStorage.getItem('csrfToken');
-  const headers = new Headers(options.headers || {});
-  if (token) headers.set('Authorization', `Bearer ${token}`);
-  if (csrfToken) headers.set('X-CSRF-Token', csrfToken);
-  return fetch(url, { ...options, headers, credentials: 'include' });
+  return fetch(url, { ...options, credentials: 'include' });
 };
 const emojis = ['😀', '😂', '😍', '🥹', '🔥', '🙏', '❤️', '🎧', '🎵', '✅', '😭', '😤', '🤝', '✨', '💿', '🚀'];
 

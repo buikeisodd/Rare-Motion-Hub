@@ -57,9 +57,8 @@ export default function UploadModal({ isOpen, onClose, onSuccess, userId, projec
 
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
-      const token = localStorage.getItem('token');
-      const auth = token ? { Authorization: `Bearer ${token}` } : {};
-      const signatureRes = await fetch(`${apiUrl}/api/upload/signature`, { headers: auth });
+      // Credentials are in HttpOnly cookies — no Authorization header needed.
+      const signatureRes = await fetch(`${apiUrl}/api/upload/signature`, { credentials: 'include' });
       const signature = await signatureRes.json();
       if (!signatureRes.ok) throw new Error(signature.error || 'Cloudinary storage is unavailable.');
 

@@ -81,28 +81,44 @@ const deriveAccountStatus = (user) => {
 
 const userResponse = (user) => ({ ...publicUser(user), email: user.email, emailVerified: user.emailVerified !== false, accountStatus: user.accountStatus || deriveAccountStatus(user), authProvider: user.authProvider || 'password' });
 
-const cookieOptions = (maxAge) => ({
+// Cookie names use the __Host- prefix in production which enforces:
+// - Secure attribute (HTTPS only)
+// - No Domain attribute (bound to the exact host, not subdomains)
+// - Path must be "/"
+// This prevents a compromised subdomain from setting/overwriting these cookies.
+// In development (http://localhost) the __Host- prefix is not valid, so we
+// fall back to plain names.
+const IS_PROD = process.env.NODE_ENV === 'production';
+const cookieName = (name) => IS_PROD ? `__Host-${name}` : name;
+
+const cookieOptions = (maxAge, overrides = {}) => ({
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+  secure: IS_PROD,
+  sameSite: IS_PROD ? 'strict' : 'lax',
   path: '/',
-  maxAge
+  maxAge,
+  ...overrides
 });
 
 const clearAuthCookies = (res) => {
-  res.clearCookie('accessToken', cookieOptions(0));
-  res.clearCookie('refreshToken', cookieOptions(0));
-  res.clearCookie('csrfToken', { ...cookieOptions(0), httpOnly: false });
+  const opts = cookieOptions(0);
+  res.clearCookie(cookieName('accessToken'), opts);
+  res.clearCookie(cookieName('refreshToken'), opts);
+  res.clearCookie(cookieName('sessionId'), opts);
+  // csrfToken is readable by JS (httpOnly: false) so the frontend
+  // can include it in request headers for CSRF double-submit.
+  res.clearCookie(cookieName('csrfToken'), { ...opts, httpOnly: false });
 };
 
 const readCookie = (req, name) => {
   const cookieHeader = req.headers.cookie || '';
+  const prefixed = IS_PROD ? `__Host-${name}` : name;
   const match = cookieHeader
     .split(';')
     .map((value) => value.trim())
-    .find((value) => value.startsWith(`${name}=`));
+    .find((value) => value.startsWith(`${prefixed}=`));
   if (!match) return '';
-  return decodeURIComponent(match.slice(name.length + 1));
+  return decodeURIComponent(match.slice(prefixed.length + 1));
 };
 
 const issueAuthSession = async (req, res, user) => {
@@ -112,10 +128,28 @@ const issueAuthSession = async (req, res, user) => {
   const { session, refreshToken } = await createRefreshSession({ req, userId: user.id });
   const csrfToken = createOpaqueToken(24);
   const accessToken = tokenForUser(user.id, session.sessionId);
-  res.cookie('accessToken', accessToken, cookieOptions(ACCESS_TOKEN_TTL_MS));
-  res.cookie('refreshToken', refreshToken, cookieOptions(REFRESH_TOKEN_TTL_MS));
-  res.cookie('csrfToken', csrfToken, { ...cookieOptions(REFRESH_TOKEN_TTL_MS), httpOnly: false });
-  return { token: tokenForUser(user.id, session.sessionId), csrfToken, sessionId: session.sessionId };
+
+  // All three authentication credentials are set as HttpOnly cookies only
+  // for web browser clients. They must not appear in JSON response bodies
+  // for web — the frontend reads user state from the JSON payload only.
+  res.cookie(cookieName('accessToken'), accessToken, cookieOptions(ACCESS_TOKEN_TTL_MS));
+  res.cookie(cookieName('refreshToken'), refreshToken, cookieOptions(REFRESH_TOKEN_TTL_MS));
+  res.cookie(cookieName('sessionId'), session.sessionId, cookieOptions(REFRESH_TOKEN_TTL_MS));
+  // csrfToken intentionally not HttpOnly — JS reads it and sends it as a
+  // request header so the server can verify the double-submit pattern.
+  res.cookie(cookieName('csrfToken'), csrfToken, cookieOptions(REFRESH_TOKEN_TTL_MS, { httpOnly: false }));
+
+  // Mobile clients (React Native) cannot use HttpOnly cookies — the platform
+  // doesn't expose a browser cookie jar to native code. Detect via the
+  // X-Client-Type header (sent by the Expo app) and include the tokens in
+  // the JSON response body for mobile only, where they are stored in
+  // expo-secure-store (encrypted, sandboxed, not accessible to other apps).
+  const isMobileClient = (req.get('x-client-type') || '').toLowerCase() === 'mobile';
+
+  return {
+    sessionId: session.sessionId,
+    ...(isMobileClient ? { token: accessToken, refreshToken, csrfToken } : {})
+  };
 };
 
 const EMAIL_VERIFICATION_TTL_SECONDS = 5 * 60;
@@ -274,10 +308,10 @@ const login = async (req, res, next) => {
       });
     }
 
-    const { token, csrfToken, sessionId } = await issueAuthSession(req, res, user);
+    const { sessionId, ...mobileTokens } = await issueAuthSession(req, res, user);
     await noteLoginSuccess(email);
     await recordSecurityEvent({ req, userId: user.id, sessionId, type: 'login_success' });
-    res.json({ success: true, user: userResponse(user), token, csrfToken });
+    res.json({ success: true, user: userResponse(user), ...mobileTokens });
   } catch (error) {
     next(error);
   }
@@ -323,10 +357,10 @@ const verifyEmail = async (req, res, next) => {
       return next(new AppError('Invalid or expired verification link. Request a new one.', 400));
     }
 
-    const { token: authToken, csrfToken, sessionId } = await issueAuthSession(req, res, user);
+    const { sessionId, ...mobileTokens } = await issueAuthSession(req, res, user);
     await recordSecurityEvent({ req, userId: user.id, sessionId, type: 'email_verified' });
     const verifiedUser = { ...user, ...updates };
-    res.json({ user: userResponse(verifiedUser), token: authToken, csrfToken });
+    res.json({ user: userResponse(verifiedUser), ...mobileTokens });
   } catch (error) {
     next(error);
   }
@@ -425,10 +459,10 @@ const resetPassword = async (req, res, next) => {
     }
 
     await revokeAllSessionsForUser({ userId: user.id, reason: 'password_reset' });
-    const { token: authToken, csrfToken, sessionId } = await issueAuthSession(req, res, user);
+    const { sessionId, ...mobileTokens } = await issueAuthSession(req, res, user);
     await recordSecurityEvent({ req, userId: user.id, sessionId, type: 'password_reset_completed' });
     const nextUser = { ...user, ...updates };
-    res.json({ user: userResponse(nextUser), token: authToken, csrfToken });
+    res.json({ user: userResponse(nextUser), ...mobileTokens });
   } catch (error) {
     next(error);
   }
@@ -477,13 +511,21 @@ const refreshSession = async (req, res, next) => {
       await recordSecurityEvent({ req, userId: user.id, sessionId: rotated.session.sessionId, type: 'refresh_blocked', metadata: { reason: 'email_unverified' } });
       return next(new AppError('Please verify your email before signing in.', 403));
     }
+
+    // Issue fresh access token and rotate refresh token via cookies only.
+    // Credentials never appear in the JSON response body.
     const accessToken = tokenForUser(user.id, rotated.session.sessionId);
     const csrfToken = createOpaqueToken(24);
-    res.cookie('accessToken', accessToken, cookieOptions(ACCESS_TOKEN_TTL_MS));
-    res.cookie('refreshToken', rotated.refreshToken, cookieOptions(REFRESH_TOKEN_TTL_MS));
-    res.cookie('csrfToken', csrfToken, { ...cookieOptions(REFRESH_TOKEN_TTL_MS), httpOnly: false });
+    res.cookie(cookieName('accessToken'), accessToken, cookieOptions(ACCESS_TOKEN_TTL_MS));
+    res.cookie(cookieName('refreshToken'), rotated.refreshToken, cookieOptions(REFRESH_TOKEN_TTL_MS));
+    res.cookie(cookieName('sessionId'), rotated.session.sessionId, cookieOptions(REFRESH_TOKEN_TTL_MS));
+    res.cookie(cookieName('csrfToken'), csrfToken, cookieOptions(REFRESH_TOKEN_TTL_MS, { httpOnly: false }));
     await recordSecurityEvent({ req, userId: user.id, sessionId: rotated.session.sessionId, type: 'session_refreshed' });
-    res.json({ user: userResponse(user), token: accessToken, csrfToken });
+    const isMobileClient = (req.get('x-client-type') || '').toLowerCase() === 'mobile';
+    res.json({
+      user: userResponse(user),
+      ...(isMobileClient ? { token: accessToken, refreshToken: rotated.refreshToken, csrfToken } : {})
+    });
   } catch (error) {
     next(error);
   }

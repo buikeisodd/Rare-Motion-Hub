@@ -26,8 +26,8 @@ import {
   TextInput,
   View
 } from 'react-native';
-import { API_URL, api, resolveMediaUrl } from './src/api';
-import { clearUser, getLastEmail, getOfflineTracks, getStoredToken, getStoredUser, storeLastEmail, storeOfflineTracks, storeUser, storeToken } from './src/storage';
+import { API_URL, api, apiUpload, resolveMediaUrl, setForceLogoutHandler } from './src/api';
+import { clearAuth, clearUser, getLastEmail, getOfflineTracks, getStoredUser, storeLastEmail, storeOfflineTracks, storeUser, storeToken, storeRefreshToken, storeCsrfToken } from './src/storage';
 import { colors, gradientFor } from './src/theme';
 
 const IDLE_LIMIT_MS = 15 * 60 * 1000;
@@ -172,6 +172,8 @@ function LoginScreen({ onLogin }) {
       }
       await storeUser(data.user);
       if (data.token) await storeToken(data.token);
+      if (data.refreshToken) await storeRefreshToken(data.refreshToken);
+      if (data.csrfToken) await storeCsrfToken(data.csrfToken);
       onLogin(data.user);
     } catch (error) {
       Alert.alert('Could not ' + (isRegister ? 'register' : 'sign in'), error.message);
@@ -1057,6 +1059,14 @@ export default function App() {
   };
 
   useEffect(() => {
+    // Register force-logout handler so api.js can clear React state on
+    // session expiry without importing App state directly.
+    setForceLogoutHandler(() => {
+      clearAuth().catch(() => {});
+      setUser(null);
+      setRoute({ name: 'library' });
+    });
+
     getStoredUser()
       .then((stored) => {
         if (stored) setUser(stored);
@@ -1440,14 +1450,7 @@ export default function App() {
         type: asset.mimeType || `image/${extension === 'jpg' ? 'jpeg' : extension}`
       });
 
-      const token = await getStoredToken();
-      const response = await fetch(`${API_URL}/api/auth/${user.id}/avatar`, {
-        method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-        body: formData
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Could not update profile picture.');
+      const data = await apiUpload(`/api/auth/${user.id}/avatar`, formData);
       await storeUser(data.user);
       setUser(data.user);
     } catch (error) {
@@ -1481,14 +1484,7 @@ export default function App() {
         name: `cover.${extension}`,
         type: asset.mimeType || `image/${extension === 'jpg' ? 'jpeg' : extension}`
       });
-      const token = await getStoredToken();
-      const uploadRes = await fetch(`${API_URL}/api/upload-cover`, {
-        method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-        body: formData
-      });
-      const cover = await uploadRes.json();
-      if (!uploadRes.ok) throw new Error(cover.error || 'Could not upload cover art.');
+      const cover = await apiUpload(`/api/upload-cover`, formData);
       await api(`/api/projects/${project.id}/cover`, {
         method: 'PUT',
         body: JSON.stringify({ userId: user.id, coverUrl: cover.url })
@@ -1551,14 +1547,7 @@ export default function App() {
       formData.append('producer', '');
       formData.append('userId', user.id);
       formData.append('projectId', project.id);
-      const token = await getStoredToken();
-      const response = await fetch(`${API_URL}/api/upload`, {
-        method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-        body: formData
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Could not upload track.');
+      const data = await apiUpload(`/api/upload`, formData);
       await refreshProject(project.id);
       await refreshWorkspace();
     } catch (error) {
@@ -1643,7 +1632,7 @@ export default function App() {
 
   const logout = async () => {
     await closePlayer();
-    await clearUser();
+    await clearAuth();
     setUser(null);
     setRoute({ name: 'library' });
   };

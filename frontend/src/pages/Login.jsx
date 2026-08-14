@@ -58,7 +58,7 @@ export default function Login({ onLogin }) {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Could not reset password.');
-        onLogin(data.user, data.token, data.csrfToken);
+        onLogin(data.user);
         return;
       }
 
@@ -77,7 +77,7 @@ export default function Login({ onLogin }) {
         if (data.requiresVerification) {
           setVerificationModal({ email: data.email || email, expiresAt: data.expiresAt, verificationUrl: data.verificationUrl });
         } else {
-          onLogin(data.user, data.token, data.csrfToken);
+          onLogin(data.user);
         }
       } else if (data.requiresEmailVerification) {
         // Login blocked because the account isn't verified yet — reuse the

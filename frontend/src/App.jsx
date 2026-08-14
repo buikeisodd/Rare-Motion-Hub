@@ -245,25 +245,13 @@ function IdleLogoutGuard({ user, onLogout }) {
 }
 
 function App() {
-  const [user, setUser] = useState(() => {
-    try {
-      const storedUser = localStorage.getItem('user');
-      if (!storedUser) return null;
-      const parsed = JSON.parse(storedUser);
-      // Clear old/invalid sessions — valid IDs are alphanumeric strings, not just '1'
-      if (!parsed?.id || !parsed?.email || parsed.id === '1' || parsed.id.length < 4) {
-        localStorage.removeItem('user');
-        return null;
-      }
-      return parsed;
-    } catch {
-      localStorage.removeItem('user');
-      return null;
-    }
-  });
+  // User profile lives in React state only — tokens live in HttpOnly cookies
+  // managed by the browser. No localStorage for auth credentials.
+  const [user, setUser] = useState(null);
   const [justAuthenticated, setJustAuthenticated] = useState(false);
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
+  // One-time silent session restore on mount — cookies are sent automatically.
   useEffect(() => {
     if (user) return;
     let cancelled = false;
@@ -278,10 +266,6 @@ function App() {
         const data = await res.json();
         if (cancelled || !data.user) return;
         setUser(data.user);
-        setJustAuthenticated(false);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        if (data.token) localStorage.setItem('token', data.token);
-        if (data.csrfToken) localStorage.setItem('csrfToken', data.csrfToken);
       } catch (err) {
         console.error('Failed to restore session', err);
       }
@@ -291,21 +275,19 @@ function App() {
     return () => { cancelled = true; };
   }, [apiUrl, user]);
 
+  // Keep user profile fresh after login — fetch from server, not localStorage.
   useEffect(() => {
     if (!user?.id) return;
     let cancelled = false;
 
     async function refreshUser() {
       try {
-        const token = localStorage.getItem('token');
         const res = await fetch(`${apiUrl}/api/auth/${user.id}`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
           credentials: 'include'
         });
         const data = await res.json();
         if (!cancelled && res.ok && data.user) {
           setUser(data.user);
-          localStorage.setItem('user', JSON.stringify(data.user));
         }
       } catch (err) {
         console.error('Failed to refresh user profile', err);
@@ -316,12 +298,20 @@ function App() {
     return () => { cancelled = true; };
   }, [apiUrl, user?.id]);
 
-  const handleLogin = (userData, token, csrfToken) => {
+  // Listen for the forced-logout event dispatched by the fetch interceptor.
+  useEffect(() => {
+    const onAuthLogout = () => { setUser(null); setJustAuthenticated(false); };
+    window.addEventListener('auth:logout', onAuthLogout);
+    return () => window.removeEventListener('auth:logout', onAuthLogout);
+  }, []);
+
+  const handleLogin = (userData) => {
     setUser(userData);
     setJustAuthenticated(true);
-    localStorage.setItem('user', JSON.stringify(userData));
-    if (token) localStorage.setItem('token', token);
-    if (csrfToken) localStorage.setItem('csrfToken', csrfToken);
+    // Purge any stale localStorage auth remnants from the old mechanism.
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    localStorage.removeItem('csrfToken');
   };
 
   const handleLogout = async () => {
@@ -335,15 +325,11 @@ function App() {
     }
     setUser(null);
     setJustAuthenticated(false);
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
-    localStorage.removeItem('csrfToken');
-    // Audio cleanup is handled by AudioContext unmounting
+    // Cookies are cleared server-side by the logout endpoint.
   };
 
   const handleUserUpdate = (nextUser) => {
     setUser(nextUser);
-    localStorage.setItem('user', JSON.stringify(nextUser));
   };
 
   return (

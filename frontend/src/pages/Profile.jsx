@@ -6,12 +6,7 @@ import ChatInbox from '../components/ChatInbox';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 const authFetch = (url, options = {}) => {
-  const token = localStorage.getItem('token');
-  const csrfToken = localStorage.getItem('csrfToken');
-  const headers = new Headers(options.headers || {});
-  if (token) headers.set('Authorization', `Bearer ${token}`);
-  if (csrfToken) headers.set('X-CSRF-Token', csrfToken);
-  return fetch(url, { ...options, headers, credentials: 'include' });
+  return fetch(url, { ...options, credentials: 'include' });
 };
 
 export default function Profile({ user, onUserUpdate }) {
@@ -72,7 +67,8 @@ export default function Profile({ user, onUserUpdate }) {
       setProfile(nextProfile);
       if (profile.id === user?.id) {
         const nextUser = { ...user, ...nextProfile };
-        localStorage.setItem('user', JSON.stringify(nextUser));
+        // User state is managed in App.jsx React state only — no localStorage
+        // for auth credentials. onUserUpdate propagates the change up.
         onUserUpdate?.(nextUser);
       }
       setAvatarFile(null);

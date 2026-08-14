@@ -7,8 +7,9 @@ const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 const originalFetch = window.fetch;
 
 // Single-flight refresh: if several requests 401 at once, only one
-// /api/auth/refresh call should fire; the rest wait on the same promise.
+// /api/auth/refresh call fires; the rest wait on the same promise.
 let refreshPromise = null;
+let isRefreshing = false;
 
 const isAuthExemptUrl = (url) => (
   url.includes('/api/auth/refresh') ||
@@ -20,21 +21,14 @@ const isAuthExemptUrl = (url) => (
   url.includes('/api/auth/reset-password')
 );
 
-const attemptRefresh = async () => {
+const attemptRefresh = () => {
   if (!refreshPromise) {
     refreshPromise = originalFetch(`${apiUrl}/api/auth/refresh`, {
       method: 'POST',
       credentials: 'include'
     })
-      .then(async (res) => {
-        if (!res.ok) return null;
-        const data = await res.json();
-        if (!data.user || !data.token) return null;
-        localStorage.setItem('user', JSON.stringify(data.user));
-        localStorage.setItem('token', data.token);
-        if (data.csrfToken) localStorage.setItem('csrfToken', data.csrfToken);
-        return data.token;
-      })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => data?.user || null)
       .catch(() => null)
       .finally(() => { refreshPromise = null; });
   }
@@ -42,29 +36,38 @@ const attemptRefresh = async () => {
 };
 
 const forceLogout = () => {
-  localStorage.removeItem('user');
-  localStorage.removeItem('token');
-  localStorage.removeItem('csrfToken');
+  // No localStorage to clear — credentials live in HttpOnly cookies.
+  // Dispatch a custom event so App.jsx can clear React state.
+  window.dispatchEvent(new CustomEvent('auth:logout'));
   window.location.href = '/login';
 };
 
+// Global fetch interceptor: add credentials:include and CSRF header to all
+// /api/ requests. On 401 attempts a single token refresh then retries once.
+// No Bearer headers — authentication is cookie-only.
 window.fetch = async (url, options = {}) => {
   const isApiCall = typeof url === 'string' && url.includes('/api/');
   if (isApiCall) {
-    const token = localStorage.getItem('token');
-    if (token) {
-      options.headers = { ...options.headers, Authorization: `Bearer ${token}` };
+    options.credentials = 'include';
+    // CSRF double-submit: echo the csrfToken cookie value as a header.
+    // The cookie is not HttpOnly so JS can read it; an attacker making a
+    // cross-site request cannot read cookie values, so they can't echo it.
+    const csrfMatch = document.cookie
+      .split(';')
+      .map((c) => c.trim())
+      .find((c) => c.startsWith('csrfToken=') || c.startsWith('__Host-csrfToken='));
+    if (csrfMatch) {
+      const csrfValue = decodeURIComponent(csrfMatch.split('=').slice(1).join('='));
+      options.headers = { ...options.headers, 'x-csrf-token': csrfValue };
     }
-    if (options.credentials === undefined) options.credentials = 'include';
   }
 
   let res = await originalFetch(url, options);
 
   if (res.status === 401 && isApiCall && !isAuthExemptUrl(url)) {
-    const newToken = await attemptRefresh();
-    if (newToken) {
-      // Retry the original request once with the fresh token.
-      options.headers = { ...options.headers, Authorization: `Bearer ${newToken}` };
+    const user = await attemptRefresh();
+    if (user) {
+      // Retry the original request — the refresh set new cookies automatically.
       res = await originalFetch(url, options);
       if (res.status !== 401) return res;
     }
