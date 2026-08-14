@@ -5,7 +5,13 @@ const { deriveAccountStatus } = require('../controllers/auth.controller');
 
 const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV === 'production' ? null : 'fallback_secret');
 const IS_PROD = process.env.NODE_ENV === 'production';
-const cookieName = (name) => IS_PROD ? `__Host-${name}` : name;
+const SAME_SITE_STRICT = process.env.SAME_SITE_STRICT === 'true';
+
+// Must match the cookie naming logic in auth.controller.js exactly.
+const cookieName = (name) => {
+  if (!IS_PROD) return name;
+  return SAME_SITE_STRICT ? `__Host-${name}` : `__Secure-${name}`;
+};
 
 // Reads a cookie by its correct environment-specific name (__Host- in prod).
 const readAuthCookie = (req, name) => {
@@ -65,16 +71,33 @@ const requireUserId = async (req, res, next) => {
       return next(new AppError('Please verify your email before continuing.', 403));
     }
 
-    // CSRF double-submit check for cookie-transported requests on unsafe methods.
-    // The csrfToken cookie is readable by JS (not httpOnly), so the frontend
-    // can echo it as a request header — an attacker making a cross-site request
-    // can trigger the cookie to be sent automatically, but cannot read the
-    // cookie value to echo it as a header (same-origin restriction).
+    // CSRF double-submit check for all state-changing methods (POST/PUT/PATCH/DELETE).
+    //
+    // Why this works in the cross-domain topology (SameSite=None):
+    // An attacker on evil.com can trigger cross-site requests that carry the
+    // HttpOnly auth cookies automatically, but they cannot READ the csrfToken
+    // cookie value — the same-origin policy blocks JS on a foreign origin from
+    // reading cookies set by onrender.com. So they can cause the auth cookies
+    // to be sent but cannot echo the csrfToken as a header, which fails this check.
+    //
+    // Bearer-only requests (mobile): the CSRF header comes from SecureStore via
+    // api.js and is required. The mobile flow always sets it.
+    //
+    // The comparison uses a timing-safe equality check to eliminate any
+    // theoretical timing oracle, though the practical CSRF risk from timing is
+    // negligible relative to an attacker needing to read the cookie first.
     if (unsafeMethods.has(req.method)) {
       const csrfCookie = readAuthCookie(req, 'csrfToken');
-      const csrfHeader = req.get('x-csrf-token');
-      if (!csrfCookie || !csrfHeader || csrfCookie !== csrfHeader) {
-        return next(new AppError('Unauthorized: Invalid CSRF token', 401));
+      const csrfHeader = req.get('x-csrf-token') || '';
+      const cookieBuf = Buffer.from(csrfCookie || '', 'utf8');
+      const headerBuf = Buffer.from(csrfHeader, 'utf8');
+      const tokenValid =
+        csrfCookie &&
+        csrfHeader &&
+        cookieBuf.length === headerBuf.length &&
+        require('crypto').timingSafeEqual(cookieBuf, headerBuf);
+      if (!tokenValid) {
+        return next(new AppError('Unauthorized: Invalid CSRF token', 403));
       }
     }
 

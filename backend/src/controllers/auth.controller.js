@@ -81,20 +81,55 @@ const deriveAccountStatus = (user) => {
 
 const userResponse = (user) => ({ ...publicUser(user), email: user.email, emailVerified: user.emailVerified !== false, accountStatus: user.accountStatus || deriveAccountStatus(user), authProvider: user.authProvider || 'password' });
 
-// Cookie names use the __Host- prefix in production which enforces:
-// - Secure attribute (HTTPS only)
-// - No Domain attribute (bound to the exact host, not subdomains)
-// - Path must be "/"
-// This prevents a compromised subdomain from setting/overwriting these cookies.
-// In development (http://localhost) the __Host- prefix is not valid, so we
-// fall back to plain names.
+// Cookie deployment topology decision — documented here because it affects
+// security properties:
+//
+// The frontend (*.vercel.app) and backend (*.onrender.com) live on different
+// registrable domains. This means:
+//
+//   SameSite=Strict:  cookies are NEVER sent cross-site — including by the
+//                     legitimate frontend. This breaks authentication entirely
+//                     in this cross-domain deployment.
+//
+//   SameSite=Lax:     cookies are sent on top-level navigations but NOT on
+//                     sub-resource requests (fetch/XHR). Still breaks API
+//                     calls from the SPA frontend.
+//
+//   SameSite=None; Secure: cookies are sent on all HTTPS cross-site requests
+//                     when credentials:include is set. This is the only
+//                     option that works in cross-domain deployments.
+//                     The CSRF risk this reintroduces — a cross-site attacker
+//                     can now trigger cookie-carrying requests — is mitigated
+//                     by the existing double-submit CSRF pattern: they can
+//                     trigger the cookie but cannot read the csrfToken cookie
+//                     value from a cross-origin context (same-origin policy),
+//                     so they cannot echo it as the x-csrf-token header.
+//
+// The __Host- prefix requires SameSite=Strict and Secure. Since we're
+// switching to SameSite=None for cross-domain compatibility, __Host- no
+// longer applies in production either — use __Secure- instead, which
+// requires only the Secure attribute and binds to HTTPS.
+//
+// If the frontend and backend are ever colocated on the same domain (e.g.
+// same-domain Render + custom domain), SameSite=Strict can be restored and
+// the double-submit becomes defence-in-depth rather than the primary CSRF
+// defence. Set SAME_SITE_STRICT=true in env to opt into this.
+
 const IS_PROD = process.env.NODE_ENV === 'production';
-const cookieName = (name) => IS_PROD ? `__Host-${name}` : name;
+const SAME_SITE_STRICT = process.env.SAME_SITE_STRICT === 'true';
+
+// In production with cross-domain deployment: __Secure- prefix (Secure only).
+// In production with same-domain: __Host- prefix (Secure + no Domain + Path=/).
+// In development: no prefix (plain names, http).
+const cookieName = (name) => {
+  if (!IS_PROD) return name;
+  return SAME_SITE_STRICT ? `__Host-${name}` : `__Secure-${name}`;
+};
 
 const cookieOptions = (maxAge, overrides = {}) => ({
   httpOnly: true,
   secure: IS_PROD,
-  sameSite: IS_PROD ? 'strict' : 'lax',
+  sameSite: IS_PROD ? (SAME_SITE_STRICT ? 'strict' : 'none') : 'lax',
   path: '/',
   maxAge,
   ...overrides
