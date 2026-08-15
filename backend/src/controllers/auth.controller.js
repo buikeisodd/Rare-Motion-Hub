@@ -28,6 +28,7 @@ const {
   enforceAuthEndpointLimits,
   enforceLoginLimits,
   enforceRefreshLimits,
+  enforceResendLimits,
   noteLoginFailure,
   noteLoginSuccess,
   securitySubject
@@ -413,23 +414,39 @@ const resendVerification = async (req, res, next) => {
     ensureAuthConfig();
     const email = req.body.email?.trim().toLowerCase();
     if (!email) return next(new AppError('Email is required.', 400));
-    await enforceAuthEndpointLimits(req, 'resend-verification', email);
+
+    // Tighter rate limit than generic auth endpoints — each resend triggers
+    // an outbound email (IP: 5/10min, per-email: 3/10min).
+    await enforceResendLimits(req, email);
+
     const user = await User.findOne({ email }).lean();
-    if (!user) return next(new AppError('Account not found.', 404));
-    if (user.emailVerified !== false) return res.json({ message: 'Email is already verified.' });
+
+    // Return the same success-shaped response whether the account exists or not
+    // to avoid leaking which email addresses have accounts.
+    if (!user || user.emailVerified !== false) {
+      return res.json({
+        email,
+        emailSent: false,
+        message: 'If an unverified account exists for this email, a new verification link has been sent.'
+      });
+    }
+
+    // createEmailVerification atomically invalidates the previous token
+    // (clears verify:{oldHash} and verify-user:{userId} from Redis) before
+    // issuing a new one — so the old link stops working the moment this runs.
     const verification = await createEmailVerification(user);
     await recordSecurityEvent({
       req,
       userId: user.id,
       type: 'AUTH_EMAIL_VERIFICATION_SENT',
-      metadata: { emailSent: verification.sent }
+      metadata: { emailSent: verification.sent, reason: 'resend' }
     });
     res.json({
       email,
       emailSent: verification.sent,
       expiresAt: verification.expiresAt,
       verificationUrl: verification.verificationUrl,
-      message: verification.sent ? 'Verification email sent.' : 'Email sending is not configured.'
+      message: 'If an unverified account exists for this email, a new verification link has been sent.'
     });
   } catch (error) {
     next(error);

@@ -43,6 +43,13 @@ const AUTH_EMAIL_WINDOW_SECONDS = Number(process.env.AUTH_EMAIL_WINDOW_SECONDS |
 const REFRESH_IP_MAX = Number(process.env.REFRESH_IP_MAX || 60);
 const REFRESH_IP_WINDOW_SECONDS = Number(process.env.REFRESH_IP_WINDOW_SECONDS || 15 * 60);
 
+// Resend verification — tighter than generic auth limits because each resend
+// triggers an outbound email. Low limits prevent spam/cost abuse while still
+// allowing legitimate retries (token expiry, spam filter issues, typos).
+const RESEND_IP_MAX = Number(process.env.RESEND_IP_MAX || 5);
+const RESEND_EMAIL_MAX = Number(process.env.RESEND_EMAIL_MAX || 3);
+const RESEND_WINDOW_SECONDS = Number(process.env.RESEND_WINDOW_SECONDS || 10 * 60);
+
 // Re-export so controllers that need them (register, verify, resend) can
 // reference the window config without duplicating it.
 const AUTH_ACTION_WINDOW_SECONDS = AUTH_EMAIL_WINDOW_SECONDS;
@@ -179,6 +186,14 @@ const enforceLoginLimits = async (req, email) => {
   await enforceEmailLimit(req, 'login', email, LOGIN_EMAIL_MAX, LOGIN_EMAIL_WINDOW_SECONDS);
 };
 
+// ── Composite: resend verification limiting ───────────────────────────────────
+// Tighter than general auth limits since each resend costs an outbound email.
+// IP check first, then per-email check.
+const enforceResendLimits = async (req, email) => {
+  await enforceIpLimit(req, 'resend-verification', RESEND_IP_MAX, RESEND_WINDOW_SECONDS);
+  if (email) await enforceEmailLimit(req, 'resend-verification', email, RESEND_EMAIL_MAX, RESEND_WINDOW_SECONDS);
+};
+
 // ── Composite: refresh token limiting ───────────────────────────────────────
 // Refresh is called frequently by legitimate clients (every 15 min per tab).
 // IP-only limit, much looser window.
@@ -195,6 +210,7 @@ module.exports = {
   enforceIpLimit,
   enforceLoginLimits,
   enforceRefreshLimits,
+  enforceResendLimits,
   ensureLoginNotLocked,
   noteLoginFailure,
   noteLoginSuccess,
