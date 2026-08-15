@@ -798,9 +798,61 @@ const deactivateUser = async (req, res, next) => {
       { returnDocument: 'after', lean: true }
     );
     if (!updatedUser) return next(new AppError('User not found.', 404));
-    await revokeAllSessionsForUser({ userId: req.params.id, reason: 'account_deactivated' });
+    // Revoking sessions first ensures no existing refresh token can silently
+    // produce a new access token after the account is deactivated. The access
+    // token's short TTL (15 min) bounds any remaining window where a token
+    // issued before this moment could still be used — but the live
+    // deriveAccountStatus check in requireVerifiedUser blocks it immediately.
+    const { modifiedCount } = await revokeAllSessionsForUser({ userId: req.params.id, reason: 'account_deactivated' });
     clearAuthCookies(res);
-    await recordSecurityEvent({ req, userId: req.params.id, type: 'account_deactivated' });
+    await recordSecurityEvent({
+      req,
+      userId: req.params.id,
+      type: 'account_deactivated',
+      metadata: { sessionsRevoked: modifiedCount }
+    });
+    res.json({ success: true });
+  } catch (error) { next(error); }
+};
+
+// suspendUser — admin-side action (no self-service route).
+// Sets isSuspended + accountStatus and revokes all sessions immediately.
+// requireVerifiedUser will block any request from a suspended account on the
+// very next request, regardless of whether the access token is still valid.
+const suspendUser = async (req, res, next) => {
+  try {
+    const suspendedAt = new Date().toISOString();
+    const updatedUser = await User.findOneAndUpdate(
+      { id: req.params.id },
+      { $set: { isSuspended: true, accountStatus: 'suspended', suspendedAt, updatedAt: suspendedAt } },
+      { returnDocument: 'after', lean: true }
+    );
+    if (!updatedUser) return next(new AppError('User not found.', 404));
+    const { modifiedCount } = await revokeAllSessionsForUser({ userId: req.params.id, reason: 'account_suspended' });
+    await recordSecurityEvent({
+      req,
+      userId: req.params.id,
+      type: 'account_suspended',
+      metadata: { sessionsRevoked: modifiedCount, suspendedBy: req.userId }
+    });
+    res.json({ success: true, sessionsRevoked: modifiedCount });
+  } catch (error) { next(error); }
+};
+
+const unsuspendUser = async (req, res, next) => {
+  try {
+    const updatedUser = await User.findOneAndUpdate(
+      { id: req.params.id },
+      { $set: { isSuspended: false, accountStatus: 'active', updatedAt: new Date().toISOString() }, $unset: { suspendedAt: '' } },
+      { returnDocument: 'after', lean: true }
+    );
+    if (!updatedUser) return next(new AppError('User not found.', 404));
+    await recordSecurityEvent({
+      req,
+      userId: req.params.id,
+      type: 'account_unsuspended',
+      metadata: { unsuspendedBy: req.userId }
+    });
     res.json({ success: true });
   } catch (error) { next(error); }
 };
@@ -823,5 +875,7 @@ module.exports = {
   uploadUserAvatar,
   deleteUser,
   deactivateUser,
+  suspendUser,
+  unsuspendUser,
   deriveAccountStatus
 };
