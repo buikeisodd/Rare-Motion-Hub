@@ -815,10 +815,11 @@ const deactivateUser = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
-// suspendUser — admin-side action (no self-service route).
-// Sets isSuspended + accountStatus and revokes all sessions immediately.
-// requireVerifiedUser will block any request from a suspended account on the
-// very next request, regardless of whether the access token is still valid.
+// suspendUser/unsuspendUser are intentionally not exposed as API endpoints —
+// this is not a role-based system and all users are equal. The isSuspended
+// field and 'suspended' accountStatus are enforced by requireVerifiedUser
+// and can be set via direct DB operation or future tooling if needed.
+
 const suspendUser = async (req, res, next) => {
   try {
     const suspendedAt = new Date().toISOString();
@@ -833,7 +834,7 @@ const suspendUser = async (req, res, next) => {
       req,
       userId: req.params.id,
       type: 'account_suspended',
-      metadata: { sessionsRevoked: modifiedCount, suspendedBy: req.userId }
+      metadata: { sessionsRevoked: modifiedCount }
     });
     res.json({ success: true, sessionsRevoked: modifiedCount });
   } catch (error) { next(error); }
@@ -851,7 +852,6 @@ const unsuspendUser = async (req, res, next) => {
       req,
       userId: req.params.id,
       type: 'account_unsuspended',
-      metadata: { unsuspendedBy: req.userId }
     });
     res.json({ success: true });
   } catch (error) { next(error); }

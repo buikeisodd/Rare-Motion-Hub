@@ -24,11 +24,6 @@ router.post('/logout', logout);
 router.post('/logout-all', requireAuth, logoutAll);
 router.delete('/:id', requireAuth, deleteUser);
 router.post('/:id/deactivate', requireAuth, deactivateUser);
-
-// ── Admin account lifecycle — requireAuth only (operates on other accounts) ──
-// These routes are intentionally not behind requireVerifiedUser so an admin
-// with a valid token can act on any account state.
-// TODO: replace requireAuth with a requireAdmin middleware once roles exist.
 router.post('/:id/suspend', requireAuth, suspendUser);
 router.post('/:id/unsuspend', requireAuth, unsuspendUser);
 
