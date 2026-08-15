@@ -22,7 +22,7 @@ function AppleIcon({ className = '' }) {
   );
 }
 
-export default function Login({ onLogin }) {
+export default function Login({ onLogin, sessionExpiredNotice = false }) {
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState(() => localStorage.getItem('lastEmail') || '');
   const [password, setPassword] = useState('');
@@ -32,7 +32,7 @@ export default function Login({ onLogin }) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
+  const [notice, setNotice] = useState(sessionExpiredNotice ? 'Your session has expired. Please sign in again.' : '');
   const [loading, setLoading] = useState(false);
   const [providerLoading, setProviderLoading] = useState('');
   const [verificationModal, setVerificationModal] = useState(null);

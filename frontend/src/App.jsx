@@ -98,21 +98,74 @@ function AuthLanding({ user, justAuthenticated, onDone }) {
   return hasSeenWelcome ? <WelcomeAnimation user={user} onDone={onDone} /> : <WelcomeBack user={user} onDone={onDone} />;
 }
 
-function AnimatedRoutes({ user, handleLogin, handleLogout, handleUserUpdate, justAuthenticated, setJustAuthenticated }) {
+function AnimatedRoutes({ user, authStatus, handleLogin, handleLogout, handleUserUpdate, justAuthenticated, setJustAuthenticated }) {
   const location = useLocation();
 
-  if (!user) {
+  // While session restore is in-flight, render nothing to avoid a flash
+  // of the login page for users who do have a valid session.
+  if (authStatus === 'loading') {
+    return (
+      <div className="flex h-screen items-center justify-center bg-primary-background">
+        <div className="h-8 w-8 rounded-full border-2 border-primary-label/20 border-t-primary-label animate-spin" />
+      </div>
+    );
+  }
+
+  // Session-expired: show login with a banner so the user understands why.
+  if (authStatus === 'session-expired') {
     return (
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
-          <Route path="/login" element={<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><Login onLogin={handleLogin} /></motion.div>} />
-          <Route path="/verify-email" element={<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><VerifyEmail onLogin={handleLogin} /></motion.div>} />
+          <Route path="/login" element={
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <Login onLogin={handleLogin} sessionExpiredNotice />
+            </motion.div>
+          } />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </AnimatePresence>
     );
   }
 
+  // Locked (suspended/deactivated): allow login/verify routes but not app.
+  if (authStatus === 'locked') {
+    return (
+      <AnimatePresence mode="wait">
+        <Routes location={location} key={location.pathname}>
+          <Route path="/login" element={<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><Login onLogin={handleLogin} /></motion.div>} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </AnimatePresence>
+    );
+  }
+
+  if (authStatus === 'unauthenticated') {
+    return (
+      <AnimatePresence mode="wait">
+        <Routes location={location} key={location.pathname}>
+          <Route path="/login" element={<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><Login onLogin={handleLogin} /></motion.div>} />
+          <Route path="/verify-email" element={<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><VerifyEmail onLogin={handleLogin} /></motion.div>} />
+          <Route path="/shared/:type/:id" element={<motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><SharedItem user={null} /></motion.div>} />
+          <Route path="/shared/link/:token" element={<motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><SharedItem user={null} isLink={true} /></motion.div>} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </AnimatePresence>
+    );
+  }
+
+  // authenticated-unverified: only verify-email route is accessible.
+  if (authStatus === 'authenticated-unverified') {
+    return (
+      <AnimatePresence mode="wait">
+        <Routes location={location} key={location.pathname}>
+          <Route path="/verify-email" element={<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><VerifyEmail onLogin={handleLogin} /></motion.div>} />
+          <Route path="*" element={<Navigate to="/verify-email" replace />} />
+        </Routes>
+      </AnimatePresence>
+    );
+  }
+
+  // authenticated-verified: full application access.
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
@@ -245,52 +298,76 @@ function IdleLogoutGuard({ user, onLogout }) {
 }
 
 function App() {
-  // User profile lives in React state only — tokens live in HttpOnly cookies
-  // managed by the browser. No localStorage for auth credentials.
+  // ── Auth state machine ────────────────────────────────────────────────────
+  // Explicit states, derived from the live server response — never from
+  // localStorage or frontend-only logic:
+  //   loading              → startup, /api/auth/me not yet resolved
+  //   unauthenticated      → no valid session (no cookies / cookies expired)
+  //   authenticated-unverified → valid session, emailVerified = false
+  //   authenticated-verified   → valid session, active account (normal flow)
+  //   locked               → account locked or suspended
+  //   session-expired      → was authenticated, server rejected the session
+  //
+  // Security note: these states gate routing and UI only. Actual access
+  // control is enforced server-side — the frontend state is never trusted
+  // as a security mechanism.
+  const [authStatus, setAuthStatus] = useState('loading');
   const [user, setUser] = useState(null);
   const [justAuthenticated, setJustAuthenticated] = useState(false);
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
-  // One-time silent session restore on mount — cookies are sent automatically.
+  const deriveAuthStatus = (userData) => {
+    if (!userData) return 'unauthenticated';
+    const status = userData.accountStatus;
+    if (status === 'suspended' || status === 'deactivated') return 'locked';
+    if (userData.emailVerified === false || status === 'pending_verification') return 'authenticated-unverified';
+    return 'authenticated-verified';
+  };
+
+  // On startup: call GET /api/auth/me to restore session from cookies.
+  // This does NOT rotate the refresh token (unlike using POST /auth/refresh
+  // directly). The fetch interceptor handles silent refresh+retry if the
+  // access token cookie is already expired by the time this fires.
   useEffect(() => {
-    if (user) return;
     let cancelled = false;
 
     async function restoreSession() {
       try {
-        const res = await fetch(`${apiUrl}/api/auth/refresh`, {
-          method: 'POST',
-          credentials: 'include'
-        });
-        if (!res.ok) return;
-        const data = await res.json();
-        if (cancelled || !data.user) return;
-        setUser(data.user);
-      } catch (err) {
-        console.error('Failed to restore session', err);
+        const res = await fetch(`${apiUrl}/api/auth/me`, { credentials: 'include' });
+        if (cancelled) return;
+        if (res.ok) {
+          const data = await res.json();
+          if (data.user) {
+            setUser(data.user);
+            setAuthStatus(deriveAuthStatus(data.user));
+            return;
+          }
+        }
+        setAuthStatus('unauthenticated');
+      } catch {
+        if (!cancelled) setAuthStatus('unauthenticated');
       }
     }
 
     restoreSession();
     return () => { cancelled = true; };
-  }, [apiUrl, user]);
+  }, [apiUrl]);
 
-  // Keep user profile fresh after login — fetch from server, not localStorage.
+  // Keep user profile fresh after login.
   useEffect(() => {
     if (!user?.id) return;
     let cancelled = false;
 
     async function refreshUser() {
       try {
-        const res = await fetch(`${apiUrl}/api/auth/${user.id}`, {
-          credentials: 'include'
-        });
+        const res = await fetch(`${apiUrl}/api/auth/${user.id}`, { credentials: 'include' });
         const data = await res.json();
         if (!cancelled && res.ok && data.user) {
           setUser(data.user);
+          setAuthStatus(deriveAuthStatus(data.user));
         }
-      } catch (err) {
-        console.error('Failed to refresh user profile', err);
+      } catch {
+        // Non-fatal — cached user state remains
       }
     }
 
@@ -300,15 +377,19 @@ function App() {
 
   // Listen for the forced-logout event dispatched by the fetch interceptor.
   useEffect(() => {
-    const onAuthLogout = () => { setUser(null); setJustAuthenticated(false); };
+    const onAuthLogout = () => {
+      setUser(null);
+      setAuthStatus('session-expired');
+      setJustAuthenticated(false);
+    };
     window.addEventListener('auth:logout', onAuthLogout);
     return () => window.removeEventListener('auth:logout', onAuthLogout);
   }, []);
 
   const handleLogin = (userData) => {
     setUser(userData);
+    setAuthStatus(deriveAuthStatus(userData));
     setJustAuthenticated(true);
-    // Purge any stale localStorage auth remnants from the old mechanism.
     localStorage.removeItem('user');
     localStorage.removeItem('token');
     localStorage.removeItem('csrfToken');
@@ -316,16 +397,11 @@ function App() {
 
   const handleLogout = async () => {
     try {
-      await fetch(`${apiUrl}/api/auth/logout`, {
-        method: 'POST',
-        credentials: 'include'
-      });
-    } catch (err) {
-      console.error('Failed to revoke server session', err);
-    }
+      await fetch(`${apiUrl}/api/auth/logout`, { method: 'POST', credentials: 'include' });
+    } catch {}
     setUser(null);
+    setAuthStatus('unauthenticated');
     setJustAuthenticated(false);
-    // Cookies are cleared server-side by the logout endpoint.
   };
 
   const handleUserUpdate = (nextUser) => {
@@ -337,7 +413,8 @@ function App() {
       <AudioProvider key={user?.id || "guest"}>
         <BrowserRouter>
           <AnimatedRoutes 
-            user={user} 
+            user={user}
+            authStatus={authStatus}
             handleLogin={handleLogin} 
             handleLogout={handleLogout} 
             handleUserUpdate={handleUserUpdate}

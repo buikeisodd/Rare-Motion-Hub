@@ -28,6 +28,14 @@ router.post('/:id/suspend', requireAuth, suspendUser);
 router.post('/:id/unsuspend', requireAuth, unsuspendUser);
 
 // ── requireAuth + requireVerifiedUser — normal application routes ─────────────
+router.get('/me', requireAuth, requireVerifiedUser, (req, res) => {
+  // Returns the live, server-side user state from req.user (set by requireAuth
+  // via a fresh User.findOne). Frontend uses this on startup to restore session
+  // without rotating the refresh token unnecessarily.
+  const { deriveAccountStatus } = require('../controllers/auth.controller');
+  const status = req.user.accountStatus || deriveAccountStatus(req.user);
+  res.json({ user: { ...req.user, accountStatus: status } });
+});
 router.get('/:id', requireAuth, requireVerifiedUser, getUser);
 router.put('/:id', requireAuth, requireVerifiedUser, updateUser);
 router.post('/:id/follow', requireAuth, requireVerifiedUser, toggleFollow);
