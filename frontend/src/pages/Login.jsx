@@ -344,9 +344,13 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
       {verificationModal && (
         <VerificationModal
           email={verificationModal.email}
-          expiresAt={verificationModal.expiresAt || new Date().toISOString()}
+          expiresAt={verificationModal.expiresAt || new Date(Date.now() + 300000).toISOString()}
           verificationUrl={verificationModal.verificationUrl}
           apiUrl={apiUrl}
+          onVerified={(userData) => {
+            setVerificationModal(null);
+            onLogin(userData);
+          }}
           onClose={() => setVerificationModal(null)}
         />
       )}
