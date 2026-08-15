@@ -127,7 +127,7 @@ const noteLoginFailure = async (req, email) => {
     await setSecurityValue(lockKey(subject), String(lockUntilMs), LOGIN_LOCK_SECONDS);
     await recordSecurityEvent({
       req,
-      type: 'login_locked',
+      type: 'SECURITY_ACCOUNT_LOCKED',
       metadata: { attempts: count, lockSeconds: LOGIN_LOCK_SECONDS }
     });
   }

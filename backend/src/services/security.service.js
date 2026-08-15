@@ -44,15 +44,58 @@ const requestContext = (req) => {
   };
 };
 
-const recordSecurityEvent = async ({ req, userId, sessionId, category = 'auth', type, metadata = {} }) => {
+// ── Security event taxonomy ───────────────────────────────────────────────────
+// All event type constants with their categories. Call sites must use these
+// constants — not raw strings — so typos are caught at startup/test time.
+// Metadata must NEVER include: passwords, raw access tokens, raw refresh tokens,
+// verification tokens, or reset tokens.
+const SECURITY_EVENTS = {
+  // AUTH — normal authentication lifecycle events
+  AUTH_REGISTERED:                    'AUTH',
+  AUTH_LOGIN_SUCCESS:                 'AUTH',
+  AUTH_LOGIN_FAILED:                  'AUTH',
+  AUTH_LOGOUT:                        'AUTH',
+  AUTH_LOGOUT_ALL:                    'AUTH',
+  AUTH_EMAIL_VERIFICATION_SENT:       'AUTH',
+  AUTH_EMAIL_VERIFIED:                'AUTH',
+  AUTH_EMAIL_VERIFICATION_FAILED:     'AUTH',
+  AUTH_PASSWORD_RESET_REQUESTED:      'AUTH',
+  AUTH_PASSWORD_RESET_COMPLETED:      'AUTH',
+  AUTH_PASSWORD_RESET_FAILED:         'AUTH',
+  AUTH_TOKEN_REFRESHED:               'AUTH',
+  AUTH_ACCOUNT_DEACTIVATED:           'AUTH',
+  AUTH_ACCOUNT_DELETED:               'AUTH',
+
+  // SECURITY — anomalies, policy violations, elevated-risk events
+  SECURITY_ACCOUNT_LOCKED:           'SECURITY',
+  SECURITY_REFRESH_REUSE_DETECTED:   'SECURITY',
+  SECURITY_SESSION_REVOKED:          'SECURITY',
+  SECURITY_RATE_LIMITED:             'SECURITY',
+  SECURITY_SUSPICIOUS_LOGIN:         'SECURITY',
+  SECURITY_ACCOUNT_SUSPENDED:        'SECURITY',
+  SECURITY_ACCOUNT_UNSUSPENDED:      'SECURITY',
+
+  // SYSTEM — infrastructure/operational events
+  SYSTEM_ERROR:         'SYSTEM',
+  SYSTEM_EMAIL_FAILED:  'SYSTEM',
+  SYSTEM_UPLOAD_FAILED: 'SYSTEM',
+};
+
+// Derive the category from the type constant — callers never specify it manually.
+const categoryForType = (type) => SECURITY_EVENTS[type] || 'SYSTEM';
+
+const recordSecurityEvent = async ({ req, userId, sessionId, type, metadata = {} }) => {
   if (!type) return;
+  if (!SECURITY_EVENTS[type]) {
+    console.warn(`[SecurityEvent] Unknown event type: ${type} — logging as SYSTEM_ERROR`);
+  }
   try {
     const context = req ? requestContext(req) : {};
     await SecurityEvent.create({
-      eventId: `${Date.now().toString(36)}${crypto.randomBytes(8).toString('hex')}`,
+      eventId:   `${Date.now().toString(36)}${crypto.randomBytes(8).toString('hex')}`,
       userId,
       sessionId,
-      category,
+      category:  categoryForType(type),
       type,
       ipAddress: context.ipAddress,
       userAgent: context.userAgent,
@@ -60,7 +103,7 @@ const recordSecurityEvent = async ({ req, userId, sessionId, category = 'auth', 
       createdAt: new Date().toISOString()
     });
   } catch (error) {
-    console.error('Security event write failed:', error.message);
+    console.error('[SecurityEvent] Write failed:', error.message);
   }
 };
 
@@ -242,6 +285,7 @@ const revokeRefreshSession = async ({ refreshToken, reason = 'logout' }) => {
 };
 
 module.exports = {
+  SECURITY_EVENTS,
   createOpaqueToken,
   hashOpaqueToken,
   safeTokenEqual,

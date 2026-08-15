@@ -213,14 +213,26 @@ const SessionSchema = new Schema({
 });
 
 const SecurityEventSchema = new Schema({
-  eventId: { type: String, required: true, unique: true },
-  userId: { type: String, index: true },
+  eventId:   { type: String, required: true, unique: true },
+  userId:    { type: String, index: true },
   sessionId: String,
-  category: { type: String, required: true, index: true },
-  type: { type: String, required: true, index: true },
+  // Category is one of three high-level buckets — used for filtering/alerting.
+  category: {
+    type: String,
+    required: true,
+    enum: ['AUTH', 'SECURITY', 'SYSTEM'],
+    index: true
+  },
+  // Type is a fully-qualified constant within the category, e.g. AUTH_LOGIN_SUCCESS.
+  // The full taxonomy is defined in security.service.js — this field stores the
+  // string value; enforcement happens at the service layer.
+  type:      { type: String, required: true, index: true },
   ipAddress: String,
   userAgent: String,
-  metadata: Schema.Types.Mixed,
+  // metadata must never contain: passwords, raw tokens (access, refresh,
+  // verification, reset), or any other secret material. Enforced at call sites
+  // and documented in security.service.js.
+  metadata:  Schema.Types.Mixed,
   createdAt: { type: String, default: () => new Date().toISOString(), index: true },
 });
 

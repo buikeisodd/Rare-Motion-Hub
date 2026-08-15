@@ -276,7 +276,7 @@ const register = async (req, res, next) => {
     await recordSecurityEvent({
       req,
       userId: newUser.id,
-      type: 'register_requires_email_verification',
+      type: 'AUTH_REGISTERED',
       metadata: { emailSent: verification.sent }
     });
     res.status(201).json({
@@ -314,24 +314,24 @@ const login = async (req, res, next) => {
     const user = await User.findOne({ email }).lean();
     if (!user || !user.passwordHash) {
       await noteLoginFailure(req, email);
-      await recordSecurityEvent({ req, type: 'login_failed', metadata: { email, reason: 'invalid_credentials' } });
+      await recordSecurityEvent({ req, type: 'AUTH_LOGIN_FAILED', metadata: { email, reason: 'invalid_credentials' } });
       return next(new AppError('Invalid email or password.', 401));
     }
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
       await noteLoginFailure(req, email);
-      await recordSecurityEvent({ req, userId: user.id, type: 'login_failed', metadata: { reason: 'invalid_credentials' } });
+      await recordSecurityEvent({ req, userId: user.id, type: 'AUTH_LOGIN_FAILED', metadata: { reason: 'invalid_credentials' } });
       return next(new AppError('Invalid email or password.', 401));
     }
 
     // 2. Account state — deactivated/suspended, checked only once credentials
     // are already proven valid.
     if (user.isDeactivated) {
-      await recordSecurityEvent({ req, userId: user.id, type: 'login_blocked', metadata: { reason: 'deactivated' } });
+      await recordSecurityEvent({ req, userId: user.id, type: 'AUTH_LOGIN_FAILED', metadata: { reason: 'deactivated' } });
       return next(new AppError('This account is deactivated.', 403));
     }
     if (user.isSuspended) {
-      await recordSecurityEvent({ req, userId: user.id, type: 'login_blocked', metadata: { reason: 'suspended' } });
+      await recordSecurityEvent({ req, userId: user.id, type: 'AUTH_LOGIN_FAILED', metadata: { reason: 'suspended' } });
       return next(new AppError('This account is suspended.', 403));
     }
 
@@ -339,7 +339,7 @@ const login = async (req, res, next) => {
     // is otherwise in good standing, but verification is still required.
     // No session, cookies, or tokens are issued past this point.
     if (!user.emailVerified) {
-      await recordSecurityEvent({ req, userId: user.id, type: 'login_blocked', metadata: { reason: 'email_unverified' } });
+      await recordSecurityEvent({ req, userId: user.id, type: 'AUTH_LOGIN_FAILED', metadata: { reason: 'email_unverified' } });
       return res.status(403).json({
         success: false,
         requiresEmailVerification: true
@@ -348,7 +348,7 @@ const login = async (req, res, next) => {
 
     const { sessionId, ...mobileTokens } = await issueAuthSession(req, res, user);
     await noteLoginSuccess(email);
-    await recordSecurityEvent({ req, userId: user.id, sessionId, type: 'login_success' });
+    await recordSecurityEvent({ req, userId: user.id, sessionId, type: 'AUTH_LOGIN_SUCCESS' });
     res.json({ success: true, user: userResponse(user), ...mobileTokens });
   } catch (error) {
     next(error);
@@ -371,7 +371,7 @@ const verifyEmail = async (req, res, next) => {
     // gets null, so it can never successfully verify using the same token.
     const userId = await consumeSecurityValue(`verify:${tokenHash}`);
     if (!userId) {
-      await recordSecurityEvent({ req, type: 'email_verification_failed', metadata: { reason: 'invalid_or_expired' } });
+      await recordSecurityEvent({ req, type: 'AUTH_EMAIL_VERIFICATION_FAILED', metadata: { reason: 'invalid_or_expired' } });
       return next(new AppError('Invalid or expired verification link. Request a new one.', 400));
     }
     // Best-effort cleanup of the reverse pointer used to invalidate old
@@ -383,7 +383,7 @@ const verifyEmail = async (req, res, next) => {
     // states take precedence over the pending_verification -> active move.
     const existing = await User.findOne({ id: userId }).select('isSuspended isDeactivated').lean();
     if (!existing) {
-      await recordSecurityEvent({ req, type: 'email_verification_failed', metadata: { reason: 'user_not_found' } });
+      await recordSecurityEvent({ req, type: 'AUTH_EMAIL_VERIFICATION_FAILED', metadata: { reason: 'user_not_found' } });
       return next(new AppError('Invalid or expired verification link. Request a new one.', 400));
     }
     const nextStatus = existing.isDeactivated ? 'deactivated' : existing.isSuspended ? 'suspended' : 'active';
@@ -395,12 +395,12 @@ const verifyEmail = async (req, res, next) => {
       { returnDocument: 'after', lean: true }
     );
     if (!user) {
-      await recordSecurityEvent({ req, type: 'email_verification_failed', metadata: { reason: 'user_not_found' } });
+      await recordSecurityEvent({ req, type: 'AUTH_EMAIL_VERIFICATION_FAILED', metadata: { reason: 'user_not_found' } });
       return next(new AppError('Invalid or expired verification link. Request a new one.', 400));
     }
 
     const { sessionId, ...mobileTokens } = await issueAuthSession(req, res, user);
-    await recordSecurityEvent({ req, userId: user.id, sessionId, type: 'email_verified' });
+    await recordSecurityEvent({ req, userId: user.id, sessionId, type: 'AUTH_EMAIL_VERIFIED' });
     const verifiedUser = { ...user, ...updates };
     res.json({ user: userResponse(verifiedUser), ...mobileTokens });
   } catch (error) {
@@ -421,7 +421,7 @@ const resendVerification = async (req, res, next) => {
     await recordSecurityEvent({
       req,
       userId: user.id,
-      type: 'email_verification_resent',
+      type: 'AUTH_EMAIL_VERIFICATION_SENT',
       metadata: { emailSent: verification.sent }
     });
     res.json({
@@ -448,7 +448,7 @@ const requestPasswordReset = async (req, res, next) => {
       await recordSecurityEvent({
         req,
         userId: user.id,
-        type: 'password_reset_requested',
+        type: 'AUTH_PASSWORD_RESET_REQUESTED',
         metadata: { emailSent: reset.sent }
       });
       return res.json({
@@ -459,7 +459,7 @@ const requestPasswordReset = async (req, res, next) => {
           : 'Password reset created. Email sending is not configured.'
       });
     }
-    await recordSecurityEvent({ req, type: 'password_reset_requested_unknown', metadata: { email } });
+    await recordSecurityEvent({ req, type: 'AUTH_PASSWORD_RESET_REQUESTED', metadata: { email } });
     res.json({ message: 'If this email exists, a password reset link has been sent.' });
   } catch (error) {
     next(error);
@@ -478,14 +478,14 @@ const resetPassword = async (req, res, next) => {
     const tokenHash = hashToken(token);
     const userId = await consumeSecurityValue(`reset:${tokenHash}`);
     if (!userId) {
-      await recordSecurityEvent({ req, type: 'password_reset_failed', metadata: { reason: 'invalid_or_expired' } });
+      await recordSecurityEvent({ req, type: 'AUTH_PASSWORD_RESET_FAILED', metadata: { reason: 'invalid_or_expired' } });
       return next(new AppError('Invalid or expired reset link. Request a new one.', 400));
     }
     clearSecurityValue(`reset-user:${userId}`).catch(() => {});
 
     const existing = await User.findOne({ id: userId }).select('isSuspended isDeactivated').lean();
     if (!existing) {
-      await recordSecurityEvent({ req, type: 'password_reset_failed', metadata: { reason: 'user_not_found' } });
+      await recordSecurityEvent({ req, type: 'AUTH_PASSWORD_RESET_FAILED', metadata: { reason: 'user_not_found' } });
       return next(new AppError('Invalid or expired reset link. Request a new one.', 400));
     }
     const nextStatus = existing.isDeactivated ? 'deactivated' : existing.isSuspended ? 'suspended' : 'active';
@@ -498,13 +498,13 @@ const resetPassword = async (req, res, next) => {
       { returnDocument: 'after', lean: true }
     );
     if (!user) {
-      await recordSecurityEvent({ req, type: 'password_reset_failed', metadata: { reason: 'user_not_found' } });
+      await recordSecurityEvent({ req, type: 'AUTH_PASSWORD_RESET_FAILED', metadata: { reason: 'user_not_found' } });
       return next(new AppError('Invalid or expired reset link. Request a new one.', 400));
     }
 
     await revokeAllSessionsForUser({ userId: user.id, reason: 'password_reset' });
     clearAuthCookies(res);
-    await recordSecurityEvent({ req, userId: user.id, type: 'password_reset_completed' });
+    await recordSecurityEvent({ req, userId: user.id, type: 'AUTH_PASSWORD_RESET_COMPLETED' });
     // Do NOT issue a new session here. The spec requires fresh authentication
     // after a password reset — no auto-login. The attacker who triggered the
     // reset (if any) must not end up with a valid session. All refresh-token
@@ -526,7 +526,7 @@ const refreshSession = async (req, res, next) => {
     const rotated = await rotateRefreshSession({ req, refreshToken: incomingRefreshToken });
     if (!rotated) {
       clearAuthCookies(res);
-      await recordSecurityEvent({ req, type: 'refresh_failed', metadata: { reason: 'invalid_or_expired' } });
+      await recordSecurityEvent({ req, type: 'SECURITY_SESSION_REVOKED', metadata: { reason: 'invalid_or_expired' } });
       return next(new AppError('Unauthorized: Invalid refresh token', 401));
     }
     if (rotated.reused) {
@@ -558,7 +558,7 @@ const refreshSession = async (req, res, next) => {
     if (status === 'pending_verification') {
       await revokeAllSessionsForUser({ userId: user.id, reason: 'email_unverified' });
       clearAuthCookies(res);
-      await recordSecurityEvent({ req, userId: user.id, sessionId: rotated.session.sessionId, type: 'refresh_blocked', metadata: { reason: 'email_unverified' } });
+      await recordSecurityEvent({ req, userId: user.id, sessionId: rotated.session.sessionId, type: 'SECURITY_SESSION_REVOKED', metadata: { reason: 'email_unverified' } });
       return next(new AppError('Please verify your email before signing in.', 403));
     }
 
@@ -570,7 +570,7 @@ const refreshSession = async (req, res, next) => {
     res.cookie(cookieName('refreshToken'), rotated.refreshToken, cookieOptions(REFRESH_TOKEN_TTL_MS));
     res.cookie(cookieName('sessionId'), rotated.session.sessionId, cookieOptions(REFRESH_TOKEN_TTL_MS));
     res.cookie(cookieName('csrfToken'), csrfToken, cookieOptions(REFRESH_TOKEN_TTL_MS, { httpOnly: false }));
-    await recordSecurityEvent({ req, userId: user.id, sessionId: rotated.session.sessionId, type: 'session_refreshed' });
+    await recordSecurityEvent({ req, userId: user.id, sessionId: rotated.session.sessionId, type: 'AUTH_TOKEN_REFRESHED' });
     const isMobileClient = (req.get('x-client-type') || '').toLowerCase() === 'mobile';
     res.json({
       user: userResponse(user),
@@ -781,7 +781,7 @@ const deleteUser = async (req, res, next) => {
     removeDirIfExists(getUserDir(coverDir, req.params.id));
     removeDirIfExists(getUserDir(avatarDir, req.params.id));
     clearAuthCookies(res);
-    await recordSecurityEvent({ req, userId: uid, type: 'account_deleted' });
+    await recordSecurityEvent({ req, userId: uid, type: 'AUTH_ACCOUNT_DELETED' });
     res.json({ success: true });
   } catch (error) {
     next(error);
@@ -808,7 +808,7 @@ const deactivateUser = async (req, res, next) => {
     await recordSecurityEvent({
       req,
       userId: req.params.id,
-      type: 'account_deactivated',
+      type: 'AUTH_ACCOUNT_DEACTIVATED',
       metadata: { sessionsRevoked: modifiedCount }
     });
     res.json({ success: true });
@@ -833,7 +833,7 @@ const suspendUser = async (req, res, next) => {
     await recordSecurityEvent({
       req,
       userId: req.params.id,
-      type: 'account_suspended',
+      type: 'SECURITY_ACCOUNT_SUSPENDED',
       metadata: { sessionsRevoked: modifiedCount }
     });
     res.json({ success: true, sessionsRevoked: modifiedCount });
@@ -851,7 +851,7 @@ const unsuspendUser = async (req, res, next) => {
     await recordSecurityEvent({
       req,
       userId: req.params.id,
-      type: 'account_unsuspended',
+      type: 'SECURITY_ACCOUNT_UNSUSPENDED',
     });
     res.json({ success: true });
   } catch (error) { next(error); }
