@@ -7,6 +7,8 @@ const {
   clearSecurityValue,
   recordSecurityEvent
 } = require('./security.service');
+const { User } = require('../models');
+const { sendSecurityAlertEmail } = require('../utils/email');
 
 // ── Configurable thresholds ──────────────────────────────────────────────────
 // All limits are environment-configurable so security thresholds are never
@@ -130,6 +132,25 @@ const noteLoginFailure = async (req, email) => {
       type: 'SECURITY_ACCOUNT_LOCKED',
       metadata: { attempts: count, lockSeconds: LOGIN_LOCK_SECONDS }
     });
+    // Notify the account owner on lockout — a significant, actionable event.
+    // Individual failed attempts are recorded as AUTH_LOGIN_FAILED security
+    // events but do NOT trigger an email to avoid notification spam abuse.
+    // The notification is fire-and-forget; failure is logged but never throws.
+    User.findOne({ email: email.trim().toLowerCase() }).lean()
+      .then((user) => {
+        if (!user) return;
+        const lockMins = Math.ceil(LOGIN_LOCK_SECONDS / 60);
+        return sendSecurityAlertEmail({
+          to: user.email,
+          name: user.name,
+          subject: 'Your Starlight Station account has been temporarily locked',
+          headline: 'Account locked',
+          body: `We locked your account after ${count} failed sign-in attempts. It will unlock automatically in ${lockMins} minute${lockMins === 1 ? '' : 's'}. If this wasn't you, reset your password to secure your account.`,
+          ctaText: 'Reset password',
+          ctaUrl: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/login`
+        });
+      })
+      .catch((err) => console.error('[SecurityAlert] lockout email failed:', err.message));
   }
 };
 

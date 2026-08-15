@@ -7,7 +7,7 @@ const { cloudinary, hasCloudinaryConfig } = require('../config/cloudinary');
 const { invalidateCache } = require('../config/redis');
 const { AppError } = require('../middlewares/error.middleware');
 const { BASE_URL, publicUser } = require('../utils/helpers');
-const { hasSmtpConfig, sendVerificationEmail, sendPasswordResetEmail } = require('../utils/email');
+const { hasSmtpConfig, sendVerificationEmail, sendPasswordResetEmail, sendSecurityAlertEmail } = require('../utils/email');
 const {
   recordSecurityEvent,
   createOpaqueToken,
@@ -505,6 +505,18 @@ const resetPassword = async (req, res, next) => {
     await revokeAllSessionsForUser({ userId: user.id, reason: 'password_reset' });
     clearAuthCookies(res);
     await recordSecurityEvent({ req, userId: user.id, type: 'AUTH_PASSWORD_RESET_COMPLETED' });
+    // Notify the account owner that their password was changed — a significant
+    // security event. They should know even if they initiated it, and
+    // especially if they didn't (token stolen before use).
+    sendSecurityAlertEmail({
+      to: user.email,
+      name: user.name,
+      subject: 'Your Starlight Station password has been changed',
+      headline: 'Password changed',
+      body: 'Your Starlight Station password was just reset. All existing sessions have been signed out. If you did not make this change, contact support immediately.',
+      ctaText: 'Sign in',
+      ctaUrl: `${FRONTEND_URL}/login`
+    }).catch((err) => console.error('[SecurityAlert] password reset email failed:', err.message));
     // Do NOT issue a new session here. The spec requires fresh authentication
     // after a password reset — no auto-login. The attacker who triggered the
     // reset (if any) must not end up with a valid session. All refresh-token
