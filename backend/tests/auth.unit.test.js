@@ -13,6 +13,24 @@
 beforeAll(() => jest.spyOn(console, 'error').mockImplementation(() => {}));
 afterAll(() => jest.restoreAllMocks());
 
+// Mock Mongoose model calls that are fire-and-forget in the security/rate-limit
+// services — eliminates the 10s Mongoose buffer timeout per test.
+jest.mock('../src/models', () => {
+  const actual = jest.requireActual('../src/models');
+  return {
+    ...actual,
+    SecurityEvent: { ...actual.SecurityEvent, create: jest.fn().mockResolvedValue({}) },
+    User: { ...actual.User, findOne: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) }) },
+    Session: {
+      ...actual.Session,
+      create: jest.fn().mockImplementation(async (doc) => doc),
+      findOne: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) }),
+      findOneAndUpdate: jest.fn().mockResolvedValue(null),
+      updateMany: jest.fn().mockResolvedValue({ modifiedCount: 0 })
+    }
+  };
+});
+
 // ─── Phase 1: Security primitives ────────────────────────────────────────────
 describe('Phase 1 — Security primitives', () => {
   const crypto = require('crypto');
