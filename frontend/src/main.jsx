@@ -83,6 +83,18 @@ window.fetch = async (url, options = {}) => {
       if (res.status !== 401) return res;
     }
     forceLogout();
+  } else if (res.status === 403 && isApiCall && !isAuthExemptUrl(url)) {
+    // Self-heal old sessions that lack a CSRF token. If a state-changing request
+    // fails with a CSRF error, force a logout so the user can get fresh tokens.
+    const clone = res.clone();
+    try {
+      const data = await clone.json();
+      if (data.message === 'Forbidden: Invalid CSRF token' || data.error === 'Forbidden: Invalid CSRF token') {
+        forceLogout();
+      }
+    } catch (e) {
+      // ignore JSON parse errors
+    }
   }
 
   return res;
