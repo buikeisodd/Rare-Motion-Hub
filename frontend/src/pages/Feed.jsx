@@ -12,7 +12,7 @@ const Link = (props) => <RouterLink {...props} to={(props.children === 'Settings
 const dateLabel = (value) => value ? new Date(value).toLocaleDateString([], { month: 'short', day: 'numeric' }) : '';
 
 function QuickAdd({ suggestions, onFollow }) {
-  return <aside className="fixed right-8 top-28 hidden w-64 xl:block"><div className="rounded-2xl border border-border bg-shading/30 p-4"><div className="mb-4 flex items-center justify-between"><h2 className="text-sm font-semibold">Quick Add</h2><UserRound className="h-4 w-4 text-secondary-label" /></div>{suggestions.length === 0 ? <p className="text-xs text-secondary-label">You are all caught up.</p> : <div className="space-y-3">{suggestions.slice(0, MAX_QUICK_ADD_SUGGESTIONS).map((person) => <div key={person.id} className="flex items-center gap-2"><div className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-highlight text-sm font-semibold">{person.avatarUrl ? <img src={person.avatarUrl} alt="" className="h-full w-full object-cover" /> : (person.name || '?').slice(0, 1).toUpperCase()}</div><div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold">{person.name}</p><p className="truncate text-[11px] text-secondary-label">@{person.username || person.name}</p></div><button onClick={() => onFollow(person)} className="rounded-full bg-primary-label px-2.5 py-1 text-[11px] font-semibold text-primary-background">Follow</button></div>)}</div>}<p className="mt-4 border-t border-border pt-3 text-[11px] text-secondary-label/70">© 2026 Rare Motion Hub</p></div></aside>;
+  return <aside className="fixed right-4 top-4 z-30 hidden w-72 xl:block"><div className="rounded-3xl border border-white/10 bg-primary-background/60 p-5 shadow-2xl backdrop-blur-2xl"><div className="mb-5 flex items-center justify-between"><h2 className="text-sm font-semibold">Quick Add</h2><UserRound className="h-4 w-4 text-secondary-label" /></div>{suggestions.length === 0 ? <p className="text-xs text-secondary-label">You are all caught up.</p> : <div className="space-y-4">{suggestions.slice(0, MAX_QUICK_ADD_SUGGESTIONS).map((person) => <div key={person.id} className="flex items-center gap-3"><div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-highlight text-sm font-semibold shadow-inner">{person.avatarUrl ? <img src={person.avatarUrl} alt="" className="h-full w-full object-cover" /> : (person.name || '?').slice(0, 1).toUpperCase()}</div><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{person.name}</p><p className="truncate text-[11px] text-secondary-label">@{person.username || person.name}</p></div><button onClick={() => onFollow(person)} className="rounded-full bg-primary-label px-3 py-1.5 text-xs font-semibold text-primary-background shadow-md transition-transform hover:scale-105">Follow</button></div>)}</div>}<p className="mt-5 border-t border-white/5 pt-4 text-[11px] text-secondary-label/60">© 2026 Rare Motion Hub</p></div></aside>;
 }
 
 function CompactQuickAdd({ suggestions, onFollow }) {
@@ -67,5 +67,61 @@ export default function Feed({ user, savedOnly = false }) {
   const deleteItem = async (id) => { if (!window.confirm('Delete this feed preview?')) return; const res = await fetch(`${apiUrl}/api/feed/tracks/${id}`, { method: 'DELETE' }); if (res.ok) setItems((current) => current.filter((item) => item.id !== id)); };
   const followSuggestion = async (person) => { setSuggestions((current) => current.filter((item) => item.id !== person.id)); const res = await fetch(`${apiUrl}/api/auth/${person.id}/follow`, { method: 'POST' }); if (!res.ok) setSuggestions((current) => current.some((item) => item.id === person.id) ? current : [person, ...current].slice(0, 5)); };
   const navItems = [{ label: 'Profile', icon: UserRound, to: '/profile/' + user.id }, { label: 'Saved', icon: Bookmark, to: '/saved' }, { label: 'Library', icon: Library, to: '/library' }];
-  return <div className="min-h-screen bg-primary-background text-primary-label"><aside className="fixed inset-y-0 left-0 z-30 hidden w-56 border-r border-border/60 bg-primary-background px-4 py-6 lg:flex lg:flex-col"><Link to="/feed" className="mb-10 px-3"><StarlightLogo className="logo-glow h-10 w-40 text-primary-label" /></Link><nav className="space-y-1">{navItems.map(({ label, icon: Icon, to }) => <Link key={label} to={to} className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-secondary-label transition-colors hover:bg-highlight hover:text-primary-label"><Icon className="h-5 w-5" />{label}</Link>)}<button onClick={() => setInboxOpen(true)} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-secondary-label transition-colors hover:bg-highlight hover:text-primary-label"><MessageCircle className="h-5 w-5" />Inbox</button><Link to="/settings" className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-secondary-label transition-colors hover:bg-highlight hover:text-primary-label"><Settings className="h-5 w-5" />Settings</Link></nav><div className="mt-auto rounded-xl border border-border bg-shading/40 p-3 text-xs text-secondary-label">Share previews, discover new work, and stay connected.</div></aside><header className="sticky top-0 z-20 flex items-center justify-between border-b border-border/60 bg-primary-background/95 px-4 py-4 backdrop-blur lg:ml-56 lg:hidden"><Link to="/library" className="grid h-9 w-9 place-items-center rounded-full bg-shading hover:bg-highlight" aria-label="Back to library"><ArrowLeft className="h-4 w-4" /></Link><StarlightLogo className="logo-glow h-8 w-32 text-primary-label" /><button onClick={() => setInboxOpen(true)} className="grid h-9 w-9 place-items-center rounded-full bg-shading hover:bg-highlight" aria-label="Open inbox"><MessageCircle className="h-4 w-4" /></button></header><QuickAdd suggestions={suggestions} onFollow={followSuggestion} /><main className="px-4 pb-20 sm:px-8 lg:ml-56 xl:mr-72"><div className="mx-auto max-w-2xl py-7"><div className="mb-6"><p className="text-xs font-semibold uppercase tracking-[0.2em] text-secondary-label">Discover</p><h1 className="mt-2 text-3xl font-semibold tracking-tight">Feed</h1><p className="mt-2 text-sm text-secondary-label">Preview new music from the Rare Motion community.</p></div><CompactQuickAdd suggestions={suggestions} onFollow={followSuggestion} />{loading && <p className="py-16 text-center text-sm text-secondary-label">Loading previews...</p>}{error && <p className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">{error}</p>}<div className="space-y-6">{items.map((item) => <FeedCard key={item.id} item={item} user={user} muted={muted} onMutedChange={setMuted} onUpdate={updateItem} onDelete={deleteItem} />)}</div></div></main><ChatInbox user={user} isOpen={inboxOpen} onToggle={() => setInboxOpen((value) => !value)} /></div>;
+  return <div className="min-h-screen bg-primary-background text-primary-label">
+    <aside className="group fixed bottom-4 left-4 top-4 z-40 hidden w-20 flex-col overflow-hidden rounded-3xl border border-white/5 bg-primary-background/70 px-3 py-6 shadow-2xl backdrop-blur-2xl transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:w-64 hover:border-white/10 lg:flex">
+      <Link to="/feed" className="mb-10 flex h-12 w-full shrink-0 items-center overflow-hidden whitespace-nowrap px-2" aria-label="Home">
+        <Compass className="mr-5 h-8 w-8 shrink-0 text-primary-label transition-transform group-hover:rotate-12" />
+        <span className="opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+          <StarlightLogo className="logo-glow h-8 w-32 text-primary-label" />
+        </span>
+      </Link>
+      <nav className="space-y-2">
+        {navItems.map(({ label, icon: Icon, to }) => (
+          <Link key={label} to={to} className="flex h-12 w-full items-center whitespace-nowrap rounded-2xl px-3 text-sm font-semibold text-secondary-label transition-colors hover:bg-highlight hover:text-primary-label" title={label}>
+            <Icon className="h-6 w-6 shrink-0" />
+            <span className="ml-5 opacity-0 transition-opacity duration-300 group-hover:opacity-100">{label}</span>
+          </Link>
+        ))}
+        <button onClick={() => setInboxOpen(true)} className="flex h-12 w-full items-center whitespace-nowrap rounded-2xl px-3 text-sm font-semibold text-secondary-label transition-colors hover:bg-highlight hover:text-primary-label" title="Inbox">
+          <MessageCircle className="h-6 w-6 shrink-0" />
+          <span className="ml-5 opacity-0 transition-opacity duration-300 group-hover:opacity-100">Inbox</span>
+        </button>
+        <Link to="/settings" className="flex h-12 w-full items-center whitespace-nowrap rounded-2xl px-3 text-sm font-semibold text-secondary-label transition-colors hover:bg-highlight hover:text-primary-label" title="Settings">
+          <Settings className="h-6 w-6 shrink-0" />
+          <span className="ml-5 opacity-0 transition-opacity duration-300 group-hover:opacity-100">Settings</span>
+        </Link>
+      </nav>
+      <div className="mt-auto w-full overflow-hidden opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+        <div className="min-w-[200px] rounded-2xl border border-white/5 bg-shading/30 p-4 text-xs leading-relaxed text-secondary-label shadow-inner">
+          Share previews, discover new work, and stay connected.
+        </div>
+      </div>
+    </aside>
+    <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border/60 bg-primary-background/95 px-4 py-4 backdrop-blur lg:hidden">
+      <Link to="/library" className="grid h-9 w-9 place-items-center rounded-full bg-shading hover:bg-highlight" aria-label="Back to library">
+        <ArrowLeft className="h-4 w-4" />
+      </Link>
+      <StarlightLogo className="logo-glow h-8 w-32 text-primary-label" />
+      <button onClick={() => setInboxOpen(true)} className="grid h-9 w-9 place-items-center rounded-full bg-shading hover:bg-highlight" aria-label="Open inbox">
+        <MessageCircle className="h-4 w-4" />
+      </button>
+    </header>
+    <QuickAdd suggestions={suggestions} onFollow={followSuggestion} />
+    <main className="px-4 pb-20 pt-4 sm:px-8 lg:ml-28 xl:mr-80">
+      <div className="mx-auto max-w-2xl py-3">
+        <div className="mb-6">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-secondary-label">Discover</p>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight">Feed</h1>
+          <p className="mt-2 text-sm text-secondary-label">Preview new music from the Rare Motion community.</p>
+        </div>
+        <CompactQuickAdd suggestions={suggestions} onFollow={followSuggestion} />
+        {loading && <p className="py-16 text-center text-sm text-secondary-label">Loading previews...</p>}
+        {error && <p className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">{error}</p>}
+        <div className="space-y-6">
+          {items.map((item) => <FeedCard key={item.id} item={item} user={user} muted={muted} onMutedChange={setMuted} onUpdate={updateItem} onDelete={deleteItem} />)}
+        </div>
+      </div>
+    </main>
+    <ChatInbox user={user} isOpen={inboxOpen} onToggle={() => setInboxOpen((value) => !value)} />
+  </div>;
 }
