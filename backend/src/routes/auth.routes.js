@@ -1,6 +1,6 @@
 const express = require('express');
 const { register, login, verifyEmail, verifyEmailDirect, resendVerification, requestPasswordReset, resetPassword, refreshSession, logout, logoutAll, providerIntent, phoneIntent, getUser, updateUser, toggleFollow, uploadUserAvatar, deleteUser, deactivateUser, suspendUser, unsuspendUser } = require('../controllers/auth.controller');
-const { requireAuth, requireVerifiedUser, requireUserId } = require('../middlewares/auth.middleware');
+const { requireAuth, requireVerifiedUser, requireUserId, readAuthCookie } = require('../middlewares/auth.middleware');
 const { uploadAvatar } = require('../middlewares/upload.middleware');
 
 const router = express.Router();
@@ -35,6 +35,10 @@ router.get('/me', requireAuth, requireVerifiedUser, (req, res) => {
   // without rotating the refresh token unnecessarily.
   const { deriveAccountStatus } = require('../controllers/auth.controller');
   const status = req.user.accountStatus || deriveAccountStatus(req.user);
+  const csrfCookie = readAuthCookie(req, 'csrfToken');
+  if (csrfCookie) {
+    res.set('x-csrf-token', csrfCookie);
+  }
   res.json({ user: { ...req.user, accountStatus: status } });
 });
 router.get('/:id', requireAuth, requireVerifiedUser, getUser);

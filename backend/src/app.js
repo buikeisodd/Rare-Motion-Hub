@@ -58,7 +58,8 @@ app.use(cors({
   origin: originCallback,
   credentials: true,
   // Preflight cache: 1 hour for prod, 0 for dev so changes take effect immediately
-  maxAge: IS_PROD ? 3600 : 0
+  maxAge: IS_PROD ? 3600 : 0,
+  exposedHeaders: ['x-csrf-token']
 }));
 app.disable('x-powered-by');
 app.use(express.json({ limit: '2mb' }));

@@ -36,15 +36,17 @@ const attemptRefresh = () => {
 };
 
 const forceLogout = () => {
-  // No localStorage to clear — credentials live in HttpOnly cookies.
-  // Dispatch a custom event so App.jsx can clear React state.
+  localStorage.removeItem('csrfToken');
   window.dispatchEvent(new CustomEvent('auth:logout'));
   window.location.href = '/login';
 };
 
 // Read the CSRF double-submit cookie. The cookie name uses __Secure- prefix
 // in production (cross-domain deployment) and no prefix in development.
-const readCsrfCookie = () => {
+const readCsrfToken = () => {
+  const local = localStorage.getItem('csrfToken');
+  if (local) return local;
+  
   const match = document.cookie
     .split(';')
     .map((c) => c.trim())
@@ -65,7 +67,7 @@ window.fetch = async (url, options = {}) => {
   const isApiCall = typeof url === 'string' && url.includes('/api/');
   if (isApiCall) {
     options.credentials = 'include';
-    const csrf = readCsrfCookie();
+    const csrf = readCsrfToken();
     if (csrf) {
       options.headers = { ...options.headers, 'x-csrf-token': csrf };
     }
@@ -73,11 +75,16 @@ window.fetch = async (url, options = {}) => {
 
   let res = await originalFetch(url, options);
 
+  if (isApiCall) {
+    const echoedCsrf = res.headers.get('x-csrf-token');
+    if (echoedCsrf) localStorage.setItem('csrfToken', echoedCsrf);
+  }
+
   if (res.status === 401 && isApiCall && !isAuthExemptUrl(url)) {
     const user = await attemptRefresh();
     if (user) {
-      // Re-read CSRF after refresh — new cookies were set.
-      const csrf = readCsrfCookie();
+      // Re-read CSRF after refresh — new headers were set.
+      const csrf = readCsrfToken();
       if (csrf) options.headers = { ...options.headers, 'x-csrf-token': csrf };
       res = await originalFetch(url, options);
       if (res.status !== 401) return res;

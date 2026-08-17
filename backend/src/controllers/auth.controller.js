@@ -176,6 +176,7 @@ const issueAuthSession = async (req, res, user) => {
   // csrfToken intentionally not HttpOnly — JS reads it and sends it as a
   // request header so the server can verify the double-submit pattern.
   res.cookie(cookieName('csrfToken'), csrfToken, cookieOptions(REFRESH_TOKEN_TTL_MS, { httpOnly: false }));
+  res.set('x-csrf-token', csrfToken); // Fallback for clients unable to read the cookie due to cross-site rules
 
   // Mobile clients (React Native) cannot use HttpOnly cookies — the platform
   // doesn't expose a browser cookie jar to native code. Detect via the
@@ -599,6 +600,7 @@ const refreshSession = async (req, res, next) => {
     res.cookie(cookieName('refreshToken'), rotated.refreshToken, cookieOptions(REFRESH_TOKEN_TTL_MS));
     res.cookie(cookieName('sessionId'), rotated.session.sessionId, cookieOptions(REFRESH_TOKEN_TTL_MS));
     res.cookie(cookieName('csrfToken'), csrfToken, cookieOptions(REFRESH_TOKEN_TTL_MS, { httpOnly: false }));
+    res.set('x-csrf-token', csrfToken);
     await recordSecurityEvent({ req, userId: user.id, sessionId: rotated.session.sessionId, type: 'AUTH_TOKEN_REFRESHED' });
     const isMobileClient = (req.get('x-client-type') || '').toLowerCase() === 'mobile';
     res.json({

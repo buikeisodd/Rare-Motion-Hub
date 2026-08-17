@@ -161,4 +161,4 @@ const requireVerifiedUser = (req, res, next) => {
 // update every route file at once.
 const requireUserId = [requireAuth, requireVerifiedUser];
 
-module.exports = { requireAuth, requireVerifiedUser, requireUserId };
+module.exports = { requireAuth, requireVerifiedUser, requireUserId, readAuthCookie };
