@@ -151,3 +151,74 @@
   from { transform: scaleY(0.3); }
   to   { transform: scaleY(1); }
 }
+
+/* ── Global Gradient Scrollbar ───────────────────────────────────────────────
+   Webkit (Chrome, Edge, Safari): full custom styling.
+   Firefox: scrollbar-color approximation.
+   Thumb shrinks to 6px and widens to 8px on hover (responsive feel).
+─────────────────────────────────────────────────────────────────────────────*/
+
+@keyframes scroll-thumb-shift {
+  0%   { background-position: 0%   50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0%   50%; }
+}
+
+/* Track */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Thumb */
+::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: linear-gradient(180deg, #a855f7, #6366f1, #3b82f6, #a855f7);
+  background-size: 100% 300%;
+  animation: scroll-thumb-shift 5s ease-in-out infinite;
+  opacity: 0.65;
+  transition: opacity 200ms ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  opacity: 1;
+  background: linear-gradient(180deg, #c084fc, #818cf8, #60a5fa, #c084fc);
+  background-size: 100% 300%;
+  animation: scroll-thumb-shift 3s ease-in-out infinite;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Responsive: wider thumb on hover via parent container */
+*:hover::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #7c3aed transparent;
+}
+
+/* Light theme: softer pastel gradient */
+:root.theme-light ::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #d8b4fe, #a5b4fc, #93c5fd, #d8b4fe);
+  background-size: 100% 300%;
+  animation: scroll-thumb-shift 5s ease-in-out infinite;
+  opacity: 0.5;
+}
+
+:root.theme-light ::-webkit-scrollbar-thumb:hover {
+  opacity: 0.9;
+}
+
+:root.theme-light * {
+  scrollbar-color: #a855f7 transparent;
+}
