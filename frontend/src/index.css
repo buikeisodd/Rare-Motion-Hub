@@ -177,16 +177,16 @@
 /* Thumb */
 ::-webkit-scrollbar-thumb {
   border-radius: 999px;
-  background: linear-gradient(180deg, #a855f7, #6366f1, #3b82f6, #a855f7);
+  background: linear-gradient(180deg, #ffffff, #d4d4d4, #a3a3a3, #ffffff);
   background-size: 100% 300%;
   animation: scroll-thumb-shift 5s ease-in-out infinite;
-  opacity: 0.65;
+  opacity: 0.55;
   transition: opacity 200ms ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   opacity: 1;
-  background: linear-gradient(180deg, #c084fc, #818cf8, #60a5fa, #c084fc);
+  background: linear-gradient(180deg, #ffffff, #e5e5e5, #d4d4d4, #ffffff);
   background-size: 100% 300%;
   animation: scroll-thumb-shift 3s ease-in-out infinite;
 }
@@ -204,15 +204,15 @@
 /* Firefox */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #7c3aed transparent;
+  scrollbar-color: rgba(255 255 255 / 0.55) transparent;
 }
 
-/* Light theme: softer pastel gradient */
+/* Light theme: darker tones so it shows against the light background */
 :root.theme-light ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #d8b4fe, #a5b4fc, #93c5fd, #d8b4fe);
+  background: linear-gradient(180deg, #737373, #525252, #404040, #737373);
   background-size: 100% 300%;
   animation: scroll-thumb-shift 5s ease-in-out infinite;
-  opacity: 0.5;
+  opacity: 0.45;
 }
 
 :root.theme-light ::-webkit-scrollbar-thumb:hover {
@@ -220,5 +220,5 @@
 }
 
 :root.theme-light * {
-  scrollbar-color: #a855f7 transparent;
+  scrollbar-color: rgba(64 64 64 / 0.45) transparent;
 }
