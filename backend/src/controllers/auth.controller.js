@@ -886,10 +886,57 @@ const unsuspendUser = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
+const verifyEmailDirect = async (req, res, next) => {
+  try {
+    ensureAuthConfig();
+    const email = req.body.email?.trim().toLowerCase();
+    if (!email) return next(new AppError('Email is required.', 400));
+
+    await enforceAuthEndpointLimits(req, 'verify-email');
+
+    const user = await User.findOne({ email }).lean();
+
+    if (!user || user.emailVerified !== false) {
+      return next(new AppError('No pending verification found for this email.', 400));
+    }
+    if (user.isDeactivated) return next(new AppError('This account is deactivated.', 403));
+    if (user.isSuspended)   return next(new AppError('This account is suspended.', 403));
+
+    const tokenHash = await getSecurityValue(`verify-user:${user.id}`);
+    if (!tokenHash) {
+      await recordSecurityEvent({ req, userId: user.id, type: 'AUTH_EMAIL_VERIFICATION_FAILED', metadata: { reason: 'token_expired' } });
+      return next(new AppError('Verification window expired. Please request a new one.', 400));
+    }
+
+    const consumed = await consumeSecurityValue(`verify:${tokenHash}`);
+    if (!consumed) {
+      await recordSecurityEvent({ req, userId: user.id, type: 'AUTH_EMAIL_VERIFICATION_FAILED', metadata: { reason: 'token_already_consumed' } });
+      return next(new AppError('Verification window expired. Please request a new one.', 400));
+    }
+    clearSecurityValue(`verify-user:${user.id}`).catch(() => {});
+
+    const nextStatus = user.isDeactivated ? 'deactivated' : user.isSuspended ? 'suspended' : 'active';
+    const updates = { emailVerified: true, accountStatus: nextStatus, updatedAt: new Date().toISOString() };
+    const verifiedUser = await User.findOneAndUpdate(
+      { id: user.id },
+      { $set: updates },
+      { returnDocument: 'after', lean: true }
+    );
+    if (!verifiedUser) return next(new AppError('Could not verify email. Please try again.', 500));
+
+    const { sessionId, ...mobileTokens } = await issueAuthSession(req, res, verifiedUser);
+    await recordSecurityEvent({ req, userId: verifiedUser.id, sessionId, type: 'AUTH_EMAIL_VERIFIED' });
+    res.json({ user: userResponse({ ...verifiedUser, ...updates }), ...mobileTokens });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   register,
   login,
   verifyEmail,
+  verifyEmailDirect,
   resendVerification,
   requestPasswordReset,
   resetPassword,

@@ -1,5 +1,5 @@
 const express = require('express');
-const { register, login, verifyEmail, resendVerification, requestPasswordReset, resetPassword, refreshSession, logout, logoutAll, providerIntent, phoneIntent, getUser, updateUser, toggleFollow, uploadUserAvatar, deleteUser, deactivateUser, suspendUser, unsuspendUser } = require('../controllers/auth.controller');
+const { register, login, verifyEmail, verifyEmailDirect, resendVerification, requestPasswordReset, resetPassword, refreshSession, logout, logoutAll, providerIntent, phoneIntent, getUser, updateUser, toggleFollow, uploadUserAvatar, deleteUser, deactivateUser, suspendUser, unsuspendUser } = require('../controllers/auth.controller');
 const { requireAuth, requireVerifiedUser, requireUserId } = require('../middlewares/auth.middleware');
 const { uploadAvatar } = require('../middlewares/upload.middleware');
 
@@ -10,6 +10,7 @@ router.post('/register', register);
 router.post('/login', login);
 router.post('/verify-email', verifyEmail);
 router.get('/verify-email', verifyEmail);
+router.post('/verify-email-direct', verifyEmailDirect);
 router.post('/resend-verification', resendVerification);
 router.post('/forgot-password', requestPasswordReset);
 router.post('/reset-password', resetPassword);
