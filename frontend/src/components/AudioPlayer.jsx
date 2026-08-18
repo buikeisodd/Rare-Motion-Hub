@@ -38,8 +38,8 @@ function ProgressBar({ progress, duration, onSeek, className = '' }) {
   return (
     <div ref={barRef} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp}
       className={`relative cursor-pointer rounded-full bg-white/20 group ${className}`} style={{ touchAction: 'none' }}>
-      <div className="absolute inset-y-0 left-0 rounded-full bg-white" style={{ width: `${pct}%` }} />
-      <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-3 w-3 rounded-full bg-white opacity-0 group-hover:opacity-100 transition-opacity" style={{ left: `${pct}%` }} />
+      <div className="absolute inset-y-0 left-0 rounded-full bg-[#D7FF65]" style={{ width: `${pct}%` }} />
+      <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-3.5 w-3.5 rounded-full bg-[#D7FF65] shadow-md opacity-0 group-hover:opacity-100 transition-opacity" style={{ left: `${pct}%` }} />
     </div>
   );
 }
