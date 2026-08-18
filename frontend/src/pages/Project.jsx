@@ -195,7 +195,7 @@ export default function Project({ user }) {
       {isProjectMenuOpen && (
         <div className="fixed inset-0 z-40" onClick={() => setIsProjectMenuOpen(false)} />
       )}
-      <header className="sticky top-0 z-50 flex items-center justify-between border-b border-border/60 bg-primary-background/95 px-6 py-6 backdrop-blur-md lg:px-14">
+      <header className="sticky top-0 z-50 flex items-center justify-between bg-primary-background/95 px-6 py-6 backdrop-blur-md lg:px-14">
         <Link to="/library" className="grid h-12 w-12 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Back to library">
           <ChevronLeft className="h-6 w-6" />
         </Link>

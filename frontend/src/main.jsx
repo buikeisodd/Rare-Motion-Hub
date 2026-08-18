@@ -21,13 +21,21 @@ const isAuthExemptUrl = (url) => (
   url.includes('/api/auth/reset-password')
 );
 
+// Attempt a silent token refresh. Captures the new CSRF token from the
+// response header so it is immediately available for the retry.
 const attemptRefresh = () => {
   if (!refreshPromise) {
     refreshPromise = originalFetch(`${apiUrl}/api/auth/refresh`, {
       method: 'POST',
       credentials: 'include'
     })
-      .then((res) => (res.ok ? res.json() : null))
+      .then((res) => {
+        if (!res.ok) return null;
+        // Capture the fresh CSRF token echoed in the refresh response.
+        const echoedCsrf = res.headers.get('x-csrf-token');
+        if (echoedCsrf) localStorage.setItem('csrfToken', echoedCsrf);
+        return res.json();
+      })
       .then((data) => data?.user || null)
       .catch(() => null)
       .finally(() => { refreshPromise = null; });
@@ -41,12 +49,11 @@ const forceLogout = () => {
   window.location.href = '/login';
 };
 
-// Read the CSRF double-submit cookie. The cookie name uses __Secure- prefix
-// in production (cross-domain deployment) and no prefix in development.
+// Read the CSRF double-submit token. Prefers the JS-readable cookie set by
+// the server, keeping localStorage in sync as a fallback for cross-domain
+// contexts where the cookie may not be readable (Safari ITP, new device
+// before the first /me or /refresh response has been received).
 const readCsrfToken = () => {
-  const local = localStorage.getItem('csrfToken');
-  if (local) return local;
-  
   const match = document.cookie
     .split(';')
     .map((c) => c.trim())
@@ -55,17 +62,30 @@ const readCsrfToken = () => {
       c.startsWith('__Host-csrfToken=') ||
       c.startsWith('csrfToken=')
     );
-  return match ? decodeURIComponent(match.split('=').slice(1).join('=')) : null;
+  if (match) {
+    const val = decodeURIComponent(match.split('=').slice(1).join('='));
+    localStorage.setItem('csrfToken', val); // keep in sync
+    return val;
+  }
+  // Fallback: value previously captured from an x-csrf-token response header.
+  return localStorage.getItem('csrfToken');
 };
 
-// Global fetch interceptor — cookie-only auth, no Bearer tokens.
-// Every /api/ request gets:
-//   credentials: 'include'     → sends HttpOnly auth cookies automatically
-//   x-csrf-token: <value>      → CSRF double-submit from the non-HttpOnly csrfToken cookie
-// On 401: attempts a single silent refresh, retries once, then force-logouts.
+// Global fetch interceptor.
+// Every /api/ request automatically gets:
+//   credentials: 'include'     — sends HttpOnly auth cookies
+//   x-csrf-token: <value>      — CSRF double-submit pattern
+//
+// 401 handling: silent refresh → retry once → force logout.
+// 403 CSRF handling: silent refresh (to get a fresh CSRF token) → retry once
+//   → only force logout if the retry also fails. This prevents a fresh
+//   device/tab (before /me has echoed a CSRF token) from being bounced to
+//   the login page on its very first state-changing request.
 window.fetch = async (url, options = {}) => {
   const isApiCall = typeof url === 'string' && url.includes('/api/');
+
   if (isApiCall) {
+    options = { ...options };
     options.credentials = 'include';
     const csrf = readCsrfToken();
     if (csrf) {
@@ -75,32 +95,65 @@ window.fetch = async (url, options = {}) => {
 
   let res = await originalFetch(url, options);
 
+  // Capture the CSRF token echoed in any API response header.
+  // The backend echoes it on login, refresh, and GET /api/auth/me — this is
+  // how a new device bootstraps its CSRF token without needing direct cookie
+  // access (which cross-domain SameSite=None can prevent in some browsers).
   if (isApiCall) {
     const echoedCsrf = res.headers.get('x-csrf-token');
     if (echoedCsrf) localStorage.setItem('csrfToken', echoedCsrf);
   }
 
+  // ── 401: access token expired ─────────────────────────────────────────────
   if (res.status === 401 && isApiCall && !isAuthExemptUrl(url)) {
     const user = await attemptRefresh();
     if (user) {
-      // Re-read CSRF after refresh — new headers were set.
       const csrf = readCsrfToken();
-      if (csrf) options.headers = { ...options.headers, 'x-csrf-token': csrf };
-      res = await originalFetch(url, options);
+      const retryOptions = { ...options };
+      if (csrf) retryOptions.headers = { ...retryOptions.headers, 'x-csrf-token': csrf };
+      res = await originalFetch(url, retryOptions);
       if (res.status !== 401) return res;
     }
     forceLogout();
-  } else if (res.status === 403 && isApiCall && !isAuthExemptUrl(url)) {
-    // Self-heal old sessions that lack a CSRF token. If a state-changing request
-    // fails with a CSRF error, force a logout so the user can get fresh tokens.
-    const clone = res.clone();
+    return res;
+  }
+
+  // ── 403: possible stale CSRF token ────────────────────────────────────────
+  if (res.status === 403 && isApiCall && !isAuthExemptUrl(url)) {
+    let isCsrfError = false;
     try {
-      const data = await clone.json();
-      if (data.message === 'Forbidden: Invalid CSRF token' || data.error === 'Forbidden: Invalid CSRF token') {
-        forceLogout();
+      const data = await res.clone().json();
+      isCsrfError =
+        data.message === 'Forbidden: Invalid CSRF token' ||
+        data.error === 'Forbidden: Invalid CSRF token';
+    } catch { /* ignore JSON parse failures */ }
+
+    if (isCsrfError) {
+      // Silently refresh to rotate the session and receive a fresh CSRF token.
+      const user = await attemptRefresh();
+      if (user) {
+        const csrf = readCsrfToken();
+        const retryOptions = { ...options };
+        if (csrf) retryOptions.headers = { ...retryOptions.headers, 'x-csrf-token': csrf };
+        const retryRes = await originalFetch(url, retryOptions);
+
+        // If the retry resolves (success or non-CSRF error), return it as-is.
+        if (retryRes.status !== 403) return retryRes;
+
+        // Retry also got a 403 — check if it's still a CSRF error.
+        try {
+          const retryData = await retryRes.clone().json();
+          if (
+            retryData.message === 'Forbidden: Invalid CSRF token' ||
+            retryData.error === 'Forbidden: Invalid CSRF token'
+          ) {
+            forceLogout();
+          }
+        } catch { /* ignore */ }
+        return retryRes;
       }
-    } catch (e) {
-      // ignore JSON parse errors
+      // Refresh failed entirely (session fully expired) → log out.
+      forceLogout();
     }
   }
 

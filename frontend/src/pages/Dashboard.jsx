@@ -833,7 +833,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
           }}
         />
       )}
-      <header className="sticky top-0 z-50 flex items-start justify-between gap-3 border-b border-border/60 bg-[#050505]/90 pb-4 pt-2 backdrop-blur-md">
+      <header className="sticky top-0 z-50 flex items-start justify-between gap-3 bg-[#050505]/90 pb-4 pt-2 backdrop-blur-md">
         <div className="flex items-center gap-2">
           <h1 className="text-2xl font-bold tracking-tight text-[#F7F4EC]">Library</h1>
         </div>

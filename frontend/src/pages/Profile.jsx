@@ -92,7 +92,7 @@ export default function Profile({ user, onUserUpdate }) {
 
   return (
     <div className="min-h-screen bg-primary-background px-4 pb-20 text-primary-label sm:px-8">
-      <header className="mx-auto flex max-w-5xl items-center justify-between border-b border-border/60 py-4">
+      <header className="mx-auto flex max-w-5xl items-center justify-between py-4">
         <Link to="/feed" className="grid h-10 w-10 place-items-center rounded-full bg-shading hover:bg-highlight" aria-label="Back"><ArrowLeft className="h-5 w-5" /></Link>
         <h1 className="text-base font-bold tracking-tight text-[#F7F4EC]">Profile</h1>
         <span className="w-10" />
