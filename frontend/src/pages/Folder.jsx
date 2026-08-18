@@ -171,7 +171,7 @@ export default function Folder({ user, onLogout }) {
       {/* Header */}
       <header className="sticky top-0 z-50 flex items-start justify-between gap-3 bg-primary-background/95 pb-4 backdrop-blur-md">
         <Link to="/library" className="flex items-center gap-2 text-sm font-semibold text-secondary-label hover:text-primary-label transition-colors">
-          <span>← Library</span>
+          <span className="font-display">← liBraRy</span>
         </Link>
         <div className="flex shrink-0 items-center gap-3">
           

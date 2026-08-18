@@ -94,7 +94,7 @@ export default function Profile({ user, onUserUpdate }) {
     <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0e140b] via-[#050505] to-[#050505] text-[#F7F4EC] px-4 pb-20 sm:px-8">
       <header className="mx-auto flex max-w-5xl items-center justify-between py-4">
         <Link to="/feed" className="grid h-10 w-10 place-items-center rounded-full bg-shading hover:bg-highlight" aria-label="Back"><ArrowLeft className="h-5 w-5" /></Link>
-        <h1 className="text-base font-bold tracking-tight text-[#F7F4EC]">Profile</h1>
+        <h1 className="font-display text-base font-bold tracking-wider text-[#F7F4EC]">pRoFiLe</h1>
         <span className="w-10" />
       </header>
       <main className="mx-auto max-w-5xl py-8 sm:py-12">

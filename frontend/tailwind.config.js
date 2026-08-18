@@ -42,7 +42,8 @@ export default {
           highlight: 'var(--rmh-panel-hover)',
         },
       fontFamily: {
-        sans: ['DM Sans', 'sans-serif'],
+        sans: ['Outfit', 'DM Sans', 'sans-serif'],
+        display: ['Space Grotesk', 'Syne', 'sans-serif'],
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-out',

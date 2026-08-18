@@ -66,13 +66,13 @@ export default function Feed({ user, savedOnly = false }) {
   const updateItem = (id, value, type) => setItems((current) => current.map((item) => { if (item.id !== id) return item; if (type === 'like' || type === 'save') return { ...item, ...value }; if (type === 'comment-like') return { ...item, comments: (item.comments || []).map((entry) => entry.id === value.id ? value : entry) }; return { ...item, comments: [...(item.comments || []), value] }; }));
   const deleteItem = async (id) => { if (!window.confirm('Delete this feed preview?')) return; const res = await fetch(`${apiUrl}/api/feed/tracks/${id}`, { method: 'DELETE' }); if (res.ok) setItems((current) => current.filter((item) => item.id !== id)); };
   const followSuggestion = async (person) => { setSuggestions((current) => current.filter((item) => item.id !== person.id)); const res = await fetch(`${apiUrl}/api/auth/${person.id}/follow`, { method: 'POST' }); if (!res.ok) setSuggestions((current) => current.some((item) => item.id === person.id) ? current : [person, ...current].slice(0, 5)); };
-  const navItems = [{ label: 'Profile', icon: UserRound, to: '/profile/' + user.id }, { label: 'Saved', icon: Bookmark, to: '/saved' }, { label: 'Library', icon: Library, to: '/library' }];
+  const navItems = [{ label: 'pRoFiLe', icon: UserRound, to: '/profile/' + user.id }, { label: 'sAvEd', icon: Bookmark, to: '/saved' }, { label: 'liBraRy', icon: Library, to: '/library' }];
   return <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0e140b] via-[#050505] to-[#050505] text-[#F7F4EC]">
     <aside className="group fixed bottom-4 left-4 top-4 z-40 hidden w-20 flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#0a0a0a]/80 px-3 py-6 shadow-2xl backdrop-blur-2xl transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:w-64 hover:border-white/20 lg:flex">
       <Link to="/feed" className="mb-8 flex h-12 w-full shrink-0 items-center overflow-hidden whitespace-nowrap px-2.5" aria-label="Home">
         <StarlightMark className="h-8 w-8 shrink-0 text-[#F7F4EC]" color="#D7FF65" />
         <div className="ml-4 flex flex-col leading-none opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-          <span className="font-sans text-base font-bold tracking-tight text-[#F7F4EC]">Starlight Station</span>
+          <span className="font-display text-base font-bold tracking-wider text-[#F7F4EC]">sTaRliGhT sTaTiOn</span>
           <span className="text-[10px] font-medium tracking-wider text-[#A6A09A] uppercase mt-1">Your work in motion</span>
         </div>
       </Link>
@@ -80,16 +80,16 @@ export default function Feed({ user, savedOnly = false }) {
         {navItems.map(({ label, icon: Icon, to }) => (
           <Link key={label} to={to} className="flex h-12 w-full items-center whitespace-nowrap rounded-2xl px-3 text-sm font-semibold text-[#A6A09A] transition-all hover:bg-[rgba(215,255,101,0.08)] hover:text-[#F7F4EC]" title={label}>
             <Icon className="h-6 w-6 shrink-0" />
-            <span className="ml-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100">{label}</span>
+            <span className="font-display ml-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100">{label}</span>
           </Link>
         ))}
         <button onClick={() => setInboxOpen(true)} className="flex h-12 w-full items-center whitespace-nowrap rounded-2xl px-3 text-sm font-semibold text-[#A6A09A] transition-all hover:bg-[rgba(215,255,101,0.08)] hover:text-[#F7F4EC]" title="Inbox">
           <MessageCircle className="h-6 w-6 shrink-0" />
-          <span className="ml-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100">Inbox</span>
+          <span className="font-display ml-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100">iNbOx</span>
         </button>
         <Link to="/settings" className="flex h-12 w-full items-center whitespace-nowrap rounded-2xl px-3 text-sm font-semibold text-[#A6A09A] transition-all hover:bg-[rgba(215,255,101,0.08)] hover:text-[#F7F4EC]" title="Settings">
           <Settings className="h-6 w-6 shrink-0" />
-          <span className="ml-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100">Settings</span>
+          <span className="font-display ml-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100">sEtTiNgS</span>
         </Link>
       </nav>
       <div className="mt-auto w-full overflow-hidden opacity-0 transition-opacity duration-300 group-hover:opacity-100">
@@ -112,7 +112,7 @@ export default function Feed({ user, savedOnly = false }) {
       <div className="mx-auto max-w-2xl py-3">
         <div className="mb-6">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-secondary-label">Discover</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight">Feed</h1>
+          <h1 className="font-display mt-2 text-3xl font-bold tracking-wider text-[#F7F4EC]">fEEd</h1>
           <p className="mt-2 text-sm text-secondary-label">Preview new music from the Rare Motion community.</p>
         </div>
         <CompactQuickAdd suggestions={suggestions} onFollow={followSuggestion} />
