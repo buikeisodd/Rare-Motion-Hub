@@ -12,13 +12,13 @@ const Link = (props) => <RouterLink {...props} to={(props.children === 'Settings
 const dateLabel = (value) => value ? new Date(value).toLocaleDateString([], { month: 'short', day: 'numeric' }) : '';
 
 function QuickAdd({ suggestions, onFollow }) {
-  return <aside className="fixed right-4 top-4 z-30 hidden w-72 xl:block"><div className="rounded-3xl border border-white/10 bg-primary-background/60 p-5 shadow-2xl backdrop-blur-2xl"><div className="mb-5 flex items-center justify-between"><h2 className="text-sm font-semibold">Quick Add</h2><UserRound className="h-4 w-4 text-secondary-label" /></div>{suggestions.length === 0 ? <p className="text-xs text-secondary-label">You are all caught up.</p> : <div className="space-y-4">{suggestions.slice(0, MAX_QUICK_ADD_SUGGESTIONS).map((person) => <div key={person.id} className="flex items-center gap-3"><div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-highlight text-sm font-semibold shadow-inner">{person.avatarUrl ? <img src={person.avatarUrl} alt="" className="h-full w-full object-cover" /> : (person.name || '?').slice(0, 1).toUpperCase()}</div><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{person.name}</p><p className="truncate text-[11px] text-secondary-label">@{person.username || person.name}</p></div><button onClick={() => onFollow(person)} className="rounded-full bg-primary-label px-3 py-1.5 text-xs font-semibold text-primary-background shadow-md transition-transform hover:scale-105">Follow</button></div>)}</div>}<p className="mt-5 border-t border-white/5 pt-4 text-[11px] text-secondary-label/60">© 2026 Rare Motion Hub</p></div></aside>;
+  return <aside className="fixed right-4 top-4 z-30 hidden w-72 xl:block"><div className="rounded-3xl border border-white/10 bg-primary-background/60 p-5 shadow-2xl backdrop-blur-2xl"><div className="mb-5 flex items-center justify-between"><h2 className="font-display text-sm font-bold tracking-wider">qUiCk aDd</h2><UserRound className="h-4 w-4 text-secondary-label" /></div>{suggestions.length === 0 ? <p className="text-xs text-secondary-label">You are all caught up.</p> : <div className="space-y-4">{suggestions.slice(0, MAX_QUICK_ADD_SUGGESTIONS).map((person) => <div key={person.id} className="flex items-center gap-3"><div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-highlight text-sm font-semibold shadow-inner">{person.avatarUrl ? <img src={person.avatarUrl} alt="" className="h-full w-full object-cover" /> : (person.name || '?').slice(0, 1).toUpperCase()}</div><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{person.name}</p><p className="truncate text-[11px] text-secondary-label">@{person.username || person.name}</p></div><button onClick={() => onFollow(person)} className="rounded-full bg-primary-label px-3 py-1.5 text-xs font-semibold text-primary-background shadow-md transition-transform hover:scale-105">Follow</button></div>)}</div>}<p className="mt-5 border-t border-white/5 pt-4 text-[11px] text-secondary-label/60">© 2026 Rare Motion Hub</p></div></aside>;
 }
 
 function CompactQuickAdd({ suggestions, onFollow }) {
   if (!suggestions.length) return null;
   return <section className="mb-6 xl:hidden" aria-label="Quick Add">
-    <div className="mb-3 flex items-center justify-between"><h2 className="text-sm font-semibold">Quick Add</h2><UserRound className="h-4 w-4 text-secondary-label" /></div>
+    <div className="mb-3 flex items-center justify-between"><h2 className="font-display text-sm font-bold tracking-wider">qUiCk aDd</h2><UserRound className="h-4 w-4 text-secondary-label" /></div>
     <div className="flex snap-x gap-3 overflow-x-auto pb-1">
       {suggestions.slice(0, MAX_QUICK_ADD_SUGGESTIONS).map((person) => <div key={person.id} className="flex min-w-[210px] snap-start items-center gap-2 rounded-2xl border border-border bg-shading/30 p-3">
         <div className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-highlight text-sm font-semibold">{person.avatarUrl ? <img src={person.avatarUrl} alt="" className="h-full w-full object-cover" /> : (person.name || '?').slice(0, 1).toUpperCase()}</div>
@@ -111,7 +111,7 @@ export default function Feed({ user, savedOnly = false }) {
     <main className="px-4 pb-20 pt-4 sm:px-8 lg:ml-28 xl:mr-80">
       <div className="mx-auto max-w-2xl py-3">
         <div className="mb-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-secondary-label">Discover</p>
+          <p className="font-display text-xs font-bold tracking-[0.2em] text-secondary-label">dIsCoVeR</p>
           <h1 className="font-display mt-2 text-3xl font-bold tracking-wider text-[#F7F4EC]">fEEd</h1>
           <p className="mt-2 text-sm text-secondary-label">Preview new music from the Rare Motion community.</p>
         </div>
