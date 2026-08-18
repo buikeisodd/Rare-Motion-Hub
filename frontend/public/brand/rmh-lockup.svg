@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 60" fill="none">
+  <!-- Motion Mark -->
+  <g transform="translate(6, 6)">
+    <path d="M 12 36 C 6 24, 16 10, 28 8" stroke="#F7F4EC" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M 18 40 C 28 42, 40 32, 42 18" stroke="#D7FF65" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M 8 20 C 14 8, 32 6, 40 14" stroke="#F7F4EC" stroke-opacity="0.4" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="28" cy="8" r="2.5" fill="#D7FF65"/>
+  </g>
+  <!-- Typography -->
+  <text x="64" y="29" font-family="DM Sans, sans-serif" font-weight="700" font-size="20" letter-spacing="-0.02em" fill="#F7F4EC">Starlight Station</text>
+  <text x="64" y="46" font-family="DM Sans, sans-serif" font-weight="500" font-size="12" letter-spacing="0.04em" fill="#A6A09A">Rare Motion · Your work in motion</text>
+</svg>

@@ -4,25 +4,65 @@
 
 @layer base {
   :root {
-    --color-primary-background: 0 0 0;
-    --color-primary-label: 255 255 255;
-    --color-secondary-label: 163 163 163;
-    --color-shading: 38 38 38;
-    --color-border: 60 60 60;
-    --color-highlight: 55 55 55;
-    --color-panel-bg: 25 25 25;
-    --color-panel-input-bg: 41 41 41;
+    --rmh-bg: #050505;
+    --rmh-bg-elevated: #0A0A0A;
+    --rmh-panel: #111111;
+    --rmh-panel-soft: #171717;
+    --rmh-panel-hover: #1D1D1D;
+
+    --rmh-ink: #F7F4EC;
+    --rmh-ink-strong: #FFFFFF;
+    --rmh-muted: #A6A09A;
+    --rmh-subtle: #77736E;
+
+    --rmh-accent: #D7FF65;
+    --rmh-accent-soft: rgba(215,255,101,.12);
+    --rmh-accent-hover: #E3FF91;
+
+    --rmh-danger: #FF5C6C;
+    --rmh-info: #85D7FF;
+
+    --rmh-border: rgba(255,255,255,.09);
+    --rmh-border-strong: rgba(255,255,255,.15);
+    --rmh-overlay: rgba(0,0,0,.72);
+
+    --rmh-radius-sm: 8px;
+    --rmh-radius-md: 12px;
+    --rmh-radius-lg: 18px;
+    --rmh-radius-xl: 24px;
+    --rmh-radius-pill: 999px;
+
+    /* Legacy mapping helpers */
+    --color-primary-background: 5 5 5;
+    --color-primary-label: 247 244 236;
+    --color-secondary-label: 166 160 154;
+    --color-shading: 17 17 17;
+    --color-border: 40 40 40;
+    --color-highlight: 29 29 29;
   }
 
   :root.theme-light {
+    --rmh-bg: #F5F5F2;
+    --rmh-bg-elevated: #EAEAE7;
+    --rmh-panel: #FFFFFF;
+    --rmh-panel-soft: #F0F0ED;
+    --rmh-panel-hover: #E5E5E2;
+
+    --rmh-ink: #0F0F0F;
+    --rmh-ink-strong: #000000;
+    --rmh-muted: #5A5A5A;
+    --rmh-subtle: #8A8A8A;
+
+    --rmh-accent: #5B8C00;
+    --rmh-accent-soft: rgba(91,140,0,.12);
+    --rmh-accent-hover: #486E00;
+
     --color-primary-background: 245 245 242;
     --color-primary-label: 15 15 15;
     --color-secondary-label: 90 90 90;
-    --color-shading: 228 228 225;
-    --color-border: 190 190 188;
-    --color-highlight: 210 210 207;
-    --color-panel-bg: 255 255 255;
-    --color-panel-input-bg: 235 235 232;
+    --color-shading: 255 255 255;
+    --color-border: 210 210 207;
+    --color-highlight: 229 229 226;
   }
 
   body {

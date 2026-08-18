@@ -51,13 +51,13 @@ function IconButton({ name, onPress, label, tone = 'dark', badge = 0 }) {
 }
 
 function LogoMark({ small = false }) {
-  const pulse = useRef(new Animated.Value(0.72)).current;
+  const pulse = useRef(new Animated.Value(0.85)).current;
 
   useEffect(() => {
     const animation = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulse, { toValue: 1, duration: 1400, useNativeDriver: true }),
-        Animated.timing(pulse, { toValue: 0.72, duration: 1400, useNativeDriver: true })
+        Animated.timing(pulse, { toValue: 1, duration: 1600, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0.85, duration: 1600, useNativeDriver: true })
       ])
     );
     animation.start();
@@ -65,9 +65,14 @@ function LogoMark({ small = false }) {
   }, [pulse]);
 
   return (
-    <Animated.View style={[styles.logoWrap, small && styles.logoWrapSmall, { opacity: pulse }]}>
-      <Text style={[styles.logoText, small && styles.logoTextSmall]}>Starlight</Text>
-      <Text style={[styles.logoSubText, small && styles.logoSubTextSmall]}>Station</Text>
+    <Animated.View style={[styles.logoWrap, small && styles.logoWrapSmall, { opacity: pulse, flexDirection: 'row', alignItems: 'center', gap: small ? 8 : 12 }]}>
+      <View style={{ width: small ? 24 : 36, height: small ? 24 : 36, borderRadius: small ? 12 : 18, backgroundColor: 'rgba(215,255,101,0.12)', alignItems: 'center', justifyControl: 'center', borderWidth: 1, borderColor: 'rgba(215,255,101,0.3)', justifyContent: 'center' }}>
+        <Ionicons name="sparkles" size={small ? 14 : 20} color={colors.accent} />
+      </View>
+      <View style={{ flexDirection: 'column' }}>
+        <Text style={[styles.logoText, small && styles.logoTextSmall, { color: colors.ink, fontWeight: 'bold' }]}>Starlight Station</Text>
+        {!small && <Text style={{ fontSize: 10, color: colors.muted, letterSpacing: 1.2, textTransform: 'uppercase', marginTop: 1 }}>Your work in motion</Text>}
+      </View>
     </Animated.View>
   );
 }
@@ -183,50 +188,50 @@ function LoginScreen({ onLogin }) {
   };
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.screen}>
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={[styles.screen, { backgroundColor: colors.bg }]}>
       <SafeAreaView style={styles.safe}>
         <View style={styles.loginHero}>
           <LogoMark />
-          <Text style={styles.loginTitle}>A sacred place for your work-in-progress music.</Text>
-          <Text style={styles.loginCopy}>Projects, folders, playback, and collaboration stay synced with your Starlight Station account.</Text>
+          <Text style={[styles.loginTitle, { color: colors.ink, fontWeight: 'bold', marginTop: 24 }]}>Your work in motion.</Text>
+          <Text style={[styles.loginCopy, { color: colors.muted, marginTop: 8 }]}>A private creative space for music, projects, playback and collaboration.</Text>
         </View>
-        <View style={styles.loginPanel}>
-          <View style={{flexDirection: 'row', justifyContent: 'center', marginBottom: 20, gap: 20}}>
+        <View style={[styles.loginPanel, { backgroundColor: colors.panel, borderRadius: 18, borderWidth: 1, borderColor: colors.border, padding: 20 }]}>
+          <View style={{flexDirection: 'row', justifyContent: 'center', marginBottom: 20, gap: 24, borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: 12}}>
             <Pressable onPress={() => setIsRegister(false)}>
-              <Text style={{fontSize: 18, color: !isRegister ? colors.text : colors.muted, fontWeight: 'bold'}}>Login</Text>
+              <Text style={{fontSize: 16, color: !isRegister ? colors.ink : colors.muted, fontWeight: '700'}}>Sign in</Text>
             </Pressable>
             <Pressable onPress={() => setIsRegister(true)}>
-              <Text style={{fontSize: 18, color: isRegister ? colors.text : colors.muted, fontWeight: 'bold'}}>Register</Text>
+              <Text style={{fontSize: 16, color: isRegister ? colors.ink : colors.muted, fontWeight: '700'}}>Create account</Text>
             </Pressable>
           </View>
-          <View style={styles.inputRow}>
+          <View style={[styles.inputRow, { backgroundColor: colors.panelSoft, borderRadius: 12, borderWidth: 1, borderColor: colors.border }]}>
             <Ionicons name="mail-outline" size={20} color={colors.muted} />
             <TextInput
               value={email}
               onChangeText={setEmail}
               placeholder="Email address"
-              placeholderTextColor={colors.muted}
+              placeholderTextColor={colors.subtle}
               autoCapitalize="none"
               keyboardType="email-address"
               returnKeyType="next"
-              style={styles.input}
+              style={[styles.input, { color: colors.ink }]}
             />
           </View>
-          <View style={[styles.inputRow, { marginTop: 12 }]}>
+          <View style={[styles.inputRow, { marginTop: 12, backgroundColor: colors.panelSoft, borderRadius: 12, borderWidth: 1, borderColor: colors.border }]}>
             <Ionicons name="lock-closed-outline" size={20} color={colors.muted} />
             <TextInput
               value={password}
               onChangeText={setPassword}
               placeholder="Password"
-              placeholderTextColor={colors.muted}
+              placeholderTextColor={colors.subtle}
               secureTextEntry
               returnKeyType="go"
               onSubmitEditing={submit}
-              style={styles.input}
+              style={[styles.input, { color: colors.ink }]}
             />
           </View>
-          <Pressable onPress={submit} disabled={loading} style={({ pressed }) => [styles.primaryButton, {marginTop: 20}, pressed && styles.pressed]}>
-            {loading ? <ActivityIndicator color={colors.bg} /> : <Text style={styles.primaryButtonText}>{isRegister ? 'Create Account' : 'Continue'}</Text>}
+          <Pressable onPress={submit} disabled={loading} style={({ pressed }) => [{ height: 48, borderRadius: 12, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center', marginTop: 24 }, pressed && styles.pressed]}>
+            {loading ? <ActivityIndicator color={colors.bg} /> : <Text style={{ fontSize: 15, fontWeight: 'bold', color: colors.bg }}>{isRegister ? 'Create account' : 'Sign in'}</Text>}
           </Pressable>
         </View>
       </SafeAreaView>

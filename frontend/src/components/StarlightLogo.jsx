@@ -1,92 +1,28 @@
-export default function StarlightLogo({ className = '' }) {
+export function StarlightMark({ className = 'h-8 w-8', color = '#D7FF65' }) {
   return (
-    <svg
-      viewBox="0 0 260 80"
-      xmlns="http://www.w3.org/2000/svg"
-      className={className}
-      aria-label="Starlight Station"
-    >
-      <defs>
-        {/* Glow filter */}
-        <filter id="glow" x="-20%" y="-40%" width="140%" height="180%">
-          <feGaussianBlur stdDeviation="3.5" result="blur1" />
-          <feGaussianBlur stdDeviation="7" result="blur2" />
-          <feMerge>
-            <feMergeNode in="blur2" />
-            <feMergeNode in="blur1" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-
-        {/* Subtle shimmer gradient — sweeps left to right */}
-        <linearGradient id="shimmer" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%"   stopColor="currentColor" stopOpacity="0.7" />
-          <stop offset="45%"  stopColor="currentColor" stopOpacity="1" />
-          <stop offset="55%"  stopColor="white"        stopOpacity="1" />
-          <stop offset="100%" stopColor="currentColor" stopOpacity="0.7" />
-          <animateTransform
-            attributeName="gradientTransform"
-            type="translate"
-            from="-1 0"
-            to="1 0"
-            dur="3s"
-            repeatCount="indefinite"
-          />
-        </linearGradient>
-
-        {/* Pulse animation on the glow blur */}
-        <animate
-          id="glowPulse"
-          attributeName="stdDeviation"
-          values="2;5;2"
-          dur="2.8s"
-          repeatCount="indefinite"
-        />
-      </defs>
-
-      {/* Glow layer — blurred duplicate behind */}
-      <g filter="url(#glow)" opacity="0.6">
-        <text
-          x="50%" y="36"
-          textAnchor="middle"
-          fontFamily="Georgia, 'Times New Roman', serif"
-          fontSize="34" fontWeight="400" fontStyle="italic" letterSpacing="2"
-          fill="currentColor"
-        >
-          Starlight
-          <animate attributeName="opacity" values="0.5;1;0.5" dur="2.8s" repeatCount="indefinite" />
-        </text>
-        <text
-          x="50%" y="72"
-          textAnchor="middle"
-          fontFamily="Georgia, 'Times New Roman', serif"
-          fontSize="34" fontWeight="400" fontStyle="italic" letterSpacing="2"
-          fill="currentColor"
-        >
-          Station
-          <animate attributeName="opacity" values="0.5;1;0.5" dur="2.8s" repeatCount="indefinite" />
-        </text>
-      </g>
-
-      {/* Main text with shimmer fill */}
-      <text
-        x="50%" y="36"
-        textAnchor="middle"
-        fontFamily="Georgia, 'Times New Roman', serif"
-        fontSize="34" fontWeight="400" fontStyle="italic" letterSpacing="2"
-        fill="url(#shimmer)"
-      >
-        Starlight
-      </text>
-      <text
-        x="50%" y="72"
-        textAnchor="middle"
-        fontFamily="Georgia, 'Times New Roman', serif"
-        fontSize="34" fontWeight="400" fontStyle="italic" letterSpacing="2"
-        fill="url(#shimmer)"
-      >
-        Station
-      </text>
+    <svg viewBox="0 0 48 48" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
+      <path d="M 12 36 C 6 24, 16 10, 28 8" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" />
+      <path d="M 18 40 C 28 42, 40 32, 42 18" stroke={color} strokeWidth="3.5" strokeLinecap="round" />
+      <path d="M 8 20 C 14 8, 32 6, 40 14" stroke="currentColor" strokeOpacity="0.4" strokeWidth="3" strokeLinecap="round" />
+      <circle cx="28" cy="8" r="2.5" fill={color} />
     </svg>
+  );
+}
+
+export default function StarlightLogo({ className = '', compact = false, showTagline = true }) {
+  return (
+    <div className={`inline-flex items-center gap-3.5 select-none ${className}`}>
+      <StarlightMark className="h-9 w-9 shrink-0 text-[#F7F4EC]" color="#D7FF65" />
+      {!compact && (
+        <div className="flex flex-col leading-tight">
+          <div className="flex items-center gap-1.5">
+            <span className="font-sans text-xl font-bold tracking-tight text-[#F7F4EC]">Starlight Station</span>
+          </div>
+          {showTagline && (
+            <span className="text-[11px] font-medium tracking-wider text-[#A6A09A] uppercase">Your work in motion</span>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

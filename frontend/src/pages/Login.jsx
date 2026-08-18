@@ -184,62 +184,69 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
   };
 
   return (
-    <div className="min-h-screen bg-primary-background px-5 py-8 sm:px-8 lg:px-20 lg:py-12 relative overflow-hidden">
-      <div className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-5xl flex-col items-center justify-center animate-fade-in">
-        <StarlightLogo className="logo-glow mb-7 h-24 w-full max-w-sm text-primary-label sm:h-28 sm:max-w-md" />
+    <div className="min-h-screen bg-[#050505] text-[#F7F4EC] px-5 py-8 sm:px-8 lg:px-20 lg:py-12 relative overflow-hidden flex flex-col justify-center items-center">
+      <div className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-4xl flex-col items-center justify-center animate-fade-in py-6">
+        <StarlightLogo className="mb-6 h-12 text-[#F7F4EC]" showTagline={false} />
         
-        <h1 className="max-w-md text-center text-2xl font-semibold leading-tight tracking-normal mb-7 sm:text-3xl">
-          A sacred place for your work-in-progress music
+        <h1 className="max-w-xl text-center text-3xl font-bold leading-tight tracking-tight mb-3 sm:text-4xl text-[#FFFFFF]">
+          Your work in motion.
         </h1>
+        <p className="max-w-md text-center text-sm sm:text-base text-[#A6A09A] mb-8 leading-relaxed">
+          A private creative space for music, projects, playback and collaboration.
+        </p>
 
-        <div className="flex space-x-4 mb-6">
+        <div className="flex items-center gap-6 mb-8 border-b border-[rgba(255,255,255,.09)] pb-3 px-4">
           <button 
+            type="button"
             onClick={() => { setIsRegister(false); setResetMode(false); setResetToken(''); }}
-            className={`text-lg font-semibold transition-colors ${!isRegister && !resetMode ? 'text-primary-label' : 'text-secondary-label'}`}>
-            Login
+            className={`text-base font-semibold transition-all relative py-1 ${!isRegister && !resetMode ? 'text-[#F7F4EC]' : 'text-[#A6A09A] hover:text-[#F7F4EC]'}`}>
+            Sign in
+            {!isRegister && !resetMode && <span className="absolute bottom-[-13px] left-0 right-0 h-[2px] bg-[#D7FF65] rounded-full" />}
           </button>
           <button 
+            type="button"
             onClick={() => { setIsRegister(true); setResetMode(false); setResetToken(''); }}
-            className={`text-lg font-semibold transition-colors ${isRegister && !resetMode ? 'text-primary-label' : 'text-secondary-label'}`}>
-            Register
+            className={`text-base font-semibold transition-all relative py-1 ${isRegister && !resetMode ? 'text-[#F7F4EC]' : 'text-[#A6A09A] hover:text-[#F7F4EC]'}`}>
+            Create account
+            {isRegister && !resetMode && <span className="absolute bottom-[-13px] left-0 right-0 h-[2px] bg-[#D7FF65] rounded-full" />}
           </button>
         </div>
 
-        <div className="grid w-full max-w-4xl gap-4 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,0.9fr)] md:items-stretch">
-          <form onSubmit={handleSubmit} className="space-y-3 rounded-2xl border border-border bg-shading/20 p-3 sm:p-4">
+        <div className="w-full max-w-md">
+          <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-[rgba(255,255,255,.09)] bg-[#111111] p-5 sm:p-7 shadow-2xl">
             <label className="relative block">
-              <Mail className="absolute left-6 top-1/2 h-5 w-5 -translate-y-1/2 text-secondary-label" />
+              <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#A6A09A]" />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email address"
-                className="h-12 w-full rounded-full bg-shading border border-border pl-12 pr-6 text-center text-base font-semibold text-primary-label placeholder:text-secondary-label focus:outline-none focus:ring-2 focus:ring-primary-label/20 transition-all"
+                className="h-12 w-full rounded-xl bg-[#171717] border border-[rgba(255,255,255,.09)] pl-11 pr-4 text-left text-sm font-medium text-[#F7F4EC] placeholder:text-[#77736E] focus:outline-none focus:border-[#D7FF65] focus:ring-1 focus:ring-[#D7FF65] transition-all"
                 required={!resetMode}
                 disabled={resetMode}
               />
             </label>
             <label className="relative block">
-              <Lock className="absolute left-6 top-1/2 h-5 w-5 -translate-y-1/2 text-secondary-label" />
+              <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#A6A09A]" />
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={resetMode ? 'New password' : 'Password'}
                 minLength={8}
-                className="h-12 w-full rounded-full bg-shading border border-border pl-12 pr-14 text-center text-base font-semibold text-primary-label placeholder:text-secondary-label focus:outline-none focus:ring-2 focus:ring-primary-label/20 transition-all"
+                className="h-12 w-full rounded-xl bg-[#171717] border border-[rgba(255,255,255,.09)] pl-11 pr-12 text-left text-sm font-medium text-[#F7F4EC] placeholder:text-[#77736E] focus:outline-none focus:border-[#D7FF65] focus:ring-1 focus:ring-[#D7FF65] transition-all"
                 required
               />
-              <button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute right-5 top-1/2 -translate-y-1/2 text-secondary-label transition-colors hover:text-primary-label" aria-label={showPassword ? 'Hide password' : 'Show password'}>
+              <button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#A6A09A] transition-colors hover:text-[#F7F4EC]" aria-label={showPassword ? 'Hide password' : 'Show password'}>
                 {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>
             </label>
             {!isRegister && !resetMode && (
-              <div className="flex justify-end px-2">
+              <div className="flex justify-end px-1">
                 <button
                   type="button"
                   onClick={requestPasswordReset}
-                  className="text-xs font-semibold text-secondary-label underline-offset-4 transition-colors hover:text-primary-label hover:underline"
+                  className="text-xs font-medium text-[#A6A09A] transition-colors hover:text-[#D7FF65]"
                 >
                   Forgot password?
                 </button>
@@ -247,28 +254,28 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
             )}
 
             {isRegister && !resetMode && <label className="relative block">
-              <Lock className="absolute left-6 top-1/2 h-5 w-5 -translate-y-1/2 text-secondary-label" />
+              <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#A6A09A]" />
               <input
                 type={showConfirmPassword ? 'text' : 'password'}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirm password"
-                className="h-12 w-full rounded-full bg-shading border border-border pl-12 pr-14 text-center text-base font-semibold text-primary-label placeholder:text-secondary-label focus:outline-none focus:ring-2 focus:ring-primary-label/20 transition-all"
+                className="h-12 w-full rounded-xl bg-[#171717] border border-[rgba(255,255,255,.09)] pl-11 pr-12 text-left text-sm font-medium text-[#F7F4EC] placeholder:text-[#77736E] focus:outline-none focus:border-[#D7FF65] focus:ring-1 focus:ring-[#D7FF65] transition-all"
                 required
               />
-              <button type="button" onClick={() => setShowConfirmPassword((value) => !value)} className="absolute right-5 top-1/2 -translate-y-1/2 text-secondary-label transition-colors hover:text-primary-label" aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}>
+              <button type="button" onClick={() => setShowConfirmPassword((value) => !value)} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#A6A09A] transition-colors hover:text-[#F7F4EC]" aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}>
                 {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>
             </label>}
 
             {error && (
-              <div className="rounded-2xl border border-red-300/10 bg-red-400/10 px-4 py-3 text-center text-sm text-red-300">
+              <div className="rounded-xl border border-[#FF5C6C]/20 bg-[#FF5C6C]/10 px-4 py-3 text-left text-xs font-medium text-[#FF5C6C]">
                 {error}
               </div>
             )}
 
             {lockCountdown > 0 && (
-              <div className="flex items-center justify-center gap-2 rounded-2xl border border-amber-400/10 bg-amber-400/10 px-4 py-3 text-sm text-amber-300">
+              <div className="flex items-center justify-center gap-2 rounded-xl border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-xs text-amber-300">
                 <Timer className="h-4 w-4 shrink-0" />
                 <span>
                   Account locked — try again in{' '}
@@ -280,7 +287,7 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
             )}
 
             {notice && (
-              <div className="rounded-2xl border border-primary-label/10 bg-primary-label/10 px-4 py-3 text-center text-sm text-primary-label">
+              <div className="rounded-xl border border-[#D7FF65]/20 bg-[#D7FF65]/10 px-4 py-3 text-left text-xs font-medium text-[#D7FF65]">
                 {notice}
               </div>
             )}
@@ -288,9 +295,9 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
             <button
               type="submit"
               disabled={loading || lockCountdown > 0}
-              className="flex h-12 w-full items-center justify-center rounded-full bg-primary-label text-base font-semibold text-primary-background transition-transform hover:scale-[1.01] disabled:opacity-70"
+              className="flex h-12 w-full items-center justify-center rounded-xl bg-[#D7FF65] text-sm font-bold text-[#050505] transition-all hover:bg-[#E3FF91] active:scale-[0.99] disabled:opacity-50 shadow-md mt-2"
             >
-              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (resetMode ? 'Reset password' : isRegister ? 'Create Account' : 'Login')}
+              {loading ? <Loader2 className="w-5 h-5 animate-spin text-[#050505]" /> : (resetMode ? 'Reset password' : isRegister ? 'Create account' : 'Sign in')}
             </button>
           </form>
 

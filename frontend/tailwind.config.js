@@ -6,18 +6,41 @@ export default {
   ],
   theme: {
     extend: {
-      colors: {
-        primary: {
-          background: 'rgb(var(--color-primary-background) / <alpha-value>)',
-          label: 'rgb(var(--color-primary-label) / <alpha-value>)',
+        colors: {
+          rmh: {
+            bg: 'var(--rmh-bg)',
+            'bg-elevated': 'var(--rmh-bg-elevated)',
+            panel: 'var(--rmh-panel)',
+            'panel-soft': 'var(--rmh-panel-soft)',
+            'panel-hover': 'var(--rmh-panel-hover)',
+            ink: 'var(--rmh-ink)',
+            'ink-strong': 'var(--rmh-ink-strong)',
+            muted: 'var(--rmh-muted)',
+            subtle: 'var(--rmh-subtle)',
+            accent: 'var(--rmh-accent)',
+            'accent-soft': 'var(--rmh-accent-soft)',
+            'accent-hover': 'var(--rmh-accent-hover)',
+            danger: 'var(--rmh-danger)',
+            info: 'var(--rmh-info)',
+            border: 'var(--rmh-border)',
+            'border-strong': 'var(--rmh-border-strong)',
+          },
+          primary: {
+            background: 'var(--rmh-bg)',
+            label: 'var(--rmh-ink)',
+          },
+          secondary: {
+            label: 'var(--rmh-muted)',
+          },
+          accent: {
+            DEFAULT: '#D7FF65',
+            hover: '#E3FF91',
+            soft: 'rgba(215,255,101,.12)',
+          },
+          shading: 'var(--rmh-panel)',
+          border: 'rgba(255,255,255,.09)',
+          highlight: 'var(--rmh-panel-hover)',
         },
-        secondary: {
-          label: 'rgb(var(--color-secondary-label) / <alpha-value>)',
-        },
-        shading: 'rgb(var(--color-shading) / 0.08)',
-        border: 'rgb(var(--color-border) / 0.05)',
-        highlight: 'rgb(var(--color-highlight) / 0.15)',
-      },
       fontFamily: {
         sans: ['DM Sans', 'sans-serif'],
       },
