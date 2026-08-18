@@ -9,17 +9,15 @@ export function StarlightMark({ className = 'h-8 w-8', color = '#D7FF65' }) {
   );
 }
 
-export default function StarlightLogo({ className = '', compact = false, showTagline = true }) {
+export default function StarlightLogo({ className = '', compact = false, showTagline = true, markClassName = 'h-8 w-8' }) {
   return (
-    <div className={`inline-flex items-center gap-3.5 select-none ${className}`}>
-      <StarlightMark className="h-9 w-9 shrink-0 text-[#F7F4EC]" color="#D7FF65" />
+    <div className={`inline-flex items-center gap-3 select-none ${className}`}>
+      <StarlightMark className={`${markClassName} shrink-0 text-[#F7F4EC]`} color="#D7FF65" />
       {!compact && (
-        <div className="flex flex-col leading-tight">
-          <div className="flex items-center gap-1.5">
-            <span className="font-sans text-xl font-bold tracking-tight text-[#F7F4EC]">Starlight Station</span>
-          </div>
+        <div className="flex flex-col leading-none overflow-hidden whitespace-nowrap">
+          <span className="font-sans text-base font-bold tracking-tight text-[#F7F4EC]">Starlight Station</span>
           {showTagline && (
-            <span className="text-[11px] font-medium tracking-wider text-[#A6A09A] uppercase">Your work in motion</span>
+            <span className="text-[10px] font-medium tracking-wider text-[#A6A09A] uppercase mt-1">Your work in motion</span>
           )}
         </div>
       )}

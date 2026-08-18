@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Bookmark, Compass, Heart, Library, MessageCircle, MoreHorizontal, Pause, Play, Radio, Send, Settings, Trash2, UserRound, Volume2, VolumeX } from 'lucide-react';
 import { Link as RouterLink } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import StarlightLogo from '../components/StarlightLogo';
+import StarlightLogo, { StarlightMark } from '../components/StarlightLogo';
 import { defaultGradient, gradientFor } from '../utils/gradients';
 import ChatInbox from '../components/ChatInbox';
 
@@ -67,32 +67,33 @@ export default function Feed({ user, savedOnly = false }) {
   const deleteItem = async (id) => { if (!window.confirm('Delete this feed preview?')) return; const res = await fetch(`${apiUrl}/api/feed/tracks/${id}`, { method: 'DELETE' }); if (res.ok) setItems((current) => current.filter((item) => item.id !== id)); };
   const followSuggestion = async (person) => { setSuggestions((current) => current.filter((item) => item.id !== person.id)); const res = await fetch(`${apiUrl}/api/auth/${person.id}/follow`, { method: 'POST' }); if (!res.ok) setSuggestions((current) => current.some((item) => item.id === person.id) ? current : [person, ...current].slice(0, 5)); };
   const navItems = [{ label: 'Profile', icon: UserRound, to: '/profile/' + user.id }, { label: 'Saved', icon: Bookmark, to: '/saved' }, { label: 'Library', icon: Library, to: '/library' }];
-  return <div className="min-h-screen bg-primary-background text-primary-label">
-    <aside className="group fixed bottom-4 left-4 top-4 z-40 hidden w-20 flex-col overflow-hidden rounded-3xl border border-white/5 bg-primary-background/70 px-3 py-6 shadow-2xl backdrop-blur-2xl transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:w-64 hover:border-white/10 lg:flex">
-      <Link to="/feed" className="mb-10 flex h-12 w-full shrink-0 items-center overflow-hidden whitespace-nowrap px-2" aria-label="Home">
-        <Compass className="mr-5 h-8 w-8 shrink-0 text-primary-label transition-transform group-hover:rotate-12" />
-        <span className="opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-          <StarlightLogo className="logo-glow h-8 w-32 text-primary-label" />
-        </span>
+  return <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0e140b] via-[#050505] to-[#050505] text-[#F7F4EC]">
+    <aside className="group fixed bottom-4 left-4 top-4 z-40 hidden w-20 flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#0a0a0a]/80 px-3 py-6 shadow-2xl backdrop-blur-2xl transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:w-64 hover:border-white/20 lg:flex">
+      <Link to="/feed" className="mb-8 flex h-12 w-full shrink-0 items-center overflow-hidden whitespace-nowrap px-2.5" aria-label="Home">
+        <StarlightMark className="h-8 w-8 shrink-0 text-[#F7F4EC]" color="#D7FF65" />
+        <div className="ml-4 flex flex-col leading-none opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+          <span className="font-sans text-base font-bold tracking-tight text-[#F7F4EC]">Starlight Station</span>
+          <span className="text-[10px] font-medium tracking-wider text-[#A6A09A] uppercase mt-1">Your work in motion</span>
+        </div>
       </Link>
       <nav className="space-y-2">
         {navItems.map(({ label, icon: Icon, to }) => (
-          <Link key={label} to={to} className="flex h-12 w-full items-center whitespace-nowrap rounded-2xl px-3 text-sm font-semibold text-secondary-label transition-colors hover:bg-highlight hover:text-primary-label" title={label}>
+          <Link key={label} to={to} className="flex h-12 w-full items-center whitespace-nowrap rounded-2xl px-3 text-sm font-semibold text-[#A6A09A] transition-all hover:bg-[rgba(215,255,101,0.08)] hover:text-[#F7F4EC]" title={label}>
             <Icon className="h-6 w-6 shrink-0" />
-            <span className="ml-5 opacity-0 transition-opacity duration-300 group-hover:opacity-100">{label}</span>
+            <span className="ml-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100">{label}</span>
           </Link>
         ))}
-        <button onClick={() => setInboxOpen(true)} className="flex h-12 w-full items-center whitespace-nowrap rounded-2xl px-3 text-sm font-semibold text-secondary-label transition-colors hover:bg-highlight hover:text-primary-label" title="Inbox">
+        <button onClick={() => setInboxOpen(true)} className="flex h-12 w-full items-center whitespace-nowrap rounded-2xl px-3 text-sm font-semibold text-[#A6A09A] transition-all hover:bg-[rgba(215,255,101,0.08)] hover:text-[#F7F4EC]" title="Inbox">
           <MessageCircle className="h-6 w-6 shrink-0" />
-          <span className="ml-5 opacity-0 transition-opacity duration-300 group-hover:opacity-100">Inbox</span>
+          <span className="ml-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100">Inbox</span>
         </button>
-        <Link to="/settings" className="flex h-12 w-full items-center whitespace-nowrap rounded-2xl px-3 text-sm font-semibold text-secondary-label transition-colors hover:bg-highlight hover:text-primary-label" title="Settings">
+        <Link to="/settings" className="flex h-12 w-full items-center whitespace-nowrap rounded-2xl px-3 text-sm font-semibold text-[#A6A09A] transition-all hover:bg-[rgba(215,255,101,0.08)] hover:text-[#F7F4EC]" title="Settings">
           <Settings className="h-6 w-6 shrink-0" />
-          <span className="ml-5 opacity-0 transition-opacity duration-300 group-hover:opacity-100">Settings</span>
+          <span className="ml-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100">Settings</span>
         </Link>
       </nav>
       <div className="mt-auto w-full overflow-hidden opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-        <div className="min-w-[200px] rounded-2xl border border-white/5 bg-shading/30 p-4 text-xs leading-relaxed text-secondary-label shadow-inner">
+        <div className="min-w-[200px] rounded-2xl border border-white/5 bg-[#141812]/50 p-4 text-xs leading-relaxed text-[#A6A09A] shadow-inner">
           Share previews, discover new work, and stay connected.
         </div>
       </div>
