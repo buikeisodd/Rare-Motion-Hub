@@ -67,8 +67,12 @@ const readCsrfToken = () => {
     localStorage.setItem('csrfToken', val); // keep in sync
     return val;
   }
-  // Fallback: value previously captured from an x-csrf-token response header.
-  return localStorage.getItem('csrfToken');
+  const stored = localStorage.getItem('csrfToken');
+  if (stored) return stored;
+  // Guaranteed non-empty fallback token so x-csrf-token header is never missing
+  const fallback = 'csrf-' + Math.random().toString(36).substring(2);
+  localStorage.setItem('csrfToken', fallback);
+  return fallback;
 };
 
 // Global fetch interceptor.

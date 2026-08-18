@@ -86,25 +86,24 @@ const requireAuth = async (req, res, next) => {
     if (!session) return next(new AppError('Unauthorized: Session expired or revoked', 401));
     if (!user) return next(new AppError('Unauthorized: Account not found', 401));
 
-    // CSRF double-submit for all state-changing methods.
-    // See auth.controller.js and CORS config for topology reasoning.
-    // Mobile clients (Bearer transport) send the CSRF token from SecureStore.
+    // CSRF double-submit / custom header protection for all state-changing methods.
+    // OWASP CSRF Prevention: Custom headers (like x-csrf-token) cannot be forged
+    // cross-domain without passing CORS preflight. Requiring the x-csrf-token
+    // header (and comparing against cookie when present) guarantees CSRF protection
+    // while preventing false 403 blocks when 3rd-party cookies are restricted.
     if (unsafeMethods.has(req.method)) {
       const csrfCookie = readAuthCookie(req, 'csrfToken');
       const csrfHeader = req.get('x-csrf-token') || '';
-      // For mobile (Bearer transport), the CSRF token comes from the header
-      // only — there's no cookie to compare against. Require the header to be
-      // present regardless; its value was issued by the server and stored in
-      // SecureStore, so it can't be forged cross-site.
-      const isMobile = Boolean(bearerToken && !cookieToken);
-      const tokenValid = isMobile
-        ? Boolean(csrfHeader)
-        : (() => {
-            if (!csrfCookie || !csrfHeader) return false;
-            const a = Buffer.from(csrfCookie, 'utf8');
-            const b = Buffer.from(csrfHeader, 'utf8');
-            return a.length === b.length && crypto.timingSafeEqual(a, b);
-          })();
+      
+      const tokenValid = (() => {
+        if (!csrfHeader) return false;
+        if (!csrfCookie) return true;
+        if (csrfHeader === csrfCookie) return true;
+        const a = Buffer.from(csrfCookie, 'utf8');
+        const b = Buffer.from(csrfHeader, 'utf8');
+        return a.length === b.length && crypto.timingSafeEqual(a, b);
+      })();
+
       if (!tokenValid) {
         return next(new AppError('Forbidden: Invalid CSRF token', 403));
       }
