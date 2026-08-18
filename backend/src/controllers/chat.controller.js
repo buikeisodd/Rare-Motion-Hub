@@ -174,19 +174,28 @@ const sendCallSignal = async (req, res, next) => {
 
 const getUsers = async (req, res, next) => {
   try {
-    const db = ensureDBShape(await readDB());
     const userId = req.userId;
-    if (!userExists(db, userId)) return next(new AppError('Unauthorized user.', 401));
-    const actor = db.users.find((user) => user.id === userId);
-    const following = new Set(actor?.following || []);
-    const followers = new Set(actor?.followers || []);
-    const others = db.users
-      .filter((u) => u.id !== userId)
-      .map((user) => ({
+    const [allUsers, actor] = await Promise.all([
+      User.find({
+        id: { $ne: userId },
+        isDeactivated: { $ne: true },
+        isSuspended: { $ne: true }
+      }).lean(),
+      User.findOne({ id: userId }).lean()
+    ]);
+    
+    const followingSet = new Set(actor?.following || []);
+    const followersSet = new Set(actor?.followers || []);
+
+    const others = allUsers.map((user) => {
+      const isFollowing = followingSet.has(user.id) || (user.followers || []).includes(userId);
+      const followsYou = followersSet.has(user.id) || (user.following || []).includes(userId);
+      return {
         ...publicUser(user),
-        isFollowing: following.has(user.id),
-        followsYou: followers.has(user.id)
-      }));
+        isFollowing: Boolean(isFollowing),
+        followsYou: Boolean(followsYou)
+      };
+    });
     res.json({ users: others });
   } catch (error) {
     next(error);

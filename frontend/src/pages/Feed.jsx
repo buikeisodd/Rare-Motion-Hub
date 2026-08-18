@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Bookmark, Compass, Heart, Library, MessageCircle, MoreHorizontal, Pause, Play, Radio, Send, Settings, Trash2, UserRound, Volume2, VolumeX } from 'lucide-react';
+import { ArrowLeft, Bookmark, Compass, Heart, Library, MessageCircle, MoreHorizontal, Pause, Play, Radio, Send, Settings, Trash2, UserRound, Volume2, VolumeX, X } from 'lucide-react';
 import { Link as RouterLink } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import StarlightLogo, { StarlightMark } from '../components/StarlightLogo';
@@ -11,22 +11,132 @@ const MAX_QUICK_ADD_SUGGESTIONS = 5;
 const Link = (props) => <RouterLink {...props} to={(props.children === 'Settings' || (Array.isArray(props.children) && props.children.includes('Settings'))) ? '/settings' : props.to} />;
 const dateLabel = (value) => value ? new Date(value).toLocaleDateString([], { month: 'short', day: 'numeric' }) : '';
 
-function QuickAdd({ suggestions, onFollow }) {
-  return <aside className="fixed right-4 top-4 z-30 hidden w-72 xl:block"><div className="rounded-3xl border border-white/10 bg-primary-background/60 p-5 shadow-2xl backdrop-blur-2xl"><div className="mb-5 flex items-center justify-between"><h2 className="font-display text-sm font-bold tracking-wider">qUiCk aDd</h2><UserRound className="h-4 w-4 text-secondary-label" /></div>{suggestions.length === 0 ? <p className="text-xs text-secondary-label">You are all caught up.</p> : <div className="space-y-4">{suggestions.slice(0, MAX_QUICK_ADD_SUGGESTIONS).map((person) => <div key={person.id} className="flex items-center gap-3"><div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-highlight text-sm font-semibold shadow-inner">{person.avatarUrl ? <img src={person.avatarUrl} alt="" className="h-full w-full object-cover" /> : (person.name || '?').slice(0, 1).toUpperCase()}</div><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{person.name}</p><p className="truncate text-[11px] text-secondary-label">@{person.username || person.name}</p></div><button onClick={() => onFollow(person)} className="rounded-full bg-primary-label px-3 py-1.5 text-xs font-semibold text-primary-background shadow-md transition-transform hover:scale-105">Follow</button></div>)}</div>}<p className="mt-5 border-t border-white/5 pt-4 text-[11px] text-secondary-label/60">© 2026 Rare Motion Hub</p></div></aside>;
+function QuickAdd({ suggestions, onFollow, onDismiss }) {
+  return (
+    <aside className="fixed right-4 top-4 z-30 hidden w-72 xl:block">
+      <div className="rounded-3xl border border-white/10 bg-primary-background/60 p-5 shadow-2xl backdrop-blur-2xl">
+        <div className="mb-5 flex items-center justify-between">
+          <h2 className="font-display text-sm font-bold tracking-wider text-[#F7F4EC]">qUiCk aDd</h2>
+          <UserRound className="h-4 w-4 text-secondary-label" />
+        </div>
+        {suggestions.length === 0 ? (
+          <p className="text-xs text-secondary-label">You are all caught up.</p>
+        ) : (
+          <div className="space-y-4">
+            {suggestions.slice(0, MAX_QUICK_ADD_SUGGESTIONS).map((person) => {
+              const buttonText = person.isFollowing
+                ? 'Following'
+                : person.followsYou
+                ? 'Follow Back'
+                : 'Follow';
+              return (
+                <div key={person.id} className="group relative flex items-center gap-2.5">
+                  <RouterLink to={'/profile/' + person.id} className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-highlight text-sm font-semibold shadow-inner">
+                    {person.avatarUrl ? (
+                      <img src={person.avatarUrl} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      (person.name || '?').slice(0, 1).toUpperCase()
+                    )}
+                  </RouterLink>
+                  <div className="min-w-0 flex-1">
+                    <RouterLink to={'/profile/' + person.id} className="truncate text-sm font-semibold block hover:underline text-[#F7F4EC]">
+                      {person.name}
+                    </RouterLink>
+                    <p className="truncate text-[11px] text-secondary-label">
+                      @{person.username || person.name}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={() => onFollow(person)}
+                      className={`rounded-full px-3 py-1.5 text-xs font-semibold shadow-md transition-all hover:scale-105 ${
+                        person.isFollowing
+                          ? 'bg-shading text-secondary-label'
+                          : person.followsYou
+                          ? 'bg-[#D7FF65] text-black hover:bg-[#E3FF91]'
+                          : 'bg-primary-label text-primary-background'
+                      }`}
+                    >
+                      {buttonText}
+                    </button>
+                    <button
+                      onClick={() => onDismiss(person)}
+                      className="grid h-6 w-6 place-items-center rounded-full text-secondary-label opacity-60 transition-opacity hover:bg-highlight hover:opacity-100"
+                      title="Remove suggestion"
+                      aria-label="Remove suggestion"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        <p className="mt-5 border-t border-white/5 pt-4 text-[11px] text-secondary-label/60">© 2026 Rare Motion Hub</p>
+      </div>
+    </aside>
+  );
 }
 
-function CompactQuickAdd({ suggestions, onFollow }) {
+function CompactQuickAdd({ suggestions, onFollow, onDismiss }) {
   if (!suggestions.length) return null;
-  return <section className="mb-6 xl:hidden" aria-label="Quick Add">
-    <div className="mb-3 flex items-center justify-between"><h2 className="font-display text-sm font-bold tracking-wider">qUiCk aDd</h2><UserRound className="h-4 w-4 text-secondary-label" /></div>
-    <div className="flex snap-x gap-3 overflow-x-auto pb-1">
-      {suggestions.slice(0, MAX_QUICK_ADD_SUGGESTIONS).map((person) => <div key={person.id} className="flex min-w-[210px] snap-start items-center gap-2 rounded-2xl border border-border bg-shading/30 p-3">
-        <div className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-highlight text-sm font-semibold">{person.avatarUrl ? <img src={person.avatarUrl} alt="" className="h-full w-full object-cover" /> : (person.name || '?').slice(0, 1).toUpperCase()}</div>
-        <div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold">{person.name}</p><p className="truncate text-[11px] text-secondary-label">@{person.username || person.name}</p></div>
-        <button onClick={() => onFollow(person)} className="shrink-0 rounded-full bg-primary-label px-2.5 py-1 text-[11px] font-semibold text-primary-background">Follow</button>
-      </div>)}
-    </div><p className="mt-3 text-[11px] text-secondary-label/70">© 2026 Rare Motion Hub</p>
-  </section>;
+  return (
+    <section className="mb-6 xl:hidden" aria-label="Quick Add">
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="font-display text-sm font-bold tracking-wider text-[#F7F4EC]">qUiCk aDd</h2>
+        <UserRound className="h-4 w-4 text-secondary-label" />
+      </div>
+      <div className="flex snap-x gap-3 overflow-x-auto pb-1">
+        {suggestions.slice(0, MAX_QUICK_ADD_SUGGESTIONS).map((person) => {
+          const buttonText = person.isFollowing
+            ? 'Following'
+            : person.followsYou
+            ? 'Follow Back'
+            : 'Follow';
+          return (
+            <div key={person.id} className="relative flex min-w-[220px] snap-start items-center gap-2 rounded-2xl border border-border bg-shading/30 p-3">
+              <RouterLink to={'/profile/' + person.id} className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-highlight text-sm font-semibold">
+                {person.avatarUrl ? (
+                  <img src={person.avatarUrl} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  (person.name || '?').slice(0, 1).toUpperCase()
+                )}
+              </RouterLink>
+              <div className="min-w-0 flex-1">
+                <RouterLink to={'/profile/' + person.id} className="truncate text-xs font-semibold block hover:underline text-[#F7F4EC]">
+                  {person.name}
+                </RouterLink>
+                <p className="truncate text-[11px] text-secondary-label">@{person.username || person.name}</p>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  onClick={() => onFollow(person)}
+                  className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all ${
+                    person.isFollowing
+                      ? 'bg-shading text-secondary-label'
+                      : person.followsYou
+                      ? 'bg-[#D7FF65] text-black'
+                      : 'bg-primary-label text-primary-background'
+                  }`}
+                >
+                  {buttonText}
+                </button>
+                <button
+                  onClick={() => onDismiss(person)}
+                  className="grid h-6 w-6 place-items-center rounded-full text-secondary-label opacity-60 hover:bg-highlight hover:opacity-100"
+                  aria-label="Remove suggestion"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <p className="mt-3 text-[11px] text-secondary-label/70">© 2026 Rare Motion Hub</p>
+    </section>
+  );
 }
 
 function FeedCard({ item, user, onUpdate, onDelete, muted, onMutedChange }) {
@@ -60,12 +170,50 @@ function FeedCard({ item, user, onUpdate, onDelete, muted, onMutedChange }) {
 export default function Feed({ user, savedOnly = false }) {
   const [items, setItems] = useState([]); const [loading, setLoading] = useState(true); const [error, setError] = useState(''); const [muted, setMuted] = useState(true);
   const [inboxOpen, setInboxOpen] = useState(false);
-  const [suggestions, setSuggestions] = useState([]);
+  const [allSuggestions, setAllSuggestions] = useState([]);
+  const [dismissedIds, setDismissedIds] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('rmh_dismissed_suggestions') || '[]');
+    } catch {
+      return [];
+    }
+  });
+
   useEffect(() => { fetch(`${apiUrl}/api/feed`).then(async (res) => { const data = await res.json(); if (!res.ok) throw new Error(data.error || 'Could not load feed.'); setItems(data.items || []); }).catch((err) => setError(err.message)).finally(() => setLoading(false)); }, []);
-  useEffect(() => { fetch(`${apiUrl}/api/users`).then((res) => res.json()).then((data) => setSuggestions((data.users || []).filter((person) => !person.isFollowing && person.id !== user?.id).slice(0, 5))).catch(() => {}); }, [user?.id]);
+  
+  useEffect(() => {
+    fetch(`${apiUrl}/api/users`)
+      .then((res) => res.json())
+      .then((data) => {
+        setAllSuggestions((data.users || []).filter((person) => person.id !== user?.id));
+      })
+      .catch(() => {});
+  }, [user?.id]);
+
   const updateItem = (id, value, type) => setItems((current) => current.map((item) => { if (item.id !== id) return item; if (type === 'like' || type === 'save') return { ...item, ...value }; if (type === 'comment-like') return { ...item, comments: (item.comments || []).map((entry) => entry.id === value.id ? value : entry) }; return { ...item, comments: [...(item.comments || []), value] }; }));
   const deleteItem = async (id) => { if (!window.confirm('Delete this feed preview?')) return; const res = await fetch(`${apiUrl}/api/feed/tracks/${id}`, { method: 'DELETE' }); if (res.ok) setItems((current) => current.filter((item) => item.id !== id)); };
-  const followSuggestion = async (person) => { setSuggestions((current) => current.filter((item) => item.id !== person.id)); const res = await fetch(`${apiUrl}/api/auth/${person.id}/follow`, { method: 'POST' }); if (!res.ok) setSuggestions((current) => current.some((item) => item.id === person.id) ? current : [person, ...current].slice(0, 5)); };
+
+  const dismissSuggestion = (person) => {
+    setDismissedIds((prev) => {
+      const next = [...prev, person.id];
+      try { localStorage.setItem('rmh_dismissed_suggestions', JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+
+  const followSuggestion = async (person) => {
+    setAllSuggestions((current) => current.map((item) => item.id === person.id ? { ...item, isFollowing: true } : item));
+    setTimeout(() => {
+      setAllSuggestions((current) => current.filter((item) => item.id !== person.id));
+    }, 600);
+    const res = await fetch(`${apiUrl}/api/auth/${person.id}/follow`, { method: 'POST' });
+    if (!res.ok) {
+      setAllSuggestions((current) => current.map((item) => item.id === person.id ? { ...item, isFollowing: false } : item));
+    }
+  };
+
+  const activeSuggestions = allSuggestions.filter((person) => !person.isFollowing && !dismissedIds.includes(person.id));
+
   const navItems = [{ label: 'pRoFiLe', icon: UserRound, to: '/profile/' + user.id }, { label: 'sAvEd', icon: Bookmark, to: '/saved' }, { label: 'liBraRy', icon: Library, to: '/library' }];
   return <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0e140b] via-[#050505] to-[#050505] text-[#F7F4EC]">
     <aside className="group fixed bottom-4 left-4 top-4 z-40 hidden w-20 flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#0a0a0a]/80 px-3 py-6 shadow-2xl backdrop-blur-2xl transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:w-64 hover:border-white/20 lg:flex">
@@ -107,7 +255,7 @@ export default function Feed({ user, savedOnly = false }) {
         <MessageCircle className="h-4 w-4" />
       </button>
     </header>
-    <QuickAdd suggestions={suggestions} onFollow={followSuggestion} />
+    <QuickAdd suggestions={activeSuggestions} onFollow={followSuggestion} onDismiss={dismissSuggestion} />
     <main className="px-4 pb-20 pt-4 sm:px-8 lg:ml-28 xl:mr-80">
       <div className="mx-auto max-w-2xl py-3">
         <div className="mb-6">
@@ -115,7 +263,7 @@ export default function Feed({ user, savedOnly = false }) {
           <h1 className="font-display mt-2 text-3xl font-bold tracking-wider text-[#F7F4EC]">fEEd</h1>
           <p className="mt-2 text-sm text-secondary-label">Preview new music from the Rare Motion community.</p>
         </div>
-        <CompactQuickAdd suggestions={suggestions} onFollow={followSuggestion} />
+        <CompactQuickAdd suggestions={activeSuggestions} onFollow={followSuggestion} onDismiss={dismissSuggestion} />
         {loading && <p className="py-16 text-center text-sm text-secondary-label">Loading previews...</p>}
         {error && <p className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">{error}</p>}
         <div className="space-y-6">
