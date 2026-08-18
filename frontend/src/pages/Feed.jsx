@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import StarlightLogo, { StarlightMark } from '../components/StarlightLogo';
 import { defaultGradient, gradientFor } from '../utils/gradients';
 import ChatInbox from '../components/ChatInbox';
+import UserSearch from '../components/UserSearch';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 const MAX_QUICK_ADD_SUGGESTIONS = 5;
@@ -160,10 +161,36 @@ function FeedCard({ item, user, onUpdate, onDelete, muted, onMutedChange }) {
   const reactComment = async (entry) => { const next = !entry.likedByMe; onUpdate(item.id, { ...entry, likedByMe: next, likeCount: Math.max(0, (entry.likeCount || 0) + (next ? 1 : -1)) }, 'comment-like'); const res = await fetch(`${apiUrl}/api/feed/tracks/${item.id}/comments/${entry.id}/like`, { method: 'POST' }); if (!res.ok) onUpdate(item.id, { ...entry, likedByMe: !next, likeCount: entry.likeCount || 0 }, 'comment-like'); };
   const roots = (item.comments || []).filter((entry) => !entry.parentId); const replies = (id) => (item.comments || []).filter((entry) => entry.parentId === id);
   return <motion.article ref={cardRef} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="relative mx-auto w-full max-w-xl overflow-hidden rounded-2xl border border-border bg-shading/35">
-    <Link to={'/profile/' + item.owner?.id} className="absolute left-0 top-0 z-10 h-14 w-3/4" aria-label={'Open ' + (item.owner?.name || 'artist') + ' profile'} />
-    <div className="flex items-center gap-3 px-4 py-3">{item.owner?.avatarUrl ? <img src={item.owner.avatarUrl} alt="" className="h-8 w-8 rounded-full object-cover" /> : <div className="grid h-8 w-8 place-items-center rounded-full bg-highlight text-sm font-semibold">{(item.owner?.name || user?.name || '?').slice(0, 1).toUpperCase()}</div>}<div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{item.owner?.name || 'Unknown artist'}</p><p className="text-xs text-secondary-label">{dateLabel(item.publishedAt || item.uploadedAt)}</p></div>{item.owner?.id === user?.id && <div className="relative"><button onClick={() => setMenuOpen((value) => !value)} className="grid h-8 w-8 place-items-center rounded-full hover:bg-highlight" aria-label="Feed options"><MoreHorizontal className="h-5 w-5" /></button>{menuOpen && <div className="absolute right-0 top-9 z-10 w-44 rounded-xl border border-border bg-primary-background p-1 shadow-2xl"><button onClick={() => { setMenuOpen(false); onDelete(item.id); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-red-400 hover:bg-red-500/10"><Trash2 className="h-4 w-4" />Delete preview</button></div>}</div>}</div>
+    <div className="flex items-center gap-3 px-4 py-3">
+      <RouterLink to={'/profile/' + item.owner?.id} className="flex items-center gap-3 min-w-0 flex-1 group">
+        {item.owner?.avatarUrl ? <img src={item.owner.avatarUrl} alt="" className="h-8 w-8 rounded-full object-cover" /> : <div className="grid h-8 w-8 place-items-center rounded-full bg-highlight text-sm font-semibold">{(item.owner?.name || user?.name || '?').slice(0, 1).toUpperCase()}</div>}
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-[#F7F4EC] group-hover:underline">{item.owner?.name || 'Unknown artist'}</p>
+          <p className="text-xs text-secondary-label">{dateLabel(item.publishedAt || item.uploadedAt)}</p>
+        </div>
+      </RouterLink>
+      {item.owner?.id === user?.id && <div className="relative"><button onClick={() => setMenuOpen((value) => !value)} className="grid h-8 w-8 place-items-center rounded-full hover:bg-highlight" aria-label="Feed options"><MoreHorizontal className="h-5 w-5" /></button>{menuOpen && <div className="absolute right-0 top-9 z-10 w-44 rounded-xl border border-border bg-primary-background p-1 shadow-2xl"><button onClick={() => { setMenuOpen(false); onDelete(item.id); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-red-400 hover:bg-red-500/10"><Trash2 className="h-4 w-4" />Delete preview</button></div>}</div>}
+    </div>
     <div className="group relative aspect-square w-full overflow-hidden bg-black sm:aspect-[4/3]">{item.project?.coverArt ? <img src={item.project.coverArt} alt="" className="block h-full w-full object-cover" /> : <div className={`h-full w-full bg-gradient-to-br ${gradientFor(item.id) || defaultGradient}`} />}<button onClick={() => playing ? stop() : play()} className={`absolute inset-0 m-auto grid h-12 w-12 place-items-center rounded-full bg-primary-label text-primary-background shadow-xl transition-opacity hover:scale-105 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 ${playing ? 'opacity-100' : ''}`} aria-label={playing ? 'Pause preview' : 'Play preview'}>{playing ? <Pause className="h-4 w-4 fill-current" /> : <Play className="ml-1 h-4 w-4 fill-current" />}</button><button onClick={toggleMute} className="absolute bottom-3 right-3 grid h-9 w-9 place-items-center rounded-full bg-black/65 text-white hover:bg-black/85" aria-label={muted ? 'Unmute preview' : 'Mute preview'}>{muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}</button><span className="absolute bottom-3 left-3 rounded-full bg-black/65 px-2.5 py-1 text-[11px] font-semibold text-white">{playing ? 'Previewing' : 'Preview'}</span></div>
-    <div className="px-4 py-3"><h2 className="font-semibold">{item.title || 'Untitled track'}</h2><p className="mt-1 text-sm text-secondary-label">{item.project?.title || 'Project preview'}</p>{item.feedCaption && <p className="mt-2 text-sm">{item.feedCaption}</p>}<div className="mt-3 flex items-center gap-4"><button onClick={toggleLike} className={`inline-flex items-center gap-1.5 text-sm ${item.likedByMe ? 'text-red-400' : 'text-secondary-label hover:text-primary-label'}`} aria-label="Like preview"><Heart className={`h-5 w-5 ${item.likedByMe ? 'fill-current' : ''}`} />{item.likeCount || 0}</button><button onClick={() => setShowComments((value) => !value)} className="inline-flex items-center gap-1.5 text-sm text-secondary-label hover:text-primary-label" aria-label="Show comments"><MessageCircle className="h-5 w-5" />{item.comments?.length || 0}</button><button onClick={toggleSave} className={`ml-auto inline-flex items-center text-sm transition-colors ${item.savedByMe ? 'text-primary-label' : 'text-secondary-label hover:text-primary-label'}`} aria-label={item.savedByMe ? 'Remove from saved' : 'Save preview'} title={item.savedByMe ? 'Remove from saved' : 'Save preview'}><Bookmark className={`h-5 w-5 ${item.savedByMe ? 'fill-current' : ''}`} /></button></div>{showComments && <div className="mt-3 border-t border-border pt-3"><div className="max-h-48 space-y-3 overflow-y-auto">{roots.map((entry) => <div key={entry.id} className="text-sm"><div className="flex gap-2"><span className="font-semibold">{entry.user?.name || 'User'}</span><span className="min-w-0 flex-1 break-words text-secondary-label">{entry.text}</span></div><div className="mt-1 flex items-center gap-3 pl-1 text-xs text-secondary-label"><button onClick={() => reactComment(entry)} className={entry.likedByMe ? 'text-red-400' : ''}><Heart className={`mr-1 inline h-3.5 w-3.5 ${entry.likedByMe ? 'fill-current' : ''}`} />{entry.likeCount || 0}</button><button onClick={() => { setReplyTo(entry); setComment(`@${entry.user?.name || 'user'} `); }}>Reply</button></div>{replies(entry.id).map((reply) => <div key={reply.id} className="ml-5 mt-2 flex gap-2 border-l border-border pl-3"><span className="font-semibold">{reply.user?.name || 'User'}</span><span className="break-words text-secondary-label">{reply.text}</span></div>)}</div>)}</div><form onSubmit={commentAction} className="mt-3 flex items-center gap-2">{replyTo && <button type="button" onClick={() => { setReplyTo(null); setComment(''); }} className="text-xs text-secondary-label">Cancel reply</button>}<input value={comment} onChange={(event) => setComment(event.target.value)} maxLength={500} placeholder={replyTo ? `Reply to ${replyTo.user?.name || 'user'}...` : 'Add a comment...'} className="min-w-0 flex-1 rounded-full border border-border bg-shading px-3 py-2 text-sm outline-none" /><button className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary-label text-primary-background" aria-label="Post comment"><Send className="h-4 w-4" /></button></form></div>}</div>
+    <div className="px-4 py-3"><h2 className="font-semibold">{item.title || 'Untitled track'}</h2><p className="mt-1 text-sm text-secondary-label">{item.project?.title || 'Project preview'}</p>{item.feedCaption && <p className="mt-2 text-sm">{item.feedCaption}</p>}<div className="mt-3 flex items-center gap-4"><button onClick={toggleLike} className={`inline-flex items-center gap-1.5 text-sm ${item.likedByMe ? 'text-red-400' : 'text-secondary-label hover:text-primary-label'}`} aria-label="Like preview"><Heart className={`h-5 w-5 ${item.likedByMe ? 'fill-current' : ''}`} />{item.likeCount || 0}</button><button onClick={() => setShowComments((value) => !value)} className="inline-flex items-center gap-1.5 text-sm text-secondary-label hover:text-primary-label" aria-label="Show comments"><MessageCircle className="h-5 w-5" />{item.comments?.length || 0}</button><button onClick={toggleSave} className={`ml-auto inline-flex items-center text-sm transition-colors ${item.savedByMe ? 'text-primary-label' : 'text-secondary-label hover:text-primary-label'}`} aria-label={item.savedByMe ? 'Remove from saved' : 'Save preview'} title={item.savedByMe ? 'Remove from saved' : 'Save preview'}><Bookmark className={`h-5 w-5 ${item.savedByMe ? 'fill-current' : ''}`} /></button></div>{showComments && <div className="mt-3 border-t border-border pt-3"><div className="max-h-48 space-y-3 overflow-y-auto">{roots.map((entry) => <div key={entry.id} className="text-sm"><div className="flex gap-2">
+      {entry.user?.id ? (
+        <RouterLink to={'/profile/' + entry.user.id} className="font-semibold text-[#F7F4EC] hover:underline cursor-pointer shrink-0">
+          {entry.user?.name || 'User'}
+        </RouterLink>
+      ) : (
+        <span className="font-semibold text-[#F7F4EC]">{entry.user?.name || 'User'}</span>
+      )}
+      <span className="min-w-0 flex-1 break-words text-secondary-label">{entry.text}</span>
+    </div><div className="mt-1 flex items-center gap-3 pl-1 text-xs text-secondary-label"><button onClick={() => reactComment(entry)} className={entry.likedByMe ? 'text-red-400' : ''}><Heart className={`mr-1 inline h-3.5 w-3.5 ${entry.likedByMe ? 'fill-current' : ''}`} />{entry.likeCount || 0}</button><button onClick={() => { setReplyTo(entry); setComment(`@${entry.user?.name || 'user'} `); }}>Reply</button></div>{replies(entry.id).map((reply) => <div key={reply.id} className="ml-5 mt-2 flex gap-2 border-l border-border pl-3">
+      {reply.user?.id ? (
+        <RouterLink to={'/profile/' + reply.user.id} className="font-semibold text-[#F7F4EC] hover:underline cursor-pointer shrink-0">
+          {reply.user?.name || 'User'}
+        </RouterLink>
+      ) : (
+        <span className="font-semibold text-[#F7F4EC]">{reply.user?.name || 'User'}</span>
+      )}
+      <span className="break-words text-secondary-label">{reply.text}</span>
+    </div>)}</div>)}</div><form onSubmit={commentAction} className="mt-3 flex items-center gap-2">{replyTo && <button type="button" onClick={() => { setReplyTo(null); setComment(''); }} className="text-xs text-secondary-label">Cancel reply</button>}<input value={comment} onChange={(event) => setComment(event.target.value)} maxLength={500} placeholder={replyTo ? `Reply to ${replyTo.user?.name || 'user'}...` : 'Add a comment...'} className="min-w-0 flex-1 rounded-full border border-border bg-shading px-3 py-2 text-sm outline-none" /><button className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary-label text-primary-background" aria-label="Post comment"><Send className="h-4 w-4" /></button></form></div>}</div>
   </motion.article>;
 }
 
@@ -258,10 +285,20 @@ export default function Feed({ user, savedOnly = false }) {
     <QuickAdd suggestions={activeSuggestions} onFollow={followSuggestion} onDismiss={dismissSuggestion} />
     <main className="px-4 pb-20 pt-4 sm:px-8 lg:ml-28 xl:mr-80">
       <div className="mx-auto max-w-2xl py-3">
-        <div className="mb-6">
-          <p className="font-display text-xs font-bold tracking-[0.2em] text-secondary-label">dIsCoVeR</p>
-          <h1 className="font-display mt-2 text-3xl font-bold tracking-wider text-[#F7F4EC]">fEEd</h1>
-          <p className="mt-2 text-sm text-secondary-label">Preview new music from the Rare Motion community.</p>
+        <div className="mb-6 space-y-3">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="font-display text-xs font-bold tracking-[0.2em] text-secondary-label">dIsCoVeR</p>
+              <h1 className="font-display mt-1 text-3xl font-bold tracking-wider text-[#F7F4EC]">fEEd</h1>
+            </div>
+            <div className="hidden sm:block w-72">
+              <UserSearch currentUser={user} />
+            </div>
+          </div>
+          <div className="sm:hidden">
+            <UserSearch currentUser={user} />
+          </div>
+          <p className="text-sm text-secondary-label">Preview new music from the Rare Motion community.</p>
         </div>
         <CompactQuickAdd suggestions={activeSuggestions} onFollow={followSuggestion} onDismiss={dismissSuggestion} />
         {loading && <p className="py-16 text-center text-sm text-secondary-label">Loading previews...</p>}

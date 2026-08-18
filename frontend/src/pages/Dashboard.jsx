@@ -5,6 +5,7 @@ import { Bell, ChevronRight, Circle, Compass, Disc3, Edit3, Folder, FolderOpen, 
 import StarlightLogo from '../components/StarlightLogo';
 import ConfirmModal from '../components/ConfirmModal';
 import MarqueeInput from '../components/MarqueeInput';
+import UserSearch from '../components/UserSearch';
 import { useAudio } from '../context/AudioContext';
 import { defaultGradient, gradientFor } from '../utils/gradients';
 
@@ -386,19 +387,29 @@ function NotificationsMenu({ isOpen, notifications, conversations }) {
           ) : (
             <div className="max-h-96 space-y-2 overflow-y-auto hide-scrollbar">
               {allNotifications.map((notification) => {
-                const text = notification.type === 'chat' || notification.type === 'message' || notification.type === 'call' || notification.type === 'like' || notification.type === 'comment_like' || notification.type === 'comment_reply'
+                const text = notification.type === 'chat' || notification.type === 'message' || notification.type === 'call' || notification.type === 'like' || notification.type === 'comment_like' || notification.type === 'comment_reply' || notification.type === 'follow'
                   ? notification.message
                   : `${notification.actor?.name || 'Someone'} listened to ${notification.track?.title || notification.project?.name || notification.folder?.name || 'your shared item'}`;
-                return (
-                  <div key={notification.id} className={`flex gap-3 rounded-2xl p-3 ${notification.read ? 'bg-shading' : 'bg-primary-label/10'}`}>
+                
+                const itemContent = (
+                  <div className={`flex gap-3 rounded-2xl p-3 transition-colors hover:bg-highlight/80 ${notification.read ? 'bg-shading' : 'bg-primary-label/10'}`}>
                     <ProfileAvatar user={notification.actor || { name: '?' }} size="h-10 w-10" />
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold text-primary-label">{text}</p>
                       {notification.preview && <p className="mt-1 truncate text-xs text-secondary-label">{notification.preview}</p>}
                       <p className="mt-1 text-xs text-secondary-label">{new Date(notification.createdAt).toLocaleString([], { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' })}</p>
                     </div>
                   </div>
                 );
+
+                if (notification.actor?.id) {
+                  return (
+                    <Link key={notification.id} to={'/profile/' + notification.actor.id} className="block">
+                      {itemContent}
+                    </Link>
+                  );
+                }
+                return <div key={notification.id}>{itemContent}</div>;
               })}
             </div>
           )}
@@ -833,9 +844,12 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
           }}
         />
       )}
-      <header className="sticky top-0 z-50 flex items-start justify-between gap-3 bg-[#050505]/90 pb-4 pt-2 backdrop-blur-md">
-        <div className="flex items-center gap-2">
-          <h1 className="font-display text-2xl font-bold tracking-wider text-[#F7F4EC]">liBraRy</h1>
+      <header className="sticky top-0 z-50 flex items-center justify-between gap-3 bg-[#050505]/90 pb-4 pt-2 backdrop-blur-md">
+        <div className="flex items-center gap-4 min-w-0 flex-1 max-w-lg">
+          <h1 className="font-display text-2xl font-bold tracking-wider text-[#F7F4EC] shrink-0">liBraRy</h1>
+          <div className="hidden sm:block flex-1 min-w-0">
+            <UserSearch currentUser={user} />
+          </div>
         </div>
 
         <div className="flex shrink-0 items-center gap-3">

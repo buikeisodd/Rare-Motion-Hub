@@ -747,7 +747,16 @@ const toggleFollow = async (req, res, next) => {
     } else {
       await Promise.all([
         User.updateOne({ id: target.id }, { $addToSet: { followers: req.userId } }),
-        User.updateOne({ id: actor.id }, { $addToSet: { following: target.id } })
+        User.updateOne({ id: actor.id }, { $addToSet: { following: target.id } }),
+        Notification.create({
+          id: createOpaqueToken(16),
+          userId: target.id,
+          type: 'follow',
+          read: false,
+          message: `${actor.name || 'Someone'} started following you.`,
+          actor: { id: actor.id, name: actor.name, avatarUrl: actor.avatarUrl },
+          createdAt: new Date().toISOString()
+        }).catch(console.error)
       ]);
     }
     const followerCount = isFollowing ? (target.followers || []).length - 1 : (target.followers || []).length + 1;
