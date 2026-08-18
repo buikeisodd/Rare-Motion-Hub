@@ -497,9 +497,6 @@ function EditProfileModal({ isOpen, user, onClose, onSave, saving, error }) {
 
             <h2 className="text-lg font-bold text-primary-label">Edit Profile</h2>
 
-            {/* Starlight Station logo replaces disc */}
-            <StarlightLogo className="logo-glow h-16 w-52 text-primary-label opacity-80" />
-
             {/* Avatar with label directly below it */}
             <div className="flex flex-col items-center gap-2">
               <button type="button" onClick={() => fileInputRef.current?.click()} className="relative grid h-24 w-24 place-items-center overflow-hidden rounded-full bg-shading">
@@ -807,7 +804,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
   };
 
   return (
-    <div className="min-h-screen bg-primary-background px-8 py-6 pb-10 lg:px-12">
+    <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0e140b] via-[#050505] to-[#050505] text-[#F7F4EC] px-8 py-6 pb-10 lg:px-12">
       {conversionProgress !== null && (
         <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm">
           <div className="w-80 rounded-3xl border border-border bg-shading p-8 shadow-2xl">
@@ -836,11 +833,10 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
           }}
         />
       )}
-      <header className="sticky top-0 z-50 flex items-start justify-between gap-3 border-b border-border/60 bg-primary-background/95 pb-4 pt-2 backdrop-blur-md">
-        {/* Starlight Station logo — blends with bg in dark, black in light */}
-        <Link to="/" aria-label="Starlight Station home">
-          <StarlightLogo className="logo-glow h-20 w-64 text-primary-label opacity-90 hover:opacity-100 transition-opacity" />
-        </Link>
+      <header className="sticky top-0 z-50 flex items-start justify-between gap-3 border-b border-border/60 bg-[#050505]/90 pb-4 pt-2 backdrop-blur-md">
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold tracking-tight text-[#F7F4EC]">Library</h1>
+        </div>
 
         <div className="flex shrink-0 items-center gap-3">
           <div className="relative">
