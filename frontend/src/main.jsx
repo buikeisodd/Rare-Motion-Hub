@@ -88,20 +88,20 @@ window.fetch = async (url, options = {}) => {
     options = { ...options };
     options.credentials = 'include';
     const csrf = readCsrfToken();
-    if (csrf) {
-      options.headers = { ...options.headers, 'x-csrf-token': csrf };
-    }
+    const token = localStorage.getItem('accessToken');
+    options.headers = { ...options.headers };
+    if (csrf) options.headers['x-csrf-token'] = csrf;
+    if (token) options.headers['authorization'] = `Bearer ${token}`;
   }
 
   let res = await originalFetch(url, options);
 
-  // Capture the CSRF token echoed in any API response header.
-  // The backend echoes it on login, refresh, and GET /api/auth/me — this is
-  // how a new device bootstraps its CSRF token without needing direct cookie
-  // access (which cross-domain SameSite=None can prevent in some browsers).
+  // Capture CSRF & Access tokens echoed in API response headers.
   if (isApiCall) {
     const echoedCsrf = res.headers.get('x-csrf-token');
     if (echoedCsrf) localStorage.setItem('csrfToken', echoedCsrf);
+    const echoedAccess = res.headers.get('x-access-token');
+    if (echoedAccess) localStorage.setItem('accessToken', echoedAccess);
   }
 
   // ── 401: access token expired ─────────────────────────────────────────────
@@ -109,8 +109,10 @@ window.fetch = async (url, options = {}) => {
     const user = await attemptRefresh();
     if (user) {
       const csrf = readCsrfToken();
-      const retryOptions = { ...options };
-      if (csrf) retryOptions.headers = { ...retryOptions.headers, 'x-csrf-token': csrf };
+      const token = localStorage.getItem('accessToken');
+      const retryOptions = { ...options, headers: { ...options.headers } };
+      if (csrf) retryOptions.headers['x-csrf-token'] = csrf;
+      if (token) retryOptions.headers['authorization'] = `Bearer ${token}`;
       res = await originalFetch(url, retryOptions);
       if (res.status !== 401) return res;
     }

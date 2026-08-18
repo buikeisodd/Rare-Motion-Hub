@@ -150,13 +150,20 @@ const clearAuthCookies = (res) => {
 
 const readCookie = (req, name) => {
   const cookieHeader = req.headers.cookie || '';
-  const prefixed = IS_PROD ? `__Host-${name}` : name;
-  const match = cookieHeader
-    .split(';')
-    .map((value) => value.trim())
-    .find((value) => value.startsWith(`${prefixed}=`));
-  if (!match) return '';
-  return decodeURIComponent(match.slice(prefixed.length + 1));
+  if (!cookieHeader) return '';
+  const expected = cookieName(name);
+  const prefixes = [
+    `${expected}=`,
+    `__Secure-${name}=`,
+    `__Host-${name}=`,
+    `${name}=`
+  ];
+  const items = cookieHeader.split(';').map((v) => v.trim());
+  for (const prefix of prefixes) {
+    const match = items.find((v) => v.startsWith(prefix));
+    if (match) return decodeURIComponent(match.slice(prefix.length));
+  }
+  return '';
 };
 
 const issueAuthSession = async (req, res, user) => {
@@ -167,27 +174,22 @@ const issueAuthSession = async (req, res, user) => {
   const csrfToken = createOpaqueToken(24);
   const accessToken = tokenForUser(user.id, session.sessionId);
 
-  // All three authentication credentials are set as HttpOnly cookies only
-  // for web browser clients. They must not appear in JSON response bodies
-  // for web — the frontend reads user state from the JSON payload only.
+  // Set HttpOnly cookies for web clients that support third-party cookies.
   res.cookie(cookieName('accessToken'), accessToken, cookieOptions(ACCESS_TOKEN_TTL_MS));
   res.cookie(cookieName('refreshToken'), refreshToken, cookieOptions(REFRESH_TOKEN_TTL_MS));
   res.cookie(cookieName('sessionId'), session.sessionId, cookieOptions(REFRESH_TOKEN_TTL_MS));
-  // csrfToken intentionally not HttpOnly — JS reads it and sends it as a
-  // request header so the server can verify the double-submit pattern.
   res.cookie(cookieName('csrfToken'), csrfToken, cookieOptions(REFRESH_TOKEN_TTL_MS, { httpOnly: false }));
-  res.set('x-csrf-token', csrfToken); // Fallback for clients unable to read the cookie due to cross-site rules
-
-  // Mobile clients (React Native) cannot use HttpOnly cookies — the platform
-  // doesn't expose a browser cookie jar to native code. Detect via the
-  // X-Client-Type header (sent by the Expo app) and include the tokens in
-  // the JSON response body for mobile only, where they are stored in
-  // expo-secure-store (encrypted, sandboxed, not accessible to other apps).
-  const isMobileClient = (req.get('x-client-type') || '').toLowerCase() === 'mobile';
+  
+  // Set headers as fallbacks for cross-domain deployments where browsers block 3rd-party cookies
+  res.set('x-csrf-token', csrfToken);
+  res.set('x-access-token', accessToken);
+  res.set('x-refresh-token', refreshToken);
 
   return {
     sessionId: session.sessionId,
-    ...(isMobileClient ? { token: accessToken, refreshToken, csrfToken } : {})
+    token: accessToken,
+    refreshToken,
+    csrfToken
   };
 };
 

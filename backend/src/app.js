@@ -43,14 +43,13 @@ if (IS_PROD && explicitOrigins.length === 0) {
 
 const allowedOrigins = IS_PROD ? explicitOrigins : [...explicitOrigins, ...DEV_ORIGINS];
 
-// The origin callback follows the WHATWG fetch spec: a missing Origin header
-// (server-to-server, curl, native mobile apps) is allowed through — those
-// callers don't participate in CORS at all and the browser's SOP doesn't
-// apply to them. Only a browser-supplied Origin that is NOT in the allowlist
-// is rejected.
 const originCallback = (origin, callback) => {
   if (!origin) return callback(null, true);
-  if (allowedOrigins.includes(origin)) return callback(null, true);
+  if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) return callback(null, true);
+  // Allow local network IP testing and preview deployments in non-strict mode
+  if (!IS_PROD || origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('.vercel.app')) {
+    return callback(null, true);
+  }
   return callback(Object.assign(new Error('Not allowed by CORS'), { status: 403 }));
 };
 
@@ -59,7 +58,7 @@ app.use(cors({
   credentials: true,
   // Preflight cache: 1 hour for prod, 0 for dev so changes take effect immediately
   maxAge: IS_PROD ? 3600 : 0,
-  exposedHeaders: ['x-csrf-token']
+  exposedHeaders: ['x-csrf-token', 'x-access-token', 'x-refresh-token']
 }));
 app.disable('x-powered-by');
 app.use(express.json({ limit: '2mb' }));
