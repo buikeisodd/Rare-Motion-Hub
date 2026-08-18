@@ -29,7 +29,7 @@ function DesktopOnly({ children }) {
   if (isDesktop) return children;
 
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center px-8 text-center">
+    <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0e140b] via-[#050505] to-[#050505] text-[#F7F4EC] flex flex-col items-center justify-center px-8 text-center">
       <StarlightLogo className="logo-glow h-16 w-56 text-white opacity-80 mb-12" />
       <div className="mb-8 text-6xl"></div>
       <h1 className="text-2xl font-semibold text-white mb-3">Desktop only</h1>
@@ -49,7 +49,7 @@ function WelcomeBack({ user, onDone }) {
   };
 
   return (
-    <div className="min-h-screen bg-primary-background px-6 py-12 flex flex-col">
+    <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0e140b] via-[#050505] to-[#050505] text-[#F7F4EC] px-6 py-12 flex flex-col">
       <main className="flex-1 flex items-center justify-center">
         <div className="w-full max-w-xl text-center animate-welcome-rise">
           <StarlightLogo className="logo-glow mx-auto mb-10 h-32 w-80 text-primary-label opacity-90 animate-record-float" />
@@ -80,7 +80,7 @@ function WelcomeAnimation({ user, onDone }) {
   }, [navigate, onDone]);
 
   return (
-    <div className="min-h-screen bg-primary-background px-6 py-12 flex flex-col">
+    <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0e140b] via-[#050505] to-[#050505] text-[#F7F4EC] px-6 py-12 flex flex-col">
       <main className="flex-1 flex items-center justify-center">
         <div className="text-center animate-welcome-rise">
           <StarlightLogo className="logo-glow mx-auto mb-8 h-28 w-72 text-primary-label opacity-90 animate-record-float" />
@@ -409,7 +409,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-primary-background text-primary-label font-sans">
+    <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0e140b] via-[#050505] to-[#050505] text-[#F7F4EC] font-sans">
       <AudioProvider key={user?.id || "guest"}>
         <BrowserRouter>
           <AnimatedRoutes 
