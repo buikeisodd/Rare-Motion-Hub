@@ -610,7 +610,7 @@ const switchVersion = async (req, res, next) => {
       uploadedAt: track.uploadedAt || new Date().toISOString()
     };
 
-    track.versions.splice(versionIndex, 1, currentVersion);
+    track.versions.splice(selectedIndex, 1, currentVersion);
     track.filename = selectedVersion.filename;
     track.url = selectedVersion.url || (selectedVersion.filename ? `${BASE_URL}/api/media/tracks/${track.id}/versions/${selectedVersion.id}` : track.url);
     track.mimeType = selectedVersion.mimeType;
