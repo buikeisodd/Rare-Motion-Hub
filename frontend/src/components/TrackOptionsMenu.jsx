@@ -505,33 +505,6 @@ function TrackVersionsModal({ isOpen, onClose, onBack, track, userId, onTrackUpd
     }
   };
 
-  const saveVersionLabel = async (version, nextLabel) => {
-    try {
-      if (version.isCurrent) {
-        const res = await fetch(`${apiUrl}/api/tracks/${track.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, title: nextLabel })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
-        onTrackUpdate(data.track);
-        return;
-      }
-
-      const res = await fetch(`${apiUrl}/api/tracks/${track.id}/versions/${version.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, label: nextLabel })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      onTrackUpdate(data.track);
-    } catch (err) {
-      alert(err.message);
-    }
-  };
-
   const handleExport = async (version) => {
     setOpenMenuId(null);
     const url = version.isCurrent
@@ -594,22 +567,15 @@ function TrackVersionsModal({ isOpen, onClose, onBack, track, userId, onTrackUpd
           >
             <button
               onClick={() => version.isCurrent ? onPlay?.(track) : handleSwitch(version.id)}
-              className="mt-1 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-shading hover:bg-highlight"
-              aria-label="Play version"
+              className={`mt-1 grid h-9 w-9 shrink-0 place-items-center rounded-full ${version.isCurrent ? 'bg-primary-label text-primary-background' : 'bg-shading hover:bg-highlight'}`}
+              aria-label={version.isCurrent ? 'Play active version' : 'Switch to this version'}
             >
               <Play className="h-4 w-4 fill-current" />
             </button>
             <div className="min-w-0 flex-1">
               <div className="mb-2 flex items-center gap-2">
-                {version.isCurrent && (
-                  <span className="shrink-0 rounded-full bg-primary-label px-2 py-0.5 text-[10px] font-bold text-primary-background">Current</span>
-                )}
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-secondary-label">Rename</span>
+                <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${version.isCurrent ? 'bg-primary-label text-primary-background' : 'bg-shading text-secondary-label'}`}>{version.isCurrent ? 'Active version' : 'Switch version'}</span>
               </div>
-              <VersionRenameField
-                label={version.label}
-                onSave={(nextLabel) => saveVersionLabel(version, nextLabel)}
-              />
               <p className="mt-2 truncate text-xs text-secondary-label">{formatTrackDate(version.uploadedAt)}</p>
             </div>
             <div className="relative shrink-0">
