@@ -230,7 +230,7 @@ const updateFolder = async (req, res, next) => {
       name: nextTitle,
       title: nextTitle,
       artist: nextArtist,
-      visibility: visibility === 'public' ? 'public' : (db.folders[folderIndex].visibility || 'private'),
+      visibility: visibility === undefined ? (db.folders[folderIndex].visibility || 'public') : (visibility === 'private' ? 'private' : 'public'),
       allowedUserIds: Array.isArray(allowedUserIds) ? allowedUserIds : (db.folders[folderIndex].allowedUserIds || []),
       updatedAt: new Date().toISOString()
     };
@@ -319,7 +319,7 @@ const updateProject = async (req, res, next) => {
       name: nextTitle,
       title: nextTitle,
       artist: nextArtist,
-      visibility: visibility === 'public' ? 'public' : (db.projects[projectIndex].visibility || 'private'),
+      visibility: visibility === undefined ? (db.projects[projectIndex].visibility || 'public') : (visibility === 'private' ? 'private' : 'public'),
       allowedUserIds: Array.isArray(allowedUserIds) ? allowedUserIds : (db.projects[projectIndex].allowedUserIds || []),
       updatedAt: new Date().toISOString()
     };
