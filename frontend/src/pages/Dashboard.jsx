@@ -851,7 +851,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
           }}
         />
       )}
-      <header className="sticky top-0 z-50 flex items-center justify-between gap-3 bg-[#050505]/90 pb-4 pt-2 backdrop-blur-md">
+      <header className="sticky top-0 z-50 flex items-center justify-between gap-3 bg-transparent pb-4 pt-2">
         <div className="flex min-w-0 max-w-lg flex-1 items-center gap-4">
           <h1 className="font-display text-2xl font-bold tracking-wider text-[#F7F4EC] shrink-0">liBraRy</h1>
         </div>
@@ -951,7 +951,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
           className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-shading border border-border px-5 text-sm font-semibold text-primary-label shadow-xl backdrop-blur-md transition-colors hover:bg-highlight"
         >
           <Plus className={`h-4 w-4 transition-transform duration-200 ${isAddMenuOpen ? 'rotate-45' : ''}`} />
-          {isAddMenuOpen ? 'Close' : 'Add'}
+          {isAddMenuOpen ? 'Close' : currentTrack ? null : 'Add'}
         </button>
       </div>
 

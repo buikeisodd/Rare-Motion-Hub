@@ -271,7 +271,7 @@ export default function Feed({ user, savedOnly = false }) {
         </div>
       </div>
     </aside>
-    <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border/60 bg-primary-background/95 px-4 py-4 backdrop-blur lg:hidden">
+    <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border/40 bg-transparent px-4 py-4 lg:hidden">
       <Link to="/library" className="grid h-9 w-9 place-items-center rounded-full bg-shading hover:bg-highlight" aria-label="Back to library">
         <ArrowLeft className="h-4 w-4" />
       </Link>

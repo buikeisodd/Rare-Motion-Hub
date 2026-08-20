@@ -195,7 +195,7 @@ export default function Project({ user }) {
       {isProjectMenuOpen && (
         <div className="fixed inset-0 z-40" onClick={() => setIsProjectMenuOpen(false)} />
       )}
-      <header className="sticky top-0 z-50 flex items-center justify-between bg-primary-background/95 px-6 py-6 backdrop-blur-md lg:px-14">
+      <header className="sticky top-0 z-50 flex items-center justify-between bg-transparent px-6 py-6 lg:px-14">
         <Link to="/library" className="grid h-10 w-10 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:h-12 sm:w-12 sm:rounded-3xl" aria-label="Back to library">
           <ChevronLeft className="h-6 w-6" />
         </Link>
@@ -407,7 +407,7 @@ export default function Project({ user }) {
         aria-label="Add tracks"
       >
         <Plus className="h-4 w-4" />
-        Add
+        {currentTrack ? null : 'Add tracks'}
       </button>
 
       <UploadModal
