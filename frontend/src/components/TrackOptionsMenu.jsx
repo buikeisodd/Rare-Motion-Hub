@@ -578,15 +578,12 @@ function TrackVersionsModal({ isOpen, onClose, onBack, track, userId, onTrackUpd
         {allVersions.map((version) => (
           <div
             key={version.id}
-            className={`relative flex items-start gap-3 rounded-2xl px-3 py-3 transition-colors ${version.isCurrent ? 'bg-highlight' : 'hover:bg-shading'}`}
+            onClick={() => !version.isCurrent && !switchingId && handleSwitch(version.id)}
+            className={`relative flex cursor-pointer items-start gap-3 rounded-2xl px-3 py-3 transition-colors ${version.isCurrent ? 'bg-highlight' : 'hover:bg-shading'} ${switchingId === version.id ? 'pointer-events-none opacity-70' : ''}`}
           >
-            <button
-              onClick={() => version.isCurrent ? onPlay?.(track) : handleSwitch(version.id)}
-              className={`mt-1 grid h-9 w-9 shrink-0 place-items-center rounded-full ${version.isCurrent ? 'bg-primary-label text-primary-background' : 'bg-shading hover:bg-highlight'}`}
-              aria-label={version.isCurrent ? 'Play active version' : 'Switch to this version'}
-            >
-              {switchingId === version.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4 fill-current" />}
-            </button>
+            <div className={`mt-1 grid h-9 w-9 shrink-0 place-items-center rounded-full ${version.isCurrent ? 'bg-primary-label text-primary-background' : 'bg-shading'}`}>
+              {switchingId === version.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <span className="text-xs font-bold">{version.isCurrent ? 'A' : 'V'}</span>}
+            </div>
             <div className="min-w-0 flex-1">
               <div className="mb-2 flex items-center gap-2">
                 <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${version.isCurrent ? 'bg-primary-label text-primary-background' : 'bg-shading text-secondary-label'}`}>{version.isCurrent ? 'Active version' : switchingId === version.id ? 'Switching...' : 'Switch version'}</span>
