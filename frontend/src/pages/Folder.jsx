@@ -303,7 +303,7 @@ export default function Folder({ user, onLogout }) {
       </main>
 
       {/* Desktop Add Button */}
-      <div className={`fixed z-[60] hidden md:flex flex-col items-end ${currentTrack ? 'bottom-28 left-6' : 'bottom-4 right-4 sm:bottom-7 sm:right-8 lg:right-12'}`}>
+      <div className={`fixed bottom-6 z-[60] hidden md:flex flex-col items-end ${currentTrack ? 'left-6' : 'right-4 sm:right-8 lg:right-12'}`}>
         <AnimatePresence>
           {isAddMenuOpen && (
             <motion.div
@@ -326,10 +326,10 @@ export default function Folder({ user, onLogout }) {
         </AnimatePresence>
         <button
           onClick={() => { setIsAddMenuOpen((o) => !o); setIsFolderMenuOpen(false); }}
-          className="grid h-14 w-14 place-items-center rounded-full bg-primary-label text-primary-background shadow-2xl transition-transform hover:scale-105"
+          className="grid h-12 w-12 place-items-center rounded-full bg-primary-label text-primary-background shadow-2xl transition-transform hover:scale-105"
           aria-label="Add"
         >
-          {isAddMenuOpen ? <X className="h-7 w-7" /> : <Plus className="h-7 w-7" />}
+          {isAddMenuOpen ? <X className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
         </button>
       </div>
 
@@ -357,10 +357,10 @@ export default function Folder({ user, onLogout }) {
         </AnimatePresence>
         <button
           onClick={() => { setIsAddMenuOpen((o) => !o); setIsFolderMenuOpen(false); }}
-          className="grid h-14 w-14 place-items-center rounded-full bg-primary-label text-primary-background shadow-2xl transition-transform hover:scale-105"
+          className="grid h-12 w-12 place-items-center rounded-full bg-primary-label text-primary-background shadow-2xl transition-transform hover:scale-105"
           aria-label="Add"
         >
-          {isAddMenuOpen ? <X className="h-7 w-7" /> : <Plus className="h-7 w-7" />}
+          {isAddMenuOpen ? <X className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
         </button>
       </div>
 
