@@ -244,6 +244,10 @@ const publishTrack = async (req, res, next) => {
     const db = ensureDBShape(await readDB());
     const track = db.tracks.find((item) => item.id === req.params.id);
     if (!track || trackOwnerId(track) !== userId) return next(new AppError('Track not found', 404));
+    const project = track.projectId ? db.projects.find((item) => item.id === track.projectId) : null;
+    if (project?.visibility === 'private' && req.body.published !== false) {
+      return next(new AppError('Private projects cannot be published to the feed.', 403));
+    }
 
     const published = req.body.published !== false;
     const start = Number(req.body.previewStart ?? track.previewStart ?? 0);
@@ -273,7 +277,11 @@ const getFeed = async (req, res, next) => {
   try {
     const db = ensureDBShape(await readDB());
     const items = db.tracks
-      .filter((track) => track.isPublished && (track.url || track.filename))
+      .filter((track) => {
+        if (!track.isPublished || (!track.url && !track.filename)) return false;
+        const project = track.projectId ? db.projects.find((item) => item.id === track.projectId) : null;
+        return !project || project.visibility !== 'private';
+      })
       .sort((a, b) => new Date(b.publishedAt || b.uploadedAt) - new Date(a.publishedAt || a.uploadedAt))
       .slice(0, 50)
       .map((track) => {

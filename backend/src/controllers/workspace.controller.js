@@ -21,6 +21,8 @@ const { cloudinary, hasCloudinaryConfig } = require('../config/cloudinary');
 const { removeDirIfExists, removeFileIfExists, stemsDir, coverDir } = require('../utils/fileHelper');
 const { AppError } = require('../middlewares/error.middleware');
 
+const canAccessItem = (item, userId) => item && (item.userId === userId || item.visibility !== 'private' || (item.allowedUserIds || []).includes(userId));
+
 const getWorkspace = async (req, res, next) => {
   try {
     const userId = req.userId;
@@ -114,11 +116,12 @@ const getFolder = async (req, res, next) => {
   try {
     const db = ensureDBShape(await readDB());
     const userId = req.userId;
-    const folder = db.folders.find((f) => f.id === req.params.id && f.userId === userId);
+    const folder = db.folders.find((f) => f.id === req.params.id);
     if (!folder) return next(new AppError('Folder not found', 404));
+    if (!canAccessItem(folder, userId)) return next(new AppError('This folder is private.', 403));
 
-    const childProjects = db.projects.filter((p) => p.folderId === folder.id && p.userId === userId);
-    const childFolders = db.folders.filter((f) => f.parentFolderId === folder.id && f.userId === userId);
+    const childProjects = db.projects.filter((p) => p.folderId === folder.id && canAccessItem(p, userId));
+    const childFolders = db.folders.filter((f) => f.parentFolderId === folder.id && canAccessItem(f, userId));
 
     const breadcrumbs = [];
     let current = folder;
@@ -211,7 +214,7 @@ const moveFolder = async (req, res, next) => {
 
 const updateFolder = async (req, res, next) => {
   try {
-    const { title, name, artist } = req.body;
+    const { title, name, artist, visibility, allowedUserIds } = req.body;
     const userId = req.userId;
     const db = ensureDBShape(await readDB());
     const folderIndex = db.folders.findIndex((folder) => folder.id === req.params.id && folder.userId === userId);
@@ -224,6 +227,8 @@ const updateFolder = async (req, res, next) => {
       name: nextTitle,
       title: nextTitle,
       artist: nextArtist,
+      visibility: visibility === 'public' ? 'public' : (db.folders[folderIndex].visibility || 'private'),
+      allowedUserIds: Array.isArray(allowedUserIds) ? allowedUserIds : (db.folders[folderIndex].allowedUserIds || []),
       updatedAt: new Date().toISOString()
     };
     await writeDB(db);
@@ -261,7 +266,7 @@ const deleteFolder = async (req, res, next) => {
 
 const createProject = async (req, res, next) => {
   try {
-    const { name, title, artist, folderId } = req.body;
+    const { name, title, artist, folderId, visibility } = req.body;
     const userId = req.userId;
     const db = ensureDBShape(await readDB());
     const ownerName = ownerNameFor(db, userId);
@@ -278,6 +283,9 @@ const createProject = async (req, res, next) => {
       userId, 
       folderId: folderId || null,
       coverArt: null,
+      visibility: visibility === 'public' ? 'public' : 'private',
+      allowedUserIds: [],
+      accessRequests: [],
       createdAt: new Date().toISOString() 
     };
     db.projects.push(newProject);
@@ -291,7 +299,7 @@ const createProject = async (req, res, next) => {
 
 const updateProject = async (req, res, next) => {
   try {
-    const { title, name, artist } = req.body;
+    const { title, name, artist, visibility, allowedUserIds } = req.body;
     const userId = req.userId;
     const db = ensureDBShape(await readDB());
     const projectIndex = db.projects.findIndex((project) => project.id === req.params.id && project.userId === userId);
@@ -304,6 +312,8 @@ const updateProject = async (req, res, next) => {
       name: nextTitle,
       title: nextTitle,
       artist: nextArtist,
+      visibility: visibility === 'public' ? 'public' : (db.projects[projectIndex].visibility || 'private'),
+      allowedUserIds: Array.isArray(allowedUserIds) ? allowedUserIds : (db.projects[projectIndex].allowedUserIds || []),
       updatedAt: new Date().toISOString()
     };
     await writeDB(db);
@@ -410,13 +420,47 @@ const updateProjectCover = async (req, res, next) => {
   }
 };
 
+const requestWorkspaceAccess = async (req, res, next) => {
+  try {
+    const db = ensureDBShape(await readDB());
+    const userId = req.userId;
+    if (!['folder', 'project'].includes(req.params.type)) return next(new AppError('Invalid workspace type.', 400));
+    const collection = req.params.type === 'folder' ? db.folders : db.projects;
+    const item = collection.find((entry) => entry.id === req.params.id);
+    if (!item) return next(new AppError('Workspace item not found.', 404));
+    if (item.visibility === 'public' || item.userId === userId || (item.allowedUserIds || []).includes(userId)) return res.json({ status: 'granted' });
+    item.accessRequests ||= [];
+    if (!item.accessRequests.some((request) => request.userId === userId && request.status === 'pending')) item.accessRequests.push({ userId, status: 'pending', createdAt: new Date().toISOString() });
+    await writeDB(db);
+    res.status(201).json({ status: 'pending' });
+  } catch (error) { next(error); }
+};
+
+const decideWorkspaceAccess = async (req, res, next) => {
+  try {
+    const db = ensureDBShape(await readDB());
+    if (!['folder', 'project'].includes(req.params.type)) return next(new AppError('Invalid workspace type.', 400));
+    const collection = req.params.type === 'folder' ? db.folders : db.projects;
+    const item = collection.find((entry) => entry.id === req.params.id && entry.userId === req.userId);
+    if (!item) return next(new AppError('Workspace item not found.', 404));
+    const request = (item.accessRequests || []).find((entry) => entry.userId === req.body.userId);
+    if (!request) return next(new AppError('Access request not found.', 404));
+    request.status = req.body.approved === true ? 'approved' : 'rejected';
+    item.allowedUserIds = (item.allowedUserIds || []).filter((id) => id !== request.userId);
+    if (request.status === 'approved') item.allowedUserIds.push(request.userId);
+    await writeDB(db);
+    res.json({ status: request.status, allowedUserIds: item.allowedUserIds });
+  } catch (error) { next(error); }
+};
+
 const getProject = async (req, res, next) => {
   try {
     const userId = req.userId;
     const data = await getOrSetCache(`project:${req.params.id}:${userId}`, 3600, async () => {
       const db = ensureDBShape(await readDB());
-      const project = db.projects.find((item) => item.id === req.params.id && item.userId === userId);
+      const project = db.projects.find((item) => item.id === req.params.id);
       if (!project) return { error: 'Project not found', status: 404 };
+      if (!canAccessItem(project, userId)) return { error: 'This project is private.', status: 403 };
       const tracks = db.tracks.filter((track) => track.projectId === project.id).map(normalizeTrack);
       return { project: normalizeLibraryItem(project, db, 'project'), tracks };
     });
@@ -516,6 +560,8 @@ module.exports = {
   getCovers,
   updateProjectCover,
   getProject,
+  requestWorkspaceAccess,
+  decideWorkspaceAccess,
   uploadCover,
   deleteCover
 };

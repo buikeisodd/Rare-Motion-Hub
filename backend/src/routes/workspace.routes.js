@@ -15,6 +15,8 @@ const {
   getCovers,
   updateProjectCover,
   getProject,
+  requestWorkspaceAccess,
+  decideWorkspaceAccess,
   uploadCover,
   deleteCover
 } = require('../controllers/workspace.controller');
@@ -44,6 +46,8 @@ router.put('/projects/:id', requireUserId, updateProject);
 router.put('/projects/:id/move', requireUserId, moveProject);
 router.delete('/projects/:id', requireUserId, deleteProject);
 router.put('/projects/:id/cover', requireUserId, updateProjectCover);
+router.post('/:type/:id/access-request', requireUserId, requestWorkspaceAccess);
+router.patch('/:type/:id/access-request', requireUserId, decideWorkspaceAccess);
 
 // Covers
 router.get('/covers', requireUserId, getCovers);

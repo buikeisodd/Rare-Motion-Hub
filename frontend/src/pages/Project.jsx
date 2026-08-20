@@ -109,6 +109,13 @@ export default function Project({ user }) {
     }
   };
 
+  const toggleVisibility = async () => {
+    const visibility = project.visibility === 'public' ? 'private' : 'public';
+    const res = await fetch(`${apiUrl}/api/projects/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: project.title, artist: project.artist, visibility }) });
+    if (res.ok) setProject(await res.json());
+    setIsProjectMenuOpen(false);
+  };
+
   const handleDeleteClick = (e) => {
     setIsProjectMenuOpen(false);
     setIsConfirmOpen(true);
@@ -221,6 +228,9 @@ export default function Project({ user }) {
                   <button onClick={() => { setIsShareModalOpen(true); setIsProjectMenuOpen(false); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
                     <Link2 className="h-6 w-6" />
                     Share project
+                  </button>
+                  <button onClick={toggleVisibility} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
+                    {project.visibility === 'public' ? 'Make project private' : 'Make project public'}
                   </button>
                   <button onClick={() => navigate(`/project/${id}/insights`)} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
                     <BarChart3 className="h-6 w-6" />

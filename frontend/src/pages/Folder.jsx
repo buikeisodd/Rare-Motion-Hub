@@ -74,6 +74,12 @@ export default function Folder({ user, onLogout }) {
     await saveFolderMetadata(id, { title: nextTitle, artist: nextArtist });
   };
 
+  const toggleVisibility = async () => {
+    const visibility = data?.folder?.visibility === 'public' ? 'private' : 'public';
+    await saveFolderMetadata(id, { title: editableTitle, artist: editableArtist, visibility });
+    setIsFolderMenuOpen(false);
+  };
+
   const createProject = async () => {
     const res = await fetch(`${apiUrl}/api/projects`, {
       method: 'POST',
@@ -198,6 +204,9 @@ export default function Folder({ user, onLogout }) {
                   }} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
                     <Copy className="h-4 w-4" />
                     Copy share link
+                  </button>
+                  <button onClick={toggleVisibility} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
+                    {data?.folder?.visibility === 'public' ? 'Make folder private' : 'Make folder public'}
                   </button>
                   <button onClick={handleDeleteClick} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-500 hover:bg-red-500/10 transition-colors">
                     <Trash2 className="h-4 w-4" />

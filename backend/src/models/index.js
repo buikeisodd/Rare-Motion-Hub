@@ -47,6 +47,9 @@ const ProjectSchema = new Schema({
   bpm: String,
   key: String,
   notes: String,
+  visibility: { type: String, enum: ['public', 'private'], default: 'private' },
+  allowedUserIds: [String],
+  accessRequests: [{ userId: String, status: String, createdAt: String }],
   locked: Boolean,
   exportedAt: String,
   createdAt: { type: String, default: () => new Date().toISOString() },
@@ -87,6 +90,9 @@ const FolderSchema = new Schema({
   title: String,
   name: String,
   artist: String,
+  visibility: { type: String, enum: ['public', 'private'], default: 'private' },
+  allowedUserIds: [String],
+  accessRequests: [{ userId: String, status: String, createdAt: String }],
   createdAt: { type: String, default: () => new Date().toISOString() },
 });
 
