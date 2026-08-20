@@ -280,7 +280,13 @@ const getFeed = async (req, res, next) => {
       .filter((track) => {
         if (!track.isPublished || (!track.url && !track.filename)) return false;
         const project = track.projectId ? db.projects.find((item) => item.id === track.projectId) : null;
-        return !project || project.visibility !== 'private';
+        if (project?.visibility === 'private') return false;
+        let folder = project?.folderId ? db.folders.find((item) => item.id === project.folderId) : null;
+        while (folder) {
+          if (folder.visibility === 'private') return false;
+          folder = folder.parentFolderId ? db.folders.find((item) => item.id === folder.parentFolderId) : null;
+        }
+        return true;
       })
       .sort((a, b) => new Date(b.publishedAt || b.uploadedAt) - new Date(a.publishedAt || a.uploadedAt))
       .slice(0, 50)

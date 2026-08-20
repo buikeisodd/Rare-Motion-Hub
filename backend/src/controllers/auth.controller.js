@@ -7,6 +7,7 @@ const { cloudinary, hasCloudinaryConfig } = require('../config/cloudinary');
 const { invalidateCache } = require('../config/redis');
 const { AppError } = require('../middlewares/error.middleware');
 const { BASE_URL, publicUser } = require('../utils/helpers');
+const { readDB, writeDB, ensureDBShape } = require('../utils/dbHelper');
 const { hasSmtpConfig, sendVerificationEmail, sendPasswordResetEmail, sendSecurityAlertEmail } = require('../utils/email');
 const {
   recordSecurityEvent,
@@ -819,6 +820,9 @@ const deleteUser = async (req, res, next) => {
     if (!user) return next(new AppError('User not found.', 404));
 
     const uid = req.params.id;
+    const db = ensureDBShape(await readDB());
+    db.tracks = db.tracks.filter((track) => track.userId !== uid && track.uploader?.id !== uid);
+    await writeDB(db);
     await Promise.all([
       User.deleteOne({ id: uid }),
       Folder.deleteMany({ userId: uid }),
@@ -851,6 +855,14 @@ const deactivateUser = async (req, res, next) => {
       { returnDocument: 'after', lean: true }
     );
     if (!updatedUser) return next(new AppError('User not found.', 404));
+    const db = ensureDBShape(await readDB());
+    db.tracks.forEach((track) => {
+      if (track.userId === req.params.id || track.uploader?.id === req.params.id) {
+        track.isPublished = false;
+        track.publishedAt = null;
+      }
+    });
+    await writeDB(db);
     // Revoking sessions first ensures no existing refresh token can silently
     // produce a new access token after the account is deactivated. The access
     // token's short TTL (15 min) bounds any remaining window where a token

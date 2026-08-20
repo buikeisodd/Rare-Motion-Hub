@@ -107,8 +107,8 @@
 
 @layer utilities {
   .glass {
-    backdrop-filter: blur(12px);
-    background-color: rgb(var(--color-shading) / 0.8);
+    backdrop-filter: blur(28px) saturate(125%);
+    background-color: rgb(var(--color-shading) / 0.97);
     border: 1px solid rgb(var(--color-border));
   }
 
@@ -121,7 +121,9 @@
   }
 
   .panel-bg {
-    background-color: rgb(var(--color-panel-bg));
+    background-color: rgb(var(--color-panel-bg) / 0.98);
+    backdrop-filter: blur(28px) saturate(125%);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
   }
 
   .panel-input-bg {

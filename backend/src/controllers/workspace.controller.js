@@ -160,6 +160,9 @@ const createFolder = async (req, res, next) => {
       name: nextTitle,
       title: nextTitle,
       artist: artist?.trim() || ownerName,
+      visibility: 'public',
+      allowedUserIds: [],
+      accessRequests: [],
       userId,
       parentFolderId: parentFolderId || null,
       createdAt: new Date().toISOString()
@@ -231,6 +234,10 @@ const updateFolder = async (req, res, next) => {
       allowedUserIds: Array.isArray(allowedUserIds) ? allowedUserIds : (db.folders[folderIndex].allowedUserIds || []),
       updatedAt: new Date().toISOString()
     };
+    if (db.folders[folderIndex].visibility === 'private') {
+      const childProjectIds = db.projects.filter((project) => project.folderId === req.params.id).map((project) => project.id);
+      db.tracks.forEach((track) => { if (childProjectIds.includes(track.projectId)) { track.isPublished = false; track.publishedAt = null; } });
+    }
     await writeDB(db);
     invalidateCache(`workspace:${userId}`);
     res.json(normalizeLibraryItem(db.folders[folderIndex], db, 'folder'));
@@ -283,7 +290,7 @@ const createProject = async (req, res, next) => {
       userId, 
       folderId: folderId || null,
       coverArt: null,
-      visibility: visibility === 'public' ? 'public' : 'private',
+      visibility: visibility === 'private' ? 'private' : 'public',
       allowedUserIds: [],
       accessRequests: [],
       createdAt: new Date().toISOString() 
@@ -316,6 +323,9 @@ const updateProject = async (req, res, next) => {
       allowedUserIds: Array.isArray(allowedUserIds) ? allowedUserIds : (db.projects[projectIndex].allowedUserIds || []),
       updatedAt: new Date().toISOString()
     };
+    if (db.projects[projectIndex].visibility === 'private') {
+      db.tracks.forEach((track) => { if (track.projectId === req.params.id) { track.isPublished = false; track.publishedAt = null; } });
+    }
     await writeDB(db);
     invalidateCache(`workspace:${userId}`);
     invalidateCache(`project:${req.params.id}:${userId}`);
