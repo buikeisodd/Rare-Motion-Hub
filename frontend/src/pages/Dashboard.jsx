@@ -351,6 +351,7 @@ function ProfileAvatar({ user, size = 'h-11 w-11', className = '' }) {
 }
 
 function NotificationsMenu({ isOpen, notifications, conversations }) {
+  const [tab, setTab] = useState('unread');
   const allNotifications = [...notifications];
 
   if (conversations) {
@@ -370,6 +371,7 @@ function NotificationsMenu({ isOpen, notifications, conversations }) {
   }
 
   allNotifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const visibleNotifications = allNotifications.filter((notification) => tab === 'unread' ? !notification.read : notification.read);
 
   return (
     <AnimatePresence>
@@ -381,12 +383,18 @@ function NotificationsMenu({ isOpen, notifications, conversations }) {
           transition={{ duration: 0.15 }}
           className="absolute left-auto right-0 top-full mt-2 z-50 w-72 rounded-[1.25rem] border border-border panel-bg p-3 shadow-2xl origin-top-right"
         >
-          <h2 className="px-2 pb-2 text-sm font-bold text-primary-label">Notifications</h2>
-          {allNotifications.length === 0 ? (
-            <p className="px-3 py-6 text-sm text-secondary-label">No notifications yet.</p>
+          <div className="mb-2 grid grid-cols-2 gap-1 rounded-xl bg-shading p-1">
+            {['unread', 'read'].map((value) => (
+              <button key={value} onClick={() => setTab(value)} className={`rounded-lg px-2 py-2 text-xs font-semibold capitalize transition-colors ${tab === value ? 'bg-primary-label text-primary-background' : 'text-secondary-label hover:text-primary-label'}`}>
+                {value} {value === 'unread' ? allNotifications.filter((notification) => !notification.read).length : allNotifications.filter((notification) => notification.read).length}
+              </button>
+            ))}
+          </div>
+          {visibleNotifications.length === 0 ? (
+            <p className="px-3 py-6 text-sm text-secondary-label">No {tab} notifications.</p>
           ) : (
             <div className="max-h-96 space-y-2 overflow-y-auto hide-scrollbar">
-              {allNotifications.map((notification) => {
+              {visibleNotifications.map((notification) => {
                 const text = notification.type === 'chat' || notification.type === 'message' || notification.type === 'call' || notification.type === 'like' || notification.type === 'comment_like' || notification.type === 'comment_reply' || notification.type === 'follow' || notification.type === 'follow_confirmation'
                   ? notification.message
                   : `${notification.actor?.name || 'Someone'} listened to ${notification.track?.title || notification.project?.name || notification.folder?.name || 'your shared item'}`;
@@ -804,7 +812,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
     setIsAddMenuOpen(false);
 
     if (!isNotificationsOpen && unreadNotificationsCount > 0) {
-      fetch(`${apiUrl}/api/notifications/read?userId=${user.id}`, { method: 'POST' })
+      fetch(`${apiUrl}/api/notifications/read`, { method: 'POST', credentials: 'include' })
         .catch(err => console.error('Failed to mark notifications read', err));
       
       setWorkspace(prev => ({
@@ -856,7 +864,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
           <div className="relative">
             <button onClick={handleOpenNotifications} className="relative grid h-10 w-10 place-items-center rounded-2xl bg-primary-label text-primary-background transition-transform hover:scale-105 sm:h-11 sm:w-11" aria-label="Notifications">
               <Bell className="h-5 w-5 fill-current" />
-              {totalNotifications > 0 && <span className="absolute right-3 top-3 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-primary-background">{totalNotifications}</span>}
+              {totalNotifications > 0 && <span className="absolute right-2.5 top-2.5 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-primary-background" aria-label="New notifications" />}
             </button>
             <NotificationsMenu isOpen={isNotificationsOpen} notifications={workspace.notifications} conversations={conversations} />
           </div>
