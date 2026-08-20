@@ -205,10 +205,12 @@ export default function Folder({ user, onLogout }) {
                     <Copy className="h-4 w-4" />
                     Copy share link
                   </button>
-                  <button onClick={toggleVisibility} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
-                    {data?.folder?.visibility === 'private' ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
-                    {data?.folder?.visibility === 'private' ? 'Private · Make public' : 'Public · Make private'}
-                  </button>
+                  {data?.folder?.userId === user.id && (
+                    <button onClick={toggleVisibility} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
+                      {data?.folder?.visibility === 'private' ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+                      {data?.folder?.visibility === 'private' ? 'Private · Make public' : 'Public · Make private'}
+                    </button>
+                  )}
                   <button onClick={handleDeleteClick} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-500 hover:bg-red-500/10 transition-colors">
                     <Trash2 className="h-4 w-4" />
                     Delete folder

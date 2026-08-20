@@ -229,10 +229,12 @@ export default function Project({ user }) {
                     <Link2 className="h-6 w-6" />
                     Share project
                   </button>
-                  <button onClick={toggleVisibility} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
-                    {project.visibility === 'private' ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
-                    {project.visibility === 'private' ? 'Private · Make public' : 'Public · Make private'}
-                  </button>
+                  {project.userId === user.id && (
+                    <button onClick={toggleVisibility} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
+                      {project.visibility === 'private' ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+                      {project.visibility === 'private' ? 'Private · Make public' : 'Public · Make private'}
+                    </button>
+                  )}
                   <button onClick={() => navigate(`/project/${id}/insights`)} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
                     <BarChart3 className="h-6 w-6" />
                     Insights
