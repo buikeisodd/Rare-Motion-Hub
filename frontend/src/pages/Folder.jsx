@@ -334,7 +334,7 @@ export default function Folder({ user, onLogout }) {
       </div>
 
       {/* Mobile Add Button */}
-      <div className={`fixed z-[60] md:hidden flex flex-col items-end ${currentTrack ? 'bottom-[4.9rem] left-3' : 'bottom-[4.9rem] left-1/2 -translate-x-1/2'}`}>
+      <div className={`fixed bottom-6 z-[60] md:hidden flex flex-col items-end ${currentTrack ? 'left-3' : 'left-1/2 -translate-x-1/2'}`}>
         <AnimatePresence>
           {isAddMenuOpen && (
             <motion.div
