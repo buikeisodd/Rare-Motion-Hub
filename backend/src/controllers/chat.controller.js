@@ -547,12 +547,12 @@ const markNotificationsRead = async (req, res, next) => {
     const userId = req.userId;
 
     db.notifications.forEach((notif) => {
-      if (notif.userId === userId) {
-        notif.read = true;
-      }
+      if (String(notif.userId) === String(userId)) notif.read = true;
     });
 
     await writeDB(db);
+    await Notification.updateMany({ userId }, { $set: { read: true } });
+    invalidateCache(`workspace:${userId}`);
     res.json({ success: true });
   } catch (error) {
     next(error);
