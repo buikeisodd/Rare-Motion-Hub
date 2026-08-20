@@ -282,6 +282,12 @@ function IdleLogoutGuard({ user, onLogout }) {
   );
 }
 
+function MobileRouteChrome({ user, onInbox }) {
+  const location = useLocation();
+  if (!user || location.pathname !== '/feed') return null;
+  return <MobileBottomNav user={user} onInbox={onInbox} />;
+}
+
 function App() {
   // ── Auth state machine ────────────────────────────────────────────────────
   // Explicit states, derived from the live server response — never from
@@ -409,7 +415,7 @@ function App() {
           />
           <GlobalAudioPlayer />
           <IdleLogoutGuard user={user} onLogout={handleLogout} />
-          {user && <MobileBottomNav user={user} onInbox={() => setMobileInboxOpen(true)} />}
+          <MobileRouteChrome user={user} onInbox={() => setMobileInboxOpen(true)} />
           {user && <ChatInbox user={user} isOpen={mobileInboxOpen} onToggle={() => setMobileInboxOpen((value) => !value)} />}
           <ServerStatus />
         </BrowserRouter>
