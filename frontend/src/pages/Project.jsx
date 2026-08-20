@@ -75,6 +75,7 @@ export default function Project({ user }) {
     fetch(`${apiUrl}/api/listen`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ userId: user.id, projectId: project?.id, trackId: track.id })
     }).catch((err) => console.error('Failed to record listening activity', err));
   };

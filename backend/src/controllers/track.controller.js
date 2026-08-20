@@ -432,24 +432,26 @@ const getTrackInsights = async (req, res, next) => {
     if (!track) return next(new AppError('Track not found', 404));
 
     const sourceTrackId = track.sourceTrackId || track.id;
+    const ownerId = trackOwnerId(track) || track.userId;
+    if (ownerId !== userId) return next(new AppError('Only the project owner can view insights.', 403));
     const playEvents = db.playEvents.filter((event) => (
-      event.ownerId === userId &&
+      (event.ownerId === ownerId || event.ownerId === userId) &&
       (event.sourceTrackId === sourceTrackId || event.trackId === track.id)
     ));
 
     const listenerMap = new Map();
     playEvents.forEach((event) => {
-      const listener = db.users.find((item) => item.id === event.actorId);
-      const key = event.actorId || 'unknown';
+      const listener = db.users.find((item) => item.id === event.userId);
+      const key = event.userId || 'unknown';
       const current = listenerMap.get(key) || {
         id: key,
         name: listener?.name || 'Unknown listener',
         avatarUrl: listener?.avatarUrl || null,
         plays: 0,
-        lastListenedAt: event.createdAt
+        lastListenedAt: event.playedAt
       };
       current.plays += 1;
-      if (new Date(event.createdAt) > new Date(current.lastListenedAt)) current.lastListenedAt = event.createdAt;
+      if (new Date(event.playedAt) > new Date(current.lastListenedAt)) current.lastListenedAt = event.playedAt;
       listenerMap.set(key, current);
     });
 
@@ -461,6 +463,50 @@ const getTrackInsights = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
+};
+
+const recordListen = async (req, res, next) => {
+  try {
+    const db = ensureDBShape(await readDB());
+    const track = db.tracks.find((item) => item.id === req.body?.trackId);
+    if (!track) return next(new AppError('Track not found', 404));
+    const project = db.projects.find((item) => item.id === (req.body?.projectId || track.projectId));
+    if (!project) return next(new AppError('Project not found', 404));
+    const playedAt = new Date().toISOString();
+    db.playEvents.push({
+      id: makeId(),
+      trackId: track.id,
+      projectId: project.id,
+      ownerId: project.userId,
+      userId: req.userId,
+      playedAt
+    });
+    await writeDB(db);
+    res.status(201).json({ recorded: true, playedAt });
+  } catch (error) { next(error); }
+};
+
+const getProjectInsights = async (req, res, next) => {
+  try {
+    const db = ensureDBShape(await readDB());
+    const project = db.projects.find((item) => item.id === req.params.id);
+    if (!project) return next(new AppError('Project not found', 404));
+    if (project.userId !== req.userId) return next(new AppError('Only the project owner can view insights.', 403));
+    const tracks = db.tracks.filter((item) => item.projectId === project.id);
+    const trackIds = new Set(tracks.map((item) => item.id));
+    const events = db.playEvents.filter((event) => event.projectId === project.id || trackIds.has(event.trackId));
+    const byTrack = tracks.map((track) => ({ id: track.id, title: track.title, plays: events.filter((event) => event.trackId === track.id).length })).sort((a, b) => b.plays - a.plays);
+    const listenerMap = new Map();
+    events.forEach((event) => {
+      const key = event.userId || 'unknown';
+      const listener = db.users.find((item) => item.id === key);
+      const current = listenerMap.get(key) || { id: key, name: listener?.name || 'Unknown listener', avatarUrl: listener?.avatarUrl || null, plays: 0, lastListenedAt: event.playedAt };
+      current.plays += 1;
+      if (new Date(event.playedAt) > new Date(current.lastListenedAt)) current.lastListenedAt = event.playedAt;
+      listenerMap.set(key, current);
+    });
+    res.json({ project: { id: project.id, name: project.title || project.name, coverArt: project.coverArt, ownerName: db.users.find((item) => item.id === project.userId)?.name || 'Unknown artist', trackCount: tracks.length }, totalPlays: events.length, byTrack, byListener: Array.from(listenerMap.values()).sort((a, b) => b.plays - a.plays) });
+  } catch (error) { next(error); }
 };
 
 const replaceAudio = async (req, res, next) => {
@@ -1007,6 +1053,8 @@ module.exports = {
   deleteFeedComment,
   toggleCommentLike,
   getTrackInsights,
+  recordListen,
+  getProjectInsights,
   replaceAudio,
   switchVersion,
   deleteVersion,

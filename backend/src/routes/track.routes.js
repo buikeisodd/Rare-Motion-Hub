@@ -14,6 +14,8 @@ const {
   deleteFeedComment,
   toggleCommentLike,
   getTrackInsights,
+  recordListen,
+  getProjectInsights,
   replaceAudio,
   switchVersion,
   deleteVersion,
@@ -45,6 +47,8 @@ router.post('/feed/tracks/:id/comments', requireUserId, addFeedComment);
 router.delete('/feed/tracks/:id/comments/:commentId', requireUserId, deleteFeedComment);
 router.post('/feed/tracks/:id/comments/:commentId/like', requireUserId, toggleCommentLike);
 router.get('/tracks/:id/insights', requireUserId, getTrackInsights);
+router.post('/listen', requireUserId, recordListen);
+router.get('/projects/:id/insights', requireUserId, getProjectInsights);
 router.post('/tracks/:id/replace-audio', requireUserId, uploadTrack.single('track'), replaceAudio);
 
 // Versions
