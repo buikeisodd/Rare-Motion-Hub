@@ -67,6 +67,15 @@ const TrackSchema = new Schema({
   mimeType: String,
   size: Number,
   url: String,
+  versions: [{
+    id: String,
+    filename: String,
+    url: String,
+    mimeType: String,
+    size: Number,
+    label: String,
+    uploadedAt: String
+  }],
   uploader: { id: String, name: String },
   uploadedAt: { type: String, default: () => new Date().toISOString() },
   isStem: Boolean,
