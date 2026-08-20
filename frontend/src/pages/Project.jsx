@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { BarChart3, ChevronLeft, Download, FileText, Image as ImageIcon, Link2, MoreHorizontal, Music, Pause, Play, Plus, Shuffle, Trash2 } from 'lucide-react';
+import { BarChart3, ChevronLeft, Download, FileText, Image as ImageIcon, Link2, Lock, MoreHorizontal, Music, Pause, Play, Plus, Shuffle, Trash2, Unlock } from 'lucide-react';
 import UploadModal from '../components/UploadModal';
 import CoverArtPicker from '../components/CoverArtPicker';
 import ConfirmModal from '../components/ConfirmModal';
@@ -21,7 +21,7 @@ function timeAgo(dateStr) {
   const diffHours = Math.floor(diffMins / 60);
   const diffDays = Math.floor(diffHours / 24);
 
-  if (diffSecs < 60) return 'Just now';
+  if (diffSecs < 60) return '';
   if (diffMins < 60) return `${diffMins}m ago`;
   if (diffHours < 24) return `${diffHours}h ago`;
   if (diffDays === 1) return 'Yesterday';
@@ -230,7 +230,8 @@ export default function Project({ user }) {
                     Share project
                   </button>
                   <button onClick={toggleVisibility} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
-                    {project.visibility === 'public' ? 'Make project private' : 'Make project public'}
+                    {project.visibility === 'private' ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+                    {project.visibility === 'private' ? 'Private · Make public' : 'Public · Make private'}
                   </button>
                   <button onClick={() => navigate(`/project/${id}/insights`)} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
                     <BarChart3 className="h-6 w-6" />
@@ -308,6 +309,10 @@ export default function Project({ user }) {
                 </button>
               </div>
             </div>
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-secondary-label">
+              {project.visibility === 'private' ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
+              {project.visibility === 'private' ? 'Private' : 'Public'}
+            </div>
 
             <p className="flex flex-wrap items-center text-sm md:text-base text-secondary-label">
               <span className="min-w-0 max-w-[10rem] sm:max-w-[14rem] overflow-hidden mr-1">
@@ -383,7 +388,6 @@ export default function Project({ user }) {
                   </div>
                   <div className="min-w-0">
                     <h3 className="truncate text-xl font-semibold text-primary-label">{track.title}</h3>
-                    <p className="mt-1 text-base text-secondary-label">{timeAgo(track.uploadedAt)}</p>
                     {(track.notes || track.noteMemos?.length > 0) && (
                       <p className="mt-1 truncate text-xs text-secondary-label/80">
                         {track.notes}

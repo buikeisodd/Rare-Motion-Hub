@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, Bell, ChevronRight, Circle, Copy, Disc3, FolderPlus, FolderOpen, Home, LogOut, MessageSquare, MoreHorizontal, Plus, Trash2, Video, X } from 'lucide-react';
+import { ArrowLeft, Bell, ChevronRight, Circle, Copy, Disc3, FolderPlus, FolderOpen, Home, Lock, LogOut, MessageSquare, MoreHorizontal, Plus, Trash2, Unlock, Video, X } from 'lucide-react';
 import { LibraryProject, LibraryFolder } from './Dashboard';
 import StarlightLogo from '../components/StarlightLogo';
 import ConfirmModal from '../components/ConfirmModal';
@@ -206,7 +206,8 @@ export default function Folder({ user, onLogout }) {
                     Copy share link
                   </button>
                   <button onClick={toggleVisibility} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
-                    {data?.folder?.visibility === 'public' ? 'Make folder private' : 'Make folder public'}
+                    {data?.folder?.visibility === 'private' ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+                    {data?.folder?.visibility === 'private' ? 'Private · Make public' : 'Public · Make private'}
                   </button>
                   <button onClick={handleDeleteClick} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-500 hover:bg-red-500/10 transition-colors">
                     <Trash2 className="h-4 w-4" />
@@ -252,6 +253,10 @@ export default function Folder({ user, onLogout }) {
           textClassName="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-primary-label"
           placeholder="Folder title"
         />
+        <div className="mt-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-secondary-label">
+          {folder?.visibility === 'private' ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
+          {folder?.visibility === 'private' ? 'Private' : 'Public'}
+        </div>
       </div>
 
       {/* Grid */}
