@@ -145,6 +145,28 @@ const uploadTrackController = async (req, res, next) => {
   }
 };
 
+const promoteVersionToCloudinary = async (trackId, versionId, localPath, userId) => {
+  if (!hasCloudinaryConfig || !localPath || !fs.existsSync(localPath)) return;
+  try {
+    const uploadResult = await cloudinary.uploader.upload_large(localPath, {
+      resource_type: 'video',
+      folder: 'raremotionhub/track-versions'
+    });
+    const db = ensureDBShape(await readDB());
+    const track = db.tracks.find((item) => item.id === trackId);
+    const version = track?.versions?.find((item) => item.id === versionId);
+    if (!version) return;
+    version.filename = null;
+    version.url = uploadResult.secure_url;
+    await writeDB(db);
+    invalidateCache(`workspace:${userId}`);
+    if (track.projectId) invalidateCache(`project:${track.projectId}:${userId}`);
+    removeFileIfExists(localPath);
+  } catch (error) {
+    console.error('Background Cloudinary version upload failed; local fallback remains active:', error.message);
+  }
+};
+
 const getTrackUploadSignature = (req, res, next) => {
   try {
     if (!hasCloudinaryConfig) return next(new AppError('Cloudinary storage is not configured.', 503));
@@ -524,11 +546,14 @@ const replaceAudio = async (req, res, next) => {
 
     const track = db.tracks[trackIndex];
     track.versions ||= [];
+    const previousFilename = track.filename;
+    const previousVersionId = makeId();
 
     if (track.filename) {
       track.versions.push({
-        id: makeId(),
+        id: previousVersionId,
         filename: track.filename,
+        url: track.url,
         mimeType: track.mimeType,
         size: track.size,
         label: `Version ${track.versions.length + 1}`,
@@ -549,7 +574,10 @@ const replaceAudio = async (req, res, next) => {
     invalidateCache(`workspace:${userId}`);
     if (track.projectId) invalidateCache(`project:${track.projectId}:${userId}`);
     res.json({ track: normalizeTrack(track) });
-    promoteTrackToCloudinary(track, storedFile.path, userId);
+    const previousPath = previousFilename ? trackMediaPath({ ...track, filename: previousFilename }) : null;
+    promoteTrackToCloudinary(track, storedFile.path, userId)
+      .then(() => previousFilename && promoteVersionToCloudinary(track.id, previousVersionId, previousPath, userId))
+      .catch((error) => console.error('Version Cloudinary promotion failed:', error.message));
   } catch (error) {
     next(error);
   }
@@ -574,6 +602,7 @@ const switchVersion = async (req, res, next) => {
     const currentVersion = {
       id: makeId(),
       filename: track.filename,
+      url: track.url,
       mimeType: track.mimeType,
       size: track.size,
       label: selectedVersion.label || `Version ${versionIndex + 1}`,
@@ -582,6 +611,7 @@ const switchVersion = async (req, res, next) => {
 
     track.versions.splice(versionIndex, 1, currentVersion);
     track.filename = selectedVersion.filename;
+    track.url = selectedVersion.url || (selectedVersion.filename ? `${BASE_URL}/api/media/tracks/${track.id}/versions/${selectedVersion.id}` : track.url);
     track.mimeType = selectedVersion.mimeType;
     track.size = selectedVersion.size;
     track.uploadedAt = selectedVersion.uploadedAt || track.uploadedAt;
