@@ -495,13 +495,13 @@ function TrackVersionsModal({ isOpen, onClose, onBack, track, userId, onTrackUpd
     uploadedAt: track.uploadedAt,
     isCurrent: true
   };
-  const allVersions = [currentEntry, ...(track.versions || []).map((v, i) => ({ ...v, isCurrent: false, label: v.label || `Version ${i + 1}` }))];
+  const allVersions = [currentEntry, ...(track.versions || []).map((v, i) => ({ ...v, versionIndex: i, isCurrent: false, label: v.label || `Version ${i + 1}` }))];
 
-  const handleSwitch = async (versionId) => {
+  const handleSwitch = async (versionId, versionIndex) => {
     if (versionId === 'current') return;
     setSwitchingId(versionId);
     try {
-      const updated = await switchTrackVersion(track, versionId, userId);
+      const updated = await switchTrackVersion(track, versionId, userId, versionIndex);
       onTrackUpdate(updated);
     } catch (err) {
       alert(err.message);
@@ -578,7 +578,7 @@ function TrackVersionsModal({ isOpen, onClose, onBack, track, userId, onTrackUpd
         {allVersions.map((version) => (
           <div
             key={version.id}
-            onClick={() => !version.isCurrent && !switchingId && handleSwitch(version.id)}
+            onClick={() => !version.isCurrent && !switchingId && handleSwitch(version.id, version.versionIndex)}
             className={`relative flex cursor-pointer items-start gap-3 rounded-2xl px-3 py-3 transition-colors ${version.isCurrent ? 'bg-highlight' : 'hover:bg-shading'} ${switchingId === version.id ? 'pointer-events-none opacity-70' : ''}`}
           >
             <div className={`mt-1 grid h-9 w-9 shrink-0 place-items-center rounded-full ${version.isCurrent ? 'bg-primary-label text-primary-background' : 'bg-shading'}`}>
@@ -866,12 +866,12 @@ export function replaceTrackAudio(track, file, userId, onProgress) {
   });
 }
 
-export async function switchTrackVersion(track, versionId, userId) {
+export async function switchTrackVersion(track, versionId, userId, versionIndex) {
   const res = await fetch(`${apiUrl}/api/tracks/${track.id}/switch-version`, {
     method: 'PATCH',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId, versionId })
+    body: JSON.stringify({ userId, versionId, versionIndex })
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Could not switch version.');
