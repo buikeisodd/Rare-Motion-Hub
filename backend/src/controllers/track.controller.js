@@ -587,25 +587,26 @@ const switchVersion = async (req, res, next) => {
   try {
     const db = ensureDBShape(await readDB());
     const userId = req.userId;
-    const { versionId } = req.body;
-    if (!versionId) return next(new AppError('Version ID is required.', 400));
+    const { versionId, versionIndex } = req.body;
+    if (!versionId && versionIndex === undefined) return next(new AppError('Version ID is required.', 400));
 
     const trackIndex = db.tracks.findIndex((item) => item.id === req.params.id && (item.userId === userId || item.uploader?.id === userId));
     if (trackIndex === -1) return next(new AppError('Track not found', 404));
 
     const track = db.tracks[trackIndex];
     track.versions ||= [];
-    const versionIndex = track.versions.findIndex((version) => String(version.id) === String(versionId));
-    if (versionIndex === -1) return next(new AppError('Version not found', 404));
+    let selectedIndex = track.versions.findIndex((version) => String(version.id) === String(versionId));
+    if (selectedIndex === -1 && Number.isInteger(Number(versionIndex))) selectedIndex = Number(versionIndex);
+    if (selectedIndex < 0 || selectedIndex >= track.versions.length) return next(new AppError('Version not found', 404));
 
-    const selectedVersion = track.versions[versionIndex];
+    const selectedVersion = track.versions[selectedIndex];
     const currentVersion = {
       id: makeId(),
       filename: track.filename,
       url: track.url,
       mimeType: track.mimeType,
       size: track.size,
-      label: selectedVersion.label || `Version ${versionIndex + 1}`,
+      label: selectedVersion.label || `Version ${selectedIndex + 1}`,
       uploadedAt: track.uploadedAt || new Date().toISOString()
     };
 
