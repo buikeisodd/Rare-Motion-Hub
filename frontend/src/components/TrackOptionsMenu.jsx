@@ -49,15 +49,20 @@ function ModalShell({ isOpen, onClose, children, className = 'max-w-3xl', zIndex
 function TrackInsightsModal({ isOpen, onClose, track, userId }) {
   const [insights, setInsights] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (!isOpen || !track) return;
     let cancelled = false;
     setLoading(true);
-    fetch(`${apiUrl}/api/tracks/${track.id}/insights?userId=${encodeURIComponent(userId)}`)
-      .then((res) => res.json())
-      .then((data) => { if (!cancelled) setInsights(data); })
-      .catch(() => { if (!cancelled) setInsights(null); })
+    setError('');
+    fetch(`${apiUrl}/api/tracks/${track.id}/insights?userId=${encodeURIComponent(userId)}`, { credentials: 'include' })
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Could not load insights.');
+        if (!cancelled) setInsights(data);
+      })
+      .catch((err) => { if (!cancelled) { setInsights(null); setError(err.message); } })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [isOpen, track, userId]);
@@ -72,7 +77,9 @@ function TrackInsightsModal({ isOpen, onClose, track, userId }) {
           </button>
         </div>
         {loading ? (
-          <p className="text-sm text-secondary-label">Loading...</p>
+          <div className="animate-pulse space-y-3"><div className="h-4 w-2/3 rounded bg-shading" /><div className="h-10 w-32 rounded bg-shading" /><div className="h-4 w-24 rounded bg-shading" /><div className="h-10 w-full rounded-xl bg-shading" /><div className="h-10 w-full rounded-xl bg-shading" /></div>
+        ) : error ? (
+          <p className="rounded-xl bg-red-500/10 px-3 py-3 text-sm text-red-300">{error}</p>
         ) : (
           <>
             <p className="mb-1 truncate text-sm font-semibold">{track?.title}</p>
