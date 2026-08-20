@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft, BarChart3, Download, FileAudio, FileText, Layers,
-  ListPlus, MoreHorizontal, Pencil, Play, Radio, Share2, Trash2, Upload, X
+  ListPlus, Loader2, MoreHorizontal, Pencil, Play, Radio, Share2, Trash2, Upload, X
 } from 'lucide-react';
 import ConfirmModal from './ConfirmModal';
 
@@ -483,6 +483,7 @@ function VersionRenameField({ label, onSave, disabled }) {
 function TrackVersionsModal({ isOpen, onClose, onBack, track, userId, onTrackUpdate, onPlay }) {
   const [openMenuId, setOpenMenuId] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [switchingId, setSwitchingId] = useState(null);
   const addVersionRef = useRef(null);
 
   if (!isOpen || !track) return null;
@@ -497,11 +498,14 @@ function TrackVersionsModal({ isOpen, onClose, onBack, track, userId, onTrackUpd
 
   const handleSwitch = async (versionId) => {
     if (versionId === 'current') return;
+    setSwitchingId(versionId);
     try {
       const updated = await switchTrackVersion(track, versionId, userId);
       onTrackUpdate(updated);
     } catch (err) {
       alert(err.message);
+    } finally {
+      setSwitchingId(null);
     }
   };
 
@@ -570,11 +574,11 @@ function TrackVersionsModal({ isOpen, onClose, onBack, track, userId, onTrackUpd
               className={`mt-1 grid h-9 w-9 shrink-0 place-items-center rounded-full ${version.isCurrent ? 'bg-primary-label text-primary-background' : 'bg-shading hover:bg-highlight'}`}
               aria-label={version.isCurrent ? 'Play active version' : 'Switch to this version'}
             >
-              <Play className="h-4 w-4 fill-current" />
+              {switchingId === version.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4 fill-current" />}
             </button>
             <div className="min-w-0 flex-1">
               <div className="mb-2 flex items-center gap-2">
-                <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${version.isCurrent ? 'bg-primary-label text-primary-background' : 'bg-shading text-secondary-label'}`}>{version.isCurrent ? 'Active version' : 'Switch version'}</span>
+                <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${version.isCurrent ? 'bg-primary-label text-primary-background' : 'bg-shading text-secondary-label'}`}>{version.isCurrent ? 'Active version' : switchingId === version.id ? 'Switching...' : 'Switch version'}</span>
               </div>
               <p className="mt-2 truncate text-xs text-secondary-label">{formatTrackDate(version.uploadedAt)}</p>
             </div>
@@ -835,7 +839,7 @@ export async function replaceTrackAudio(track, file, userId) {
   const formData = new FormData();
   formData.append('track', file);
   formData.append('userId', userId);
-  const res = await fetch(`${apiUrl}/api/tracks/${track.id}/replace-audio`, { method: 'POST', body: formData });
+  const res = await fetch(`${apiUrl}/api/tracks/${track.id}/replace-audio`, { method: 'POST', credentials: 'include', body: formData });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Could not replace audio.');
   return data.track;
@@ -844,6 +848,7 @@ export async function replaceTrackAudio(track, file, userId) {
 export async function switchTrackVersion(track, versionId, userId) {
   const res = await fetch(`${apiUrl}/api/tracks/${track.id}/switch-version`, {
     method: 'PATCH',
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userId, versionId })
   });
