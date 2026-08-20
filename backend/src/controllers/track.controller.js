@@ -595,7 +595,7 @@ const switchVersion = async (req, res, next) => {
 
     const track = db.tracks[trackIndex];
     track.versions ||= [];
-    const versionIndex = track.versions.findIndex((version) => version.id === versionId);
+    const versionIndex = track.versions.findIndex((version) => String(version.id) === String(versionId));
     if (versionIndex === -1) return next(new AppError('Version not found', 404));
 
     const selectedVersion = track.versions[versionIndex];
