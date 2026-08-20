@@ -335,12 +335,7 @@ export default function Project({ user }) {
               <span className="whitespace-nowrap font-medium">
                 • {tracks.length} track{tracks.length !== 1 ? 's' : ''} • {
                   (() => {
-                    const latestTrackTime = tracks.length > 0 
-                      ? Math.max(...tracks.map(t => new Date(t.uploadedAt).getTime()))
-                      : null;
-                    const projTime = new Date(project.updatedAt || project.createdAt).getTime();
-                    const lastUpdated = latestTrackTime ? Math.max(latestTrackTime, projTime) : projTime;
-                    return timeAgo(new Date(lastUpdated).toISOString());
+                    return '';
                   })()
                 }
               </span>
@@ -397,6 +392,7 @@ export default function Project({ user }) {
                   </div>
                   <div className="min-w-0">
                     <h3 className="truncate text-xl font-semibold text-primary-label">{track.title}</h3>
+                    {track.uploadedAt && <p className="mt-1 text-xs text-secondary-label">{timeAgo(track.uploadedAt)}</p>}
                     {(track.notes || track.noteMemos?.length > 0) && (
                       <p className="mt-1 truncate text-xs text-secondary-label/80">
                         {track.notes}
