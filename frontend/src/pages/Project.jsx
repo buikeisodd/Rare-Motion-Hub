@@ -148,9 +148,12 @@ export default function Project({ user }) {
   };
 
   const handleTrackUpdate = (updatedTrack) => {
-    setTracks((prev) => prev.map((track) => (track.id === updatedTrack.id ? updatedTrack : track)));
+    const nextTracks = tracks.map((track) => (track.id === updatedTrack.id ? updatedTrack : track));
+    const wasPlaying = currentTrack?.id === updatedTrack.id && isPlaying;
+    setTracks(nextTracks);
     if (currentTrack?.id === updatedTrack.id) {
       setCurrentTrack(updatedTrack);
+      if (wasPlaying) playTrack(updatedTrack, nextTracks, project?.title || project?.name, project?.coverArt, project?.id);
     }
   };
 
