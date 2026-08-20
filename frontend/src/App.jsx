@@ -13,7 +13,6 @@ import Saved from './pages/Saved';
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
 import Search from './pages/Search';
-import StarlightLogo from './components/StarlightLogo';
 import { AudioProvider, useAudio } from './context/AudioContext';
 import AudioPlayer from './components/AudioPlayer';
 import ServerStatus from './components/ServerStatus';
@@ -22,6 +21,20 @@ import ChatInbox from './components/ChatInbox';
 
 function DesktopOnly({ children }) {
   return children;
+}
+
+function WelcomeSignal({ compact = false }) {
+  const size = compact ? 'h-24 w-24' : 'h-32 w-32';
+  return (
+    <div className={`relative mx-auto ${size}`} aria-hidden="true">
+      <div className="absolute inset-0 rounded-full border border-primary-label/15" />
+      <div className="absolute inset-2 rounded-full border border-primary-label/30 border-t-primary-label/90 animate-spin" style={{ animationDuration: '3.8s' }} />
+      <div className="absolute inset-5 rounded-full border border-primary-label/20 border-b-primary-label/70 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '2.6s' }} />
+      <div className="absolute inset-1/2 h-16 w-px -translate-x-1/2 -translate-y-1/2 bg-primary-label/20" />
+      <div className="absolute inset-1/2 h-px w-16 -translate-x-1/2 -translate-y-1/2 bg-primary-label/20" />
+      <div className="absolute inset-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary-label shadow-[0_0_32px_rgba(215,255,101,0.65)] animate-pulse" />
+    </div>
+  );
 }
 
 function WelcomeBack({ user, onDone }) {
@@ -36,7 +49,7 @@ function WelcomeBack({ user, onDone }) {
     <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0e140b] via-[#050505] to-[#050505] text-[#F7F4EC] px-6 py-12 flex flex-col">
       <main className="flex-1 flex items-center justify-center">
         <div className="w-full max-w-xl text-center animate-welcome-rise">
-          <StarlightLogo className="logo-glow mx-auto mb-10 h-32 w-80 text-primary-label opacity-90 animate-record-float" />
+          <WelcomeSignal />
           <p className="text-secondary-label text-sm font-medium uppercase tracking-[0.28em] mb-4">Welcome back</p>
           <h1 className="text-5xl font-semibold tracking-normal mb-8">{user.name}</h1>
           <Link
@@ -67,7 +80,7 @@ function WelcomeAnimation({ user, onDone }) {
     <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0e140b] via-[#050505] to-[#050505] text-[#F7F4EC] px-6 py-12 flex flex-col">
       <main className="flex-1 flex items-center justify-center">
         <div className="text-center animate-welcome-rise">
-          <StarlightLogo className="logo-glow mx-auto mb-8 h-28 w-72 text-primary-label opacity-90 animate-record-float" />
+          <WelcomeSignal compact />
           <p className="text-secondary-label text-sm font-medium uppercase tracking-[0.28em] mb-3">Welcome back</p>
           <h1 className="text-4xl font-semibold tracking-normal">{user.name}</h1>
         </div>

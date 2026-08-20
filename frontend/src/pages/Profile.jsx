@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft, Camera, Check, Edit3, Loader2, MessageCircle, Play, UserPlus, X } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
-import StarlightLogo from '../components/StarlightLogo';
 import ChatInbox from '../components/ChatInbox';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
@@ -88,7 +87,31 @@ export default function Profile({ user, onUserUpdate }) {
     setInboxOpen(true);
   };
 
-  if (!profile) return <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0e140b] via-[#050505] to-[#050505] text-[#F7F4EC] p-8">Loading profile...</div>;
+  if (!profile) return (
+    <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0e140b] via-[#050505] to-[#050505] px-4 pb-32 text-[#F7F4EC] sm:px-8 md:pb-20" role="status" aria-label="Loading profile">
+      <div className="mx-auto max-w-5xl animate-pulse">
+        <header className="flex items-center justify-between py-4">
+          <div className="h-10 w-10 rounded-full bg-shading" />
+          <div className="h-4 w-24 rounded bg-shading" />
+          <div className="h-10 w-10 rounded-full bg-shading" />
+        </header>
+        <main className="py-8 sm:py-12">
+          <section className="grid gap-7 sm:grid-cols-[9rem_1fr] sm:gap-10 lg:grid-cols-[12rem_1fr] lg:gap-14">
+            <div className="mx-auto h-36 w-36 rounded-full bg-shading sm:mx-0 sm:h-40 sm:w-40 lg:h-48 lg:w-48" />
+            <div className="w-full max-w-xl space-y-4">
+              <div className="h-8 w-48 rounded bg-shading" />
+              <div className="h-4 w-32 rounded bg-shading" />
+              <div className="h-4 w-full rounded bg-shading" />
+              <div className="h-11 w-40 rounded-xl bg-shading" />
+            </div>
+          </section>
+          <section className="mt-12 grid grid-cols-2 gap-1 sm:grid-cols-3 sm:gap-2">
+            {Array.from({ length: 6 }, (_, index) => <div key={index} className="aspect-square rounded-xl bg-shading" />)}
+          </section>
+        </main>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0e140b] via-[#050505] to-[#050505] px-4 pb-32 text-[#F7F4EC] sm:px-8 md:pb-20">
