@@ -433,25 +433,26 @@ const getTrackInsights = async (req, res, next) => {
 
     const sourceTrackId = track.sourceTrackId || track.id;
     const ownerId = trackOwnerId(track) || track.userId;
-    if (ownerId !== userId) return next(new AppError('Only the project owner can view insights.', 403));
+    if (String(ownerId) !== String(userId)) return next(new AppError('Only the project owner can view insights.', 403));
     const playEvents = db.playEvents.filter((event) => (
-      (event.ownerId === ownerId || event.ownerId === userId) &&
-      (event.sourceTrackId === sourceTrackId || event.trackId === track.id)
+      (event.projectId === track.projectId && (event.trackId === track.id || event.sourceTrackId === sourceTrackId)) ||
+      ((event.ownerId === ownerId || event.ownerId === userId) && (event.sourceTrackId === sourceTrackId || event.trackId === track.id))
     ));
 
     const listenerMap = new Map();
     playEvents.forEach((event) => {
-      const listener = db.users.find((item) => item.id === event.userId);
-      const key = event.userId || 'unknown';
+      const key = event.userId || event.actorId || 'unknown';
+      const listener = db.users.find((item) => item.id === key);
       const current = listenerMap.get(key) || {
         id: key,
         name: listener?.name || 'Unknown listener',
         avatarUrl: listener?.avatarUrl || null,
         plays: 0,
-        lastListenedAt: event.playedAt
+        lastListenedAt: event.playedAt || event.createdAt
       };
       current.plays += 1;
-      if (new Date(event.playedAt) > new Date(current.lastListenedAt)) current.lastListenedAt = event.playedAt;
+      const playedAt = event.playedAt || event.createdAt;
+      if (new Date(playedAt) > new Date(current.lastListenedAt)) current.lastListenedAt = playedAt;
       listenerMap.set(key, current);
     });
 
