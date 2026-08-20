@@ -163,7 +163,7 @@ export default function Folder({ user, onLogout }) {
   const isEmpty = folders.length === 0 && projects.length === 0;
 
   return (
-    <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0e140b] via-[#050505] to-[#050505] text-[#F7F4EC] px-5 py-5 pb-28 sm:px-8 sm:py-6 lg:px-14 lg:py-8">
+    <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0e140b] via-[#050505] to-[#050505] px-4 py-4 pb-32 text-[#F7F4EC] sm:px-8 sm:py-6 md:pb-28 lg:px-14 lg:py-8">
       {isAddMenuOpen && (
         <div className="fixed inset-0 z-40" onClick={() => setIsAddMenuOpen(false)} />
       )}
@@ -317,7 +317,7 @@ export default function Folder({ user, onLogout }) {
       </div>
 
       {/* Mobile Add Button */}
-      <div className={`fixed z-[60] md:hidden flex flex-col items-end ${currentTrack ? 'bottom-28 left-5' : 'bottom-4 right-4'}`}>
+      <div className={`fixed z-[60] md:hidden flex flex-col items-end ${currentTrack ? 'bottom-[4.9rem] left-3' : 'bottom-[4.9rem] left-1/2 -translate-x-1/2'}`}>
         <AnimatePresence>
           {isAddMenuOpen && (
             <motion.div

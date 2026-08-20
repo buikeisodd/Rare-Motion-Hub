@@ -88,7 +88,7 @@ export default function UploadModal({ isOpen, onClose, onSuccess, userId, projec
       });
 
       const finalizeRes = await fetch(`${apiUrl}/api/upload/cloudinary`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
         body: JSON.stringify({
           title, artist, producer, projectId,
           secureUrl: cloudinaryResult.secure_url,
@@ -115,7 +115,7 @@ export default function UploadModal({ isOpen, onClose, onSuccess, userId, projec
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4">
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" 
@@ -123,20 +123,20 @@ export default function UploadModal({ isOpen, onClose, onSuccess, userId, projec
       ></div>
 
       {/* Modal Content */}
-      <div className="relative glass w-full max-w-lg rounded-3xl p-6 shadow-2xl animate-slide-up border-border border max-h-[90vh] overflow-y-auto">
+      <div className="relative glass w-full max-w-lg max-h-[92dvh] overflow-y-auto rounded-t-3xl border border-border p-4 shadow-2xl animate-slide-up sm:max-h-[90vh] sm:rounded-3xl sm:p-6">
         <button 
           onClick={onClose}
           disabled={loading}
-          className="absolute top-6 right-6 text-secondary-label hover:text-primary-label transition-colors"
+          className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full text-secondary-label hover:bg-shading hover:text-primary-label transition-colors sm:right-6 sm:top-6"
         >
           <X className="w-5 h-5" />
         </button>
 
-        <h2 className="text-xl font-medium mb-6">Upload Track</h2>
+        <h2 className="mb-4 pr-10 text-lg font-medium sm:mb-6 sm:text-xl">Upload Track</h2>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div 
-            className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center text-center transition-colors ${
+            className={`border-2 border-dashed rounded-2xl p-5 flex flex-col items-center justify-center text-center transition-colors sm:p-8 ${
               file ? 'border-primary-label/50 bg-highlight/30' : 'border-border hover:border-primary-label/30 bg-shading/30 hover:bg-shading'
             }`}
             onDragOver={(e) => e.preventDefault()}
@@ -148,7 +148,7 @@ export default function UploadModal({ isOpen, onClose, onSuccess, userId, projec
                 <div className="w-12 h-12 bg-primary-label text-primary-background rounded-full flex items-center justify-center mb-4">
                   <Music className="w-6 h-6" />
                 </div>
-                <p className="font-medium text-primary-label">{file.name}</p>
+                <p className="max-w-full break-words font-medium text-primary-label sm:text-base">{file.name}</p>
                 <p className="text-xs text-secondary-label mt-1">
                   {(file.size / (1024 * 1024)).toFixed(2)} MB
                 </p>
@@ -190,7 +190,7 @@ export default function UploadModal({ isOpen, onClose, onSuccess, userId, projec
                   required
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label className="block text-sm font-medium text-secondary-label mb-2">Artist (Optional)</label>
                   <input
@@ -234,9 +234,9 @@ export default function UploadModal({ isOpen, onClose, onSuccess, userId, projec
             </div>
           )}
 
-          <div className="flex items-center justify-between pt-2">
+          <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
             <span className="text-xs text-secondary-label">Timestamp will be auto-generated</span>
-            <div className="flex gap-3">
+            <div className="grid grid-cols-2 gap-3 sm:flex">
               <button
                 type="button"
                 onClick={loading ? () => xhrRef.current?.abort() : onClose}

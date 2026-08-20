@@ -12,32 +12,16 @@ import Feed from './pages/Feed';
 import Saved from './pages/Saved';
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
+import Search from './pages/Search';
 import StarlightLogo from './components/StarlightLogo';
 import { AudioProvider, useAudio } from './context/AudioContext';
 import AudioPlayer from './components/AudioPlayer';
 import ServerStatus from './components/ServerStatus';
+import MobileBottomNav from './components/MobileBottomNav';
+import ChatInbox from './components/ChatInbox';
 
 function DesktopOnly({ children }) {
-  const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 1024);
-
-  useEffect(() => {
-    const check = () => setIsDesktop(window.innerWidth >= 1024);
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
-  }, []);
-
-  if (isDesktop) return children;
-
-  return (
-    <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0e140b] via-[#050505] to-[#050505] text-[#F7F4EC] flex flex-col items-center justify-center px-8 text-center">
-      <StarlightLogo className="logo-glow h-16 w-56 text-white opacity-80 mb-12" />
-      <div className="mb-8 text-6xl"></div>
-      <h1 className="text-2xl font-semibold text-white mb-3">Desktop only</h1>
-      <p className="text-[#888] text-base max-w-xs leading-relaxed">
-        Starlight Station is built for desktop. Please open this on a laptop or desktop computer to continue.
-      </p>
-    </div>
-  );
+  return children;
 }
 
 function WelcomeBack({ user, onDone }) {
@@ -174,6 +158,7 @@ function AnimatedRoutes({ user, authStatus, handleLogin, handleLogout, handleUse
         <Route path="/verify-email" element={<Navigate to="/" replace />} />
         <Route path="/library" element={<motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><Dashboard user={user} onLogout={handleLogout} onUserUpdate={handleUserUpdate} /></motion.div>} />
         <Route path="/feed" element={<motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><Feed user={user} /></motion.div>} />
+        <Route path="/search" element={<motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><Search user={user} /></motion.div>} />
         <Route path="/saved" element={<motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><Saved /></motion.div>} />
         <Route path="/settings" element={<motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><Settings user={user} onLogout={handleLogout} /></motion.div>} />
         <Route path="/profile/:id" element={<motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><Profile user={user} onUserUpdate={handleUserUpdate} /></motion.div>} />
@@ -314,6 +299,7 @@ function App() {
   const [authStatus, setAuthStatus] = useState('loading');
   const [user, setUser] = useState(null);
   const [justAuthenticated, setJustAuthenticated] = useState(false);
+  const [mobileInboxOpen, setMobileInboxOpen] = useState(false);
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
   const deriveAuthStatus = (userData) => {
@@ -423,6 +409,8 @@ function App() {
           />
           <GlobalAudioPlayer />
           <IdleLogoutGuard user={user} onLogout={handleLogout} />
+          {user && <MobileBottomNav user={user} onInbox={() => setMobileInboxOpen(true)} />}
+          {user && <ChatInbox user={user} isOpen={mobileInboxOpen} onToggle={() => setMobileInboxOpen((value) => !value)} />}
           <ServerStatus />
         </BrowserRouter>
       </AudioProvider>

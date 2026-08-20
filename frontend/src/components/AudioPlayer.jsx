@@ -110,6 +110,7 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, onDi
   const [showQueue, setShowQueue] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const { audioRef } = useAudio();
 
@@ -179,36 +180,37 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, onDi
 
   // ── FLOATING PILL (all pages except insights/chat) ───────────────────
   if (!cardModal) return (
-    <div className="fixed bottom-6 right-6 z-50 select-none">
+    <>
+    <div className="fixed bottom-[4.8rem] right-3 z-50 max-w-[calc(100vw-5.25rem)] select-none sm:bottom-6 sm:right-6 sm:max-w-none">
       {/* Panels pop above */}
       {showQueue && (
-        <div className="absolute bottom-full right-0 mb-3 w-72">
+        <div className="absolute bottom-full right-0 mb-3 w-[min(18rem,calc(100vw-1.5rem))] sm:w-72">
           <QueuePanel playQueue={playQueue} queueIndex={queueIndex} onSelect={t => { setCurrentTrack(t); setIsPlaying(true); setShowQueue(false); }} onClose={() => setShowQueue(false)} />
         </div>
       )}
       {showSettings && (
-        <div className="absolute bottom-full right-0 mb-3 w-72">
+        <div className="absolute bottom-full right-0 mb-3 w-[min(18rem,calc(100vw-1.5rem))] sm:w-72">
           <SettingsPanel playbackRate={playbackRate} setRate={handleRate} pitchShift={pitchShift} setPitch={handlePitch} onClose={() => setShowSettings(false)} />
         </div>
       )}
 
       {/* Compact floating pill */}
-      <div className="flex items-center gap-2 rounded-2xl bg-[#1c1c1e]/95 backdrop-blur-xl border border-white/10 shadow-2xl px-3 py-2">
+      <div onClick={() => setExpanded(true)} className="flex w-full items-center gap-2 rounded-2xl border border-white/10 bg-[#1c1c1e]/95 px-2.5 py-2 shadow-2xl backdrop-blur-xl sm:px-3">
         {/* Cover art */}
         <div className={`h-9 w-9 shrink-0 rounded-full bg-cover bg-center ${isPlaying ? 'animate-spin-slow' : ''}`} style={coverStyle} />
 
         {/* Title + progress */}
-        <div className="w-32 min-w-0">
+        <div className="min-w-0 flex-1 sm:w-32 sm:flex-none">
           <MarqueeText text={currentTrack.title} className="text-xs font-semibold text-white" />
           <ProgressBar progress={progress} duration={duration} onSeek={seek} className="h-1 w-full mt-1.5" />
         </div>
 
         {/* Core controls */}
-        <div className="flex items-center gap-1 text-white shrink-0">
-          <button onClick={toggleShuffle} className={`h-7 w-7 grid place-items-center rounded-full ${isShuffled ? 'text-white' : 'text-white/30 hover:text-white/60'}`}>
+        <div className="flex shrink-0 items-center gap-0.5 text-white sm:gap-1" onClick={(event) => event.stopPropagation()}>
+          <button onClick={toggleShuffle} className={`hidden h-7 w-7 place-items-center rounded-full sm:grid ${isShuffled ? 'text-white' : 'text-white/30 hover:text-white/60'}`}>
             <Shuffle className="h-3.5 w-3.5" />
           </button>
-          <button onClick={handlePrev} className="h-7 w-7 grid place-items-center rounded-full text-white/70 hover:text-white transition-colors">
+          <button onClick={handlePrev} className="hidden h-7 w-7 place-items-center rounded-full text-white/70 transition-colors hover:text-white sm:grid">
             <SkipBack className="h-3.5 w-3.5 fill-current" />
           </button>
           <button onClick={() => setIsPlaying(p => !p)} className="h-8 w-8 grid place-items-center rounded-full bg-white text-black hover:scale-105 transition-transform">
@@ -216,16 +218,16 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, onDi
               ? <div className="h-3 w-3 animate-spin rounded-full border-2 border-black border-t-transparent" />
               : isPlaying ? <Pause className="h-3.5 w-3.5 fill-current" /> : <Play className="h-3.5 w-3.5 fill-current ml-0.5" />}
           </button>
-          <button onClick={handleNext} className="h-7 w-7 grid place-items-center rounded-full text-white/70 hover:text-white transition-colors">
+          <button onClick={handleNext} className="hidden h-7 w-7 place-items-center rounded-full text-white/70 transition-colors hover:text-white sm:grid">
             <SkipForward className="h-3.5 w-3.5 fill-current" />
           </button>
-          <button onClick={() => setRepeatMode(m => (m+1)%3)} className={`h-7 w-7 grid place-items-center rounded-full ${repeatMode > 0 ? 'text-white' : 'text-white/30 hover:text-white/60'}`}>
+          <button onClick={() => setRepeatMode(m => (m+1)%3)} className={`hidden h-7 w-7 place-items-center rounded-full sm:grid ${repeatMode > 0 ? 'text-white' : 'text-white/30 hover:text-white/60'}`}>
             {repeatMode === 2 ? <Repeat1 className="h-3.5 w-3.5" /> : <Repeat className="h-3.5 w-3.5" />}
           </button>
         </div>
 
         {/* Extra controls */}
-        <div className="flex items-center gap-0.5 text-white/40 shrink-0">
+        <div className="hidden items-center gap-0.5 text-white/40 sm:flex shrink-0" onClick={(event) => event.stopPropagation()}>
           <button onClick={() => { setShowQueue(q => !q); setShowSettings(false); }} className={`relative h-7 w-7 grid place-items-center rounded-full transition-colors ${showQueue ? 'text-white bg-white/15' : 'hover:text-white'}`}>
             <ListMusic className="h-3.5 w-3.5" />
           </button>
@@ -238,6 +240,48 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, onDi
         </div>
       </div>
     </div>
+    {expanded && (
+      <div className="fixed inset-0 z-[90] flex flex-col bg-primary-background text-primary-label sm:hidden">
+        <div className="flex items-center justify-between px-5 pb-3 pt-[max(env(safe-area-inset-top),1rem)]">
+          <button onClick={() => setExpanded(false)} className="grid h-10 w-10 place-items-center rounded-full bg-shading" aria-label="Collapse player">
+            <ChevronDown className="h-5 w-5" />
+          </button>
+          <span className="text-xs font-semibold uppercase tracking-[0.22em] text-secondary-label">Now Playing</span>
+          <button onClick={() => { setExpanded(false); onDismiss?.(); }} className="grid h-10 w-10 place-items-center rounded-full bg-shading" aria-label="Close player">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="flex flex-1 flex-col justify-center px-6 pb-8">
+          <div className="mx-auto aspect-square w-full max-w-[18rem] rounded-[1.75rem] bg-cover bg-center shadow-2xl" style={coverStyle} />
+          <div className="mt-7 text-center">
+            <MarqueeText text={currentTrack.title} className="mx-auto max-w-xs text-2xl font-bold text-primary-label" />
+            <MarqueeText text={projectName || currentTrack.artist || 'Starlight Station'} className="mx-auto mt-1 max-w-xs text-sm text-secondary-label" />
+          </div>
+          <ProgressBar progress={progress} duration={duration} onSeek={seek} className="mt-7 h-1.5 w-full" />
+          <div className="mt-2 flex justify-between text-xs font-mono text-secondary-label">
+            <span>{fmt(progress)}</span>
+            <span>-{fmt(Math.max(0, duration - progress))}</span>
+          </div>
+          <div className="mt-7 flex items-center justify-between text-primary-label">
+            <button onClick={toggleShuffle} className={`grid h-11 w-11 place-items-center rounded-full ${isShuffled ? 'bg-shading text-primary-label' : 'text-secondary-label'}`}><Shuffle className="h-5 w-5" /></button>
+            <button onClick={handlePrev} className="grid h-12 w-12 place-items-center rounded-full bg-shading"><SkipBack className="h-5 w-5 fill-current" /></button>
+            <button onClick={() => setIsPlaying(p => !p)} className="grid h-16 w-16 place-items-center rounded-full bg-primary-label text-primary-background">
+              {isBuffering && isPlaying ? <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary-background border-t-transparent" /> : isPlaying ? <Pause className="h-7 w-7 fill-current" /> : <Play className="ml-1 h-7 w-7 fill-current" />}
+            </button>
+            <button onClick={handleNext} className="grid h-12 w-12 place-items-center rounded-full bg-shading"><SkipForward className="h-5 w-5 fill-current" /></button>
+            <button onClick={() => setRepeatMode(m => (m+1)%3)} className={`grid h-11 w-11 place-items-center rounded-full ${repeatMode > 0 ? 'bg-shading text-primary-label' : 'text-secondary-label'}`}>{repeatMode === 2 ? <Repeat1 className="h-5 w-5" /> : <Repeat className="h-5 w-5" />}</button>
+          </div>
+          <div className="mt-8 rounded-2xl border border-border bg-shading/40 p-4">
+            <SettingsPanel playbackRate={playbackRate} setRate={handleRate} pitchShift={pitchShift} setPitch={handlePitch} onClose={() => {}} compact />
+          </div>
+          <div className="mt-4 flex items-center gap-3 rounded-2xl border border-border bg-shading/40 px-4 py-3">
+            <button onClick={() => handleMute(!isMuted)} className="text-secondary-label">{isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}</button>
+            <input type="range" min="0" max="1" step="0.01" value={isMuted ? 0 : volume} onChange={e => handleVolume(parseFloat(e.target.value))} className="min-w-0 flex-1 accent-white" />
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 
   // ── CARD MODAL (insights + chat) ──────────────────────────────────────

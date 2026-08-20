@@ -242,7 +242,7 @@ export default function Feed({ user, savedOnly = false }) {
   const activeSuggestions = allSuggestions.filter((person) => !person.isFollowing && !dismissedIds.includes(person.id));
 
   const navItems = [{ label: 'pRoFiLe', icon: UserRound, to: '/profile/' + user.id }, { label: 'sAvEd', icon: Bookmark, to: '/saved' }, { label: 'liBraRy', icon: Library, to: '/library' }];
-  return <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0e140b] via-[#050505] to-[#050505] text-[#F7F4EC]">
+  return <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0e140b] via-[#050505] to-[#050505] pb-24 text-[#F7F4EC] md:pb-0">
     <aside className="group fixed bottom-4 left-4 top-4 z-40 hidden w-20 flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#0a0a0a]/80 px-3 py-6 shadow-2xl backdrop-blur-2xl transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:w-64 hover:border-white/20 lg:flex">
       <Link to="/feed" className="mb-8 flex h-12 w-full shrink-0 items-center overflow-hidden whitespace-nowrap px-2.5" aria-label="Home">
         <StarlightMark className="h-8 w-8 shrink-0 text-[#F7F4EC]" color="#D7FF65" />

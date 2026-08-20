@@ -191,22 +191,22 @@ export default function Project({ user }) {
   const leadTrack = tracks[0];
 
   return (
-    <div className="relative min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0e140b] via-[#050505] to-[#050505] text-[#F7F4EC] pb-10">
+    <div className="relative min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0e140b] via-[#050505] to-[#050505] pb-32 text-[#F7F4EC] md:pb-10">
       {isProjectMenuOpen && (
         <div className="fixed inset-0 z-40" onClick={() => setIsProjectMenuOpen(false)} />
       )}
       <header className="sticky top-0 z-50 flex items-center justify-between bg-primary-background/95 px-6 py-6 backdrop-blur-md lg:px-14">
-        <Link to="/library" className="grid h-12 w-12 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Back to library">
+        <Link to="/library" className="grid h-10 w-10 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:h-12 sm:w-12 sm:rounded-3xl" aria-label="Back to library">
           <ChevronLeft className="h-6 w-6" />
         </Link>
 
         <div className="flex items-center gap-3">
-          <button onClick={handleCopyShareLink} className="relative grid h-12 w-12 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Copy project link">
+          <button onClick={handleCopyShareLink} className="relative grid h-10 w-10 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:h-12 sm:w-12 sm:rounded-3xl" aria-label="Copy project link">
             <Link2 className="h-5 w-5" />
           </button>
 
           <div className="relative">
-            <button onClick={() => setIsProjectMenuOpen((open) => !open)} className="grid h-12 w-12 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Project options">
+            <button onClick={() => setIsProjectMenuOpen((open) => !open)} className="grid h-10 w-10 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:h-12 sm:w-12 sm:rounded-3xl" aria-label="Project options">
               <MoreHorizontal className="h-5 w-5" />
             </button>
             <AnimatePresence>
@@ -216,7 +216,7 @@ export default function Project({ user }) {
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: -10 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute right-0 top-16 z-50 w-64 rounded-[1.25rem] border border-border panel-bg p-3 shadow-2xl origin-top-right"
+                  className="absolute right-0 top-12 z-50 w-56 rounded-[1.25rem] border border-border panel-bg p-2 shadow-2xl origin-top-right sm:top-16 sm:w-64 sm:p-3"
                 >
                   <button onClick={() => { setIsShareModalOpen(true); setIsProjectMenuOpen(false); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
                     <Link2 className="h-6 w-6" />
@@ -403,7 +403,7 @@ export default function Project({ user }) {
       {/* Add Tracks Button — fixed position, never moves */}
       <button
         onClick={() => setIsUploadOpen(true)}
-        className={`fixed z-[60] flex items-center gap-2 rounded-full bg-primary-label px-5 py-3 text-sm font-semibold text-primary-background shadow-2xl transition-transform hover:scale-105 ${currentTrack ? 'bottom-28 left-6' : 'bottom-6 right-8'}`}
+                  className={`fixed z-[60] flex items-center gap-2 rounded-full bg-primary-label px-5 py-3 text-sm font-semibold text-primary-background shadow-2xl transition-transform hover:scale-105 ${currentTrack ? 'bottom-[4.9rem] left-3 sm:bottom-28 sm:left-6' : 'bottom-[4.9rem] left-1/2 -translate-x-1/2 sm:bottom-6 sm:left-auto sm:right-8 sm:translate-x-0'}`}
         aria-label="Add tracks"
       >
         <Plus className="h-4 w-4" />

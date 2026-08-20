@@ -815,7 +815,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0e140b] via-[#050505] to-[#050505] text-[#F7F4EC] px-8 py-6 pb-10 lg:px-12">
+    <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0e140b] via-[#050505] to-[#050505] text-[#F7F4EC] px-4 py-4 pb-32 sm:px-6 sm:py-6 md:pb-10 lg:px-12">
       {conversionProgress !== null && (
         <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm">
           <div className="w-80 rounded-3xl border border-border bg-shading p-8 shadow-2xl">
@@ -854,7 +854,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
 
         <div className="flex shrink-0 items-center gap-3">
           <div className="relative">
-            <button onClick={handleOpenNotifications} className="relative grid h-11 w-11 place-items-center rounded-2xl bg-primary-label text-primary-background transition-transform hover:scale-105" aria-label="Notifications">
+            <button onClick={handleOpenNotifications} className="relative grid h-10 w-10 place-items-center rounded-2xl bg-primary-label text-primary-background transition-transform hover:scale-105 sm:h-11 sm:w-11" aria-label="Notifications">
               <Bell className="h-5 w-5 fill-current" />
               {totalNotifications > 0 && <span className="absolute right-3 top-3 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-primary-background">{totalNotifications}</span>}
             </button>
@@ -867,16 +867,16 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
             </button>
           </div>
 
-          <button onClick={() => navigate('/feed')} className="grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Open feed">
+          <button onClick={() => navigate('/feed')} className="grid h-10 w-10 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:h-14 sm:w-14 sm:rounded-3xl" aria-label="Open feed">
             <Compass className="h-6 w-6" />
           </button>
-          <button onClick={onLogout} className="grid h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Log out">
+          <button onClick={onLogout} className="hidden h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight md:grid" aria-label="Log out">
             <LogOut className="h-6 w-6" />
           </button>
         </div>
       </header>
 
-      <main className="mx-auto flex min-h-[calc(100vh-16rem)] max-w-4xl items-center justify-center py-10 pb-10">
+      <main className="mx-auto flex min-h-[calc(100vh-16rem)] max-w-4xl items-center justify-center py-6 pb-40 sm:py-10 sm:pb-10">
         {workspace.projects.length === 0 && workspace.folders.length === 0 ? (
           <div className="text-center">
             <Disc3 className="mx-auto mb-5 h-12 w-12 text-secondary-label" />
@@ -916,7 +916,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
       </main>
 
       {/* Add button — anchored, menu pops above, never moves */}
-      <div className={`fixed bottom-6 z-50 ${currentTrack ? 'left-6' : 'left-1/2 -translate-x-1/2'}`}>
+      <div className={`fixed bottom-[4.9rem] z-50 sm:bottom-6 ${currentTrack ? 'left-3 sm:left-6' : 'left-1/2 -translate-x-1/2'}`}>
         <AnimatePresence>
           {isAddMenuOpen && (
             <motion.div
