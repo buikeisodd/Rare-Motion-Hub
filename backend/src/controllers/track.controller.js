@@ -91,7 +91,7 @@ const promoteTrackToCloudinary = async (track, localPath, userId) => {
     await writeDB(db);
     invalidateCache(`workspace:${userId}`);
     if (track.projectId) invalidateCache(`project:${track.projectId}:${userId}`);
-    removeFileIfExists(localPath);
+    // Keep the local fallback while the current client may still hold its URL.
   } catch (error) {
     console.error('Background Cloudinary track upload failed; local playback remains active:', error.message);
   }
@@ -161,7 +161,7 @@ const promoteVersionToCloudinary = async (trackId, versionId, localPath, userId)
     await writeDB(db);
     invalidateCache(`workspace:${userId}`);
     if (track.projectId) invalidateCache(`project:${track.projectId}:${userId}`);
-    removeFileIfExists(localPath);
+    // Keep the local fallback while the current client may still hold its URL.
   } catch (error) {
     console.error('Background Cloudinary version upload failed; local fallback remains active:', error.message);
   }
