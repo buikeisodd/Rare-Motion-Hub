@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, Folder, Music, Play, Plus } from 'lucide-react';
 import { useAudio } from '../context/AudioContext';
+import PageLoading from '../components/PageLoading';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
@@ -95,7 +96,7 @@ export default function SharedItem({ user, isLink }) {
     }
   };
 
-  if (loading) return null;
+  if (loading) return <PageLoading />;
   if (isExpired) {
     return (
       <div className="min-h-screen bg-primary-background flex flex-col items-center justify-center p-6 text-center">

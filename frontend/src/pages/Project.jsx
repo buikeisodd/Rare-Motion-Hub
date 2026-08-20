@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BarChart3, ChevronLeft, Download, FileText, Image as ImageIcon, Link2, Lock, MoreHorizontal, Music, Pause, Play, Plus, Shuffle, Trash2, Unlock } from 'lucide-react';
 import UploadModal from '../components/UploadModal';
+import PageLoading from '../components/PageLoading';
 import CoverArtPicker from '../components/CoverArtPicker';
 import ConfirmModal from '../components/ConfirmModal';
 import ShareLinkModal from '../components/ShareLinkModal';
@@ -192,7 +193,7 @@ export default function Project({ user }) {
     setIsShareModalOpen(true);
   };
 
-  if (loading) return null;
+  if (loading) return <PageLoading />;
   if (!project) return <div className="text-center mt-20">Project not found</div>;
 
   const leadTrack = tracks[0];

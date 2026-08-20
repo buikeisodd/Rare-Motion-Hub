@@ -5,6 +5,7 @@ import { ArrowLeft, Bell, ChevronRight, Circle, Copy, Disc3, FolderPlus, FolderO
 import { LibraryProject, LibraryFolder } from './Dashboard';
 import StarlightLogo from '../components/StarlightLogo';
 import ConfirmModal from '../components/ConfirmModal';
+import PageLoading from '../components/PageLoading';
 import ShareLinkModal from '../components/ShareLinkModal';
 import MarqueeInput from '../components/MarqueeInput';
 import { useAudio } from '../context/AudioContext';
@@ -159,7 +160,7 @@ export default function Folder({ user, onLogout }) {
 
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
 
-  if (loading) return null;
+  if (loading) return <PageLoading />;
 
   const folder = data?.folder;
   const folders = data?.folders || [];

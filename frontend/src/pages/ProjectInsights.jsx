@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ChevronLeft, Music, Play } from 'lucide-react';
+import PageLoading from '../components/PageLoading';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
@@ -43,7 +44,7 @@ export default function ProjectInsights({ user }) {
     };
   }, [id, user.id]);
 
-  if (loading) return null;
+  if (loading) return <PageLoading />;
   if (!insights) return <div className="mt-20 text-center text-primary-label">Insights not found</div>;
 
   const { project, totalPlays, byTrack, byListener } = insights;

@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Bell, ChevronRight, Circle, Compass, Disc3, Edit3, Folder, FolderOpen, FolderPlus, LogOut, MoreHorizontal, Music, Palette, Play, Pause, Plus, Settings, Trash2, UploadCloud, Video, X, User } from 'lucide-react';
 import StarlightLogo from '../components/StarlightLogo';
 import ConfirmModal from '../components/ConfirmModal';
+import PageLoading from '../components/PageLoading';
 import MarqueeInput from '../components/MarqueeInput';
 import { useAudio } from '../context/AudioContext';
 import { defaultGradient, gradientFor } from '../utils/gradients';
@@ -797,7 +798,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
     }
   };
 
-  if (loading) return null;
+  if (loading) return <PageLoading />;
 
   const anyPanelOpen = isNotificationsOpen || isProfileOpen || isAddMenuOpen;
   
