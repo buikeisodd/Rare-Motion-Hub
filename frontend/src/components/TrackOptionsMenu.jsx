@@ -854,6 +854,8 @@ export function replaceTrackAudio(track, file, userId, onProgress) {
     const xhr = new XMLHttpRequest();
     xhr.open('POST', `${apiUrl}/api/tracks/${track.id}/replace-audio`);
     xhr.withCredentials = true;
+    const csrfToken = localStorage.getItem('csrfToken');
+    if (csrfToken) xhr.setRequestHeader('x-csrf-token', csrfToken);
     xhr.upload.onprogress = (event) => { if (event.lengthComputable) onProgress?.(Math.round((event.loaded / event.total) * 100)); };
     xhr.onload = () => {
       let data;
