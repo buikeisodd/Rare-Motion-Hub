@@ -2,10 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Bookmark, Compass, Heart, Library, MessageCircle, MoreHorizontal, Pause, Play, Radio, Send, Settings, Trash2, UserRound, Volume2, VolumeX, X } from 'lucide-react';
 import { Link as RouterLink } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import StarlightLogo, { StarlightMark } from '../components/StarlightLogo';
 import { defaultGradient, gradientFor } from '../utils/gradients';
 import ChatInbox from '../components/ChatInbox';
-import UserSearch from '../components/UserSearch';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 const MAX_QUICK_ADD_SUGGESTIONS = 5;
@@ -244,11 +242,11 @@ export default function Feed({ user, savedOnly = false }) {
   const navItems = [{ label: 'pRoFiLe', icon: UserRound, to: '/profile/' + user.id }, { label: 'sAvEd', icon: Bookmark, to: '/saved' }, { label: 'liBraRy', icon: Library, to: '/library' }];
   return <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0e140b] via-[#050505] to-[#050505] pb-24 text-[#F7F4EC] md:pb-0">
     <aside className="group fixed bottom-4 left-4 top-4 z-40 hidden w-20 flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#0a0a0a]/80 px-3 py-6 shadow-2xl backdrop-blur-2xl transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:w-64 hover:border-white/20 lg:flex">
-      <Link to="/feed" className="mb-8 flex h-12 w-full shrink-0 items-center overflow-hidden whitespace-nowrap px-2.5" aria-label="Home">
-        <StarlightMark className="h-8 w-8 shrink-0 text-[#F7F4EC]" color="#D7FF65" />
+      <Link to="/feed" className="mb-8 flex h-12 w-full shrink-0 items-center overflow-hidden whitespace-nowrap px-2.5" aria-label="Feed">
+        <Compass className="h-8 w-8 shrink-0 text-[#D7FF65]" />
         <div className="ml-4 flex flex-col leading-none opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-          <span className="font-display text-base font-bold tracking-wider text-[#F7F4EC]">sTaRliGhT sTaTiOn</span>
-          <span className="text-[10px] font-medium tracking-wider text-[#A6A09A] uppercase mt-1">Your work in motion</span>
+          <span className="font-display text-base font-bold tracking-wider text-[#F7F4EC]">fEEd</span>
+          <span className="mt-1 text-[10px] font-medium uppercase tracking-wider text-[#A6A09A]">Discover new work</span>
         </div>
       </Link>
       <nav className="space-y-2">
@@ -277,10 +275,12 @@ export default function Feed({ user, savedOnly = false }) {
       <Link to="/library" className="grid h-9 w-9 place-items-center rounded-full bg-shading hover:bg-highlight" aria-label="Back to library">
         <ArrowLeft className="h-4 w-4" />
       </Link>
-      <StarlightLogo className="logo-glow h-8 w-32 text-primary-label" />
-      <button onClick={() => setInboxOpen(true)} className="grid h-9 w-9 place-items-center rounded-full bg-shading hover:bg-highlight" aria-label="Open inbox">
-        <MessageCircle className="h-4 w-4" />
-      </button>
+      <Link to="/feed" className="grid h-9 w-9 place-items-center rounded-full bg-shading text-primary-label hover:bg-highlight" aria-label="Feed">
+        <Compass className="h-5 w-5" />
+      </Link>
+      <Link to="/settings" className="grid h-9 w-9 place-items-center rounded-full bg-shading hover:bg-highlight" aria-label="Open settings">
+        <Settings className="h-4 w-4" />
+      </Link>
     </header>
     <QuickAdd suggestions={activeSuggestions} onFollow={followSuggestion} onDismiss={dismissSuggestion} />
     <main className="px-4 pb-20 pt-4 sm:px-8 lg:ml-28 xl:mr-80">
@@ -291,12 +291,6 @@ export default function Feed({ user, savedOnly = false }) {
               <p className="font-display text-xs font-bold tracking-[0.2em] text-secondary-label">dIsCoVeR</p>
               <h1 className="font-display mt-1 text-3xl font-bold tracking-wider text-[#F7F4EC]">fEEd</h1>
             </div>
-            <div className="hidden sm:block w-72">
-              <UserSearch currentUser={user} />
-            </div>
-          </div>
-          <div className="sm:hidden">
-            <UserSearch currentUser={user} />
           </div>
           <p className="text-sm text-secondary-label">Preview new music from the Rare Motion community.</p>
         </div>
