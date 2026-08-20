@@ -483,6 +483,7 @@ function VersionRenameField({ label, onSave, disabled }) {
 function TrackVersionsModal({ isOpen, onClose, onBack, track, userId, onTrackUpdate, onPlay }) {
   const [openMenuId, setOpenMenuId] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [switchingId, setSwitchingId] = useState(null);
   const addVersionRef = useRef(null);
 
@@ -537,8 +538,9 @@ function TrackVersionsModal({ isOpen, onClose, onBack, track, userId, onTrackUpd
   const handleAddVersion = async (file) => {
     if (!file) return;
     setUploading(true);
+    setUploadProgress(0);
     try {
-      const updated = await replaceTrackAudio(track, file, userId);
+      const updated = await replaceTrackAudio(track, file, userId, setUploadProgress);
       onTrackUpdate(updated);
     } catch (err) {
       alert(err.message);
@@ -564,6 +566,15 @@ function TrackVersionsModal({ isOpen, onClose, onBack, track, userId, onTrackUpd
       </div>
 
       <div className="max-h-[50vh] space-y-1 overflow-y-auto px-3 py-3">
+        {uploading && (
+          <div className="flex items-center gap-3 rounded-2xl bg-shading/40 px-3 py-3 opacity-60">
+            <Loader2 className="h-5 w-5 shrink-0 animate-spin text-secondary-label" />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between text-xs font-semibold text-secondary-label"><span>New version uploading</span><span>{uploadProgress}%</span></div>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-primary-background"><div className="h-full rounded-full bg-primary-label transition-all" style={{ width: `${uploadProgress}%` }} /></div>
+            </div>
+          </div>
+        )}
         {allVersions.map((version) => (
           <div
             key={version.id}
@@ -835,14 +846,25 @@ export default function TrackOptionsMenu({
   );
 }
 
-export async function replaceTrackAudio(track, file, userId) {
+export function replaceTrackAudio(track, file, userId, onProgress) {
   const formData = new FormData();
   formData.append('track', file);
   formData.append('userId', userId);
-  const res = await fetch(`${apiUrl}/api/tracks/${track.id}/replace-audio`, { method: 'POST', credentials: 'include', body: formData });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Could not replace audio.');
-  return data.track;
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${apiUrl}/api/tracks/${track.id}/replace-audio`);
+    xhr.withCredentials = true;
+    xhr.upload.onprogress = (event) => { if (event.lengthComputable) onProgress?.(Math.round((event.loaded / event.total) * 100)); };
+    xhr.onload = () => {
+      let data;
+      try { data = JSON.parse(xhr.responseText); } catch { reject(new Error('The server returned an invalid upload response.')); return; }
+      if (xhr.status < 200 || xhr.status >= 300) { reject(new Error(data.error || 'Could not replace audio.')); return; }
+      resolve(data.track);
+    };
+    xhr.onerror = () => reject(new Error('Network error while uploading the version.'));
+    xhr.onabort = () => reject(new Error('Upload cancelled.'));
+    xhr.send(formData);
+  });
 }
 
 export async function switchTrackVersion(track, versionId, userId) {
