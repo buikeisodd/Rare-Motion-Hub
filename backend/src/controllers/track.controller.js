@@ -549,7 +549,7 @@ const replaceAudio = async (req, res, next) => {
     const previousFilename = track.filename;
     const previousVersionId = makeId();
 
-    if (track.filename) {
+    if (track.filename || track.url) {
       track.versions.push({
         id: previousVersionId,
         filename: track.filename,
