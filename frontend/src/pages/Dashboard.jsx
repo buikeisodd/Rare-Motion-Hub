@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bell, ChevronRight, Circle, Compass, Disc3, Edit3, Folder, FolderOpen, FolderPlus, LogOut, MoreHorizontal, Music, Palette, Play, Pause, Plus, Settings, Trash2, UploadCloud, Video, X, User } from 'lucide-react';
+import { Bell, ChevronRight, Circle, Compass, Disc3, Edit3, Folder, FolderOpen, FolderPlus, LogOut, MoreHorizontal, Music, Palette, Play, Pause, Plus, Search, Settings, Trash2, UploadCloud, Video, X, User } from 'lucide-react';
 import StarlightLogo from '../components/StarlightLogo';
 import ConfirmModal from '../components/ConfirmModal';
 import MarqueeInput from '../components/MarqueeInput';
-import UserSearch from '../components/UserSearch';
 import { useAudio } from '../context/AudioContext';
 import { defaultGradient, gradientFor } from '../utils/gradients';
 
@@ -853,11 +852,8 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
         />
       )}
       <header className="sticky top-0 z-50 flex items-center justify-between gap-3 bg-[#050505]/90 pb-4 pt-2 backdrop-blur-md">
-        <div className="flex items-center gap-4 min-w-0 flex-1 max-w-lg">
+        <div className="flex min-w-0 max-w-lg flex-1 items-center gap-4">
           <h1 className="font-display text-2xl font-bold tracking-wider text-[#F7F4EC] shrink-0">liBraRy</h1>
-          <div className="hidden sm:block flex-1 min-w-0">
-            <UserSearch currentUser={user} />
-          </div>
         </div>
 
         <div className="flex shrink-0 items-center gap-3">
@@ -874,6 +870,10 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
               <Settings className="h-6 w-6" />
             </button>
           </div>
+
+          <button onClick={() => navigate('/search')} className="grid h-10 w-10 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:h-14 sm:w-14 sm:rounded-3xl" aria-label="Search users">
+            <Search className="h-5 w-5 sm:h-6 sm:w-6" />
+          </button>
 
           <button onClick={() => navigate('/feed')} className="grid h-10 w-10 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:h-14 sm:w-14 sm:rounded-3xl" aria-label="Open feed">
             <Compass className="h-6 w-6" />
