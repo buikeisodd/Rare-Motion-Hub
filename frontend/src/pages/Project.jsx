@@ -196,6 +196,7 @@ export default function Project({ user }) {
   if (loading) return <PageLoading />;
   if (!project) return <div className="text-center mt-20">Project not found</div>;
 
+  const isOwner = String(project.userId) === String(user.id);
   const leadTrack = tracks[0];
 
   return (
@@ -249,10 +250,10 @@ export default function Project({ user }) {
                     Export
                   </button>
                   <div className="my-3 border-t border-border" />
-                  <button onClick={handleDeleteClick} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-red-500 hover:bg-red-500/10 transition-colors">
+                  {isOwner && <button onClick={handleDeleteClick} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-red-500 hover:bg-red-500/10 transition-colors">
                     <Trash2 className="h-6 w-6" />
                     Delete project
-                  </button>
+                  </button>}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -267,7 +268,8 @@ export default function Project({ user }) {
             <button
               type="button"
               className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={() => setIsCoverPickerOpen(true)}
+              onClick={() => isOwner && setIsCoverPickerOpen(true)}
+              disabled={!isOwner}
             >
               <ImageIcon className="w-8 h-8 text-white mb-2" />
               <span className="text-white text-sm font-medium">Change Cover</span>
@@ -286,6 +288,7 @@ export default function Project({ user }) {
                   className="w-full"
                   textClassName="text-3xl sm:text-4xl font-bold tracking-tight text-primary-label"
                   placeholder="Project title"
+                  readOnly={!isOwner}
                 />
               </div>
               <div className="flex shrink-0 items-center gap-3">
@@ -326,6 +329,7 @@ export default function Project({ user }) {
                   className="w-full"
                   textClassName="text-secondary-label font-medium"
                   placeholder="Artist"
+                  readOnly={!isOwner}
                 />
               </span>
               <span className="whitespace-nowrap font-medium">
@@ -359,11 +363,13 @@ export default function Project({ user }) {
                   key={track.id}
                   onClick={() => handlePlay(track)}
                   onDragOver={(event) => {
+                    if (!isOwner) return;
                     event.preventDefault();
                     setDragTrackId(track.id);
                   }}
                   onDragLeave={() => setDragTrackId(null)}
                   onDrop={(event) => {
+                    if (!isOwner) return;
                     event.preventDefault();
                     event.stopPropagation();
                     setDragTrackId(null);
@@ -401,14 +407,14 @@ export default function Project({ user }) {
                     )}
                   </div>
                   <div className="flex items-center gap-1 text-primary-label" onClick={(event) => event.stopPropagation()}>
-                    <TrackOptionsMenu
+                    {isOwner && <TrackOptionsMenu
                       track={track}
                       userId={user.id}
                       onTrackUpdate={handleTrackUpdate}
                       onTrackDelete={handleDeleteTrack}
                       onAddToQueue={(queuedTrack) => addToQueue(queuedTrack)}
                       onPlay={handlePlay}
-                    />
+                    />}
                   </div>
                 </div>
               ))
@@ -418,24 +424,24 @@ export default function Project({ user }) {
       </main>
 
       {/* Add Tracks Button — fixed position, never moves */}
-      <button
+      {isOwner && <button
         onClick={() => setIsUploadOpen(true)}
                   className={`fixed z-[60] flex items-center gap-2 rounded-full bg-primary-label px-5 py-3 text-sm font-semibold text-primary-background shadow-2xl transition-transform hover:scale-105 ${currentTrack ? 'bottom-[4.9rem] left-3 sm:bottom-28 sm:left-6' : 'bottom-[4.9rem] left-1/2 -translate-x-1/2 sm:bottom-6 sm:left-auto sm:right-8 sm:translate-x-0'}`}
         aria-label="Add tracks"
       >
         <Plus className="h-4 w-4" />
         {currentTrack ? null : 'Add tracks'}
-      </button>
+      </button>}
 
-      <UploadModal
+      {isOwner && <UploadModal
         isOpen={isUploadOpen}
         onClose={() => setIsUploadOpen(false)}
         onSuccess={handleUploadSuccess}
         userId={user.id}
         projectId={id}
-      />
+      />}
 
-      <CoverArtPicker
+      {isOwner && <CoverArtPicker
         isOpen={isCoverPickerOpen}
         onClose={() => setIsCoverPickerOpen(false)}
         onSelect={handleCoverSelect}
@@ -443,16 +449,16 @@ export default function Project({ user }) {
         userId={user.id}
         onRefresh={fetchWorkspace}
         projectCoverUrl={project?.coverArt}
-      />
+      />}
 
-      <ConfirmModal
+      {isOwner && <ConfirmModal
         isOpen={isConfirmOpen}
         onClose={() => setIsConfirmOpen(false)}
         onConfirm={confirmDelete}
         title="Delete project?"
         message="Are you sure you want to delete this project? This action cannot be undone."
         confirmText="Delete"
-      />
+      />}
 
       <ShareLinkModal
         isOpen={isShareModalOpen}

@@ -15,7 +15,6 @@ import Profile from './pages/Profile';
 import Search from './pages/Search';
 import { AudioProvider, useAudio } from './context/AudioContext';
 import AudioPlayer from './components/AudioPlayer';
-import ServerStatus from './components/ServerStatus';
 import MobileBottomNav from './components/MobileBottomNav';
 import ChatInbox from './components/ChatInbox';
 
@@ -430,7 +429,6 @@ function App() {
           <IdleLogoutGuard user={user} onLogout={handleLogout} />
           <MobileRouteChrome user={user} onInbox={() => setMobileInboxOpen(true)} />
           {user && <ChatInbox user={user} isOpen={mobileInboxOpen} onToggle={() => setMobileInboxOpen((value) => !value)} />}
-          <ServerStatus />
         </BrowserRouter>
       </AudioProvider>
     </div>
