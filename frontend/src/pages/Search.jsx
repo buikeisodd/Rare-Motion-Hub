@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Search as SearchIcon, UserRound } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { ArrowLeft, Search as SearchIcon, UserRound } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import StarlightLogo from '../components/StarlightLogo';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
@@ -15,6 +15,7 @@ const authFetch = (url, options = {}) => {
 };
 
 export default function Search({ user }) {
+  const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -38,6 +39,9 @@ export default function Search({ user }) {
   return (
     <div className="min-h-screen bg-primary-background px-4 pb-32 pt-4 text-primary-label sm:px-6 md:px-10">
       <header className="mx-auto flex max-w-2xl items-center justify-between border-b border-border/60 pb-3">
+        <button type="button" onClick={() => navigate(-1)} className="grid h-10 w-10 place-items-center rounded-full bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Go back">
+          <ArrowLeft className="h-5 w-5" />
+        </button>
         <StarlightLogo className="logo-glow h-9 w-36 text-primary-label" />
         <UserRound className="h-5 w-5 text-secondary-label" />
       </header>

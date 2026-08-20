@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bell, ChevronRight, Circle, Compass, Disc3, Edit3, Folder, FolderOpen, FolderPlus, LogOut, MoreHorizontal, Music, Palette, Play, Pause, Plus, Search, Settings, Trash2, UploadCloud, Video, X, User } from 'lucide-react';
+import { Bell, ChevronRight, Circle, Compass, Disc3, Edit3, Folder, FolderOpen, FolderPlus, LogOut, MoreHorizontal, Music, Palette, Play, Pause, Plus, Settings, Trash2, UploadCloud, Video, X, User } from 'lucide-react';
 import StarlightLogo from '../components/StarlightLogo';
 import ConfirmModal from '../components/ConfirmModal';
 import MarqueeInput from '../components/MarqueeInput';
@@ -870,10 +870,6 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
               <Settings className="h-6 w-6" />
             </button>
           </div>
-
-          <button onClick={() => navigate('/search')} className="grid h-10 w-10 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:h-14 sm:w-14 sm:rounded-3xl" aria-label="Search users">
-            <Search className="h-5 w-5 sm:h-6 sm:w-6" />
-          </button>
 
           <button onClick={() => navigate('/feed')} className="grid h-10 w-10 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:h-14 sm:w-14 sm:rounded-3xl" aria-label="Open feed">
             <Compass className="h-6 w-6" />
