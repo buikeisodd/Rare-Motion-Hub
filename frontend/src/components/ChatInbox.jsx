@@ -540,7 +540,12 @@ function normalizeConversation(convo) {
     type,
     group,
     partner,
-    participants: Array.isArray(convo.participants) ? convo.participants.filter(Boolean) : [],
+    participants: Array.isArray(convo.participants)
+      ? convo.participants.filter((participant) => participant && typeof participant === 'object' && participant.id).map((participant) => ({
+          ...participant,
+          name: participant.name || participant.username || 'Unknown user'
+        }))
+      : [],
     lastMessage: convo.lastMessage ? normalizeChatMessage(convo.lastMessage) : null
   };
 }
@@ -768,7 +773,7 @@ function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall,
       body: JSON.stringify({
         senderId: currentUser.id,
         targetType: target.type,
-        recipientId: target.type === 'dm' ? target.partner.id : null,
+        recipientId: target.type === 'dm' ? target.partner?.id : null,
         groupId: target.type === 'group' ? target.group?.id : null
       })
     });
@@ -797,7 +802,7 @@ function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall,
         <ProfileAvatar user={convo.partner} isGroup={isGroup} size="h-9 w-9" />
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-bold text-primary-label">{chatName}</p>
-          {isGroup && <p className="truncate text-[11px] text-secondary-label">{participants.map(p => p.name).join(' · ')}</p>}
+          {isGroup && <p className="truncate text-[11px] text-secondary-label">{participants.map((p) => p?.name || 'Unknown user').join(' · ')}</p>}
         </div>
         {isGroup && (
           <div className="flex items-center gap-2 shrink-0">
@@ -889,7 +894,7 @@ function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall,
           <div className="mb-2 flex items-center justify-between text-sm font-semibold"><span>Forward to</span><button onClick={() => setForwarding(null)}><X className="h-4 w-4" /></button></div>
           <div className="grid grid-cols-2 gap-2">
             {conversations.map((target) => (
-              <button key={target.type === 'group' ? target.group?.id : target.partner.id} onClick={() => handleForward(target)} className="truncate rounded-xl bg-shading px-3 py-2 text-left text-xs hover:bg-highlight">
+              <button key={target.type === 'group' ? target.group?.id : target.partner?.id} onClick={() => handleForward(target)} disabled={target.type === 'dm' && !target.partner?.id} className="truncate rounded-xl bg-shading px-3 py-2 text-left text-xs hover:bg-highlight disabled:opacity-40">
                 {target.type === 'group' ? target.group?.name || 'Group' : target.partner.name}
               </button>
             ))}
