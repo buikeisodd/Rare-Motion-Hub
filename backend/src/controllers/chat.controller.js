@@ -333,6 +333,10 @@ const sendMessageController = async (req, res, next) => {
     db.messages.push(msg);
     notifyMessage(db, msg);
     await writeDB(db);
+    const notificationRecipients = type === 'group'
+      ? (db.groups.find((group) => group.id === groupId)?.participantIds || []).filter((id) => id !== senderId)
+      : [recipientId];
+    await Promise.all(notificationRecipients.map((recipientId) => invalidateCache(`workspace:${recipientId}`)));
     res.json({ message: hydrateMessage(db, msg) });
   } catch (error) {
     next(error);

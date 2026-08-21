@@ -477,14 +477,15 @@ const toggleFeedLike = async (req, res, next) => {
     if (!track) return next(new AppError('Preview not found', 404));
     track.likes ||= [];
     const index = track.likes.indexOf(req.userId);
+    const ownerId = trackOwnerId(track);
     if (index >= 0) track.likes.splice(index, 1);
     else {
       track.likes.push(req.userId);
       const actor = db.users.find((user) => user.id === req.userId);
-      const ownerId = trackOwnerId(track);
       if (ownerId && ownerId !== req.userId) db.notifications.push({ id: makeId(), userId: ownerId, type: 'like', actor: publicUser(actor), track: { id: track.id, title: track.title }, message: `${actor?.name || 'Someone'} liked your preview`, read: false, createdAt: new Date().toISOString() });
     }
     await writeDB(db);
+    if (index < 0 && ownerId && ownerId !== req.userId) await invalidateCache(`workspace:${ownerId}`);
     res.json({ liked: index < 0, likeCount: track.likes.length });
   } catch (error) { next(error); }
 };
@@ -525,6 +526,7 @@ const addFeedComment = async (req, res, next) => {
       });
     });
     await writeDB(db);
+    await Promise.all([...notificationTargets.keys()].map((recipientId) => invalidateCache(`workspace:${recipientId}`)));
     const commenter = db.users.find((user) => user.id === req.userId);
     res.status(201).json({ comment: { ...comment, likeCount: 0, likedByMe: false, user: commenter ? { id: commenter.id, name: commenter.name, avatarUrl: commenter.avatarUrl || null } : null } });
   } catch (error) { next(error); }
@@ -545,6 +547,7 @@ const toggleCommentLike = async (req, res, next) => {
       if (comment.userId && comment.userId !== req.userId) db.notifications.push({ id: makeId(), userId: comment.userId, type: 'comment_like', actor: publicUser(actor), track: { id: track.id, title: track.title }, message: `${actor?.name || 'Someone'} liked your comment`, read: false, createdAt: new Date().toISOString() });
     }
     await writeDB(db);
+    if (index < 0 && comment.userId && comment.userId !== req.userId) await invalidateCache(`workspace:${comment.userId}`);
     res.json({ liked: index < 0, likeCount: comment.likes.length });
   } catch (error) { next(error); }
 };
