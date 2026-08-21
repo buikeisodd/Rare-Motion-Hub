@@ -525,7 +525,14 @@ function normalizeConversation(convo) {
   if (!convo || typeof convo !== 'object') return null;
   const type = convo.type === 'group' ? 'group' : 'dm';
   const group = convo.group && typeof convo.group === 'object' ? convo.group : null;
-  const partner = convo.partner && typeof convo.partner === 'object' ? convo.partner : null;
+  const partnerSource = convo.partner || convo.user || convo.recipient;
+  const partner = partnerSource && typeof partnerSource === 'object' ? {
+    ...partnerSource,
+    id: partnerSource.id || partnerSource.userId || partnerSource._id,
+    name: partnerSource.name || partnerSource.username || 'Unknown user',
+    username: partnerSource.username || partnerSource.name || 'unknown',
+    avatarUrl: partnerSource.avatarUrl || ''
+  } : null;
   if (type === 'group' && !group?.id) return null;
   if (type === 'dm' && !partner?.id) return null;
   return {
@@ -669,9 +676,10 @@ function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall,
           ...payload
         })
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Message could not be sent.');
-      if (data.message) setMessages((prev) => [...prev, normalizeChatMessage(data.message)]);
+      if (!data.message || typeof data.message !== 'object') throw new Error('The server returned an invalid message payload. Please try again.');
+      setMessages((prev) => [...prev, normalizeChatMessage(data.message)]);
       setReplyTo(null);
     } catch (err) {
       setChatError(err.message || 'Message could not be sent.');
