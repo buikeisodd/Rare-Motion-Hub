@@ -294,7 +294,7 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, onDi
       {showSettings && <div className="mb-2"><SettingsPanel playbackRate={playbackRate} setRate={handleRate} pitchShift={pitchShift} setPitch={handlePitch} onClose={() => setShowSettings(false)} compact /></div>}
       {showQueue && <div className="mb-2"><QueuePanel playQueue={playQueue} queueIndex={queueIndex} onSelect={t => { setCurrentTrack(t); setIsPlaying(true); setShowQueue(false); }} onClose={() => setShowQueue(false)} /></div>}
 
-      <div className="rounded-2xl bg-[#1c1c1e] border border-white/10 shadow-2xl overflow-hidden">
+      <div className="rounded-2xl border border-white/10 bg-[#1c1c1e]/80 shadow-2xl backdrop-blur-xl overflow-hidden">
         {!hideCover && !collapsed && <div className="h-2" />}
         <div className="p-3">
           <div className="flex items-center gap-2 mb-2">

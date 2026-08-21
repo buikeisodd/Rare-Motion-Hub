@@ -299,7 +299,7 @@ export default function Feed({ user, savedOnly = false }) {
         <p className="text-sm text-secondary-label">Preview new music from the Rare Motion community.</p>
         </div>
         <CompactQuickAdd suggestions={activeSuggestions} onFollow={followSuggestion} onDismiss={dismissSuggestion} />
-        {currentTrack && <div className="mb-6 w-full max-w-sm xl:fixed xl:right-4 xl:top-72 xl:z-30 xl:mb-0 xl:w-72"><AudioPlayer cardModal /></div>}
+        {currentTrack && <div className="mb-6 w-full max-w-sm rounded-3xl bg-black/20 p-1.5 shadow-2xl backdrop-blur-xl xl:fixed xl:right-4 xl:top-[28rem] xl:z-20 xl:mb-0 xl:w-72"><AudioPlayer cardModal /></div>}
         {loading && <p className="py-16 text-center text-sm text-secondary-label">Loading previews...</p>}
         {error && <p className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">{error}</p>}
         <div className="space-y-6">
