@@ -810,6 +810,9 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
     setIsNotificationsOpen((open) => !open);
     setIsProfileOpen(false);
     setIsAddMenuOpen(false);
+    setWorkspace((prev) => ({ ...prev, notifications: prev.notifications.map((item) => ({ ...item, read: true })) }));
+    fetch(`${apiUrl}/api/notifications/read`, { method: 'POST', credentials: 'include', headers: authHeaders(true) })
+      .catch((error) => console.error('Failed to mark notifications read', error));
   };
 
   return (
