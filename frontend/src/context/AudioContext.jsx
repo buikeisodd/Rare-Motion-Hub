@@ -38,22 +38,22 @@ export function AudioProvider({ children }) {
   // Load new track when currentTrack changes
   useEffect(() => {
     const audio = audioRef.current;
-    if (!currentTrack?.url) { audio.pause(); return; }
+    if (!(currentTrack?.playbackUrl || currentTrack?.url)) { audio.pause(); return; }
     setProgress(0);
     setDuration(0);
     setIsBuffering(true);
     audio.pause();
     const sourceUrl = currentTrack.filename
       ? `${apiUrl.replace(/\/$/, '')}/api/media/tracks/${encodeURIComponent(currentTrack.id)}`
-      : resolveTrackUrl(currentTrack.url);
+      : resolveTrackUrl(currentTrack.playbackUrl || currentTrack.url);
     audio.src = sourceUrl;
     audio.load();
-  }, [currentTrack?.url]);
+  }, [currentTrack?.id, currentTrack?.playbackUrl, currentTrack?.url]);
 
   // Play / pause
   useEffect(() => {
     const audio = audioRef.current;
-    if (!currentTrack?.url) return;
+    if (!(currentTrack?.playbackUrl || currentTrack?.url)) return;
     if (isPlaying && audio.paused) {
       audio.play().catch((err) => {
         console.error('Audio playback failed:', err, 'for track URL:', currentTrack.url);

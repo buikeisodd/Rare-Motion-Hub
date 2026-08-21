@@ -20,6 +20,22 @@ const normalizeLibraryItem = (item, db, type) => {
   return { ...item, title, name: title, artist };
 };
 
+const normalizeMediaAsset = (asset, trackId, versionId = null) => ({
+  id: versionId || asset.id || trackId,
+  playbackUrl: asset.filename
+    ? `${BASE_URL}/api/media/tracks/${trackId}${versionId ? `/versions/${versionId}` : ''}`
+    : asset.url || asset.secureUrl || null,
+  secureUrl: asset.url || asset.secureUrl || null,
+  publicId: asset.publicId || null,
+  resourceType: asset.resourceType || 'video',
+  format: asset.format || null,
+  mimeType: asset.mimeType || null,
+  duration: Number(asset.duration) || 0,
+  bytes: Number(asset.size || asset.bytes) || 0,
+  storageProvider: asset.storageProvider || (asset.publicId || asset.url ? 'cloudinary' : 'local'),
+  playbackStatus: asset.playbackStatus || (asset.filename || asset.url ? 'ready' : 'failed')
+});
+
 const normalizeTrack = (track) => ({
   ...track,
   notes: track.notes || '',
@@ -29,7 +45,12 @@ const normalizeTrack = (track) => ({
       ? `${BASE_URL}/api/media/tracks/${track.id}/note-memos/${memo.id}`
       : memo.url
   })),
-  versions: track.versions || [],
+  versions: (track.versions || []).map((version) => ({
+    ...version,
+    ...normalizeMediaAsset(version, track.id, version.id)
+  })),
+  activeVersionId: track.activeVersionId || null,
+  playbackUrl: track.filename ? `${BASE_URL}/api/media/tracks/${track.id}` : track.url,
   url: track.filename ? `${BASE_URL}/api/media/tracks/${track.id}` : track.url
 });
 
@@ -210,6 +231,7 @@ module.exports = {
   ownerNameFor,
   normalizeLibraryItem,
   normalizeTrack,
+  normalizeMediaAsset,
   trackOwnerId,
   trackMediaPath,
   noteMemoDir,

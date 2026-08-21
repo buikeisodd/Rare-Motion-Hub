@@ -90,13 +90,26 @@ const promoteTrackToCloudinary = async (track, localPath, userId) => {
     // A newer replacement may have completed while this upload was processing.
     // Never let an older Cloudinary job overwrite the newer active URL.
     if (db.tracks[index].url !== track.url || db.tracks[index].filename !== track.filename) return;
-    db.tracks[index] = { ...db.tracks[index], filename: null, url: uploadResult.secure_url };
+    const updated = { ...db.tracks[index], filename: null, url: uploadResult.secure_url, publicId: uploadResult.public_id, resourceType: uploadResult.resource_type, format: uploadResult.format, duration: uploadResult.duration || db.tracks[index].duration || 0, size: uploadResult.bytes || db.tracks[index].size, storageProvider: 'cloudinary', playbackStatus: 'ready' };
+    updated.versions = (updated.versions || []).map((version) => version.id === updated.activeVersionId ? { ...version, filename: null, url: uploadResult.secure_url, publicId: uploadResult.public_id, resourceType: uploadResult.resource_type, format: uploadResult.format, duration: uploadResult.duration || version.duration || 0, size: uploadResult.bytes || version.size, storageProvider: 'cloudinary', playbackStatus: 'ready' } : version);
+    db.tracks[index] = updated;
     await writeDB(db);
     invalidateCache(`workspace:${userId}`);
     if (track.projectId) invalidateCache(`project:${track.projectId}:${userId}`);
     // Keep the local fallback while the current client may still hold its URL.
   } catch (error) {
     console.error('Background Cloudinary track upload failed; local playback remains active:', error.message);
+    try {
+      const db = ensureDBShape(await readDB());
+      const current = db.tracks.find((item) => item.id === track.id);
+      if (current && current.activeVersionId) {
+        current.playbackStatus = 'failed';
+        current.versions = (current.versions || []).map((version) => version.id === current.activeVersionId ? { ...version, playbackStatus: 'failed' } : version);
+        await writeDB(db);
+      }
+    } catch (statusError) {
+      console.error('Could not persist failed media status:', statusError.message);
+    }
   }
 };
 
@@ -161,6 +174,13 @@ const promoteVersionToCloudinary = async (trackId, versionId, localPath, userId)
     if (!version) return;
     version.filename = null;
     version.url = uploadResult.secure_url;
+    version.publicId = uploadResult.public_id;
+    version.resourceType = uploadResult.resource_type;
+    version.format = uploadResult.format;
+    version.duration = uploadResult.duration || version.duration || 0;
+    version.size = uploadResult.bytes || version.size;
+    version.storageProvider = 'cloudinary';
+    version.playbackStatus = 'ready';
     await writeDB(db);
     invalidateCache(`workspace:${userId}`);
     if (track.projectId) invalidateCache(`project:${track.projectId}:${userId}`);
@@ -193,13 +213,16 @@ const createCloudinaryTrack = async (req, res, next) => {
     if (projectId && !db.projects.some((project) => project.id === projectId && project.userId === userId)) {
       return next(new AppError('Project not found', 404));
     }
+    const versionId = makeId();
     const track = {
       id: makeId(), userId, projectId: projectId || null,
       title: title || publicId.split('/').pop(), artist: artist || '', producer: producer || '',
       filename: null, url: secureUrl, publicId, resourceType: resourceType || 'video',
       format: format || null, size: Number(bytes) || 0, duration: Number(duration) || 0,
+      storageProvider: 'cloudinary', playbackStatus: 'ready', activeVersionId: versionId,
       mimeType: format === 'wav' ? 'audio/wav' : 'audio/mpeg',
-      uploader: { id: uploader.id, name: uploader.name }, uploadedAt: new Date().toISOString()
+      uploader: { id: uploader.id, name: uploader.name }, uploadedAt: new Date().toISOString(),
+      versions: [{ id: versionId, label: 'Version 1', filename: null, url: secureUrl, publicId, resourceType: resourceType || 'video', format: format || null, duration: Number(duration) || 0, size: Number(bytes) || 0, mimeType: format === 'wav' ? 'audio/wav' : 'audio/mpeg', storageProvider: 'cloudinary', playbackStatus: 'ready', uploadedAt: new Date().toISOString() }]
     };
     db.tracks.push(track);
     await writeDB(db);
@@ -223,9 +246,8 @@ const deleteTrack = async (req, res, next) => {
       (track.versions || []).forEach((version) => {
         removeFileIfExists(path.join(uploadDir, trackOwnerId(track), version.filename));
       });
-    } else if (track.url) {
-      const publicId = track.url.split('/').pop().split('.')[0];
-      cloudinary.uploader.destroy(`raremotionhub/tracks/${publicId}`, { resource_type: 'video' }).catch(console.error);
+    } else if (track.publicId) {
+      cloudinary.uploader.destroy(track.publicId, { resource_type: track.resourceType || 'video' }).catch(console.error);
     }
     removeDirIfExists(path.join(stemsDir, trackOwnerId(track), track.id));
 
@@ -551,6 +573,7 @@ const replaceAudio = async (req, res, next) => {
     track.versions ||= [];
     const previousFilename = track.filename;
     const previousVersionId = makeId();
+    const previousUploadedAt = track.uploadedAt || new Date().toISOString();
 
     if (track.filename || track.url) {
       track.versions.push({
@@ -559,19 +582,34 @@ const replaceAudio = async (req, res, next) => {
         url: track.url,
         mimeType: track.mimeType,
         size: track.size,
+        publicId: track.publicId || null,
+        resourceType: track.resourceType || 'video',
+        format: track.format || null,
+        duration: track.duration || 0,
+        storageProvider: track.storageProvider || (track.publicId || track.url ? 'cloudinary' : 'local'),
+        playbackStatus: track.url || track.filename ? 'ready' : 'failed',
         label: `Version ${track.versions.length + 1}`,
-        uploadedAt: track.uploadedAt || new Date().toISOString()
+        uploadedAt: previousUploadedAt
       });
     }
 
     // Complete the request from local storage first; cloud promotion is best-effort.
     const storedFile = storeTrackLocally(req.file, userId);
 
+    const nextVersionId = makeId();
     track.filename = storedFile.filename;
     track.url = storedFile.url;
+    track.publicId = null;
+    track.resourceType = 'video';
+    track.format = path.extname(req.file.originalname).slice(1).toLowerCase() || null;
+    track.duration = 0;
+    track.storageProvider = 'local';
+    track.playbackStatus = 'processing';
+    track.activeVersionId = nextVersionId;
     track.mimeType = req.file.mimetype;
     track.size = req.file.size;
     track.uploadedAt = new Date().toISOString();
+    track.versions.push({ id: nextVersionId, filename: storedFile.filename, url: storedFile.url, mimeType: req.file.mimetype, size: req.file.size, label: `Version ${track.versions.length + 1}`, uploadedAt: track.uploadedAt, resourceType: 'video', format: track.format, storageProvider: 'local', playbackStatus: 'processing' });
     db.tracks[trackIndex] = track;
     await writeDB(db);
     invalidateCache(`workspace:${userId}`);
@@ -603,21 +641,19 @@ const switchVersion = async (req, res, next) => {
     if (selectedIndex < 0 || selectedIndex >= track.versions.length) return next(new AppError('Version not found', 404));
 
     const selectedVersion = track.versions[selectedIndex];
-    const currentVersion = {
-      id: makeId(),
-      filename: track.filename,
-      url: track.url,
-      mimeType: track.mimeType,
-      size: track.size,
-      label: selectedVersion.label || `Version ${selectedIndex + 1}`,
-      uploadedAt: track.uploadedAt || new Date().toISOString()
-    };
-
-    track.versions.splice(selectedIndex, 1, currentVersion);
+    if (selectedVersion.playbackStatus === 'processing') return next(new AppError('Version is still processing.', 409));
+    if (selectedVersion.playbackStatus === 'failed') return next(new AppError('Version media is unavailable.', 409));
+    track.activeVersionId = selectedVersion.id;
     track.filename = selectedVersion.filename;
     track.url = selectedVersion.url || (selectedVersion.filename ? `${BASE_URL}/api/media/tracks/${track.id}/versions/${selectedVersion.id}` : track.url);
     track.mimeType = selectedVersion.mimeType;
     track.size = selectedVersion.size;
+    track.publicId = selectedVersion.publicId || null;
+    track.resourceType = selectedVersion.resourceType || 'video';
+    track.format = selectedVersion.format || null;
+    track.duration = selectedVersion.duration || 0;
+    track.storageProvider = selectedVersion.storageProvider || (selectedVersion.url ? 'cloudinary' : 'local');
+    track.playbackStatus = selectedVersion.playbackStatus || 'ready';
     track.uploadedAt = selectedVersion.uploadedAt || track.uploadedAt;
     db.tracks[trackIndex] = track;
     await writeDB(db);
@@ -639,11 +675,13 @@ const deleteVersion = async (req, res, next) => {
 
     const track = db.tracks[trackIndex];
     track.versions ||= [];
+    if (track.activeVersionId === req.params.versionId) return next(new AppError('The active version cannot be deleted. Switch versions first.', 409));
     const versionIndex = track.versions.findIndex((version) => version.id === req.params.versionId);
     if (versionIndex === -1) return next(new AppError('Version not found', 404));
 
     const [removed] = track.versions.splice(versionIndex, 1);
-    removeFileIfExists(path.join(uploadDir, trackOwnerId(track), removed.filename));
+    removeFileIfExists(removed.filename ? path.join(uploadDir, trackOwnerId(track), removed.filename) : null);
+    if (removed.publicId) cloudinary.uploader.destroy(removed.publicId, { resource_type: removed.resourceType || 'video' }).catch(console.error);
     db.tracks[trackIndex] = track;
     await writeDB(db);
     invalidateCache(`workspace:${userId}`);

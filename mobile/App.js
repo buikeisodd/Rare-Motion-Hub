@@ -1290,7 +1290,7 @@ export default function App() {
 
   const playTrack = async (track, project, tracks) => {
     try {
-      const source = offlineTracks[track.id] || resolveMediaUrl(track.url);
+      const source = offlineTracks[track.id] || resolveMediaUrl(track.playbackUrl || track.url);
       if (!source) {
         Alert.alert('Track unavailable', 'This track does not have a playable URL yet.');
         return;

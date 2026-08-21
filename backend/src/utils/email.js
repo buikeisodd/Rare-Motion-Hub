@@ -1,30 +1,6 @@
-const nodemailer = require('nodemailer');
-
-const smtpPassword = process.env.SMTP_PASS || process.env.SMTP_PASSWORD;
-const hasSmtpConfig = Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && smtpPassword);
-
-const getTransport = () => nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT || 587),
-  secure: process.env.SMTP_SECURE === 'true',
-  connectionTimeout: 8000,
-  greetingTimeout: 8000,
-  socketTimeout: 10000,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: smtpPassword
-  }
-});
-
-const sendMailSafely = async (message) => {
-  try {
-    await getTransport().sendMail(message);
-    return true;
-  } catch (error) {
-    console.error('SMTP email delivery failed:', error.message);
-    return false;
-  }
-};
+const emailService = require('../services/email');
+const hasSmtpConfig = emailService.isConfigured();
+const sendMailSafely = async (message) => (await emailService.send(message)).sent;
 
 const sendVerificationEmail = async ({ to, name, verificationUrl }) => {
   if (!hasSmtpConfig) {
