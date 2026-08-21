@@ -637,32 +637,66 @@ const replaceAudio = async (req, res, next) => {
       });
     }
 
-    // Complete the request from local storage first; cloud promotion is best-effort.
+    // Follow the same lifecycle as the normal upload: finish Cloudinary
+    // persistence before returning the replacement to the client. Returning a
+    // local processing URL here caused the player to race the background job.
     const storedFile = storeTrackLocally(req.file, userId);
 
+    let media = {
+      filename: storedFile.filename,
+      url: storedFile.url,
+      publicId: null,
+      resourceType: 'video',
+      format: path.extname(req.file.originalname).slice(1).toLowerCase() || null,
+      duration: 0,
+      size: req.file.size,
+      storageProvider: 'local',
+      playbackStatus: 'ready'
+    };
+    if (hasCloudinaryConfig) {
+      try {
+        const uploadResult = await cloudinary.uploader.upload_large(storedFile.path, {
+          resource_type: 'video',
+          folder: 'raremotionhub/tracks'
+        });
+        media = {
+          filename: null,
+          url: uploadResult.secure_url,
+          publicId: uploadResult.public_id,
+          resourceType: uploadResult.resource_type || 'video',
+          format: uploadResult.format || media.format,
+          duration: Number(uploadResult.duration) || 0,
+          size: Number(uploadResult.bytes) || media.size,
+          storageProvider: 'cloudinary',
+          playbackStatus: 'ready'
+        };
+        removeFileIfExists(storedFile.path);
+      } catch (uploadError) {
+        // Keep the local file as a fallback only when Cloudinary is unavailable.
+        // It remains playable for this process, and the error is visible in logs.
+        console.error('Replacement Cloudinary upload failed; keeping local media:', uploadError.message);
+      }
+    }
+
     const nextVersionId = makeId();
-    track.filename = storedFile.filename;
-    track.url = storedFile.url;
-    track.publicId = null;
-    track.resourceType = 'video';
-    track.format = path.extname(req.file.originalname).slice(1).toLowerCase() || null;
-    track.duration = 0;
-    track.storageProvider = 'local';
-    track.playbackStatus = 'processing';
+    track.filename = media.filename;
+    track.url = media.url;
+    track.publicId = media.publicId;
+    track.resourceType = media.resourceType;
+    track.format = media.format;
+    track.duration = media.duration;
+    track.storageProvider = media.storageProvider;
+    track.playbackStatus = media.playbackStatus;
     track.activeVersionId = nextVersionId;
     track.mimeType = req.file.mimetype;
     track.size = req.file.size;
     track.uploadedAt = new Date().toISOString();
-    track.versions.push({ id: nextVersionId, filename: storedFile.filename, url: storedFile.url, mimeType: req.file.mimetype, size: req.file.size, label: `Version ${track.versions.length + 1}`, uploadedAt: track.uploadedAt, resourceType: 'video', format: track.format, storageProvider: 'local', playbackStatus: 'processing' });
+    track.versions.push({ id: nextVersionId, filename: media.filename, url: media.url, publicId: media.publicId, mimeType: req.file.mimetype, size: media.size, duration: media.duration, label: `Version ${track.versions.length + 1}`, uploadedAt: track.uploadedAt, resourceType: media.resourceType, format: media.format, storageProvider: media.storageProvider, playbackStatus: media.playbackStatus });
     db.tracks[trackIndex] = track;
     await writeDB(db);
     invalidateCache(`workspace:${userId}`);
     if (track.projectId) invalidateCache(`project:${track.projectId}:${userId}`);
     res.json({ track: normalizeTrack(track) });
-    const previousPath = previousFilename ? trackMediaPath({ ...track, filename: previousFilename }) : null;
-    promoteTrackToCloudinary(track, storedFile.path, userId)
-      .then(() => previousFilename && promoteVersionToCloudinary(track.id, previousVersionId, previousPath, userId))
-      .catch((error) => console.error('Version Cloudinary promotion failed:', error.message));
   } catch (error) {
     next(error);
   }
