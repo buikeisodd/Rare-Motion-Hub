@@ -93,7 +93,17 @@ export default function ChatInbox({ user, isOpen, onToggle, startConversationWit
     finally { if (!silent) setLoading(false); }
   }, []);
 
-  const openConversation = (conversation) => { setActive(conversation); setMessages([]); loadMessages(conversation); };
+  const openConversation = (conversation) => {
+    setConversations((current) => current.map((item) => (
+      item.type === conversation.type &&
+      (item.type === 'group' ? item.group?.id === conversation.group?.id : item.partner?.id === conversation.partner?.id)
+        ? { ...item, unreadCount: 0 }
+        : item
+    )));
+    setActive({ ...conversation, unreadCount: 0 });
+    setMessages([]);
+    loadMessages(conversation);
+  };
 
   useEffect(() => {
     if (!isOpen || !active) return undefined;
