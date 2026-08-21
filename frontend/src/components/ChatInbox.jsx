@@ -73,25 +73,26 @@ export default function ChatInbox({ user, isOpen, onToggle, startConversationWit
     setTab('inbox');
   }, [isOpen, startConversationWith, user?.id, conversations]);
 
-  const loadMessages = useCallback(async (conversation) => {
+  const loadMessages = useCallback(async (conversation, { silent = false } = {}) => {
     if (!conversation) return;
     const isGroup = conversation.type === 'group';
     const query = isGroup ? `type=group&groupId=${conversation.group.id}` : `type=dm&partnerId=${conversation.partner.id}`;
-    setLoading(true); setError('');
+    if (!silent) setLoading(true);
+    setError('');
     try {
       const response = await authFetch(`${apiUrl}/api/messages?${query}`);
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || 'Could not load conversation.');
       setMessages((Array.isArray(data.messages) ? data.messages : []).map(normalizeMessage).filter(Boolean));
-    } catch (err) { setMessages([]); setError(err.message || 'Could not load conversation.'); }
-    finally { setLoading(false); }
+    } catch (err) { if (!silent) setMessages([]); setError(err.message || 'Could not load conversation.'); }
+    finally { if (!silent) setLoading(false); }
   }, []);
 
   const openConversation = (conversation) => { setActive(conversation); setMessages([]); loadMessages(conversation); };
 
   useEffect(() => {
     if (!isOpen || !active) return undefined;
-    const timer = window.setInterval(() => loadMessages(active), 3000);
+    const timer = window.setInterval(() => loadMessages(active, { silent: true }), 3000);
     return () => window.clearInterval(timer);
   }, [isOpen, active, loadMessages]);
 
