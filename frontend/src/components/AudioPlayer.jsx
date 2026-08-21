@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
-import { Activity, ChevronDown, ChevronUp, ListMusic, Pause, Play, Repeat, Repeat1, Settings2, Shuffle, SkipBack, SkipForward, Volume2, VolumeX, X } from 'lucide-react';
+import { ChevronDown, ChevronUp, ListMusic, Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Volume2, VolumeX, X } from 'lucide-react';
 import { useAudio } from '../context/AudioContext';
 import { gradientFor } from '../utils/gradients';
 
@@ -68,49 +68,17 @@ function QueuePanel({ playQueue, queueIndex, onSelect, onClose }) {
   );
 }
 
-function SettingsPanel({ playbackRate, setRate, pitchShift, setPitch, onClose, compact = false }) {
-  return (
-    <div className={`rounded-2xl bg-[#1e1e1e] border border-white/10 shadow-2xl ${compact ? 'p-3' : 'p-4'}`}>
-      <div className="flex items-center justify-between mb-2">
-        <span className={`font-bold text-white/60 uppercase tracking-wider ${compact ? 'text-[10px]' : 'text-xs'}`}>Playback</span>
-        <button onClick={onClose} className="text-white/40 hover:text-white"><X className={compact ? 'h-3 w-3' : 'h-3.5 w-3.5'} /></button>
-      </div>
-      <div className="space-y-3">
-        <div>
-          <div className={`flex justify-between text-white/50 mb-1 ${compact ? 'text-[10px]' : 'text-xs'}`}>
-            <span className="flex items-center gap-1"><Activity className="h-3 w-3" /> Speed</span>
-            <span className="font-mono">{playbackRate.toFixed(2)}x</span>
-          </div>
-          <input type="range" min="0.5" max="2" step="0.05" value={playbackRate} onChange={e => setRate(parseFloat(e.target.value))} className="w-full accent-white" />
-          <button onClick={() => setRate(1)} className="mt-0.5 text-[10px] text-white/35 hover:text-white">Reset</button>
-        </div>
-        <div>
-          <div className={`flex justify-between text-white/50 mb-1 ${compact ? 'text-[10px]' : 'text-xs'}`}>
-            <span className="flex items-center gap-1"><Settings2 className="h-3 w-3" /> Pitch</span>
-            <span className="font-mono">{pitchShift > 0 ? '+' : ''}{pitchShift} st</span>
-          </div>
-          <input type="range" min="-7" max="7" step="1" value={pitchShift} onChange={e => setPitch(parseInt(e.target.value, 10))} className="w-full accent-white" />
-          <button onClick={() => setPitch(0)} className="mt-0.5 text-[10px] text-white/35 hover:text-white">Reset</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function AudioPlayer({ cardModal = false, hideCover = false, minimal = false, onDismiss }) {
   const { currentTrack, tracks, projectName, isPlaying, setIsPlaying, setCurrentTrack,
-          progress, duration, isBuffering, seek, setVolume, setMuted, setPlaybackRate: ctxSetRate,
+          progress, duration, isBuffering, seek, setVolume, setMuted,
           repeatMode, setRepeatMode, projectCover, projectId } = useAudio();
 
   const [volume, setVolumeState] = useState(1);
   const [isMuted, setIsMutedState] = useState(false);
-  const [playbackRate, setPlaybackRateState] = useState(1);
-  const [pitchShift, setPitchShift] = useState(0);
   const [isShuffled, setIsShuffled] = useState(false);
   const [playQueue, setPlayQueue] = useState([]);
   const [queueIndex, setQueueIndex] = useState(-1);
   const [showQueue, setShowQueue] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
@@ -119,16 +87,6 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
   // Sync volume/muted/rate changes to the shared audio element via context
   const handleVolume = (v) => { setVolumeState(v); setVolume(v); if (v > 0) { setIsMutedState(false); setMuted(false); } };
   const handleMute   = (m) => { setIsMutedState(m); setMuted(m); };
-  const handleRate   = (r) => { setPlaybackRateState(r); applyRate(r, pitchShift); };
-  const handlePitch  = (p) => { setPitchShift(p); applyRate(playbackRate, p); };
-
-  const applyRate = (rate, pitch) => {
-    const ratio = Math.pow(2, pitch / 12);
-    const combined = Math.max(0.25, Math.min(3, rate * ratio));
-    ctxSetRate(combined);
-    const audio = audioRef.current;
-    if (audio) { audio.preservesPitch = pitch === 0; audio.mozPreservesPitch = pitch === 0; audio.webkitPreservesPitch = pitch === 0; }
-  };
 
   // Build queue from tracks
   useEffect(() => {
@@ -190,11 +148,6 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
           <QueuePanel playQueue={playQueue} queueIndex={queueIndex} onSelect={t => { setCurrentTrack(t); setIsPlaying(true); setShowQueue(false); }} onClose={() => setShowQueue(false)} />
         </div>
       )}
-      {showSettings && (
-        <div className="absolute bottom-full right-0 mb-3 w-[min(18rem,calc(100vw-1.5rem))] sm:w-72">
-          <SettingsPanel playbackRate={playbackRate} setRate={handleRate} pitchShift={pitchShift} setPitch={handlePitch} onClose={() => setShowSettings(false)} />
-        </div>
-      )}
 
       {/* Compact floating pill */}
       <div onClick={() => setExpanded(true)} className="relative flex w-full overflow-hidden items-center gap-3 rounded-[1.35rem] border border-white/10 bg-[#1b1b1d]/[.76] px-3 py-3 shadow-[0_18px_50px_rgba(0,0,0,.45)] backdrop-blur-2xl sm:gap-4 sm:px-4 sm:py-3.5">
@@ -235,9 +188,6 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
           <button onClick={() => { setShowQueue(q => !q); setShowSettings(false); }} className={`relative h-7 w-7 grid place-items-center rounded-full transition-colors ${showQueue ? 'text-white bg-white/15' : 'hover:text-white'}`}>
             <ListMusic className="h-3.5 w-3.5" />
           </button>
-          <button onClick={() => { setShowSettings(s => !s); setShowQueue(false); }} className={`h-7 w-7 grid place-items-center rounded-full transition-colors ${showSettings ? 'text-white bg-white/15' : 'hover:text-white'}`}>
-            <Activity className="h-3.5 w-3.5" />
-          </button>
           <button onClick={() => onDismiss ? onDismiss() : null} className="h-7 w-7 grid place-items-center rounded-full hover:text-red-400 transition-colors">
             <X className="h-3.5 w-3.5" />
           </button>
@@ -276,7 +226,6 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
             <button onClick={() => setRepeatMode(m => (m+1)%3)} className={`grid h-11 w-11 place-items-center rounded-full ${repeatMode > 0 ? 'bg-shading text-primary-label' : 'text-secondary-label'}`}>{repeatMode === 2 ? <Repeat1 className="h-5 w-5" /> : <Repeat className="h-5 w-5" />}</button>
           </div>
           <div className="mt-8 rounded-2xl border border-border bg-shading/40 p-4">
-            <SettingsPanel playbackRate={playbackRate} setRate={handleRate} pitchShift={pitchShift} setPitch={handlePitch} onClose={() => {}} compact />
           </div>
           <div className="mt-4 flex items-center gap-3 rounded-2xl border border-border bg-shading/40 px-4 py-3">
             <button onClick={() => handleMute(!isMuted)} className="text-secondary-label">{isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}</button>
@@ -291,7 +240,6 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
   // ── CARD MODAL (insights + chat) ──────────────────────────────────────
   return (
     <div className="w-full min-w-0 select-none">
-      {showSettings && <div className="mb-2"><SettingsPanel playbackRate={playbackRate} setRate={handleRate} pitchShift={pitchShift} setPitch={handlePitch} onClose={() => setShowSettings(false)} compact /></div>}
       {showQueue && <div className="mb-2"><QueuePanel playQueue={playQueue} queueIndex={queueIndex} onSelect={t => { setCurrentTrack(t); setIsPlaying(true); setShowQueue(false); }} onClose={() => setShowQueue(false)} /></div>}
 
       <div className="relative rounded-2xl border border-white/10 bg-[#1c1c1e]/80 shadow-2xl backdrop-blur-xl overflow-hidden">
@@ -331,7 +279,6 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
             </button>
           </div>}
           {!minimal && <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-white/10">
-            <button onClick={() => { setShowSettings(s => !s); setShowQueue(false); }} className={`h-6 w-6 grid place-items-center rounded-full ${showSettings ? 'text-white bg-white/20' : 'text-white/35 hover:text-white'}`}><Activity className="h-3.5 w-3.5" /></button>
             <button onClick={() => { setShowQueue(q => !q); setShowSettings(false); }} className={`relative h-6 w-6 grid place-items-center rounded-full ${showQueue ? 'text-white bg-white/20' : 'text-white/35 hover:text-white'}`}>
               <ListMusic className="h-3.5 w-3.5" />
               {playQueue.length > 0 && <span className="absolute -right-1 -top-1 h-3 min-w-3 grid place-items-center rounded-full bg-white text-black text-[7px] font-bold">{playQueue.length}</span>}

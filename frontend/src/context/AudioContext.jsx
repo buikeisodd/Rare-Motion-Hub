@@ -120,10 +120,6 @@ export function AudioProvider({ children }) {
     audioRef.current.muted = m;
   }, []);
 
-  const setPlaybackRate = useCallback((r) => {
-    audioRef.current.playbackRate = r;
-  }, []);
-
   const [projectCover, setProjectCover] = useState(null);
   const [projectId, setProjectId] = useState(null);
 
@@ -179,7 +175,7 @@ export function AudioProvider({ children }) {
     isPlaying, setIsPlaying,
     progress, duration, isBuffering,
     repeatMode, setRepeatMode,
-    seek, setVolume, setMuted, setPlaybackRate,
+    seek, setVolume, setMuted,
     playTrack, addToQueue, addTracksToQueue,
     queue, audioRef,
   };
