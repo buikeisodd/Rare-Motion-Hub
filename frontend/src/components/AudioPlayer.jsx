@@ -198,8 +198,8 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, onDi
 
       {/* Compact floating pill */}
       <div onClick={() => setExpanded(true)} className="relative flex w-full overflow-hidden items-center gap-3 rounded-[1.35rem] border border-white/10 bg-[#1b1b1d]/[.76] px-3 py-3 shadow-[0_18px_50px_rgba(0,0,0,.45)] backdrop-blur-2xl sm:gap-4 sm:px-4 sm:py-3.5">
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0 scale-110 bg-cover bg-center opacity-25 blur-2xl" style={coverStyle} />
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[#141416]/[.68]" />
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 scale-105 bg-cover bg-center opacity-15 blur-md" style={coverStyle} />
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[#141416]/[.76]" />
         {/* Cover art */}
         <div className={`relative z-10 h-12 w-12 shrink-0 rounded-full border-2 border-white/10 bg-cover bg-center shadow-lg ${isPlaying ? 'animate-spin-slower' : ''}`} style={coverStyle} />
 
