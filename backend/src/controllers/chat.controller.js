@@ -300,7 +300,8 @@ const getMessages = async (req, res, next) => {
 
 const sendMessageController = async (req, res, next) => {
   try {
-    const { recipientId, groupId, conversationType, text, replyToMessageId } = req.body;
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    const { recipientId, groupId, conversationType, text, replyToMessageId } = body;
     const senderId = req.userId;
     if (!text?.trim()) return next(new AppError('text required.', 400));
     const type = conversationType || 'dm';
@@ -342,7 +343,8 @@ const sendMediaMessage = async (req, res, next) => {
   try {
     if (!req.file) return next(new AppError('No media uploaded.', 400));
     const db = ensureDBShape(await readDB());
-    const { recipientId, groupId, conversationType, text, replyToMessageId, mediaKind } = req.body;
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    const { recipientId, groupId, conversationType, text, replyToMessageId, mediaKind } = body;
     const senderId = req.userId;
     const type = conversationType || 'dm';
     if (!userExists(db, senderId)) {
