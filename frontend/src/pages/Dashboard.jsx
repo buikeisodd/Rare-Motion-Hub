@@ -547,6 +547,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
   const [loading, setLoading] = useState(true);
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [notificationPanelVisited, setNotificationPanelVisited] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const { currentTrack } = useAudio();
@@ -786,33 +787,26 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
   const totalNotifications = unreadNotificationsCount + unreadChatsCount;
 
   const handleReadNotification = async (notification) => {
-    if (!notification || notification.read || String(notification.id).startsWith('chat-')) return;
-
-    setWorkspace((prev) => ({
-      ...prev,
-      notifications: prev.notifications.map((item) => (
-        String(item.id) === String(notification.id) ? { ...item, read: true } : item
-      ))
-    }));
-
-    try {
-      await fetch(`${apiUrl}/api/notifications/${encodeURIComponent(notification.id)}/read`, {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: authHeaders()
-      });
-    } catch (error) {
-      console.error('Failed to mark notification read', error);
-    }
+    // Clicking an item does not consume it. Read state is committed when the
+    // user leaves and later returns to the notification panel.
+    return notification;
   };
 
   const handleOpenNotifications = () => {
-    setIsNotificationsOpen((open) => !open);
+    if (isNotificationsOpen) {
+      setIsNotificationsOpen(false);
+      setNotificationPanelVisited(true);
+      return;
+    }
+    if (notificationPanelVisited) {
+      setWorkspace((prev) => ({ ...prev, notifications: prev.notifications.map((item) => ({ ...item, read: true })) }));
+      fetch(`${apiUrl}/api/notifications/read`, { method: 'POST', credentials: 'include', headers: authHeaders(true) })
+        .catch((error) => console.error('Failed to mark notifications read', error));
+      setNotificationPanelVisited(false);
+    }
+    setIsNotificationsOpen(true);
     setIsProfileOpen(false);
     setIsAddMenuOpen(false);
-    setWorkspace((prev) => ({ ...prev, notifications: prev.notifications.map((item) => ({ ...item, read: true })) }));
-    fetch(`${apiUrl}/api/notifications/read`, { method: 'POST', credentials: 'include', headers: authHeaders(true) })
-      .catch((error) => console.error('Failed to mark notifications read', error));
   };
 
   return (
