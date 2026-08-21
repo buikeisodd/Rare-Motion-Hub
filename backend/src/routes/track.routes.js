@@ -3,6 +3,7 @@ const {
   uploadTrackController,
   getTrackUploadSignature,
   createCloudinaryTrack,
+  createCloudinaryVersion,
   deleteTrack,
   patchTrack,
   publishTrack,
@@ -36,6 +37,7 @@ const router = express.Router();
 router.post('/upload', requireUserId, uploadTrack.single('track'), uploadTrackController);
 router.get('/upload/signature', requireUserId, getTrackUploadSignature);
 router.post('/upload/cloudinary', requireUserId, createCloudinaryTrack);
+router.post('/tracks/:id/versions/cloudinary', requireUserId, createCloudinaryVersion);
 router.delete('/tracks/:id', requireUserId, deleteTrack);
 router.patch('/tracks/:id', requireUserId, patchTrack);
 router.patch('/tracks/:id/publish', requireUserId, publishTrack);

@@ -267,6 +267,50 @@ const createCloudinaryTrack = async (req, res, next) => {
   }
 };
 
+// Finalize a browser-direct Cloudinary replacement. The media bytes never
+// pass through Render; this endpoint persists only the durable asset metadata.
+const createCloudinaryVersion = async (req, res, next) => {
+  try {
+    const { secureUrl, publicId, resourceType, format, bytes, duration } = req.body || {};
+    if (!secureUrl || !publicId) return next(new AppError('Cloudinary upload metadata is incomplete.', 400));
+    const db = ensureDBShape(await readDB());
+    const userId = req.userId;
+    const trackIndex = db.tracks.findIndex((item) => item.id === req.params.id && (item.userId === userId || item.uploader?.id === userId));
+    if (trackIndex === -1) return next(new AppError('Track not found', 404));
+
+    const track = db.tracks[trackIndex];
+    track.versions ||= [];
+    const versionId = makeId();
+    const uploadedAt = new Date().toISOString();
+    const media = {
+      filename: null,
+      url: secureUrl,
+      publicId,
+      resourceType: resourceType || 'video',
+      format: format || null,
+      duration: Number(duration) || 0,
+      size: Number(bytes) || 0,
+      storageProvider: 'cloudinary',
+      playbackStatus: 'ready'
+    };
+    track.versions.push({
+      id: versionId,
+      ...media,
+      mimeType: /^wav$/i.test(media.format || '') ? 'audio/wav' : 'audio/mpeg',
+      label: `Version ${track.versions.length + 1}`,
+      uploadedAt
+    });
+    Object.assign(track, media, { activeVersionId: versionId, mimeType: /^wav$/i.test(media.format || '') ? 'audio/wav' : 'audio/mpeg', uploadedAt });
+    db.tracks[trackIndex] = track;
+    await writeDB(db);
+    invalidateCache(`workspace:${userId}`);
+    if (track.projectId) invalidateCache(`project:${track.projectId}:${userId}`);
+    res.json({ track: normalizeTrack(track) });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const deleteTrack = async (req, res, next) => {
   try {
     const userId = req.userId;

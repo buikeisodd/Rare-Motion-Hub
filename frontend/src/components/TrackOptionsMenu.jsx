@@ -847,25 +847,43 @@ export default function TrackOptionsMenu({
 }
 
 export function replaceTrackAudio(track, file, userId, onProgress) {
-  const formData = new FormData();
-  formData.append('track', file);
-  formData.append('userId', userId);
-  return new Promise((resolve, reject) => {
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+  const csrfToken = localStorage.getItem('csrfToken');
+  const uploadDirectly = async () => {
+    const signatureRes = await fetch(`${apiUrl}/api/upload/signature`, { credentials: 'include' });
+    const signature = await signatureRes.json();
+    if (!signatureRes.ok) throw new Error(signature.error || 'Cloudinary storage is unavailable.');
+    const cloudForm = new FormData();
+    cloudForm.append('file', file);
+    cloudForm.append('api_key', signature.apiKey);
+    cloudForm.append('timestamp', String(signature.timestamp));
+    cloudForm.append('folder', signature.folder);
+    cloudForm.append('signature', signature.signature);
+    const cloudinaryResult = await new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', `${apiUrl}/api/tracks/${track.id}/replace-audio`);
-    xhr.withCredentials = true;
-    const csrfToken = localStorage.getItem('csrfToken');
-    if (csrfToken) xhr.setRequestHeader('x-csrf-token', csrfToken);
+    xhr.open('POST', `https://api.cloudinary.com/v1_1/${signature.cloudName}/${signature.resourceType}/upload`);
     xhr.upload.onprogress = (event) => { if (event.lengthComputable) onProgress?.(Math.round((event.loaded / event.total) * 100)); };
     xhr.onload = () => {
       let data;
       try { data = JSON.parse(xhr.responseText); } catch { reject(new Error('The server returned an invalid upload response.')); return; }
-      if (xhr.status < 200 || xhr.status >= 300) { reject(new Error(data.error || 'Could not replace audio.')); return; }
-      resolve(data.track);
+      if (xhr.status < 200 || xhr.status >= 300) { reject(new Error(data.error?.message || 'Cloudinary upload failed.')); return; }
+      resolve(data);
     };
-    xhr.onerror = () => reject(new Error('Network error while uploading the version.'));
+    xhr.onerror = () => reject(new Error('Network error while uploading the version to Cloudinary.'));
     xhr.onabort = () => reject(new Error('Upload cancelled.'));
-    xhr.send(formData);
+    xhr.send(cloudForm);
+    });
+    const finalizeRes = await fetch(`${apiUrl}/api/tracks/${track.id}/versions/cloudinary`, {
+      method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', ...(csrfToken ? { 'x-csrf-token': csrfToken } : {}) },
+      body: JSON.stringify({ secureUrl: cloudinaryResult.secure_url, publicId: cloudinaryResult.public_id, resourceType: cloudinaryResult.resource_type, format: cloudinaryResult.format, bytes: cloudinaryResult.bytes, duration: cloudinaryResult.duration, userId })
+    });
+    const data = await finalizeRes.json();
+    if (!finalizeRes.ok) throw new Error(data.error || 'Could not save the uploaded version.');
+    return data.track;
+  };
+  return uploadDirectly().catch((error) => {
+    if (error?.message?.includes('Upload cancelled')) throw error;
+    throw error;
   });
 }
 
