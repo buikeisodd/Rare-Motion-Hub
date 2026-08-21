@@ -495,7 +495,10 @@ function TrackVersionsModal({ isOpen, onClose, onBack, track, userId, onTrackUpd
     uploadedAt: track.uploadedAt,
     isCurrent: true
   };
-  const allVersions = [currentEntry, ...(track.versions || []).map((v, i) => ({ ...v, versionIndex: i, isCurrent: false, label: v.label || `Version ${i + 1}` }))];
+  // New records include the active asset in versions[]; legacy records do not.
+  // Keep one active row in the UI instead of showing that asset twice.
+  const storedVersions = (track.versions || []).filter((version) => version.id !== track.activeVersionId);
+  const allVersions = [currentEntry, ...storedVersions.map((v, i) => ({ ...v, versionIndex: i, isCurrent: false, label: v.label || `Version ${i + 1}` }))];
 
   const handleSwitch = async (versionId, versionIndex) => {
     if (versionId === 'current') return;
@@ -723,7 +726,7 @@ function TrackDetailsModal({
             <h2 className="mb-2 text-2xl font-bold leading-tight">{track.title}</h2>
             <p className="mb-5 text-sm text-secondary-label">
               {formatDuration(duration)}
-              {track.versions?.length > 0 && ` · ${track.versions.length + 1} versions`}
+              {track.versions?.length > 0 && ` · ${track.activeVersionId ? track.versions.length : track.versions.length + 1} versions`}
             </p>
             <button
               onClick={() => setShowVersions(true)}
