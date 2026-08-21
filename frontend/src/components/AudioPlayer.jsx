@@ -35,11 +35,13 @@ function ProgressBar({ progress, duration, onSeek, className = '' }) {
   const onDown = (e) => { dragging.current = true; barRef.current.setPointerCapture(e.pointerId); onSeek(calc(e)); };
   const onMove = (e) => { if (dragging.current) onSeek(calc(e)); };
   const onUp   = (e) => { dragging.current = false; barRef.current.releasePointerCapture(e.pointerId); };
+  const bars = [4, 8, 12, 7, 16, 10, 20, 13, 8, 18, 24, 11, 15, 9, 21, 14, 7, 17, 12, 25, 15, 9, 18, 11, 22, 14, 8, 16, 10, 20, 13, 7, 17, 23, 12, 8, 15, 10, 19, 13, 7, 16, 11, 21, 14, 9, 18, 12, 6, 15, 10, 20, 13, 8, 17, 11, 22, 14, 7, 16, 10, 19, 12, 6];
   return (
     <div ref={barRef} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp}
-      className={`relative cursor-pointer rounded-full bg-white/20 group ${className}`} style={{ touchAction: 'none' }}>
-      <div className="absolute inset-y-0 left-0 rounded-full bg-[#D7FF65]" style={{ width: `${pct}%` }} />
-      <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-3.5 w-3.5 rounded-full bg-[#D7FF65] shadow-md opacity-0 group-hover:opacity-100 transition-opacity" style={{ left: `${pct}%` }} />
+      role="slider" aria-label="Track progress" aria-valuemin="0" aria-valuemax={duration || 0} aria-valuenow={progress}
+      className={`relative flex cursor-pointer items-center gap-[2px] rounded-lg bg-white/[0.03] px-1 group ${className}`} style={{ touchAction: 'none' }}>
+      {bars.map((height, index) => <span key={index} className="min-w-0 flex-1 rounded-full transition-colors duration-150" style={{ height: `${height}px`, backgroundColor: index / bars.length <= pct / 100 ? '#D7FF65' : 'rgba(255,255,255,.2)' }} />)}
+      <span className="pointer-events-none absolute top-1/2 h-4 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white opacity-0 shadow-md transition-opacity group-hover:opacity-100" style={{ left: `${pct}%` }} />
     </div>
   );
 }
@@ -181,7 +183,7 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, onDi
   // ── FLOATING PILL (all pages except insights/chat) ───────────────────
   if (!cardModal) return (
     <>
-    <div className="fixed bottom-[4.8rem] right-3 z-50 max-w-[calc(100vw-5.25rem)] select-none sm:bottom-6 sm:right-6 sm:max-w-none">
+    <div className="fixed bottom-[4.8rem] right-3 z-50 w-[min(42rem,calc(100vw-1.5rem))] select-none sm:bottom-6 sm:right-6">
       {/* Panels pop above */}
       {showQueue && (
         <div className="absolute bottom-full right-0 mb-3 w-[min(18rem,calc(100vw-1.5rem))] sm:w-72">
@@ -195,31 +197,31 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, onDi
       )}
 
       {/* Compact floating pill */}
-      <div onClick={() => setExpanded(true)} className="flex w-full items-center gap-2 rounded-2xl border border-white/10 bg-[#1c1c1e]/95 px-2.5 py-2 shadow-2xl backdrop-blur-xl sm:px-3">
+      <div onClick={() => setExpanded(true)} className="flex w-full items-center gap-3 rounded-[1.35rem] border border-white/10 bg-[#1b1b1d]/[.97] px-3 py-3 shadow-[0_18px_50px_rgba(0,0,0,.45)] backdrop-blur-xl sm:gap-4 sm:px-4 sm:py-3.5">
         {/* Cover art */}
-        <div className={`h-9 w-9 shrink-0 rounded-full bg-cover bg-center ${isPlaying ? 'animate-spin-slow' : ''}`} style={coverStyle} />
+        <div className={`h-12 w-12 shrink-0 rounded-full border-2 border-white/10 bg-cover bg-center shadow-lg ${isPlaying ? 'animate-spin-slower' : ''}`} style={coverStyle} />
 
         {/* Title + progress */}
-        <div className="min-w-0 flex-1 sm:w-32 sm:flex-none">
-          <MarqueeText text={currentTrack.title} className="text-xs font-semibold text-white" />
-          <ProgressBar progress={progress} duration={duration} onSeek={seek} className="h-1 w-full mt-1.5" />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-3"><MarqueeText text={currentTrack.title} className="text-sm font-semibold text-white" /><span className="shrink-0 text-[10px] font-mono text-white/45">{fmt(progress)} / {fmt(duration)}</span></div>
+          <ProgressBar progress={progress} duration={duration} onSeek={seek} className="mt-2 h-7 w-full" />
         </div>
 
         {/* Core controls */}
         <div className="flex shrink-0 items-center gap-0.5 text-white sm:gap-1" onClick={(event) => event.stopPropagation()}>
-          <button onClick={toggleShuffle} className={`hidden h-7 w-7 place-items-center rounded-full sm:grid ${isShuffled ? 'text-white' : 'text-white/30 hover:text-white/60'}`}>
-            <Shuffle className="h-3.5 w-3.5" />
+          <button title="Shuffle" onClick={toggleShuffle} className={`hidden h-8 w-8 place-items-center rounded-full sm:grid ${isShuffled ? 'text-white' : 'text-white/30 hover:text-white/60'}`}>
+            <Shuffle className="h-4 w-4" />
           </button>
-          <button onClick={handlePrev} className="hidden h-7 w-7 place-items-center rounded-full text-white/70 transition-colors hover:text-white sm:grid">
-            <SkipBack className="h-3.5 w-3.5 fill-current" />
+          <button title="Previous" onClick={handlePrev} className="hidden h-8 w-8 place-items-center rounded-full text-white/70 transition-colors hover:text-white sm:grid">
+            <SkipBack className="h-4 w-4 fill-current" />
           </button>
-          <button onClick={() => setIsPlaying(p => !p)} className="h-8 w-8 grid place-items-center rounded-full bg-white text-black hover:scale-105 transition-transform">
+          <button title={isPlaying ? 'Pause' : 'Play'} onClick={() => setIsPlaying(p => !p)} className="h-11 w-11 grid place-items-center rounded-full bg-white text-black hover:scale-105 transition-transform">
             {isBuffering && isPlaying
               ? <div className="h-3 w-3 animate-spin rounded-full border-2 border-black border-t-transparent" />
-              : isPlaying ? <Pause className="h-3.5 w-3.5 fill-current" /> : <Play className="h-3.5 w-3.5 fill-current ml-0.5" />}
+              : isPlaying ? <Pause className="h-5 w-5 fill-current" /> : <Play className="h-5 w-5 fill-current ml-0.5" />}
           </button>
-          <button onClick={handleNext} className="hidden h-7 w-7 place-items-center rounded-full text-white/70 transition-colors hover:text-white sm:grid">
-            <SkipForward className="h-3.5 w-3.5 fill-current" />
+          <button title="Next" onClick={handleNext} className="hidden h-8 w-8 place-items-center rounded-full text-white/70 transition-colors hover:text-white sm:grid">
+            <SkipForward className="h-4 w-4 fill-current" />
           </button>
           <button onClick={() => setRepeatMode(m => (m+1)%3)} className={`hidden h-7 w-7 place-items-center rounded-full sm:grid ${repeatMode > 0 ? 'text-white' : 'text-white/30 hover:text-white/60'}`}>
             {repeatMode === 2 ? <Repeat1 className="h-3.5 w-3.5" /> : <Repeat className="h-3.5 w-3.5" />}
@@ -291,15 +293,7 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, onDi
       {showQueue && <div className="mb-2"><QueuePanel playQueue={playQueue} queueIndex={queueIndex} onSelect={t => { setCurrentTrack(t); setIsPlaying(true); setShowQueue(false); }} onClose={() => setShowQueue(false)} /></div>}
 
       <div className="rounded-2xl bg-[#1c1c1e] border border-white/10 shadow-2xl overflow-hidden">
-        {!hideCover && !collapsed && (
-          <div className="mx-auto mt-4 mb-6 aspect-square w-48 max-w-full relative">
-            <div className={`absolute inset-0 rounded-full border-4 border-[#2c2c2e] shadow-2xl overflow-hidden bg-cover bg-center ${isPlaying ? 'animate-spin-slow' : ''}`} style={coverStyle} />
-            <div className="absolute inset-0 m-auto h-6 w-6 rounded-full bg-[#1c1c1e] border-2 border-[#2c2c2e]" />
-            <button onClick={() => setCollapsed(true)} className="absolute top-2 right-2 h-6 w-6 grid place-items-center rounded-full bg-black/50 text-white/80 hover:bg-black/70">
-              <ChevronDown className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        )}
+        {!hideCover && !collapsed && <div className="h-2" />}
         <div className="p-3">
           <div className="flex items-center gap-2 mb-2">
             <div className="min-w-0 flex-1">
