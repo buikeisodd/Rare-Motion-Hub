@@ -285,6 +285,29 @@ const getMessages = async (req, res, next) => {
       { $addToSet: { readBy: userId } }
     ).catch(() => {});
 
+    // Opening a conversation also consumes its notification. Previously only
+    // the message readBy marker changed, so the red notification dot returned
+    // after every workspace refresh.
+    const notificationFilter = type === 'group'
+      ? (notification) => String(notification.userId) === String(userId) && notification.type === 'message' && notification.chat?.type === 'group' && String(notification.chat?.groupId || '') === String(req.query.groupId)
+      : (notification) => String(notification.userId) === String(userId) && notification.type === 'message' && String(notification.chat?.partnerId || '') === String(partnerId);
+    let notificationsChanged = false;
+    db.notifications.forEach((notification) => {
+      if (notificationFilter(notification) && !notification.read) {
+        notification.read = true;
+        notificationsChanged = true;
+      }
+    });
+    if (notificationsChanged) {
+      await writeDB(db);
+      await Notification.updateMany(
+        type === 'group'
+          ? { userId, type: 'message', 'chat.type': 'group', 'chat.groupId': req.query.groupId }
+          : { userId, type: 'message', 'chat.partnerId': partnerId },
+        { $set: { read: true } }
+      );
+    }
+
     let participants = [];
     if (type === 'group') {
       const group = await ChatGroup.findOne({ id: req.query.groupId }).lean();

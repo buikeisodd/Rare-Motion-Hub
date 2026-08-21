@@ -395,7 +395,7 @@ function NotificationsMenu({ isOpen, notifications, conversations, onRead }) {
           ) : (
             <div className="max-h-96 space-y-2 overflow-y-auto hide-scrollbar">
               {visibleNotifications.map((notification) => {
-                const text = notification.type === 'chat' || notification.type === 'message' || notification.type === 'call' || notification.type === 'like' || notification.type === 'comment_like' || notification.type === 'comment_reply' || notification.type === 'follow' || notification.type === 'follow_confirmation'
+                const text = notification.type === 'chat' || notification.type === 'message' || notification.type === 'call' || notification.type === 'like' || notification.type === 'comment' || notification.type === 'comment_like' || notification.type === 'comment_reply' || notification.type === 'comment_mention' || notification.type === 'follow' || notification.type === 'follow_confirmation'
                   ? notification.message
                   : `${notification.actor?.name || 'Someone'} listened to ${notification.track?.title || notification.project?.name || notification.folder?.name || 'your shared item'}`;
                 

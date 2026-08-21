@@ -205,7 +205,8 @@ const notifyMessage = (db, message) => {
       actor: publicUser(sender),
       chat: {
         type: message.conversationType,
-        partnerId: message.conversationType === 'dm' ? message.senderId : null
+        partnerId: message.conversationType === 'dm' ? message.senderId : null,
+        groupId: message.conversationType === 'group' ? message.groupId : null
       },
       message: message.conversationType === 'group'
         ? `${sender.name} sent a message in ${db.groups?.find((group) => group.id === message.groupId)?.name || 'a group'}`

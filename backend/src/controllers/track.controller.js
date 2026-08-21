@@ -501,22 +501,29 @@ const addFeedComment = async (req, res, next) => {
     const comment = { id: makeId(), userId: req.userId, text, parentId, likes: [], createdAt: new Date().toISOString() };
     track.comments ||= [];
     track.comments.push(comment);
-    if (parentId) {
-      const parent = track.comments.find((entry) => entry.id === parentId);
-      const actor = db.users.find((user) => user.id === req.userId);
-      if (parent?.userId && parent.userId !== req.userId) {
-        db.notifications.push({
-          id: makeId(),
-          userId: parent.userId,
-          type: 'comment_reply',
-          actor: publicUser(actor),
-          track: { id: track.id, title: track.title },
-          message: `${actor?.name || 'Someone'} replied to your comment`,
-          read: false,
-          createdAt: new Date().toISOString()
-        });
+    const actor = db.users.find((user) => user.id === req.userId);
+    const parent = parentId ? track.comments.find((entry) => entry.id === parentId) : null;
+    const notificationTargets = new Map();
+    const ownerId = trackOwnerId(track);
+    if (!parentId && ownerId && ownerId !== req.userId) notificationTargets.set(ownerId, { type: 'comment', message: `${actor?.name || 'Someone'} commented on your preview` });
+    if (parent?.userId && parent.userId !== req.userId) notificationTargets.set(parent.userId, { type: 'comment_reply', message: `${actor?.name || 'Someone'} replied to your comment` });
+
+    // Mentions use either @username or @display-name and notify each distinct
+    // user once. Mention notifications are independent of reply notifications.
+    const mentions = [...text.matchAll(/@([\w.-]+)/g)].map((match) => match[1].toLowerCase());
+    db.users.forEach((mentionedUser) => {
+      const handles = [mentionedUser.username, mentionedUser.name].filter(Boolean).map((value) => String(value).toLowerCase().replace(/^@/, '').replace(/\s+/g, ''));
+      if (mentionedUser.id !== req.userId && handles.some((handle) => mentions.includes(handle))) {
+        notificationTargets.set(mentionedUser.id, { type: 'comment_mention', message: `${actor?.name || 'Someone'} mentioned you in a comment` });
       }
-    }
+    });
+    notificationTargets.forEach((details, userId) => {
+      db.notifications.push({
+        id: makeId(), userId, type: details.type, actor: publicUser(actor),
+        track: { id: track.id, title: track.title }, comment: { id: comment.id, parentId },
+        message: details.message, preview: text, read: false, createdAt: new Date().toISOString()
+      });
+    });
     await writeDB(db);
     const commenter = db.users.find((user) => user.id === req.userId);
     res.status(201).json({ comment: { ...comment, likeCount: 0, likedByMe: false, user: commenter ? { id: commenter.id, name: commenter.name, avatarUrl: commenter.avatarUrl || null } : null } });
