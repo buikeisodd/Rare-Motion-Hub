@@ -238,6 +238,10 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
           <button onClick={() => { setShowSettings(s => !s); setShowQueue(false); }} className={`h-7 w-7 grid place-items-center rounded-full transition-colors ${showSettings ? 'text-white bg-white/15' : 'hover:text-white'}`}>
             <Activity className="h-3.5 w-3.5" />
           </button>
+          <button title={isMuted ? 'Unmute' : 'Mute'} onClick={() => handleMute(!isMuted)} className="h-7 w-7 grid place-items-center rounded-full hover:text-white">
+            {isMuted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
+          </button>
+          <input aria-label="Volume" type="range" min="0" max="1" step="0.01" value={isMuted ? 0 : volume} onChange={e => handleVolume(parseFloat(e.target.value))} className="h-1 w-16 accent-white" />
           <button onClick={() => onDismiss ? onDismiss() : null} className="h-7 w-7 grid place-items-center rounded-full hover:text-red-400 transition-colors">
             <X className="h-3.5 w-3.5" />
           </button>
