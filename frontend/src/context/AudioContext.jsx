@@ -17,6 +17,22 @@ const resolveTrackUrl = (url) => {
   }
 };
 
+// Ready versions already have the durable Cloudinary URL returned by upload.
+// Only staged/local versions need the media stream endpoint.
+const resolveActiveTrackUrl = (track) => {
+  const activeVersion = track?.activeVersionId
+    ? (track.versions || []).find((version) => String(version.id) === String(track.activeVersionId))
+    : null;
+  if (activeVersion?.playbackStatus !== 'processing' && activeVersion?.playbackStatus !== 'failed') {
+    const directUrl = activeVersion?.playbackUrl || activeVersion?.url;
+    if (directUrl && !activeVersion.filename) return resolveTrackUrl(directUrl);
+  }
+  if (track?.activeVersionId) {
+    return `${apiUrl.replace(/\/$/, '')}/api/media/tracks/${encodeURIComponent(track.id)}/versions/${encodeURIComponent(track.activeVersionId)}`;
+  }
+  return resolveTrackUrl(track?.playbackUrl || track?.url);
+};
+
 export function AudioProvider({ children }) {
   const [currentTrack, setCurrentTrack] = useState(null);
   const [tracks, setTracks] = useState([]);
@@ -43,14 +59,10 @@ export function AudioProvider({ children }) {
     setDuration(0);
     setIsBuffering(true);
     audio.pause();
-    const sourceUrl = currentTrack.activeVersionId
-      ? `${apiUrl.replace(/\/$/, '')}/api/media/tracks/${encodeURIComponent(currentTrack.id)}/versions/${encodeURIComponent(currentTrack.activeVersionId)}`
-      : currentTrack.filename
-        ? `${apiUrl.replace(/\/$/, '')}/api/media/tracks/${encodeURIComponent(currentTrack.id)}`
-        : resolveTrackUrl(currentTrack.playbackUrl || currentTrack.url);
+    const sourceUrl = resolveActiveTrackUrl(currentTrack);
     audio.src = sourceUrl;
     audio.load();
-  }, [currentTrack?.id, currentTrack?.activeVersionId, currentTrack?.playbackUrl, currentTrack?.url]);
+  }, [currentTrack?.id, currentTrack?.activeVersionId, currentTrack?.playbackUrl, currentTrack?.url, currentTrack?.versions]);
 
   // Play / pause
   useEffect(() => {

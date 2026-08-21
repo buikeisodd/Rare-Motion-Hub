@@ -55,7 +55,15 @@ export default function Project({ user }) {
       setProject(data.project);
       setEditableTitle(data.project?.title || data.project?.name || 'Untitled project');
       setEditableArtist(data.project?.artist || user.name);
-      setTracks(data.tracks || []);
+      const refreshedTracks = data.tracks || [];
+      setTracks(refreshedTracks);
+      // Keep the global player in sync after background Cloudinary promotion.
+      // Without this, the page shows the ready version while the player keeps
+      // the stale processing object returned by the upload callback.
+      setCurrentTrack((current) => {
+        if (!current) return current;
+        return refreshedTracks.find((track) => track.id === current.id) || current;
+      });
     } catch (err) {
       console.error('Failed to fetch project', err);
       setProject(null);
