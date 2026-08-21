@@ -87,6 +87,9 @@ const promoteTrackToCloudinary = async (track, localPath, userId) => {
     const db = ensureDBShape(await readDB());
     const index = db.tracks.findIndex((item) => item.id === track.id);
     if (index === -1) return;
+    // A newer replacement may have completed while this upload was processing.
+    // Never let an older Cloudinary job overwrite the newer active URL.
+    if (db.tracks[index].url !== track.url || db.tracks[index].filename !== track.filename) return;
     db.tracks[index] = { ...db.tracks[index], filename: null, url: uploadResult.secure_url };
     await writeDB(db);
     invalidateCache(`workspace:${userId}`);
