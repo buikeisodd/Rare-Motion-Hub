@@ -290,7 +290,7 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
 
   // ── CARD MODAL (insights + chat) ──────────────────────────────────────
   return (
-    <div className="w-60 select-none">
+    <div className="w-full min-w-0 select-none">
       {showSettings && <div className="mb-2"><SettingsPanel playbackRate={playbackRate} setRate={handleRate} pitchShift={pitchShift} setPitch={handlePitch} onClose={() => setShowSettings(false)} compact /></div>}
       {showQueue && <div className="mb-2"><QueuePanel playQueue={playQueue} queueIndex={queueIndex} onSelect={t => { setCurrentTrack(t); setIsPlaying(true); setShowQueue(false); }} onClose={() => setShowQueue(false)} /></div>}
 
@@ -330,19 +330,19 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
               {repeatMode === 2 ? <Repeat1 className="h-3.5 w-3.5" /> : <Repeat className="h-3.5 w-3.5" />}
             </button>
           </div>}
-          {!minimal && <div className="flex items-center justify-between pt-2 border-t border-white/10">
+          {!minimal && <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-white/10">
             <button onClick={() => { setShowSettings(s => !s); setShowQueue(false); }} className={`h-6 w-6 grid place-items-center rounded-full ${showSettings ? 'text-white bg-white/20' : 'text-white/35 hover:text-white'}`}><Activity className="h-3.5 w-3.5" /></button>
             <button onClick={() => { setShowQueue(q => !q); setShowSettings(false); }} className={`relative h-6 w-6 grid place-items-center rounded-full ${showQueue ? 'text-white bg-white/20' : 'text-white/35 hover:text-white'}`}>
               <ListMusic className="h-3.5 w-3.5" />
               {playQueue.length > 0 && <span className="absolute -right-1 -top-1 h-3 min-w-3 grid place-items-center rounded-full bg-white text-black text-[7px] font-bold">{playQueue.length}</span>}
             </button>
-            <div className="flex items-center gap-1.5">
+            <div className="order-last flex min-w-0 flex-1 basis-full items-center gap-2 sm:order-none sm:basis-auto">
               <button onClick={() => handleMute(!isMuted)} className="text-white/35 hover:text-white">
                 {isMuted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
               </button>
-              <input type="range" min="0" max="1" step="0.01" value={isMuted ? 0 : volume} onChange={e => handleVolume(parseFloat(e.target.value))} className="w-14 accent-white h-1" />
+              <input aria-label="Volume" type="range" min="0" max="1" step="0.01" value={isMuted ? 0 : volume} onChange={e => handleVolume(parseFloat(e.target.value))} className="h-1 min-w-0 flex-1 accent-white" />
             </div>
-            <button onClick={() => onDismiss ? onDismiss() : null} className="text-white/35 hover:text-red-400 transition-colors"><X className="h-3.5 w-3.5" /></button>
+            <button aria-label="Close player" onClick={() => onDismiss ? onDismiss() : null} className="ml-auto grid h-7 w-7 shrink-0 place-items-center text-white/35 hover:text-red-400 transition-colors"><X className="h-3.5 w-3.5" /></button>
           </div>}
           {minimal && <div className="flex items-center justify-end gap-3 border-t border-white/10 pt-2">
             <button onClick={() => handleMute(!isMuted)} className="text-white/60 hover:text-white" aria-label={isMuted ? 'Unmute' : 'Mute'}>
