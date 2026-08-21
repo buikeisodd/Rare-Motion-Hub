@@ -202,12 +202,27 @@ const getUsers = async (req, res, next) => {
   }
 };
 
-const areConnected = (a, b) => (
-  (a.following || []).includes(b.id) ||
-  (a.followers || []).includes(b.id) ||
-  (b.following || []).includes(a.id) ||
-  (b.followers || []).includes(a.id)
+const areFriends = (a, b) => (
+  (a.following || []).includes(b.id) &&
+  (b.following || []).includes(a.id)
 );
+
+const getFriends = async (req, res, next) => {
+  try {
+    const actor = await User.findOne({ id: req.userId }).lean();
+    if (!actor) return next(new AppError('Unauthorized user.', 401));
+    const following = new Set(actor.following || []);
+    const users = await User.find({
+      id: { $in: [...following], $ne: req.userId },
+      isDeactivated: { $ne: true },
+      isSuspended: { $ne: true }
+    }).lean();
+    const friends = users.filter((user) => (user.following || []).includes(req.userId));
+    res.json({ friends: friends.map(publicUser) });
+  } catch (error) {
+    next(error);
+  }
+};
 
 const createGroup = async (req, res, next) => {
   try {
@@ -221,8 +236,8 @@ const createGroup = async (req, res, next) => {
     const participants = requestedIds
       .map((id) => db.users.find((user) => user.id === id))
       .filter(Boolean);
-    const blocked = participants.find((participant) => !areConnected(actor, participant));
-    if (blocked) return next(new AppError('You can only add followers to a group.', 403));
+    const blocked = participants.find((participant) => !areFriends(actor, participant));
+    if (blocked) return next(new AppError('You can only add mutual friends to a group.', 403));
     if (participants.length === 0) return next(new AppError('Add at least one follower to create a group.', 400));
 
     const group = {
@@ -603,6 +618,7 @@ module.exports = {
   getCallSignals,
   sendCallSignal,
   getUsers,
+  getFriends,
   createGroup,
   getMessages,
   sendMessageController,

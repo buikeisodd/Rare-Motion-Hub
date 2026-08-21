@@ -6,6 +6,7 @@ const {
   getCallSignals,
   sendCallSignal,
   getUsers,
+  getFriends,
   createGroup,
   getMessages,
   sendMessageController,
@@ -31,6 +32,7 @@ router.post('/calls/group/signals', requireUserId, sendCallSignal);
 
 // Users (contacts)
 router.get('/users', requireUserId, getUsers);
+router.get('/friends', requireUserId, getFriends);
 
 // Groups
 router.post('/groups', requireUserId, createGroup);
