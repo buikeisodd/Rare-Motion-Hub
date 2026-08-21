@@ -15,16 +15,16 @@ const dateLabel = (value) => value ? new Date(value).toLocaleDateString([], { mo
 function QuickAdd({ suggestions, onFollow, onDismiss }) {
   return (
     <aside className="fixed right-4 top-4 z-30 hidden w-72 xl:block">
-      <div className="rounded-3xl border border-white/10 bg-primary-background/60 p-5 shadow-2xl backdrop-blur-2xl">
-        <div className="mb-5 flex items-center justify-between">
+      <div className="rounded-3xl border border-white/10 bg-primary-background/60 p-3.5 shadow-2xl backdrop-blur-2xl">
+        <div className="mb-3 flex items-center justify-between">
           <h2 className="font-display text-sm font-bold tracking-wider text-[#F7F4EC]">qUiCk aDd</h2>
           <UserRound className="h-4 w-4 text-secondary-label" />
         </div>
         {suggestions.length === 0 ? (
           <p className="text-xs text-secondary-label">You are all caught up.</p>
         ) : (
-          <div className="space-y-4">
-            {suggestions.slice(0, MAX_QUICK_ADD_SUGGESTIONS).map((person) => {
+          <div className="space-y-2.5">
+            {suggestions.slice(0, Math.min(3, MAX_QUICK_ADD_SUGGESTIONS)).map((person) => {
               const buttonText = person.isFollowing
                 ? 'Following'
                 : person.followsYou
@@ -32,7 +32,7 @@ function QuickAdd({ suggestions, onFollow, onDismiss }) {
                 : 'Follow';
               return (
                 <div key={person.id} className="group relative flex items-center gap-2.5">
-                  <RouterLink to={'/profile/' + person.id} className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-highlight text-sm font-semibold shadow-inner">
+                  <RouterLink to={'/profile/' + person.id} className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-highlight text-xs font-semibold shadow-inner">
                     {person.avatarUrl ? (
                       <img src={person.avatarUrl} alt="" className="h-full w-full object-cover" />
                     ) : (
@@ -299,7 +299,7 @@ export default function Feed({ user, savedOnly = false }) {
         <p className="text-sm text-secondary-label">Preview new music from the Rare Motion community.</p>
         </div>
         <CompactQuickAdd suggestions={activeSuggestions} onFollow={followSuggestion} onDismiss={dismissSuggestion} />
-        {currentTrack && <div className="mb-6 w-full max-w-sm rounded-3xl bg-[#1c1c1e]/80 p-1.5 shadow-2xl backdrop-blur-xl xl:fixed xl:right-4 xl:top-[28rem] xl:z-20 xl:mb-0 xl:w-72"><AudioPlayer cardModal /></div>}
+        {currentTrack && <div className="mb-6 w-full max-w-sm rounded-3xl bg-[#1c1c1e]/80 p-1.5 shadow-2xl backdrop-blur-xl xl:fixed xl:right-4 xl:top-[20rem] xl:z-20 xl:mb-0 xl:w-72"><AudioPlayer cardModal /></div>}
         {loading && <p className="py-16 text-center text-sm text-secondary-label">Loading previews...</p>}
         {error && <p className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">{error}</p>}
         <div className="space-y-6">
