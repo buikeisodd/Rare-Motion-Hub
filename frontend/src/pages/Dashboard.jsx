@@ -566,13 +566,17 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
     fetch(`${apiUrl}/api/workspace?userId=${encodeURIComponent(user.id)}&_t=${Date.now()}`, { headers: authHeaders() })
       .then((res) => res.json())
       .then((data) => {
-        setWorkspace({
+        const serverNotifications = data.notifications || [];
+        setWorkspace((previous) => ({
           folders: data.folders || [],
           projects: data.projects || [],
           tracks: data.tracks || [],
           coverArts: data.coverArts || [],
-          notifications: data.notifications || [],
-        });
+          notifications: serverNotifications.map((notification) => {
+            const current = previous.notifications.find((item) => String(item.id) === String(notification.id));
+            return current?.read ? { ...notification, read: true } : notification;
+          }),
+        }));
         setLoading(false);
       })
       .catch(() => setLoading(false));
