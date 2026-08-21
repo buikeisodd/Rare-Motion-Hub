@@ -189,8 +189,9 @@ function GlobalAudioPlayer() {
   const { currentTrack, tracks, projectName, isPlaying, setIsPlaying, setCurrentTrack } = useAudio();
   const location = useLocation();
   const isInsights = /\/project\/[^/]+\/insights/.test(location.pathname);
+  const isFeed = location.pathname === '/feed';
 
-  if (!currentTrack) return null;
+  if (!currentTrack || isFeed) return null;
 
   const player = (
     <AudioPlayer

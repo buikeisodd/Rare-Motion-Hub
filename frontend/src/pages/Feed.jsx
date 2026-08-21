@@ -4,6 +4,8 @@ import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { defaultGradient, gradientFor } from '../utils/gradients';
 import ChatInbox from '../components/ChatInbox';
+import AudioPlayer from '../components/AudioPlayer';
+import { useAudio } from '../context/AudioContext';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 const MAX_QUICK_ADD_SUGGESTIONS = 5;
@@ -239,6 +241,7 @@ export default function Feed({ user, savedOnly = false }) {
   };
 
   const activeSuggestions = allSuggestions.filter((person) => !person.isFollowing && !dismissedIds.includes(person.id));
+  const { currentTrack } = useAudio();
 
   const navItems = [{ label: 'pRoFiLe', icon: UserRound, to: '/profile/' + user.id }, { label: 'sEaRcH', icon: Search, to: '/search' }, { label: 'sAvEd', icon: Bookmark, to: '/saved' }, { label: 'liBraRy', icon: Library, to: '/library' }];
   return <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0e140b] via-[#050505] to-[#050505] pb-24 text-[#F7F4EC] md:pb-0">
@@ -292,10 +295,11 @@ export default function Feed({ user, savedOnly = false }) {
               <p className="font-display text-xs font-bold tracking-[0.2em] text-secondary-label">dIsCoVeR</p>
               <h1 className="font-display mt-1 text-3xl font-bold tracking-wider text-[#F7F4EC]">fEEd</h1>
             </div>
-          </div>
-          <p className="text-sm text-secondary-label">Preview new music from the Rare Motion community.</p>
+        </div>
+        <p className="text-sm text-secondary-label">Preview new music from the Rare Motion community.</p>
         </div>
         <CompactQuickAdd suggestions={activeSuggestions} onFollow={followSuggestion} onDismiss={dismissSuggestion} />
+        {currentTrack && <div className="mb-6 w-full max-w-sm xl:fixed xl:right-4 xl:top-72 xl:z-30 xl:mb-0 xl:w-72"><AudioPlayer cardModal /></div>}
         {loading && <p className="py-16 text-center text-sm text-secondary-label">Loading previews...</p>}
         {error && <p className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">{error}</p>}
         <div className="space-y-6">

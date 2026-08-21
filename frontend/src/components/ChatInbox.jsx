@@ -1250,7 +1250,6 @@ export default function ChatInbox({ user, isOpen, onToggle, onConversationsChang
                 />
               ))}
             </div>
-            <MiniPlayer />
           </div>
           {activeConvo ? (
             <div className="flex flex-1 flex-col overflow-hidden bg-primary-background">
