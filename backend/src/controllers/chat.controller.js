@@ -268,6 +268,14 @@ const getMessages = async (req, res, next) => {
     const senders = await User.find({ id: { $in: senderIds } }).lean();
     const senderMap = Object.fromEntries(senders.map(u => [u.id, u]));
 
+    const readQuery = type === 'group'
+      ? { conversationType: 'group', groupId: req.query.groupId, readBy: { $ne: userId } }
+      : { conversationType: 'dm', senderId: partnerId, recipientId: userId, readBy: { $ne: userId } };
+    await Message.updateMany(readQuery, { $addToSet: { readBy: userId } });
+    const groupParticipantCount = type === 'group'
+      ? ((await ChatGroup.findOne({ id: req.query.groupId }).lean())?.participantIds || []).length
+      : 0;
+
     const hydrated = msgs.map(m => ({
       ...m,
       sender: senderMap[m.senderId] ? {
@@ -275,15 +283,14 @@ const getMessages = async (req, res, next) => {
         name: senderMap[m.senderId].name,
         avatarUrl: senderMap[m.senderId].avatarUrl || '',
       } : { id: m.senderId, name: 'Unknown', avatarUrl: '' },
-      replyTo: null
+      replyTo: null,
+      delivery: {
+        delivered: true,
+        read: m.senderId === userId && (type === 'group'
+          ? (m.readBy || []).length >= Math.max(1, groupParticipantCount - 1)
+          : (m.readBy || []).includes(partnerId))
+      }
     }));
-
-    Message.updateMany(
-      type === 'group'
-        ? { conversationType: 'group', groupId: req.query.groupId, readBy: { $ne: userId } }
-        : { conversationType: 'dm', senderId: partnerId, recipientId: userId, readBy: { $ne: userId } },
-      { $addToSet: { readBy: userId } }
-    ).catch(() => {});
 
     let participants = [];
     if (type === 'group') {
