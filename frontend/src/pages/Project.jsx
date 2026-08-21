@@ -155,6 +155,12 @@ export default function Project({ user }) {
       setCurrentTrack(updatedTrack);
       if (wasPlaying) playTrack(updatedTrack, nextTracks, project?.title || project?.name, project?.coverArt, project?.id);
     }
+    // Replacement uploads are acknowledged before Cloudinary promotion
+    // completes. Refresh once shortly afterward so the player gets the
+    // durable URL and final processing status.
+    if (updatedTrack.playbackStatus === 'processing') {
+      window.setTimeout(() => fetchProject(), 2500);
+    }
   };
 
   const handleReplaceAudioDrop = async (track, file) => {
