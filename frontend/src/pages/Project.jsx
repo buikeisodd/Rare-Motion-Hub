@@ -401,7 +401,7 @@ export default function Project({ user }) {
                     <h3 className="truncate text-xl font-semibold text-primary-label">{track.title}</h3>
                     <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-secondary-label">
                       {track.uploadedAt && <span>{timeAgo(track.uploadedAt)}</span>}
-                      {track.versions?.length > 0 && <span>{track.activeVersionId ? track.versions.length : track.versions.length + 1} versions</span>}
+                      {track.versions?.length > 1 && <span>{track.activeVersionId ? track.versions.length : track.versions.length + 1} versions</span>}
                     </div>
                     {(track.notes || track.noteMemos?.length > 0) && (
                       <p className="mt-1 truncate text-xs text-secondary-label/80">

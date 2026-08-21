@@ -726,7 +726,7 @@ function TrackDetailsModal({
             <h2 className="mb-2 text-2xl font-bold leading-tight">{track.title}</h2>
             <p className="mb-5 text-sm text-secondary-label">
               {formatDuration(duration)}
-              {track.versions?.length > 0 && ` · ${track.activeVersionId ? track.versions.length : track.versions.length + 1} versions`}
+              {track.versions?.length > 1 && ` · ${track.activeVersionId ? track.versions.length : track.versions.length + 1} versions`}
             </p>
             <button
               onClick={() => setShowVersions(true)}

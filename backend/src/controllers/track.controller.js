@@ -575,7 +575,10 @@ const replaceAudio = async (req, res, next) => {
     const previousVersionId = makeId();
     const previousUploadedAt = track.uploadedAt || new Date().toISOString();
 
-    if (track.filename || track.url) {
+    // New-format tracks already keep the active asset in versions[]. Legacy
+    // tracks do not, so only add the current asset when it is not represented.
+    const activeAlreadyStored = track.activeVersionId && track.versions.some((version) => version.id === track.activeVersionId);
+    if ((track.filename || track.url) && !activeAlreadyStored) {
       track.versions.push({
         id: previousVersionId,
         filename: track.filename,

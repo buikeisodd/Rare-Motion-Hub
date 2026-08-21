@@ -45,7 +45,10 @@ const normalizeTrack = (track) => ({
       ? `${BASE_URL}/api/media/tracks/${track.id}/note-memos/${memo.id}`
       : memo.url
   })),
-  versions: (track.versions || []).map((version) => ({
+  versions: Array.from(new Map((track.versions || []).map((version) => [
+    version.publicId || version.url || version.filename || version.id,
+    version
+  ])).values()).map((version) => ({
     ...version,
     ...normalizeMediaAsset(version, track.id, version.id)
   })),
