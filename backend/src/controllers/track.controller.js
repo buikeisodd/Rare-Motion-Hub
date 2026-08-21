@@ -79,32 +79,45 @@ const storeTrackLocally = (file, userId) => {
 
 const promoteTrackToCloudinary = async (track, localPath, userId) => {
   if (!hasCloudinaryConfig) return;
+  let uploadResult = null;
   try {
-    const uploadResult = await cloudinary.uploader.upload_large(localPath, {
+    uploadResult = await cloudinary.uploader.upload_large(localPath, {
       resource_type: 'video',
       folder: 'raremotionhub/tracks'
     });
     const db = ensureDBShape(await readDB());
     const index = db.tracks.findIndex((item) => item.id === track.id);
-    if (index === -1) return;
+    if (index === -1) {
+      await cloudinary.uploader.destroy(uploadResult.public_id, { resource_type: uploadResult.resource_type || 'video' }).catch(() => {});
+      removeFileIfExists(localPath);
+      return;
+    }
     // A newer replacement may have completed while this upload was processing.
     // Never let an older Cloudinary job overwrite the newer active URL.
-    if (db.tracks[index].url !== track.url || db.tracks[index].filename !== track.filename) return;
+    if (db.tracks[index].url !== track.url || db.tracks[index].filename !== track.filename) {
+      await cloudinary.uploader.destroy(uploadResult.public_id, { resource_type: uploadResult.resource_type || 'video' }).catch(() => {});
+      removeFileIfExists(localPath);
+      return;
+    }
     const updated = { ...db.tracks[index], filename: null, url: uploadResult.secure_url, publicId: uploadResult.public_id, resourceType: uploadResult.resource_type, format: uploadResult.format, duration: uploadResult.duration || db.tracks[index].duration || 0, size: uploadResult.bytes || db.tracks[index].size, storageProvider: 'cloudinary', playbackStatus: 'ready' };
     updated.versions = (updated.versions || []).map((version) => version.id === updated.activeVersionId ? { ...version, filename: null, url: uploadResult.secure_url, publicId: uploadResult.public_id, resourceType: uploadResult.resource_type, format: uploadResult.format, duration: uploadResult.duration || version.duration || 0, size: uploadResult.bytes || version.size, storageProvider: 'cloudinary', playbackStatus: 'ready' } : version);
     db.tracks[index] = updated;
     await writeDB(db);
     invalidateCache(`workspace:${userId}`);
     if (track.projectId) invalidateCache(`project:${track.projectId}:${userId}`);
-    // Keep the local fallback while the current client may still hold its URL.
+    removeFileIfExists(localPath);
   } catch (error) {
     console.error('Background Cloudinary track upload failed; local playback remains active:', error.message);
+    if (uploadResult?.public_id) await cloudinary.uploader.destroy(uploadResult.public_id, { resource_type: uploadResult.resource_type || 'video' }).catch(() => {});
+    removeFileIfExists(localPath);
     try {
       const db = ensureDBShape(await readDB());
       const current = db.tracks.find((item) => item.id === track.id);
       if (current && current.activeVersionId) {
         current.playbackStatus = 'failed';
-        current.versions = (current.versions || []).map((version) => version.id === current.activeVersionId ? { ...version, playbackStatus: 'failed' } : version);
+        current.filename = null;
+        current.url = null;
+        current.versions = (current.versions || []).map((version) => version.id === current.activeVersionId ? { ...version, filename: null, url: null, playbackStatus: 'failed' } : version);
         await writeDB(db);
       }
     } catch (statusError) {
@@ -163,15 +176,20 @@ const uploadTrackController = async (req, res, next) => {
 
 const promoteVersionToCloudinary = async (trackId, versionId, localPath, userId) => {
   if (!hasCloudinaryConfig || !localPath || !fs.existsSync(localPath)) return;
+  let uploadResult = null;
   try {
-    const uploadResult = await cloudinary.uploader.upload_large(localPath, {
+    uploadResult = await cloudinary.uploader.upload_large(localPath, {
       resource_type: 'video',
       folder: 'raremotionhub/track-versions'
     });
     const db = ensureDBShape(await readDB());
     const track = db.tracks.find((item) => item.id === trackId);
     const version = track?.versions?.find((item) => item.id === versionId);
-    if (!version) return;
+    if (!version) {
+      await cloudinary.uploader.destroy(uploadResult.public_id, { resource_type: uploadResult.resource_type || 'video' }).catch(() => {});
+      removeFileIfExists(localPath);
+      return;
+    }
     version.filename = null;
     version.url = uploadResult.secure_url;
     version.publicId = uploadResult.public_id;
@@ -184,9 +202,24 @@ const promoteVersionToCloudinary = async (trackId, versionId, localPath, userId)
     await writeDB(db);
     invalidateCache(`workspace:${userId}`);
     if (track.projectId) invalidateCache(`project:${track.projectId}:${userId}`);
-    // Keep the local fallback while the current client may still hold its URL.
+    removeFileIfExists(localPath);
   } catch (error) {
     console.error('Background Cloudinary version upload failed; local fallback remains active:', error.message);
+    if (uploadResult?.public_id) await cloudinary.uploader.destroy(uploadResult.public_id, { resource_type: uploadResult.resource_type || 'video' }).catch(() => {});
+    removeFileIfExists(localPath);
+    try {
+      const db = ensureDBShape(await readDB());
+      const track = db.tracks.find((item) => item.id === trackId);
+      const version = track?.versions?.find((item) => item.id === versionId);
+      if (version) {
+        version.filename = null;
+        version.url = null;
+        version.playbackStatus = 'failed';
+        await writeDB(db);
+      }
+    } catch (statusError) {
+      console.error('Could not persist failed version status:', statusError.message);
+    }
   }
 };
 
@@ -241,6 +274,7 @@ const deleteTrack = async (req, res, next) => {
     const track = await Track.findOne({ id: req.params.id, $or: [{ userId }, { 'uploader.id': userId }] }).lean();
     if (!track) return next(new AppError('Track not found', 404));
 
+    const destroyedPublicIds = new Set();
     if (track.filename) {
       removeFileIfExists(trackMediaPath(track));
       (track.versions || []).forEach((version) => {
@@ -248,7 +282,14 @@ const deleteTrack = async (req, res, next) => {
       });
     } else if (track.publicId) {
       cloudinary.uploader.destroy(track.publicId, { resource_type: track.resourceType || 'video' }).catch(console.error);
+      destroyedPublicIds.add(track.publicId);
     }
+    (track.versions || []).forEach((version) => {
+      if (version.publicId && !destroyedPublicIds.has(version.publicId)) {
+        destroyedPublicIds.add(version.publicId);
+        cloudinary.uploader.destroy(version.publicId, { resource_type: version.resourceType || 'video' }).catch(console.error);
+      }
+    });
     removeDirIfExists(path.join(stemsDir, trackOwnerId(track), track.id));
 
     await Track.deleteOne({ id: req.params.id });

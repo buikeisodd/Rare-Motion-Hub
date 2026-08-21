@@ -8,7 +8,7 @@ const { AppError } = require('../middlewares/error.middleware');
 const streamTrack = async (req, res, next) => {
   try {
     const db = ensureDBShape(await readDB());
-    const track = db.tracks.find((item) => item.id === req.params.id);
+    const track = findAccessibleTrack(db, req.params.id, req.userId);
     if (!track) return next(new AppError('Track not found', 404));
 
     // Local uploads must be streamed from this server directly. Redirecting

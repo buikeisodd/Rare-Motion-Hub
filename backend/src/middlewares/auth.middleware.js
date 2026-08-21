@@ -120,6 +120,14 @@ const requireAuth = async (req, res, next) => {
   }
 };
 
+// Attach a verified access identity when present, but allow public media to
+// continue without credentials. Protected media still performs its own
+// authorization check after this middleware.
+const optionalAuth = async (req, res, next) => {
+  if (!(req.headers.cookie || req.get('authorization'))) return next();
+  return requireAuth(req, res, (error) => error ? next() : next());
+};
+
 // ─── requireVerifiedUser ──────────────────────────────────────────────────────
 // Responsibility: check that the authenticated user's account is in a state
 // that permits normal application access.
@@ -160,4 +168,4 @@ const requireVerifiedUser = (req, res, next) => {
 // update every route file at once.
 const requireUserId = [requireAuth, requireVerifiedUser];
 
-module.exports = { requireAuth, requireVerifiedUser, requireUserId, readAuthCookie };
+module.exports = { requireAuth, requireVerifiedUser, requireUserId, optionalAuth, readAuthCookie };

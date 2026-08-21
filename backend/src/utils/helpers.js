@@ -72,6 +72,15 @@ const findAccessibleTrack = (db, trackId, userId) => {
   const project = db.projects.find((item) => item.id === track.projectId);
   if (project) {
     if (project.userId?.toString() === normalizedUserId) return track;
+    if (project.visibility !== 'private') {
+      let folder = project.folderId ? db.folders.find((item) => item.id === project.folderId) : null;
+      while (folder) {
+        if (folder.visibility === 'private' && !folder.allowedUserIds?.includes(normalizedUserId)) return null;
+        folder = folder.parentFolderId ? db.folders.find((item) => item.id === folder.parentFolderId) : null;
+      }
+      if (!normalizedUserId || project.allowedUserIds?.includes(normalizedUserId) || project.visibility === 'public') return track;
+    }
+    if (project.allowedUserIds?.includes(normalizedUserId)) return track;
     const members = (project.members || project.collaborators || []);
     if (members.some(m => (m.id || m.userId || m)?.toString() === normalizedUserId)) return track;
   }
