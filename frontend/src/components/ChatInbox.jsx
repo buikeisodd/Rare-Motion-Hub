@@ -471,7 +471,7 @@ function MediaPreview({ attachment }) {
   return null;
 }
 
-function MessageActions({ message, isOpen, onToggle, onClose, onReply, onCopy, onForward, onPin, onDelete }) {
+function MessageActions({ message, isOpen, onToggle = () => {}, onClose = () => {}, onReply = () => {}, onCopy = () => {}, onForward = () => {}, onPin = () => {}, onDelete = () => {} }) {
   return (
     <div className="relative shrink-0 self-center">
       <button
@@ -591,7 +591,7 @@ class ChatWindowBoundary extends Component {
   }
 }
 
-function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall, onLeaveCall, onClose }) {
+function ChatWindow({ convo, currentUser, conversations = [], activeCall, onJoinCall = () => {}, onLeaveCall = () => {}, onClose = () => {} }) {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(true);
@@ -613,7 +613,7 @@ function ChatWindow({ convo, currentUser, conversations, activeCall, onJoinCall,
   const groupId = isGroup ? convo.group?.id : null;
   const canLoadConversation = isGroup ? Boolean(groupId) : Boolean(partnerId);
   const chatName = isGroup ? convo.group?.name || 'Group' : convo.partner?.name || 'Unknown';
-  const participants = convo.participants || [];
+  const participants = Array.isArray(convo.participants) ? convo.participants.filter((participant) => participant && typeof participant === 'object') : [];
 
   const fetchMessages = useCallback(async () => {
     if (!canLoadConversation) {
