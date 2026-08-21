@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
-import { ChevronDown, ChevronUp, ListMusic, Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Volume2, VolumeX, X } from 'lucide-react';
+import { ChevronDown, ChevronUp, Pause, Play, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Volume2, VolumeX, X } from 'lucide-react';
 import { useAudio } from '../context/AudioContext';
 import { gradientFor } from '../utils/gradients';
 
@@ -78,7 +78,6 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
   const [isShuffled, setIsShuffled] = useState(false);
   const [playQueue, setPlayQueue] = useState([]);
   const [queueIndex, setQueueIndex] = useState(-1);
-  const [showQueue, setShowQueue] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
@@ -143,11 +142,6 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
     <>
     <div className="fixed bottom-[4.8rem] right-3 z-50 w-[min(42rem,calc(100vw-1.5rem))] select-none sm:bottom-6 sm:right-6">
       {/* Panels pop above */}
-      {showQueue && (
-        <div className="absolute bottom-full right-0 mb-3 w-[min(18rem,calc(100vw-1.5rem))] sm:w-72">
-          <QueuePanel playQueue={playQueue} queueIndex={queueIndex} onSelect={t => { setCurrentTrack(t); setIsPlaying(true); setShowQueue(false); }} onClose={() => setShowQueue(false)} />
-        </div>
-      )}
 
       {/* Compact floating pill */}
       <div onClick={() => setExpanded(true)} className="relative flex w-full overflow-hidden items-center gap-3 rounded-[1.35rem] border border-white/10 bg-[#1b1b1d]/[.76] px-3 py-3 shadow-[0_18px_50px_rgba(0,0,0,.45)] backdrop-blur-2xl sm:gap-4 sm:px-4 sm:py-3.5">
@@ -185,9 +179,6 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
 
         {/* Extra controls */}
         <div className="relative z-10 hidden items-center gap-0.5 text-white/40 sm:flex shrink-0" onClick={(event) => event.stopPropagation()}>
-          <button onClick={() => { setShowQueue(q => !q); setShowSettings(false); }} className={`relative h-7 w-7 grid place-items-center rounded-full transition-colors ${showQueue ? 'text-white bg-white/15' : 'hover:text-white'}`}>
-            <ListMusic className="h-3.5 w-3.5" />
-          </button>
           <button onClick={() => onDismiss ? onDismiss() : null} className="h-7 w-7 grid place-items-center rounded-full hover:text-red-400 transition-colors">
             <X className="h-3.5 w-3.5" />
           </button>
@@ -240,7 +231,6 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
   // ── CARD MODAL (insights + chat) ──────────────────────────────────────
   return (
     <div className="w-full min-w-0 select-none">
-      {showQueue && <div className="mb-2"><QueuePanel playQueue={playQueue} queueIndex={queueIndex} onSelect={t => { setCurrentTrack(t); setIsPlaying(true); setShowQueue(false); }} onClose={() => setShowQueue(false)} /></div>}
 
       <div className="relative rounded-2xl border border-white/10 bg-[#1c1c1e]/80 shadow-2xl backdrop-blur-xl overflow-hidden">
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 scale-105 bg-cover bg-center opacity-15 blur-md" style={coverStyle} />
@@ -279,10 +269,6 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
             </button>
           </div>}
           {!minimal && <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-white/10">
-            <button onClick={() => { setShowQueue(q => !q); setShowSettings(false); }} className={`relative h-6 w-6 grid place-items-center rounded-full ${showQueue ? 'text-white bg-white/20' : 'text-white/35 hover:text-white'}`}>
-              <ListMusic className="h-3.5 w-3.5" />
-              {playQueue.length > 0 && <span className="absolute -right-1 -top-1 h-3 min-w-3 grid place-items-center rounded-full bg-white text-black text-[7px] font-bold">{playQueue.length}</span>}
-            </button>
             <div className="order-last flex min-w-0 flex-1 basis-full items-center gap-2 sm:order-none sm:basis-auto">
               <button onClick={() => handleMute(!isMuted)} className="text-white/35 hover:text-white">
                 {isMuted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
