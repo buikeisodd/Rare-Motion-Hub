@@ -198,6 +198,7 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
         <div className="mx-auto w-full max-w-sm animate-fade-in">
           <div className="mb-8 lg:hidden"><StarlightLogo className="h-10 text-[#F7F4EC]" showTagline={false} markClassName="h-10 w-10" /></div>
           <div className="mb-8 lg:hidden"><h1 className="text-3xl font-semibold tracking-tight">Make room for the next sound.</h1><p className="mt-3 text-sm leading-relaxed text-[#A6A09A]">Your private studio for projects, playback and collaboration.</p></div>
+          <p className="mb-4 max-w-sm text-center text-[11px] leading-tight text-secondary-label">By continuing you confirm that this email belongs to an approved Starlight Station collaborator.</p>
 
         <div className="flex items-center gap-5 mb-5 border-b border-[rgba(255,255,255,.09)] pb-2 px-3">
           <button 
@@ -349,9 +350,6 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
 
         </div>
 
-        <p className="mt-2 max-w-sm text-center text-[11px] leading-tight text-secondary-label">
-          By continuing you confirm that this email belongs to an approved Starlight Station collaborator.
-        </p>
       </div>
 
       {verificationModal && (
