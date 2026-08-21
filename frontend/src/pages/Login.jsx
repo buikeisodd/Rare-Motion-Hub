@@ -187,25 +187,19 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
     <div className="relative min-h-screen overflow-hidden bg-[#080909] px-5 py-8 text-[#F7F4EC] sm:px-8 lg:px-16 lg:py-12">
       <div className="pointer-events-none absolute -left-40 top-[-14rem] h-[34rem] w-[34rem] rounded-full bg-[#D7FF65]/[0.06] blur-3xl" />
       <div className="pointer-events-none absolute -bottom-48 right-[-8rem] h-[30rem] w-[30rem] rounded-full bg-[#8DEBFF]/[0.05] blur-3xl" />
-      <div className="relative mx-auto grid min-h-[calc(100vh-4rem)] w-full max-w-6xl items-center gap-12 py-6 lg:grid-cols-[minmax(0,1fr)_minmax(25rem,31rem)] lg:gap-20">
+      <div className="relative mx-auto grid min-h-[calc(100vh-2rem)] w-full max-w-6xl items-center gap-10 py-3 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,27rem)] lg:gap-16">
         <section className="hidden lg:block animate-fade-in">
           <StarlightLogo className="mb-20 h-10 text-[#F7F4EC]" showTagline={false} markClassName="h-10 w-10" />
           <p className="mb-5 text-xs font-semibold uppercase tracking-[0.3em] text-primary-label/70">A softer place for unfinished ideas</p>
           <h1 className="max-w-xl text-6xl font-semibold leading-[0.96] tracking-tight text-[#FFFFFF]">Make room for the next sound.</h1>
           <p className="mt-7 max-w-md text-base leading-relaxed text-[#A6A09A]">Keep your projects close, hear every version, and share the work when it feels ready.</p>
-          <div className="mt-16 rounded-3xl border border-white/[0.08] bg-white/[0.03] p-7 backdrop-blur-sm">
-            <div className="mb-5 flex items-center justify-between text-xs font-semibold uppercase tracking-[0.22em] text-secondary-label"><span>Live workspace</span><span className="text-primary-label">*</span></div>
-            <div className="flex h-20 items-center justify-center gap-1.5 rounded-2xl bg-black/20 px-6">
-              {[22, 38, 58, 34, 72, 48, 86, 42, 64, 30, 54, 78, 36, 60, 44, 24].map((height, index) => <span key={index} className="w-1.5 rounded-full bg-primary-label/80 animate-wave" style={{ height: `${height}%`, animationDelay: `${index * 80}ms` }} />)}
-            </div>
-          </div>
         </section>
 
-        <div className="mx-auto w-full max-w-md animate-fade-in">
+        <div className="mx-auto w-full max-w-sm animate-fade-in">
           <div className="mb-8 lg:hidden"><StarlightLogo className="h-10 text-[#F7F4EC]" showTagline={false} markClassName="h-10 w-10" /></div>
           <div className="mb-8 lg:hidden"><h1 className="text-3xl font-semibold tracking-tight">Make room for the next sound.</h1><p className="mt-3 text-sm leading-relaxed text-[#A6A09A]">Your private studio for projects, playback and collaboration.</p></div>
 
-        <div className="flex items-center gap-6 mb-8 border-b border-[rgba(255,255,255,.09)] pb-3 px-4">
+        <div className="flex items-center gap-5 mb-5 border-b border-[rgba(255,255,255,.09)] pb-2 px-3">
           <button 
             type="button"
             onClick={() => { setIsRegister(false); setResetMode(false); setResetToken(''); }}
@@ -222,8 +216,8 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
           </button>
         </div>
 
-        <div className="w-full max-w-md">
-          <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-[rgba(255,255,255,.09)] bg-[#111111] p-5 sm:p-7 shadow-2xl">
+        <div className="w-full">
+          <form onSubmit={handleSubmit} className="space-y-3 rounded-2xl border border-[rgba(255,255,255,.09)] bg-[#111111] p-4 sm:p-5 shadow-2xl">
             <label className="relative block">
               <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#A6A09A]" />
               <input
@@ -231,7 +225,7 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email address"
-                className="h-12 w-full rounded-xl bg-[#171717] border border-[rgba(255,255,255,.09)] pl-11 pr-4 text-left text-sm font-medium text-[#F7F4EC] placeholder:text-[#77736E] focus:outline-none focus:border-[#D7FF65] focus:ring-1 focus:ring-[#D7FF65] transition-all"
+                className="h-11 w-full rounded-xl bg-[#171717] border border-[rgba(255,255,255,.09)] pl-11 pr-4 text-left text-sm font-medium text-[#F7F4EC] placeholder:text-[#77736E] focus:outline-none focus:border-[#D7FF65] focus:ring-1 focus:ring-[#D7FF65] transition-all"
                 required={!resetMode}
                 disabled={resetMode}
               />
@@ -244,7 +238,7 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={resetMode ? 'New password' : 'Password'}
                 minLength={8}
-                className="h-12 w-full rounded-xl bg-[#171717] border border-[rgba(255,255,255,.09)] pl-11 pr-12 text-left text-sm font-medium text-[#F7F4EC] placeholder:text-[#77736E] focus:outline-none focus:border-[#D7FF65] focus:ring-1 focus:ring-[#D7FF65] transition-all"
+                className="h-11 w-full rounded-xl bg-[#171717] border border-[rgba(255,255,255,.09)] pl-11 pr-12 text-left text-sm font-medium text-[#F7F4EC] placeholder:text-[#77736E] focus:outline-none focus:border-[#D7FF65] focus:ring-1 focus:ring-[#D7FF65] transition-all"
                 required
               />
               <button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#A6A09A] transition-colors hover:text-[#F7F4EC]" aria-label={showPassword ? 'Hide password' : 'Show password'}>
@@ -305,24 +299,24 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
             <button
               type="submit"
               disabled={loading || lockCountdown > 0}
-              className="flex h-12 w-full items-center justify-center rounded-xl bg-[#D7FF65] text-sm font-bold text-[#050505] transition-all hover:bg-[#E3FF91] active:scale-[0.99] disabled:opacity-50 shadow-md mt-2"
+              className="mx-auto flex h-11 w-[92%] items-center justify-center rounded-xl bg-[#D7FF65] text-sm font-bold text-[#050505] transition-all hover:bg-[#E3FF91] active:scale-[0.99] disabled:opacity-50 shadow-md mt-1"
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin text-[#050505]" /> : (resetMode ? 'Reset password' : isRegister ? 'Create account' : 'Sign in')}
             </button>
           </form>
 
-          <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.24em] text-secondary-label md:flex-col md:justify-center">
+          <div className="my-2 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.24em] text-secondary-label md:flex-col md:justify-center">
             <div className="h-px flex-1 bg-border md:h-full md:w-px" />
             <span>OR</span>
             <div className="h-px flex-1 bg-border md:h-full md:w-px" />
           </div>
 
-          <div className="grid content-center gap-3 rounded-2xl border border-border bg-shading/20 p-3 sm:p-4">
+            <div className="grid content-center gap-2 rounded-2xl border border-border bg-shading/20 p-2.5 sm:p-3">
             <button
               type="button"
               onClick={() => handleProviderAuth('Google')}
               disabled={Boolean(providerLoading)}
-              className="flex min-h-12 w-full items-center justify-center gap-3 rounded-full border border-border bg-shading px-4 py-3 text-sm font-semibold text-primary-label transition-all hover:border-primary-label/30 hover:bg-highlight hover:scale-[1.01]"
+              className="mx-auto flex min-h-10 w-[92%] items-center justify-center gap-3 rounded-full border border-border bg-shading px-4 py-2.5 text-sm font-semibold text-primary-label transition-all hover:border-primary-label/30 hover:bg-highlight hover:scale-[1.01]"
             >
               {providerLoading === 'Google' ? <Loader2 className="h-5 w-5 animate-spin" /> : <GoogleIcon className="h-5 w-5" />}
               Continue with Google
@@ -331,7 +325,7 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
               type="button"
               onClick={() => handleProviderAuth('Apple')}
               disabled={Boolean(providerLoading)}
-              className="flex min-h-12 w-full items-center justify-center gap-3 rounded-full border border-border bg-shading px-4 py-3 text-sm font-semibold text-primary-label transition-all hover:border-primary-label/30 hover:bg-highlight hover:scale-[1.01]"
+              className="mx-auto flex min-h-10 w-[92%] items-center justify-center gap-3 rounded-full border border-border bg-shading px-4 py-2.5 text-sm font-semibold text-primary-label transition-all hover:border-primary-label/30 hover:bg-highlight hover:scale-[1.01]"
             >
               {providerLoading === 'Apple' ? <Loader2 className="h-5 w-5 animate-spin" /> : <AppleIcon className="h-5 w-5" />}
               Continue with Apple
@@ -340,7 +334,7 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
               type="button"
               onClick={handlePhoneAuth}
               disabled={Boolean(providerLoading)}
-              className="flex min-h-12 w-full items-center justify-center gap-3 rounded-full border border-border bg-shading px-4 py-3 text-sm font-semibold text-primary-label transition-all hover:border-primary-label/30 hover:bg-highlight hover:scale-[1.01]"
+              className="mx-auto flex min-h-10 w-[92%] items-center justify-center gap-3 rounded-full border border-border bg-shading px-4 py-2.5 text-sm font-semibold text-primary-label transition-all hover:border-primary-label/30 hover:bg-highlight hover:scale-[1.01]"
             >
               {providerLoading === 'Phone' ? <Loader2 className="h-5 w-5 animate-spin" /> : <Phone className="h-5 w-5" />}
               Continue with phone number
@@ -355,7 +349,7 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
 
         </div>
 
-        <p className="mt-12 max-w-md text-center text-sm text-secondary-label">
+        <p className="mt-5 max-w-md text-center text-xs text-secondary-label">
           By continuing you confirm that this email belongs to an approved Starlight Station collaborator.
         </p>
       </div>
