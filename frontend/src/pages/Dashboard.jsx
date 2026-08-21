@@ -350,7 +350,7 @@ function ProfileAvatar({ user, size = 'h-11 w-11', className = '' }) {
   );
 }
 
-function NotificationsMenu({ isOpen, notifications, conversations }) {
+function NotificationsMenu({ isOpen, notifications, conversations, onRead }) {
   const [tab, setTab] = useState('unread');
   const allNotifications = [...notifications];
 
@@ -410,14 +410,16 @@ function NotificationsMenu({ isOpen, notifications, conversations }) {
                   </div>
                 );
 
+                const handleClick = () => onRead?.(notification);
+
                 if (notification.actor?.id) {
                   return (
-                    <Link key={notification.id} to={'/profile/' + notification.actor.id} className="block">
+                    <Link key={notification.id} to={'/profile/' + notification.actor.id} onClick={handleClick} className="block">
                       {itemContent}
                     </Link>
                   );
                 }
-                return <div key={notification.id}>{itemContent}</div>;
+                return <button type="button" key={notification.id} onClick={handleClick} className="block w-full text-left">{itemContent}</button>;
               })}
             </div>
           )}
@@ -783,20 +785,31 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
   const unreadNotificationsCount = workspace.notifications.filter((n) => !n.read).length;
   const totalNotifications = unreadNotificationsCount + unreadChatsCount;
 
+  const handleReadNotification = async (notification) => {
+    if (!notification || notification.read || String(notification.id).startsWith('chat-')) return;
+
+    setWorkspace((prev) => ({
+      ...prev,
+      notifications: prev.notifications.map((item) => (
+        String(item.id) === String(notification.id) ? { ...item, read: true } : item
+      ))
+    }));
+
+    try {
+      await fetch(`${apiUrl}/api/notifications/${encodeURIComponent(notification.id)}/read`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: authHeaders()
+      });
+    } catch (error) {
+      console.error('Failed to mark notification read', error);
+    }
+  };
+
   const handleOpenNotifications = () => {
     setIsNotificationsOpen((open) => !open);
     setIsProfileOpen(false);
     setIsAddMenuOpen(false);
-
-    if (!isNotificationsOpen && unreadNotificationsCount > 0) {
-      fetch(`${apiUrl}/api/notifications/read`, { method: 'POST', credentials: 'include' })
-        .catch(err => console.error('Failed to mark notifications read', err));
-      
-      setWorkspace(prev => ({
-        ...prev,
-        notifications: prev.notifications.map(n => ({ ...n, read: true }))
-      }));
-    }
   };
 
   return (
@@ -840,7 +853,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
               <Bell className="h-5 w-5 fill-current" />
               {totalNotifications > 0 && <span className="absolute right-2.5 top-2.5 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-primary-background" aria-label="New notifications" />}
             </button>
-            <NotificationsMenu isOpen={isNotificationsOpen} notifications={workspace.notifications} conversations={conversations} />
+            <NotificationsMenu isOpen={isNotificationsOpen} notifications={workspace.notifications} conversations={conversations} onRead={handleReadNotification} />
           </div>
 
           <div className="relative">

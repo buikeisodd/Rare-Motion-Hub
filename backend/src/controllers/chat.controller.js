@@ -561,6 +561,30 @@ const markNotificationsRead = async (req, res, next) => {
   }
 };
 
+const markNotificationRead = async (req, res, next) => {
+  try {
+    const db = ensureDBShape(await readDB());
+    const userId = String(req.userId);
+    const notificationId = String(req.params.id);
+    const notification = db.notifications.find((item) => (
+      String(item.id) === notificationId && String(item.userId) === userId
+    ));
+
+    if (!notification) return next(new AppError('Notification not found.', 404));
+
+    notification.read = true;
+    await writeDB(db);
+    await Notification.updateOne(
+      { id: notificationId, userId },
+      { $set: { read: true } }
+    );
+    invalidateCache(`workspace:${userId}`);
+    res.json({ success: true, notification });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getCallGroup,
   joinCallGroup,
@@ -576,5 +600,6 @@ module.exports = {
   deleteMessage,
   forwardMessage,
   getConversations,
-  markNotificationsRead
+  markNotificationsRead,
+  markNotificationRead
 };
