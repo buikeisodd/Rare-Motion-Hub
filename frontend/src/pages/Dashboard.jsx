@@ -386,7 +386,7 @@ function NotificationsMenu({ isOpen, notifications, conversations, onRead }) {
           <div className="mb-2 grid grid-cols-2 gap-1 rounded-xl bg-shading p-1">
             {['unread', 'read'].map((value) => (
               <button key={value} onClick={() => setTab(value)} className={`rounded-lg px-2 py-2 text-xs font-semibold capitalize transition-colors ${tab === value ? 'bg-primary-label text-primary-background' : 'text-secondary-label hover:text-primary-label'}`}>
-                {value} {value === 'unread' ? allNotifications.filter((notification) => !notification.read).length : allNotifications.filter((notification) => notification.read).length}
+                {value}
               </button>
             ))}
           </div>
@@ -804,7 +804,10 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
     refreshWorkspace();
     if (isNotificationsOpen) {
       setIsNotificationsOpen(false);
-      setNotificationPanelVisited(true);
+      setNotificationPanelVisited(false);
+      setWorkspace((prev) => ({ ...prev, notifications: prev.notifications.map((item) => ({ ...item, read: true })) }));
+      fetch(`${apiUrl}/api/notifications/read`, { method: 'POST', credentials: 'include', headers: authHeaders(true) })
+        .catch((error) => console.error('Failed to mark notifications read', error));
       return;
     }
     if (notificationPanelVisited) {
