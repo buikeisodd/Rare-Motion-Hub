@@ -43,12 +43,14 @@ export function AudioProvider({ children }) {
     setDuration(0);
     setIsBuffering(true);
     audio.pause();
-    const sourceUrl = currentTrack.filename
-      ? `${apiUrl.replace(/\/$/, '')}/api/media/tracks/${encodeURIComponent(currentTrack.id)}`
-      : resolveTrackUrl(currentTrack.playbackUrl || currentTrack.url);
+    const sourceUrl = currentTrack.activeVersionId
+      ? `${apiUrl.replace(/\/$/, '')}/api/media/tracks/${encodeURIComponent(currentTrack.id)}/versions/${encodeURIComponent(currentTrack.activeVersionId)}`
+      : currentTrack.filename
+        ? `${apiUrl.replace(/\/$/, '')}/api/media/tracks/${encodeURIComponent(currentTrack.id)}`
+        : resolveTrackUrl(currentTrack.playbackUrl || currentTrack.url);
     audio.src = sourceUrl;
     audio.load();
-  }, [currentTrack?.id, currentTrack?.playbackUrl, currentTrack?.url]);
+  }, [currentTrack?.id, currentTrack?.activeVersionId, currentTrack?.playbackUrl, currentTrack?.url]);
 
   // Play / pause
   useEffect(() => {
@@ -62,7 +64,7 @@ export function AudioProvider({ children }) {
     } else if (!isPlaying && !audio.paused) {
       audio.pause();
     }
-  }, [isPlaying, currentTrack?.url]);
+  }, [isPlaying, currentTrack?.activeVersionId, currentTrack?.url]);
 
   // Audio events
   useEffect(() => {
