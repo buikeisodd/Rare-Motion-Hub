@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, Search as SearchIcon, UserRound } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import StarlightLogo from '../components/StarlightLogo';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
@@ -40,7 +39,7 @@ export default function Search({ user }) {
         <button type="button" onClick={() => navigate(-1)} className="grid h-10 w-10 place-items-center rounded-full bg-shading text-primary-label transition-colors hover:bg-highlight" aria-label="Go back">
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <StarlightLogo className="logo-glow h-9 w-36 text-primary-label" />
+        <span aria-hidden="true" className="h-9 w-9" />
         <UserRound className="h-5 w-5 text-secondary-label" />
       </header>
 
