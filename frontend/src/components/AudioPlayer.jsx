@@ -197,18 +197,20 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, onDi
       )}
 
       {/* Compact floating pill */}
-      <div onClick={() => setExpanded(true)} className="flex w-full items-center gap-3 rounded-[1.35rem] border border-white/10 bg-[#1b1b1d]/[.97] px-3 py-3 shadow-[0_18px_50px_rgba(0,0,0,.45)] backdrop-blur-xl sm:gap-4 sm:px-4 sm:py-3.5">
+      <div onClick={() => setExpanded(true)} className="relative flex w-full overflow-hidden items-center gap-3 rounded-[1.35rem] border border-white/10 bg-[#1b1b1d]/[.76] px-3 py-3 shadow-[0_18px_50px_rgba(0,0,0,.45)] backdrop-blur-2xl sm:gap-4 sm:px-4 sm:py-3.5">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 scale-110 bg-cover bg-center opacity-25 blur-2xl" style={coverStyle} />
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[#141416]/[.68]" />
         {/* Cover art */}
-        <div className={`h-12 w-12 shrink-0 rounded-full border-2 border-white/10 bg-cover bg-center shadow-lg ${isPlaying ? 'animate-spin-slower' : ''}`} style={coverStyle} />
+        <div className={`relative z-10 h-12 w-12 shrink-0 rounded-full border-2 border-white/10 bg-cover bg-center shadow-lg ${isPlaying ? 'animate-spin-slower' : ''}`} style={coverStyle} />
 
         {/* Title + progress */}
-        <div className="min-w-0 flex-1">
+        <div className="relative z-10 min-w-0 flex-1">
           <div className="flex items-center justify-between gap-3"><MarqueeText text={currentTrack.title} className="text-sm font-semibold text-white" /><span className="shrink-0 text-[10px] font-mono text-white/45">{fmt(progress)} / {fmt(duration)}</span></div>
           <ProgressBar progress={progress} duration={duration} onSeek={seek} className="mt-2 h-7 w-full" />
         </div>
 
         {/* Core controls */}
-        <div className="flex shrink-0 items-center gap-0.5 text-white sm:gap-1" onClick={(event) => event.stopPropagation()}>
+        <div className="relative z-10 flex shrink-0 items-center gap-0.5 text-white sm:gap-1" onClick={(event) => event.stopPropagation()}>
           <button title="Shuffle" onClick={toggleShuffle} className={`hidden h-8 w-8 place-items-center rounded-full sm:grid ${isShuffled ? 'text-white' : 'text-white/30 hover:text-white/60'}`}>
             <Shuffle className="h-4 w-4" />
           </button>
@@ -229,7 +231,7 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, onDi
         </div>
 
         {/* Extra controls */}
-        <div className="hidden items-center gap-0.5 text-white/40 sm:flex shrink-0" onClick={(event) => event.stopPropagation()}>
+        <div className="relative z-10 hidden items-center gap-0.5 text-white/40 sm:flex shrink-0" onClick={(event) => event.stopPropagation()}>
           <button onClick={() => { setShowQueue(q => !q); setShowSettings(false); }} className={`relative h-7 w-7 grid place-items-center rounded-full transition-colors ${showQueue ? 'text-white bg-white/15' : 'hover:text-white'}`}>
             <ListMusic className="h-3.5 w-3.5" />
           </button>
