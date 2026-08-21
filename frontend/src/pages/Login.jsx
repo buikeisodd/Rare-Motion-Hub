@@ -349,7 +349,7 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
 
         </div>
 
-        <p className="mt-5 max-w-md text-center text-xs text-secondary-label">
+        <p className="mt-2 max-w-sm text-center text-[11px] leading-tight text-secondary-label">
           By continuing you confirm that this email belongs to an approved Starlight Station collaborator.
         </p>
       </div>
