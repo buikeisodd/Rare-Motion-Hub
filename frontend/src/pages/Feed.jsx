@@ -255,16 +255,16 @@ export default function Feed({ user, savedOnly = false }) {
       </Link>
       <nav className="space-y-2">
         {navItems.map(({ label, icon: Icon, to }) => (
-          <Link key={label} to={to} className="flex h-12 w-full items-center whitespace-nowrap rounded-2xl px-3 text-sm font-semibold text-[#A6A09A] transition-all hover:bg-[rgba(215,255,101,0.08)] hover:text-[#F7F4EC]" title={label}>
+          <Link key={label} to={to} className="flex h-12 w-full items-center whitespace-nowrap rounded-2xl px-3 text-sm font-semibold text-[#A6A09A] transition-all hover:bg-[#D7FF65] hover:text-[#050505]" title={label}>
             <Icon className="h-6 w-6 shrink-0" />
             <span className="font-display ml-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100">{label}</span>
           </Link>
         ))}
-        <button onClick={() => setInboxOpen(true)} className="flex h-12 w-full items-center whitespace-nowrap rounded-2xl px-3 text-sm font-semibold text-[#A6A09A] transition-all hover:bg-[rgba(215,255,101,0.08)] hover:text-[#F7F4EC]" title="Inbox">
+        <button onClick={() => setInboxOpen(true)} className="flex h-12 w-full items-center whitespace-nowrap rounded-2xl px-3 text-sm font-semibold text-[#A6A09A] transition-all hover:bg-[#D7FF65] hover:text-[#050505]" title="Inbox">
           <MessageCircle className="h-6 w-6 shrink-0" />
           <span className="font-display ml-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100">iNbOx</span>
         </button>
-        <Link to="/settings" className="flex h-12 w-full items-center whitespace-nowrap rounded-2xl px-3 text-sm font-semibold text-[#A6A09A] transition-all hover:bg-[rgba(215,255,101,0.08)] hover:text-[#F7F4EC]" title="Settings">
+        <Link to="/settings" className="flex h-12 w-full items-center whitespace-nowrap rounded-2xl px-3 text-sm font-semibold text-[#A6A09A] transition-all hover:bg-[#D7FF65] hover:text-[#050505]" title="Settings">
           <Settings className="h-6 w-6 shrink-0" />
           <span className="font-display ml-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100">sEtTiNgS</span>
         </Link>
