@@ -319,6 +319,7 @@ function App() {
   const [user, setUser] = useState(null);
   const [justAuthenticated, setJustAuthenticated] = useState(false);
   const [mobileInboxOpen, setMobileInboxOpen] = useState(false);
+  const authEpoch = useRef(0);
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
   const deriveAuthStatus = (userData) => {
@@ -337,9 +338,13 @@ function App() {
     let cancelled = false;
 
     async function restoreSession() {
+      const requestEpoch = authEpoch.current;
       try {
         const res = await fetch(`${apiUrl}/api/auth/me`, { credentials: 'include' });
         if (cancelled) return;
+        // A slow startup request must not undo a login that completed while
+        // it was in flight (common on mobile networks).
+        if (requestEpoch !== authEpoch.current) return;
         if (res.ok) {
           const data = await res.json();
           if (data.user) {
@@ -350,7 +355,7 @@ function App() {
         }
         setAuthStatus('unauthenticated');
       } catch {
-        if (!cancelled) setAuthStatus('unauthenticated');
+        if (!cancelled && requestEpoch === authEpoch.current) setAuthStatus('unauthenticated');
       }
     }
 
@@ -392,13 +397,13 @@ function App() {
   }, []);
 
   const handleLogin = (userData) => {
+    authEpoch.current += 1;
     setUser(userData);
     setAuthStatus(deriveAuthStatus(userData));
     setJustAuthenticated(true);
     localStorage.removeItem('user');
     localStorage.removeItem('token');
     localStorage.removeItem('accessToken');
-    localStorage.removeItem('csrfToken');
   };
 
   const handleLogout = async () => {
