@@ -771,6 +771,12 @@ const toggleFollow = async (req, res, next) => {
         ]).catch(console.error)
       ]);
     }
+    // Workspace notifications are cached independently per user. Invalidate
+    // both sides so a new follow alert is visible without a manual refresh.
+    await Promise.all([
+      invalidateCache(`workspace:${target.id}`),
+      invalidateCache(`workspace:${actor.id}`)
+    ]);
     const followerCount = isFollowing ? (target.followers || []).length - 1 : (target.followers || []).length + 1;
     res.json({ following: !isFollowing, followerCount });
   } catch (error) { next(error); }
