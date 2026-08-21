@@ -583,6 +583,14 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
     refreshWorkspace();
   }, [user.id, location.pathname]);
 
+  // Notifications are created by other users, so navigation-only fetching is
+  // not enough. Poll the lightweight workspace payload while the library is
+  // mounted; read state is still committed only by the panel revisit flow.
+  useEffect(() => {
+    const timer = window.setInterval(refreshWorkspace, 3000);
+    return () => window.clearInterval(timer);
+  }, [user.id]);
+
 
   const saveFolderMetadata = async (folderId, updates) => {
     const res = await fetch(`${apiUrl}/api/folders/${folderId}`, {
@@ -793,6 +801,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
   };
 
   const handleOpenNotifications = () => {
+    refreshWorkspace();
     if (isNotificationsOpen) {
       setIsNotificationsOpen(false);
       setNotificationPanelVisited(true);
