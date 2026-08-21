@@ -427,7 +427,7 @@ function NotificationsMenu({ isOpen, notifications, conversations }) {
   );
 }
 
-function ProfilePanel({ isOpen, user, theme, onThemeChange, onEditProfile, onLogout, onDeleteAccount }) {
+function ProfilePanel({ isOpen, user, onEditProfile, onLogout, onDeleteAccount }) {
   return (
     <AnimatePresence>
       {isOpen && (
@@ -450,24 +450,6 @@ function ProfilePanel({ isOpen, user, theme, onThemeChange, onEditProfile, onLog
             <Edit3 className="h-5 w-5" />
             Edit profile
           </button>
-
-          <div className="my-1 rounded-xl px-3 py-3">
-            <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-primary-label">
-              <Palette className="h-5 w-5" />
-              Theme
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              {['dark', 'light'].map((mode) => (
-                <button
-                  key={mode}
-                  onClick={() => onThemeChange(mode)}
-                  className={`h-8 rounded-full text-xs font-bold capitalize transition-all active:scale-95 hover:scale-[1.02] ${theme === mode ? 'bg-primary-label text-primary-background' : 'bg-highlight text-primary-label hover:opacity-80'}`}
-                >
-                  {mode}
-                </button>
-              ))}
-            </div>
-          </div>
 
           <button onClick={onDeleteAccount} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-red-500 hover:bg-red-500/10 transition-colors">
             <Trash2 className="h-5 w-5" />
@@ -568,7 +550,6 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
   const { currentTrack } = useAudio();
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileError, setProfileError] = useState('');
-  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
   const [conversionProgress, setConversionProgress] = useState(null);
   const [isConvertPickerOpen, setIsConvertPickerOpen] = useState(false);
   const [convertFormat, setConvertFormat] = useState('mp3');
@@ -599,10 +580,6 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
     refreshWorkspace();
   }, [user.id, location.pathname]);
 
-  useEffect(() => {
-    document.documentElement.classList.toggle('theme-light', theme === 'light');
-    localStorage.setItem('theme', theme);
-  }, [theme]);
 
   const saveFolderMetadata = async (folderId, updates) => {
     const res = await fetch(`${apiUrl}/api/folders/${folderId}`, {
