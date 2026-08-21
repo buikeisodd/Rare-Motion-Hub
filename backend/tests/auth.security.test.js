@@ -506,6 +506,43 @@ describe('Phase 9 — CORS and CSRF hardening', () => {
     expect(res.status).toBe(403);
   });
 
+  test('missing CSRF cookie is rejected even when a header is supplied', async () => {
+    const email = 'p9c@test.com';
+    await register(email);
+    await verifyEmail(email);
+    const loginRes = await login(email);
+    const cookies = getSetCookies(loginRes);
+    const cookieHeader = cookies.filter(c => !c.includes('csrfToken=')).map(c => c.split(';')[0]).join('; ');
+    const res = await request(app)
+      .post('/api/workspace')
+      .set('Cookie', cookieHeader)
+      .set('x-csrf-token', 'random-client-token')
+      .send({ name: 'test' });
+    expect(res.status).toBe(403);
+  });
+
+  test('bearer authentication is rejected unless explicitly marked mobile', async () => {
+    const email = 'p9d@test.com';
+    await register(email);
+    await verifyEmail(email);
+    const mobileLogin = await request(app)
+      .post('/api/auth/login')
+      .set('x-client-type', 'mobile')
+      .send({ email, password: 'Password123!' });
+    expect(mobileLogin.body.token).toBeDefined();
+
+    const rejected = await request(app)
+      .get('/api/workspace')
+      .set('Authorization', `Bearer ${mobileLogin.body.token}`);
+    expect(rejected.status).toBe(401);
+
+    const accepted = await request(app)
+      .get('/api/workspace')
+      .set('x-client-type', 'mobile')
+      .set('Authorization', `Bearer ${mobileLogin.body.token}`);
+    expect(accepted.status).toBe(200);
+  });
+
   test('disallowed origin rejected by CORS in production', async () => {
     process.env.NODE_ENV = 'production';
     process.env.CORS_ORIGINS = 'https://allowed.example.com';

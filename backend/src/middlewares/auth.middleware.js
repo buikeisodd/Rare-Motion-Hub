@@ -50,6 +50,10 @@ const requireAuth = async (req, res, next) => {
   // Authorization header, since React Native doesn't have a cookie jar.
   const cookieToken = readAuthCookie(req, 'accessToken');
   const bearerToken = (req.get('authorization') || '').replace(/^Bearer\s+/i, '').trim();
+  const isMobileClient = (req.get('x-client-type') || '').toLowerCase() === 'mobile';
+  if (bearerToken && !cookieToken && !isMobileClient) {
+    return next(new AppError('Unauthorized: Bearer authentication is restricted to mobile clients', 401));
+  }
   const token = cookieToken || bearerToken;
 
   if (!token) return next(new AppError('Unauthorized: Missing token', 401));
@@ -86,18 +90,18 @@ const requireAuth = async (req, res, next) => {
     if (!session) return next(new AppError('Unauthorized: Session expired or revoked', 401));
     if (!user) return next(new AppError('Unauthorized: Account not found', 401));
 
-    // CSRF double-submit / custom header protection for all state-changing methods.
+    // CSRF double-submit / custom header protection for browser cookie sessions.
     // OWASP CSRF Prevention: Custom headers (like x-csrf-token) cannot be forged
     // cross-domain without passing CORS preflight. Requiring the x-csrf-token
-    // header (and comparing against cookie when present) guarantees CSRF protection
-    // while preventing false 403 blocks when 3rd-party cookies are restricted.
-    if (unsafeMethods.has(req.method)) {
+    // header and matching server-issued cookie guarantees CSRF protection
+    // Native mobile requests authenticate with a bearer token and do not have
+    // browser cookies, so they do not use the browser CSRF mechanism.
+    if (unsafeMethods.has(req.method) && cookieToken) {
       const csrfCookie = readAuthCookie(req, 'csrfToken');
       const csrfHeader = req.get('x-csrf-token') || '';
       
       const tokenValid = (() => {
-        if (!csrfHeader) return false;
-        if (!csrfCookie) return true;
+        if (!csrfCookie || !csrfHeader) return false;
         if (csrfHeader === csrfCookie) return true;
         const a = Buffer.from(csrfCookie, 'utf8');
         const b = Buffer.from(csrfHeader, 'utf8');
@@ -113,7 +117,7 @@ const requireAuth = async (req, res, next) => {
     req.userId = userId;
     req.sessionId = sessionId;
     req.user = user;
-    req.isMobileClient = Boolean(bearerToken && !cookieToken);
+    req.isMobileClient = Boolean(bearerToken && !cookieToken && isMobileClient);
     next();
   } catch (err) {
     return next(new AppError('Unauthorized: Invalid token', 401));

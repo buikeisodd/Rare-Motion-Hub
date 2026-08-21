@@ -181,16 +181,16 @@ const issueAuthSession = async (req, res, user) => {
   res.cookie(cookieName('sessionId'), session.sessionId, cookieOptions(REFRESH_TOKEN_TTL_MS));
   res.cookie(cookieName('csrfToken'), csrfToken, cookieOptions(REFRESH_TOKEN_TTL_MS, { httpOnly: false }));
   
-  // Set headers as fallbacks for cross-domain deployments where browsers block 3rd-party cookies
+  const isMobileClient = (req.get('x-client-type') || '').toLowerCase() === 'mobile';
+
+  // Only the CSRF token is exposed to browser JavaScript. Authentication
+  // tokens remain HttpOnly for web clients.
   res.set('x-csrf-token', csrfToken);
-  res.set('x-access-token', accessToken);
-  res.set('x-refresh-token', refreshToken);
 
   return {
     sessionId: session.sessionId,
-    token: accessToken,
-    refreshToken,
-    csrfToken
+    csrfToken,
+    ...(isMobileClient ? { token: accessToken, refreshToken } : {})
   };
 };
 

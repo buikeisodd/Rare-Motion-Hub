@@ -92,20 +92,16 @@ window.fetch = async (url, options = {}) => {
     options = { ...options };
     options.credentials = 'include';
     const csrf = readCsrfToken();
-    const token = localStorage.getItem('accessToken');
     options.headers = { ...options.headers };
     if (csrf) options.headers['x-csrf-token'] = csrf;
-    if (token) options.headers['authorization'] = `Bearer ${token}`;
   }
 
   let res = await originalFetch(url, options);
 
-  // Capture CSRF & Access tokens echoed in API response headers.
+  // Capture only the CSRF token. Web auth tokens stay in HttpOnly cookies.
   if (isApiCall) {
     const echoedCsrf = res.headers.get('x-csrf-token');
     if (echoedCsrf) localStorage.setItem('csrfToken', echoedCsrf);
-    const echoedAccess = res.headers.get('x-access-token');
-    if (echoedAccess) localStorage.setItem('accessToken', echoedAccess);
   }
 
   // ── 401: access token expired ─────────────────────────────────────────────
@@ -113,10 +109,8 @@ window.fetch = async (url, options = {}) => {
     const user = await attemptRefresh();
     if (user) {
       const csrf = readCsrfToken();
-      const token = localStorage.getItem('accessToken');
       const retryOptions = { ...options, headers: { ...options.headers } };
       if (csrf) retryOptions.headers['x-csrf-token'] = csrf;
-      if (token) retryOptions.headers['authorization'] = `Bearer ${token}`;
       res = await originalFetch(url, retryOptions);
       if (res.status !== 401) return res;
     }

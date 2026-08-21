@@ -33,6 +33,8 @@ const resolveActiveTrackUrl = (track) => {
   return resolveTrackUrl(track?.playbackUrl || track?.url);
 };
 
+const hasPlayableSource = (track) => Boolean(resolveActiveTrackUrl(track));
+
 export function AudioProvider({ children }) {
   const [currentTrack, setCurrentTrack] = useState(null);
   const [tracks, setTracks] = useState([]);
@@ -54,12 +56,12 @@ export function AudioProvider({ children }) {
   // Load new track when currentTrack changes
   useEffect(() => {
     const audio = audioRef.current;
-    if (!(currentTrack?.playbackUrl || currentTrack?.url)) { audio.pause(); return; }
+    const sourceUrl = resolveActiveTrackUrl(currentTrack);
+    if (!sourceUrl) { audio.pause(); audio.removeAttribute('src'); return; }
     setProgress(0);
     setDuration(0);
     setIsBuffering(true);
     audio.pause();
-    const sourceUrl = resolveActiveTrackUrl(currentTrack);
     audio.src = sourceUrl;
     audio.load();
   }, [currentTrack?.id, currentTrack?.activeVersionId, currentTrack?.playbackUrl, currentTrack?.url, currentTrack?.versions]);
@@ -67,10 +69,10 @@ export function AudioProvider({ children }) {
   // Play / pause
   useEffect(() => {
     const audio = audioRef.current;
-    if (!(currentTrack?.playbackUrl || currentTrack?.url)) return;
+    if (!hasPlayableSource(currentTrack)) return;
     if (isPlaying && audio.paused) {
       audio.play().catch((err) => {
-        console.error('Audio playback failed:', err, 'for track URL:', currentTrack.url);
+        console.error('Audio playback failed:', err, 'for track URL:', resolveActiveTrackUrl(currentTrack));
         setIsPlaying(false);
       });
     } else if (!isPlaying && !audio.paused) {
