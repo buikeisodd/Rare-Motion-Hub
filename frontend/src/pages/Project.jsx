@@ -262,6 +262,12 @@ export default function Project({ user }) {
         </div>
       </header>
 
+      <nav className="flex items-center gap-2 px-6 text-sm text-secondary-label lg:px-14" aria-label="Breadcrumb">
+        <Link to="/library" className="font-semibold transition-colors hover:text-primary-label">Library</Link>
+        <span className="opacity-50">/</span>
+        <span className="truncate text-primary-label">{project.title || project.name || 'Project'}</span>
+      </nav>
+
       <main className="mx-auto grid max-w-5xl gap-6 px-4 pt-4 grid-cols-1 md:grid-cols-[minmax(14rem,18rem)_minmax(20rem,1fr)] md:gap-8 lg:px-10 lg:pt-8">
         <section className="flex justify-center md:justify-start">
           <div className="group relative aspect-square w-full max-w-[16rem] md:max-w-[18rem] overflow-hidden rounded-[1rem] bg-[linear-gradient(135deg,#43e97b_0%,#38f9d7_48%,#4facfe_100%)] shadow-2xl">
