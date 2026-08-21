@@ -198,6 +198,16 @@
   to   { transform: scaleY(1); }
 }
 
+@keyframes wave {
+  0%, 100% { transform: scaleY(.62); opacity: .55; }
+  50% { transform: scaleY(1); opacity: 1; }
+}
+
+.animate-wave {
+  transform-origin: center;
+  animation: wave 1.4s ease-in-out infinite;
+}
+
 /* ── Global Gradient Scrollbar ───────────────────────────────────────────────
    Webkit (Chrome, Edge, Safari): full custom styling.
    Firefox: scrollbar-color approximation.

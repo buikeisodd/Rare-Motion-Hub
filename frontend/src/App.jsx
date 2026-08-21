@@ -23,15 +23,13 @@ function DesktopOnly({ children }) {
 }
 
 function WelcomeSignal({ compact = false }) {
-  const size = compact ? 'h-24 w-24' : 'h-32 w-32';
+  const size = compact ? 'h-24 w-32' : 'h-32 w-44';
   return (
-    <div className={`relative mx-auto ${size}`} aria-hidden="true">
-      <div className="absolute inset-0 rounded-full border border-primary-label/15" />
-      <div className="absolute inset-2 rounded-full border border-primary-label/30 border-t-primary-label/90 animate-spin" style={{ animationDuration: '3.8s' }} />
-      <div className="absolute inset-5 rounded-full border border-primary-label/20 border-b-primary-label/70 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '2.6s' }} />
-      <div className="absolute inset-1/2 h-16 w-px -translate-x-1/2 -translate-y-1/2 bg-primary-label/20" />
-      <div className="absolute inset-1/2 h-px w-16 -translate-x-1/2 -translate-y-1/2 bg-primary-label/20" />
-      <div className="absolute inset-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary-label shadow-[0_0_32px_rgba(215,255,101,0.65)] animate-pulse" />
+    <div className={`relative mx-auto flex items-center justify-center gap-1.5 ${size}`} aria-hidden="true">
+      <div className="absolute inset-x-1/2 top-1/2 h-px -translate-x-1/2 -translate-y-1/2 bg-primary-label/20" />
+      {[18, 34, 58, 86, 48, 72, 38, 62, 28, 46, 76, 52, 30].map((height, index) => (
+        <span key={index} className="relative z-10 w-1.5 rounded-full bg-primary-label shadow-[0_0_18px_rgba(215,255,101,0.35)] animate-wave" style={{ height: `${height}%`, animationDelay: `${index * 70}ms` }} />
+      ))}
     </div>
   );
 }
@@ -45,12 +43,13 @@ function WelcomeBack({ user, onDone }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0e140b] via-[#050505] to-[#050505] text-[#F7F4EC] px-6 py-12 flex flex-col">
+    <div className="min-h-screen bg-[#080909] text-[#F7F4EC] px-6 py-12 flex flex-col relative overflow-hidden">
+      <div className="pointer-events-none absolute -left-32 top-[-12rem] h-[28rem] w-[28rem] rounded-full bg-[#D7FF65]/[0.06] blur-3xl" />
       <main className="flex-1 flex items-center justify-center">
         <div className="w-full max-w-xl text-center animate-welcome-rise">
           <WelcomeSignal />
-          <p className="text-secondary-label text-sm font-medium uppercase tracking-[0.28em] mb-4">Welcome back</p>
-          <h1 className="text-5xl font-semibold tracking-normal mb-8">{user.name}</h1>
+          <p className="text-primary-label/70 text-xs font-semibold uppercase tracking-[0.28em] mb-4">Your studio is ready</p>
+          <h1 className="text-5xl font-semibold tracking-tight mb-8">{user.name}</h1>
           <Link
             to="/library"
             onClick={handleProceed}
@@ -76,12 +75,13 @@ function WelcomeAnimation({ user, onDone }) {
   }, [navigate, onDone]);
 
   return (
-    <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0e140b] via-[#050505] to-[#050505] text-[#F7F4EC] px-6 py-12 flex flex-col">
+    <div className="min-h-screen bg-[#080909] text-[#F7F4EC] px-6 py-12 flex flex-col relative overflow-hidden">
+      <div className="pointer-events-none absolute -right-32 bottom-[-12rem] h-[28rem] w-[28rem] rounded-full bg-[#8DEBFF]/[0.05] blur-3xl" />
       <main className="flex-1 flex items-center justify-center">
         <div className="text-center animate-welcome-rise">
           <WelcomeSignal compact />
-          <p className="text-secondary-label text-sm font-medium uppercase tracking-[0.28em] mb-3">Welcome back</p>
-          <h1 className="text-4xl font-semibold tracking-normal">{user.name}</h1>
+          <p className="text-primary-label/70 text-xs font-semibold uppercase tracking-[0.28em] mb-3">Picking up where you left off</p>
+          <h1 className="text-4xl font-semibold tracking-tight">{user.name}</h1>
         </div>
       </main>
     </div>
