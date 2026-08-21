@@ -1237,6 +1237,7 @@ module.exports = {
   uploadTrackController,
   getTrackUploadSignature,
   createCloudinaryTrack,
+  createCloudinaryVersion,
   deleteTrack,
   patchTrack,
   publishTrack,
