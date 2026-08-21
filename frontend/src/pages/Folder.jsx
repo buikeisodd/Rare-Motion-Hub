@@ -176,8 +176,8 @@ export default function Folder({ user, onLogout }) {
       )}
 
       {/* Header */}
-      <header className="sticky top-0 z-50 flex items-start justify-between gap-3 bg-transparent pb-4">
-        <Link to="/library" className="flex items-center gap-2 text-sm font-semibold text-secondary-label hover:text-primary-label transition-colors">
+      <header className="sticky top-0 z-50 flex items-start justify-end gap-3 bg-transparent pb-4">
+        <Link to="/library" className="hidden">
           <span className="font-display">← liBraRy</span>
         </Link>
         <div className="flex shrink-0 items-center gap-3">
@@ -230,7 +230,7 @@ export default function Folder({ user, onLogout }) {
       </header>
 
       {/* Breadcrumbs */}
-      <nav className="mt-4 flex items-center gap-2 text-sm text-secondary-label" aria-label="Breadcrumb">
+      <nav className="mt-0 flex items-center gap-2 text-sm text-secondary-label" aria-label="Breadcrumb">
         <Link to="/library" className="flex items-center gap-1 hover:text-primary-label transition-colors">
           <Home className="h-4 w-4" />
           Library

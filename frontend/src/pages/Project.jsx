@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { BarChart3, ChevronLeft, Download, FileText, Image as ImageIcon, Link2, Lock, MoreHorizontal, Music, Pause, Play, Plus, Shuffle, Trash2, Unlock } from 'lucide-react';
+import { BarChart3, Download, FileText, Image as ImageIcon, Link2, Lock, MoreHorizontal, Music, Pause, Play, Plus, Shuffle, Trash2, Unlock } from 'lucide-react';
 import UploadModal from '../components/UploadModal';
 import PageLoading from '../components/PageLoading';
 import CoverArtPicker from '../components/CoverArtPicker';
@@ -208,11 +208,8 @@ export default function Project({ user }) {
       {isProjectMenuOpen && (
         <div className="fixed inset-0 z-40" onClick={() => setIsProjectMenuOpen(false)} />
       )}
-      <header className="sticky top-0 z-50 flex items-center justify-between bg-transparent px-6 py-6 lg:px-14">
-        <Link to="/library" className="grid h-10 w-10 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:h-12 sm:w-12 sm:rounded-3xl" aria-label="Back to library">
-          <ChevronLeft className="h-6 w-6" />
-        </Link>
-
+      <header className="sticky top-0 z-50 flex items-center justify-end bg-transparent px-6 py-6 lg:px-14">
+        
         <div className="flex items-center gap-3">
           <button onClick={handleCopyShareLink} className="relative grid h-10 w-10 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:h-12 sm:w-12 sm:rounded-3xl" aria-label="Copy project link">
             <Link2 className="h-5 w-5" />
