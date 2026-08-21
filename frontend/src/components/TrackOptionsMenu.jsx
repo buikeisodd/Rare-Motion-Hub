@@ -849,10 +849,18 @@ export default function TrackOptionsMenu({
 export function replaceTrackAudio(track, file, userId, onProgress) {
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
   const csrfToken = localStorage.getItem('csrfToken');
+  const readApiResponse = async (response, fallbackMessage) => {
+    const text = await response.text();
+    let data = null;
+    try { data = text ? JSON.parse(text) : null; } catch (_) {
+      throw new Error(`${fallbackMessage} (HTTP ${response.status}). The server returned a non-JSON response.`);
+    }
+    if (!response.ok) throw new Error(data?.error || data?.message || `${fallbackMessage} (HTTP ${response.status}).`);
+    return data || {};
+  };
   const uploadDirectly = async () => {
     const signatureRes = await fetch(`${apiUrl}/api/upload/signature`, { credentials: 'include' });
-    const signature = await signatureRes.json();
-    if (!signatureRes.ok) throw new Error(signature.error || 'Cloudinary storage is unavailable.');
+    const signature = await readApiResponse(signatureRes, 'Could not prepare the Cloudinary upload.');
     const cloudForm = new FormData();
     cloudForm.append('file', file);
     cloudForm.append('api_key', signature.apiKey);
@@ -877,8 +885,8 @@ export function replaceTrackAudio(track, file, userId, onProgress) {
       method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', ...(csrfToken ? { 'x-csrf-token': csrfToken } : {}) },
       body: JSON.stringify({ secureUrl: cloudinaryResult.secure_url, publicId: cloudinaryResult.public_id, resourceType: cloudinaryResult.resource_type, format: cloudinaryResult.format, bytes: cloudinaryResult.bytes, duration: cloudinaryResult.duration, userId })
     });
-    const data = await finalizeRes.json();
-    if (!finalizeRes.ok) throw new Error(data.error || 'Could not save the uploaded version.');
+    const data = await readApiResponse(finalizeRes, 'Could not save the uploaded version.');
+    if (!data.track) throw new Error('The server saved no track version.');
     return data.track;
   };
   return uploadDirectly().catch((error) => {
