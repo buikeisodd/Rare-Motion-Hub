@@ -538,3 +538,18 @@ button[aria-label="Add tracks"]:hover {
 [class*="fixed"][class*="z-50"] button.bg-accent:hover {
   transform: scale(1.035) !important;
 }
+
+/* Dashboard and project/folder navigation icon buttons */
+header button[aria-label] {
+  border-radius: .95rem !important;
+  border: 1px solid rgba(52, 72, 59, .14) !important;
+  box-shadow: 0 7px 16px rgba(52, 72, 59, .10), inset 0 1px 0 rgba(255, 255, 255, .24) !important;
+  transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease !important;
+}
+header button[aria-label]:hover {
+  transform: translateY(-2px) scale(1.035) !important;
+  box-shadow: 0 11px 22px rgba(52, 72, 59, .16), inset 0 1px 0 rgba(255, 255, 255, .3) !important;
+}
+header button[aria-label]:active {
+  transform: translateY(0) scale(.96) !important;
+}
