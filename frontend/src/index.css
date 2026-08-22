@@ -111,6 +111,12 @@
     color: var(--rmh-accent) !important;
   }
 
+  .text-red-400 svg,
+  .text-red-500 svg,
+  .text-red-600 svg {
+    color: inherit !important;
+  }
+
   .bg-accent svg {
     color: var(--rmh-bg) !important;
   }
