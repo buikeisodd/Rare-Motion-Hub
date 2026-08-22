@@ -420,7 +420,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#050505] via-[#050505] to-[#050505] text-[#F7F4EC] font-sans">
+    <div className="min-h-screen bg-primary-background text-primary-label font-sans">
       <AudioProvider key={user?.id || "guest"}>
         <BrowserRouter>
           <AnimatedRoutes 

@@ -43,7 +43,7 @@ export default function VerifyEmail({ onLogin }) {
   const loading = state.status === 'loading';
 
   return (
-    <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#050505] via-[#050505] to-[#050505] text-[#F7F4EC] px-5 py-10">
+    <div className="min-h-screen bg-primary-background text-primary-label px-5 py-10">
       <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-md flex-col items-center justify-center text-center">
         <StarlightLogo className="logo-glow mb-8 h-24 w-full max-w-xs text-primary-label" />
         <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-shading text-primary-label">
