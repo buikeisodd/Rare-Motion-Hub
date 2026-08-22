@@ -615,3 +615,21 @@ button[aria-label="Add tracks"]::after {
   font-size: .875rem !important;
   line-height: 1 !important;
 }
+
+/* Responsive + Add project control */
+button[aria-label="Add tracks"] {
+  box-sizing: border-box !important;
+  width: clamp(4.25rem, 18vw, 5.5rem) !important;
+  min-width: 0 !important;
+  height: clamp(2.75rem, 8vw, 3rem) !important;
+  min-height: 2.75rem !important;
+  max-width: calc(100vw - 2rem) !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+}
+@media (max-width: 420px) {
+  button[aria-label="Add tracks"] {
+    width: 4.5rem !important;
+    height: 2.75rem !important;
+  }
+}
