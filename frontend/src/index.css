@@ -352,3 +352,20 @@
 [class*="max-w-3xl"] button.text-red-500:hover {
   background-color: rgba(239, 68, 68, .10) !important;
 }
+
+/* Force the large track details modal onto the light botanical surface */
+[class*="max-w-3xl"] {
+  background-color: #F3EBDD !important;
+  background-image: none !important;
+  color: #34483B !important;
+  border-color: rgba(52, 72, 59, .14) !important;
+}
+[class*="max-w-3xl"] button:hover,
+[class*="max-w-3xl"] .hover\:bg-highlight:hover {
+  background-color: #D8E2D6 !important;
+  color: #34483B !important;
+}
+[class*="max-w-3xl"] button.text-red-500:hover {
+  background-color: rgba(239, 68, 68, .10) !important;
+  color: #EF4444 !important;
+}
