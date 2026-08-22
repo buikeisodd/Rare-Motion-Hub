@@ -494,3 +494,18 @@ button[aria-label="Add tracks"] {
   padding: 0 !important;
   transform: translateX(-50%) !important;
 }
+
+/* Keep the project control clear of the fixed player on small screens */
+button[aria-label="Add tracks"] {
+  z-index: 70 !important;
+}
+@media (max-width: 767px) {
+  button[aria-label="Add tracks"] {
+    bottom: max(5.5rem, calc(4.5rem + env(safe-area-inset-bottom))) !important;
+  }
+}
+@media (min-width: 768px) {
+  button[aria-label="Add tracks"] {
+    bottom: max(1.5rem, env(safe-area-inset-bottom)) !important;
+  }
+}
