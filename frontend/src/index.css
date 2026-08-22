@@ -588,3 +588,20 @@ button[aria-label="Add tracks"] {
 button[aria-label="Add tracks"]:hover {
   background-color: #9BAF9B !important;
 }
+
+/* Project control uses an explicit Add label */
+button[aria-label="Add tracks"] {
+  width: auto !important;
+  min-width: 4.25rem !important;
+  padding: 0 .9rem !important;
+  gap: .35rem !important;
+  border-radius: 9999px !important;
+  font-size: .875rem !important;
+}
+button[aria-label="Add tracks"]::after {
+  content: "Add";
+  font-weight: 600;
+}
+button[aria-label="Add tracks"] svg {
+  display: none !important;
+}
