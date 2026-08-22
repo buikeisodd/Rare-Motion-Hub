@@ -203,7 +203,7 @@ export default function Folder({ user, onLogout }) {
                     setIsShareModalOpen(true);
                     setIsFolderMenuOpen(false);
                   }} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
-                    <Copy className="h-4 w-4" />
+                    <Copy className="h-4 w-4 text-accent" />
                     Copy share link
                   </button>
                   {data?.folder?.userId === user.id && (

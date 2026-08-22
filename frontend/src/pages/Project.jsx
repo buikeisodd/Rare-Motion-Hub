@@ -226,7 +226,7 @@ export default function Project({ user }) {
         
         <div className="flex items-center gap-3">
           <button onClick={handleCopyShareLink} className="relative grid h-10 w-10 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:h-12 sm:w-12 sm:rounded-3xl" aria-label="Copy project link">
-            <Link2 className="h-5 w-5" />
+            <Link2 className="h-5 w-5 text-accent" />
           </button>
 
           <div className="relative">
@@ -243,7 +243,7 @@ export default function Project({ user }) {
                   className="absolute right-0 top-12 z-50 w-56 rounded-[1.25rem] border border-border panel-bg p-2 shadow-2xl origin-top-right sm:top-16 sm:w-64 sm:p-3"
                 >
                   <button onClick={() => { setIsShareModalOpen(true); setIsProjectMenuOpen(false); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
-                    <Link2 className="h-6 w-6" />
+                    <Link2 className="h-6 w-6 text-accent" />
                     Share project
                   </button>
                   {project.userId === user.id && (
