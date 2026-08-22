@@ -318,3 +318,7 @@
 
 .bg-\[\#34483B\] h3, .bg-\[\#34483B\] > div, .bg-\[\#34483B\] button, .bg-\[\#34483B\] span { color: #F3EBDD !important; }
 
+
+/* Active track animation cream override */
+[class*='bg-[#34483B]'] span[style*='animation'] { background-color: #F3EBDD !important; }
+
