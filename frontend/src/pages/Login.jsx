@@ -190,14 +190,14 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
       <div className="pointer-events-none absolute -bottom-48 right-[-8rem] h-[32rem] w-[32rem] rounded-full bg-[#345b43]/15 blur-3xl" />
       <div className="relative mx-auto grid min-h-[calc(100vh-2rem)] w-full max-w-6xl items-center gap-10 py-3 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,27rem)] lg:gap-16">
         <section className="hidden lg:block animate-fade-in">
-          <StarlightLogo className="mb-20 h-10 text-[#17221c]" showTagline={false} markClassName="h-10 w-10" />
+          <StarlightLogo className="mb-20 h-10 text-[#17221c]" showTagline={false} markClassName="h-16 w-16 sm:h-20 sm:w-20" />
           <p className="mb-5 text-xs font-semibold uppercase tracking-[0.3em] text-[#46624d]">A softer place for unfinished ideas</p>
           <h1 className="max-w-xl text-6xl font-semibold leading-[0.96] tracking-tight text-[#17221c]">Make room for the next sound.</h1>
           <p className="mt-7 max-w-md text-base leading-relaxed text-[#52655a]">Keep your projects close, hear every version, and share the work when it feels ready.</p>
         </section>
 
         <div className="mx-auto w-full max-w-sm animate-fade-in">
-          <div className="mb-8 lg:hidden"><StarlightLogo className="h-10 text-[#17221c]" showTagline={false} markClassName="h-10 w-10" /></div>
+          <div className="mb-8 lg:hidden"><StarlightLogo className="h-10 text-[#17221c]" showTagline={false} markClassName="h-16 w-16 sm:h-20 sm:w-20" /></div>
           <div className="mb-8 lg:hidden"><h1 className="text-3xl font-semibold tracking-tight">Make room for the next sound.</h1><p className="mt-3 text-sm leading-relaxed text-[#52655a]">Your private studio for projects, playback and collaboration.</p></div>
           <div className="rounded-[2rem] border border-white/70 bg-white/75 p-5 shadow-[0_28px_80px_rgba(35,62,43,.18)] backdrop-blur-xl sm:p-7">
           <p className="mb-4 max-w-sm text-center text-[11px] leading-tight text-[#52655a]">By continuing you confirm that this email belongs to an approved Starlight Station collaborator.</p>
@@ -371,4 +371,5 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
     </div>
   );
 }
+
 
