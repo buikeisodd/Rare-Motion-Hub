@@ -58,7 +58,7 @@ export function LibraryProject({ project, tracks, onDragStart, isDragging, onDel
         e.dataTransfer.setData('itemType', 'project');
         onDragStart?.();
       }}
-      className={`relative w-full max-w-[15rem] transition-all duration-200 ${isDragging ? 'opacity-40 scale-95 rotate-1' : ''} ${isMenuOpen || isConfirmOpen ? 'z-50' : 'z-0'}`}
+      className={`library-project-card relative w-full max-w-[15rem] transition-all duration-200 ${isDragging ? 'opacity-40 scale-95 rotate-1' : ''} ${isMenuOpen || isConfirmOpen ? 'z-50' : 'z-0'}`}
     >
       <Link to={`/project/${project.id}`} className="group block w-full" draggable={false}>
         <div
@@ -221,7 +221,7 @@ export function LibraryFolder({ folder, projects, tracks, onSave, onDrop, onDrag
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`relative group w-full max-w-[15rem] transition-all duration-200 ${
+      className={`library-folder-card relative group w-full max-w-[15rem] transition-all duration-200 ${
         isDragging ? 'opacity-40 scale-95 rotate-1' : ''
       } ${isDragOver ? 'scale-[1.03]' : ''} ${isMenuOpen || isConfirmOpen ? 'z-50' : 'z-0'}`}
     >

@@ -681,3 +681,25 @@ button[aria-label="Add tracks"] {
   display: inline-block !important;
   line-height: 1 !important;
 }
+
+/* Library project and folder card treatment */
+.library-project-card,
+.library-folder-card {
+  border-radius: 1rem;
+  transition: transform .22s ease, box-shadow .22s ease, filter .22s ease !important;
+}
+.library-project-card:hover,
+.library-folder-card:hover {
+  transform: translateY(-6px);
+  filter: saturate(1.03);
+  box-shadow: 0 20px 38px rgba(52, 72, 59, .16), inset 0 0 0 1px rgba(111, 137, 116, .28);
+}
+.library-project-card > a > div:first-child,
+.library-folder-card > a > div:first-child {
+  border-radius: 1rem !important;
+  box-shadow: inset 0 0 0 1px rgba(111, 137, 116, .28), 0 10px 22px rgba(52, 72, 59, .10);
+}
+.library-project-card:hover > a > div:first-child,
+.library-folder-card:hover > a > div:first-child {
+  box-shadow: inset 0 0 0 1px rgba(111, 137, 116, .48), 0 16px 30px rgba(52, 72, 59, .18);
+}
