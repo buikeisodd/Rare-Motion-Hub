@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BarChart3, Download, FileText, Image as ImageIcon, Link2, Lock, MoreHorizontal, Music, Pause, Play, Plus, Shuffle, Trash2, Unlock } from 'lucide-react';
@@ -249,7 +249,7 @@ export default function Project({ user }) {
                   {project.userId === user.id && (
                     <button onClick={toggleVisibility} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
                       {project.visibility === 'private' ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
-                      {project.visibility === 'private' ? 'Private · Make public' : 'Public · Make private'}
+                      {project.visibility === 'private' ? 'Private Â· Make public' : 'Public Â· Make private'}
                     </button>
                   )}
                   <button onClick={() => navigate(`/project/${id}/insights`)} className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
@@ -354,7 +354,7 @@ export default function Project({ user }) {
                 />
               </span>
               <span className="whitespace-nowrap font-medium">
-                • {tracks.length} track{tracks.length !== 1 ? 's' : ''} • {
+                â€¢ {tracks.length} track{tracks.length !== 1 ? 's' : ''} â€¢ {
                   (() => {
                     return '';
                   })()
@@ -440,7 +440,7 @@ export default function Project({ user }) {
         </section>
       </main>
 
-      {/* Add Tracks Button — fixed position, never moves */}
+      {/* Add Tracks Button â€” fixed position, never moves */}
       {isOwner && <button
         onClick={() => setIsUploadOpen(true)}
                   className={`fixed bottom-6 z-[60] flex items-center gap-2 rounded-full bg-accent px-5 py-3 text-sm font-semibold text-primary-background shadow-2xl transition-transform hover:scale-105 ${currentTrack ? 'left-3 sm:left-6' : 'left-1/2 -translate-x-1/2 sm:left-auto sm:right-8 sm:translate-x-0'}`}
@@ -487,3 +487,4 @@ export default function Project({ user }) {
     </div>
   );
 }
+

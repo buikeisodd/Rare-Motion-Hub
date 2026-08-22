@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react';
+﻿import { useRef, useState, useEffect } from 'react';
 import { Activity, ChevronDown, ChevronUp, ListMusic, Pause, Play, Repeat, Repeat1, Settings2, Shuffle, SkipBack, SkipForward, Volume2, VolumeX, X } from 'lucide-react';
 import { useAudio } from '../context/AudioContext';
 import { gradientFor } from '../utils/gradients';
@@ -50,15 +50,15 @@ function QueuePanel({ playQueue, queueIndex, onSelect, onClose }) {
   return (
     <div className="rounded-2xl bg-[#1e1e1e] border border-white/10 p-3 shadow-2xl max-h-56 flex flex-col">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-bold text-[#F3EBDD]/60 uppercase tracking-wider">Queue · {playQueue.length}</span>
-        <button onClick={onClose} className="text-[#34483B]/40 hover:text-[#34483B]"><X className="h-3.5 w-3.5" /></button>
+        <span className="text-xs font-bold text-[#F3EBDD]/60 uppercase tracking-wider">Queue Â· {playQueue.length}</span>
+        <button onClick={onClose} className="text-[#F3EBDD]/70 hover:text-[#F3EBDD]"><X className="h-3.5 w-3.5" /></button>
       </div>
       <div className="overflow-y-auto hide-scrollbar space-y-0.5">
         {playQueue.length === 0
-          ? <p className="text-xs text-[#34483B]/30 px-2 py-4 text-center">No tracks in queue</p>
+          ? <p className="text-xs text-[#F3EBDD]/50 px-2 py-4 text-center">No tracks in queue</p>
           : playQueue.map((t, i) => (
             <button key={t.id + i} onClick={() => onSelect(t)}
-              className={`w-full text-left px-2 py-1.5 rounded-lg text-xs transition-colors ${i === queueIndex ? 'bg-white/20 text-[#34483B] font-semibold' : 'text-[#34483B]/55 hover:bg-white/10 hover:text-[#34483B]'}`}>
+              className={`w-full text-left px-2 py-1.5 rounded-lg text-xs transition-colors ${i === queueIndex ? 'bg-white/20 text-[#34483B] font-semibold' : 'text-[#F3EBDD]/70 hover:bg-white/10 hover:text-[#F3EBDD]'}`}>
               <div className="truncate">{t.title}</div>
               <div className="truncate text-[10px] opacity-60">{t.artist || t.producer}</div>
             </button>
@@ -72,25 +72,25 @@ function SettingsPanel({ playbackRate, setRate, pitchShift, setPitch, onClose, c
   return (
     <div className={`rounded-2xl bg-[#1e1e1e] border border-white/10 shadow-2xl ${compact ? 'p-3' : 'p-4'}`}>
       <div className="flex items-center justify-between mb-2">
-        <span className={`font-bold text-[#34483B]/60 uppercase tracking-wider ${compact ? 'text-[10px]' : 'text-xs'}`}>Playback</span>
-        <button onClick={onClose} className="text-[#34483B]/40 hover:text-[#34483B]"><X className={compact ? 'h-3 w-3' : 'h-3.5 w-3.5'} /></button>
+        <span className={`font-bold text-[#F3EBDD]/80 uppercase tracking-wider ${compact ? 'text-[10px]' : 'text-xs'}`}>Playback</span>
+        <button onClick={onClose} className="text-[#F3EBDD]/70 hover:text-[#F3EBDD]"><X className={compact ? 'h-3 w-3' : 'h-3.5 w-3.5'} /></button>
       </div>
       <div className="space-y-3">
         <div>
-          <div className={`flex justify-between text-[#34483B]/50 mb-1 ${compact ? 'text-[10px]' : 'text-xs'}`}>
+          <div className={`flex justify-between text-[#F3EBDD]/80 mb-1 ${compact ? 'text-[10px]' : 'text-xs'}`}>
             <span className="flex items-center gap-1"><Activity className="h-3 w-3" /> Speed</span>
             <span className="font-mono">{playbackRate.toFixed(2)}x</span>
           </div>
-          <input type="range" min="0.5" max="2" step="0.05" value={playbackRate} onChange={e => setRate(parseFloat(e.target.value))} className="w-full accent-white" />
-          <button onClick={() => setRate(1)} className="mt-0.5 text-[10px] text-[#34483B]/35 hover:text-[#34483B]">Reset</button>
+          <input type="range" min="0.5" max="2" step="0.05" value={playbackRate} onChange={e => setRate(parseFloat(e.target.value))} className="w-full accent-[#34483B]" />
+          <button onClick={() => setRate(1)} className="mt-0.5 text-[10px] text-[#F3EBDD]/60 hover:text-[#F3EBDD]">Reset</button>
         </div>
         <div>
-          <div className={`flex justify-between text-[#34483B]/50 mb-1 ${compact ? 'text-[10px]' : 'text-xs'}`}>
+          <div className={`flex justify-between text-[#F3EBDD]/80 mb-1 ${compact ? 'text-[10px]' : 'text-xs'}`}>
             <span className="flex items-center gap-1"><Settings2 className="h-3 w-3" /> Pitch</span>
             <span className="font-mono">{pitchShift > 0 ? '+' : ''}{pitchShift} st</span>
           </div>
-          <input type="range" min="-7" max="7" step="1" value={pitchShift} onChange={e => setPitch(parseInt(e.target.value, 10))} className="w-full accent-white" />
-          <button onClick={() => setPitch(0)} className="mt-0.5 text-[10px] text-[#34483B]/35 hover:text-[#34483B]">Reset</button>
+          <input type="range" min="-7" max="7" step="1" value={pitchShift} onChange={e => setPitch(parseInt(e.target.value, 10))} className="w-full accent-[#34483B]" />
+          <button onClick={() => setPitch(0)} className="mt-0.5 text-[10px] text-[#F3EBDD]/60 hover:text-[#F3EBDD]">Reset</button>
         </div>
       </div>
     </div>
@@ -180,7 +180,7 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
     ? { backgroundImage: `url(${coverArt})`, backgroundSize: 'cover', backgroundPosition: 'center' }
     : { background: gradientFor(projectId || currentTrack.projectId || currentTrack.id) };
 
-  // ── FLOATING PILL (all pages except insights/chat) ───────────────────
+  // â”€â”€ FLOATING PILL (all pages except insights/chat) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (!cardModal) return (
     <>
     <div className="fixed bottom-[4.8rem] right-3 z-50 w-[min(42rem,calc(100vw-1.5rem))] select-none sm:bottom-6 sm:right-6">
@@ -284,7 +284,7 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
           </div>
           <div className="mt-4 flex items-center gap-3 rounded-2xl border border-border bg-shading/40 px-4 py-3">
             <button onClick={() => handleMute(!isMuted)} className="text-accent">{isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}</button>
-            <input type="range" min="0" max="1" step="0.01" value={isMuted ? 0 : volume} onChange={e => handleVolume(parseFloat(e.target.value))} className="min-w-0 flex-1 accent-white" />
+            <input type="range" min="0" max="1" step="0.01" value={isMuted ? 0 : volume} onChange={e => handleVolume(parseFloat(e.target.value))} className="min-w-0 flex-1 accent-[#34483B]" />
           </div>
         </div>
       </div>
@@ -292,7 +292,7 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
     </>
   );
 
-  // ── CARD MODAL (insights + chat) ──────────────────────────────────────
+  // â”€â”€ CARD MODAL (insights + chat) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   return (
     <div className="w-60 select-none">
       {showSettings && <div className="mb-2"><SettingsPanel playbackRate={playbackRate} setRate={handleRate} pitchShift={pitchShift} setPitch={handlePitch} onClose={() => setShowSettings(false)} compact /></div>}
@@ -306,10 +306,10 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
           <div className="flex items-center gap-2 mb-2">
             <div className="min-w-0 flex-1">
               <MarqueeText text={currentTrack.title} className="text-xs font-bold text-[#F3EBDD]" />
-              <MarqueeText text={isBuffering && isPlaying ? 'Buffering…' : (projectName || currentTrack.artist || 'Starlight Station')} className="text-[10px] text-[#F3EBDD]/70 mt-0.5" />
+              <MarqueeText text={isBuffering && isPlaying ? 'Bufferingâ€¦' : (projectName || currentTrack.artist || 'Starlight Station')} className="text-[10px] text-[#F3EBDD]/70 mt-0.5" />
             </div>
             {!hideCover && collapsed && (
-              <button onClick={() => setCollapsed(false)} className="shrink-0 text-[#34483B]/40 hover:text-[#34483B]"><ChevronUp className="h-3.5 w-3.5" /></button>
+              <button onClick={() => setCollapsed(false)} className="shrink-0 text-[#F3EBDD]/70 hover:text-[#F3EBDD]"><ChevronUp className="h-3.5 w-3.5" /></button>
             )}
           </div>
           <ProgressBar progress={progress} duration={duration} onSeek={seek} className="h-1 w-full mb-1" />
@@ -330,8 +330,8 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
             </button>
           </div>
           {!minimal && <div className="flex items-center justify-between pt-2 border-t border-white/10">
-            <button onClick={() => { setShowSettings(s => !s); setShowQueue(false); }} className={`h-6 w-6 grid place-items-center rounded-full ${showSettings ? 'text-[#34483B] bg-white/20' : 'text-[#34483B]/35 hover:text-[#34483B]'}`}><Activity className="h-3.5 w-3.5" /></button>
-            <button onClick={() => { setShowQueue(q => !q); setShowSettings(false); }} className={`relative h-6 w-6 grid place-items-center rounded-full ${showQueue ? 'text-[#34483B] bg-white/20' : 'text-[#34483B]/35 hover:text-[#34483B]'}`}>
+            <button onClick={() => { setShowSettings(s => !s); setShowQueue(false); }} className={`h-6 w-6 grid place-items-center rounded-full ${showSettings ? 'text-[#34483B] bg-white/20' : 'text-[#F3EBDD]/60 hover:text-[#F3EBDD]'}`}><Activity className="h-3.5 w-3.5" /></button>
+            <button onClick={() => { setShowQueue(q => !q); setShowSettings(false); }} className={`relative h-6 w-6 grid place-items-center rounded-full ${showQueue ? 'text-[#34483B] bg-white/20' : 'text-[#F3EBDD]/60 hover:text-[#F3EBDD]'}`}>
               <ListMusic className="h-3.5 w-3.5" />
               {playQueue.length > 0 && <span className="absolute -right-1 -top-1 h-3 min-w-3 grid place-items-center rounded-full bg-white text-black text-[7px] font-bold">{playQueue.length}</span>}
             </button>
@@ -339,7 +339,7 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
               <button onClick={() => handleMute(!isMuted)} className="text-accent/75 hover:text-accent-hover">
                 {isMuted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
               </button>
-              <input type="range" min="0" max="1" step="0.01" value={isMuted ? 0 : volume} onChange={e => handleVolume(parseFloat(e.target.value))} className="w-14 accent-white h-1" />
+              <input type="range" min="0" max="1" step="0.01" value={isMuted ? 0 : volume} onChange={e => handleVolume(parseFloat(e.target.value))} className="w-14 accent-[#34483B] h-1" />
             </div>
             <button onClick={() => onDismiss ? onDismiss() : null} className="text-[#34483B]/35 hover:text-red-400 transition-colors"><X className="h-3.5 w-3.5" /></button>
           </div>}
@@ -347,10 +347,11 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
             <button onClick={() => handleMute(!isMuted)} className="text-[#34483B]/60 hover:text-[#34483B]" aria-label={isMuted ? 'Unmute' : 'Mute'}>
               {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
             </button>
-            <input aria-label="Volume" type="range" min="0" max="1" step="0.01" value={isMuted ? 0 : volume} onChange={e => handleVolume(parseFloat(e.target.value))} className="w-24 accent-white h-1" />
+            <input aria-label="Volume" type="range" min="0" max="1" step="0.01" value={isMuted ? 0 : volume} onChange={e => handleVolume(parseFloat(e.target.value))} className="w-24 accent-[#34483B] h-1" />
           </div>}
         </div>
       </div>
     </div>
   );
 }
+
