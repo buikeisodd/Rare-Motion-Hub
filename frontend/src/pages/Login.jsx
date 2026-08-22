@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import { Eye, EyeOff, Loader2, Mail, Lock, Phone, Timer } from 'lucide-react';
 import StarlightLogo from '../components/StarlightLogo';
 import VerificationModal from '../components/VerificationModal';
@@ -42,7 +42,7 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
   // Drive the lockout countdown from the server-provided lockedUntil timestamp.
-  // The timer is purely cosmetic — backend is authoritative on whether the
+  // The timer is purely cosmetic â€” backend is authoritative on whether the
   // lock has actually expired.
   useEffect(() => {
     if (!lockedUntil) { setLockCountdown(0); return; }
@@ -76,7 +76,7 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Could not reset password.');
-        // Password reset does not auto-login — fresh authentication is required.
+        // Password reset does not auto-login â€” fresh authentication is required.
         // Clear the reset token from the URL, switch to normal login mode,
         // and show a success notice so the user knows to sign in again.
         setResetMode(false);
@@ -202,20 +202,20 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
           <div className="rounded-[2rem] border border-white/70 bg-white/75 p-5 shadow-[0_28px_80px_rgba(35,62,43,.18)] backdrop-blur-xl sm:p-7">
           <p className="mb-4 max-w-sm text-center text-[11px] leading-tight text-[#52655a]">By continuing you confirm that this email belongs to an approved Starlight Station collaborator.</p>
 
-        <div className="flex items-center gap-5 mb-5 border-b border-[rgba(255,255,255,.09)] pb-2 px-3">
+        <div className="flex items-center gap-5 mb-5 border-b border-[rgba(52,72,59,.16)] pb-2 px-3">
           <button 
             type="button"
             onClick={() => { setIsRegister(false); setResetMode(false); setResetToken(''); }}
             className={`text-base font-semibold transition-all relative py-1 ${!isRegister && !resetMode ? 'text-[#17221c]' : 'text-[#718078] hover:text-[#17221c]'}`}>
             Sign in
-            {!isRegister && !resetMode && <span className="absolute bottom-[-13px] left-0 right-0 h-[2px] bg-[#FF8A3D] rounded-full" />}
+            {!isRegister && !resetMode && <span className="absolute bottom-[-13px] left-0 right-0 h-[2px] bg-[#6F8974] rounded-full" />}
           </button>
           <button 
             type="button"
             onClick={() => { setIsRegister(true); setResetMode(false); setResetToken(''); }}
             className={`text-base font-semibold transition-all relative py-1 ${isRegister && !resetMode ? 'text-[#17221c]' : 'text-[#718078] hover:text-[#17221c]'}`}>
             Create account
-            {isRegister && !resetMode && <span className="absolute bottom-[-13px] left-0 right-0 h-[2px] bg-[#FF8A3D] rounded-full" />}
+            {isRegister && !resetMode && <span className="absolute bottom-[-13px] left-0 right-0 h-[2px] bg-[#6F8974] rounded-full" />}
           </button>
         </div>
 
@@ -228,7 +228,7 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email address"
-                className="h-11 w-full rounded-xl bg-white/80 border border-[#bdcdbf] pl-11 pr-4 text-left text-sm font-medium text-[#17221c] placeholder:text-[#718078] focus:outline-none focus:border-[#FF8A3D] focus:ring-1 focus:ring-[#FF8A3D] transition-all"
+                className="h-11 w-full rounded-xl bg-white/80 border border-[#bdcdbf] pl-11 pr-4 text-left text-sm font-medium text-[#17221c] placeholder:text-[#718078] focus:outline-none focus:border-[#6F8974] focus:ring-1 focus:ring-[#6F8974] transition-all"
                 required={!resetMode}
                 disabled={resetMode}
               />
@@ -241,10 +241,10 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={resetMode ? 'New password' : 'Password'}
                 minLength={8}
-                className="h-11 w-full rounded-xl bg-white/80 border border-[#bdcdbf] pl-11 pr-12 text-left text-sm font-medium text-[#17221c] placeholder:text-[#718078] focus:outline-none focus:border-[#FF8A3D] focus:ring-1 focus:ring-[#FF8A3D] transition-all"
+                className="h-11 w-full rounded-xl bg-white/80 border border-[#bdcdbf] pl-11 pr-12 text-left text-sm font-medium text-[#17221c] placeholder:text-[#718078] focus:outline-none focus:border-[#6F8974] focus:ring-1 focus:ring-[#6F8974] transition-all"
                 required
               />
-              <button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#A6A09A] transition-colors hover:text-[#34483B]" aria-label={showPassword ? 'Hide password' : 'Show password'}>
+              <button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#667268] transition-colors hover:text-[#34483B]" aria-label={showPassword ? 'Hide password' : 'Show password'}>
                 {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>
             </label>
@@ -253,7 +253,7 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
                 <button
                   type="button"
                   onClick={requestPasswordReset}
-                  className="text-xs font-medium text-[#A6A09A] transition-colors hover:text-[#FF8A3D]"
+                  className="text-xs font-medium text-[#667268] transition-colors hover:text-[#6F8974]"
                 >
                   Forgot password?
                 </button>
@@ -261,16 +261,16 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
             )}
 
             {isRegister && !resetMode && <label className="relative block">
-              <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#A6A09A]" />
+              <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#667268]" />
               <input
                 type={showConfirmPassword ? 'text' : 'password'}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirm password"
-                className="h-12 w-full rounded-xl bg-[#171717] border border-[rgba(255,255,255,.09)] pl-11 pr-12 text-left text-sm font-medium text-[#34483B] placeholder:text-[#77736E] focus:outline-none focus:border-[#FF8A3D] focus:ring-1 focus:ring-[#FF8A3D] transition-all"
+                className="h-12 w-full rounded-xl bg-[#E5DFD2] border border-[rgba(52,72,59,.16)] pl-11 pr-12 text-left text-sm font-medium text-[#34483B] placeholder:text-[#7D897F] focus:outline-none focus:border-[#6F8974] focus:ring-1 focus:ring-[#6F8974] transition-all"
                 required
               />
-              <button type="button" onClick={() => setShowConfirmPassword((value) => !value)} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#A6A09A] transition-colors hover:text-[#34483B]" aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}>
+              <button type="button" onClick={() => setShowConfirmPassword((value) => !value)} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#667268] transition-colors hover:text-[#34483B]" aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}>
                 {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>
             </label>}
@@ -285,7 +285,7 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
               <div className="flex items-center justify-center gap-2 rounded-xl border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-xs text-amber-300">
                 <Timer className="h-4 w-4 shrink-0" />
                 <span>
-                  Account locked — try again in{' '}
+                  Account locked â€” try again in{' '}
                   <span className="tabular-nums font-semibold">
                     {Math.floor(lockCountdown / 60)}:{String(lockCountdown % 60).padStart(2, '0')}
                   </span>
@@ -294,7 +294,7 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
             )}
 
             {notice && (
-              <div className="rounded-xl border border-[#FF8A3D]/20 bg-[#FF8A3D]/10 px-4 py-3 text-left text-xs font-medium text-[#FF8A3D]">
+              <div className="rounded-xl border border-[#6F8974]/20 bg-[#6F8974]/10 px-4 py-3 text-left text-xs font-medium text-[#6F8974]">
                 {notice}
               </div>
             )}
@@ -302,7 +302,7 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
             <button
               type="submit"
               disabled={loading || lockCountdown > 0}
-              className="mx-auto flex h-11 w-[92%] items-center justify-center rounded-xl bg-[#FF8A3D] text-sm font-bold text-[#F3EBDD] transition-all hover:bg-[#FFB067] active:scale-[0.99] disabled:opacity-50 shadow-md mt-1"
+              className="mx-auto flex h-11 w-[92%] items-center justify-center rounded-xl bg-[#6F8974] text-sm font-bold text-[#F3EBDD] transition-all hover:bg-[#9BAF9B] active:scale-[0.99] disabled:opacity-50 shadow-md mt-1"
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin text-[#F3EBDD]" /> : (resetMode ? 'Reset password' : isRegister ? 'Create account' : 'Sign in')}
             </button>
@@ -319,7 +319,7 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
               type="button"
               onClick={() => handleProviderAuth('Google')}
               disabled={Boolean(providerLoading)}
-              className="mx-auto flex min-h-10 w-[92%] items-center justify-center gap-3 rounded-xl border border-[#bdcdbf] bg-white/65 px-4 py-2.5 text-sm font-semibold text-[#17221c] transition-all hover:border-[#FF8A3D] hover:bg-[#fff] hover:scale-[1.01]"
+              className="mx-auto flex min-h-10 w-[92%] items-center justify-center gap-3 rounded-xl border border-[#bdcdbf] bg-white/65 px-4 py-2.5 text-sm font-semibold text-[#17221c] transition-all hover:border-[#6F8974] hover:bg-[#fff] hover:scale-[1.01]"
             >
               {providerLoading === 'Google' ? <Loader2 className="h-5 w-5 animate-spin" /> : <GoogleIcon className="h-5 w-5" />}
               Continue with Google
@@ -328,7 +328,7 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
               type="button"
               onClick={() => handleProviderAuth('Apple')}
               disabled={Boolean(providerLoading)}
-              className="mx-auto flex min-h-10 w-[92%] items-center justify-center gap-3 rounded-xl border border-[#bdcdbf] bg-white/65 px-4 py-2.5 text-sm font-semibold text-[#17221c] transition-all hover:border-[#FF8A3D] hover:bg-[#fff] hover:scale-[1.01]"
+              className="mx-auto flex min-h-10 w-[92%] items-center justify-center gap-3 rounded-xl border border-[#bdcdbf] bg-white/65 px-4 py-2.5 text-sm font-semibold text-[#17221c] transition-all hover:border-[#6F8974] hover:bg-[#fff] hover:scale-[1.01]"
             >
               {providerLoading === 'Apple' ? <Loader2 className="h-5 w-5 animate-spin" /> : <AppleIcon className="h-5 w-5" />}
               Continue with Apple
@@ -337,7 +337,7 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
               type="button"
               onClick={handlePhoneAuth}
               disabled={Boolean(providerLoading)}
-              className="mx-auto flex min-h-10 w-[92%] items-center justify-center gap-3 rounded-xl border border-[#bdcdbf] bg-white/65 px-4 py-2.5 text-sm font-semibold text-[#17221c] transition-all hover:border-[#FF8A3D] hover:bg-[#fff] hover:scale-[1.01]"
+              className="mx-auto flex min-h-10 w-[92%] items-center justify-center gap-3 rounded-xl border border-[#bdcdbf] bg-white/65 px-4 py-2.5 text-sm font-semibold text-[#17221c] transition-all hover:border-[#6F8974] hover:bg-[#fff] hover:scale-[1.01]"
             >
               {providerLoading === 'Phone' ? <Loader2 className="h-5 w-5 animate-spin" /> : <Phone className="h-5 w-5" />}
               Continue with phone number
@@ -371,3 +371,4 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
     </div>
   );
 }
+
