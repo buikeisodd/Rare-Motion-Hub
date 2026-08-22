@@ -369,3 +369,31 @@
   background-color: rgba(239, 68, 68, .10) !important;
   color: #EF4444 !important;
 }
+
+/* Unified botanical modal surfaces */
+.fixed.inset-0[class*="bg-black"] {
+  background-color: rgba(52, 72, 59, .22) !important;
+  backdrop-filter: blur(24px) !important;
+}
+.fixed.inset-0 > [class*="panel-bg"] {
+  background-color: rgba(243, 235, 221, .95) !important;
+  background-image: none !important;
+  color: #34483B !important;
+  border-color: rgba(52, 72, 59, .14) !important;
+  box-shadow: 0 24px 80px rgba(52, 72, 59, .24) !important;
+  backdrop-filter: blur(32px) !important;
+}
+.fixed.inset-0 > [class*="panel-bg"] .text-primary-label {
+  color: #34483B !important;
+}
+.fixed.inset-0 > [class*="panel-bg"] .text-secondary-label {
+  color: #667268 !important;
+}
+.fixed.inset-0 > [class*="panel-bg"] button:hover {
+  background-color: #D8E2D6 !important;
+  color: #34483B !important;
+}
+.fixed.inset-0 > [class*="panel-bg"] button.text-red-500:hover {
+  background-color: rgba(239, 68, 68, .10) !important;
+  color: #EF4444 !important;
+}
