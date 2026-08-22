@@ -553,3 +553,27 @@ header button[aria-label]:hover {
 header button[aria-label]:active {
   transform: translateY(0) scale(.96) !important;
 }
+
+/* Keep folder/project context in the top page band */
+header + nav[aria-label="Breadcrumb"] {
+  position: relative;
+  z-index: 2;
+  margin-top: -0.35rem !important;
+  margin-bottom: 0 !important;
+  padding-top: 0 !important;
+}
+header + nav[aria-label="Breadcrumb"] + main {
+  padding-top: .75rem !important;
+}
+header + nav[aria-label="Breadcrumb"] + div {
+  margin-top: .75rem !important;
+  margin-bottom: 1.5rem !important;
+}
+@media (max-width: 767px) {
+  header + nav[aria-label="Breadcrumb"] {
+    font-size: .75rem !important;
+  }
+  header + nav[aria-label="Breadcrumb"] + main {
+    padding-top: .5rem !important;
+  }
+}
