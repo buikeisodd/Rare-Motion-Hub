@@ -430,3 +430,29 @@
     display: none !important;
   }
 }
+
+/* Compact icon-only add and close controls */
+button[aria-label="Add tracks"] {
+  font-size: 0 !important;
+}
+button[aria-label^="Close"] {
+  font-size: 0 !important;
+}
+
+/* Version titles: animate only when the card supplies an overflowing title */
+@keyframes version-title-marquee {
+  0%, 18% { transform: translateX(0); }
+  72%, 90% { transform: translateX(calc(-100% + 11rem)); }
+  100% { transform: translateX(0); }
+}
+.version-title-marquee {
+  display: block;
+  width: max-content;
+  max-width: none;
+  animation: version-title-marquee 8s ease-in-out infinite;
+  animation-play-state: paused;
+}
+.version-title-marquee:hover,
+.version-title-marquee:focus-visible {
+  animation-play-state: running;
+}
