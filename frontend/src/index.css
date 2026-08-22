@@ -509,3 +509,32 @@ button[aria-label="Add tracks"] {
     bottom: max(1.5rem, env(safe-area-inset-bottom)) !important;
   }
 }
+
+/* Unified play/pause control language */
+button[title="Play"],
+button[title="Pause"],
+button.bg-accent {
+  border-radius: .9rem !important;
+  border: 1px solid rgba(52, 72, 59, .16) !important;
+  box-shadow: 0 8px 18px rgba(52, 72, 59, .14), inset 0 1px 0 rgba(255, 255, 255, .22) !important;
+  transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease !important;
+}
+button[title="Play"]:hover,
+button[title="Pause"]:hover,
+button.bg-accent:hover {
+  transform: translateY(-2px) scale(1.035) !important;
+  box-shadow: 0 12px 24px rgba(52, 72, 59, .20), inset 0 1px 0 rgba(255, 255, 255, .28) !important;
+}
+button[title="Play"]:active,
+button[title="Pause"]:active,
+button.bg-accent:active {
+  transform: translateY(0) scale(.97) !important;
+}
+
+/* Preserve centered transforms on add controls while they use the shared surface */
+button[aria-label="Add tracks"]:hover {
+  transform: translateX(-50%) scale(1.035) !important;
+}
+[class*="fixed"][class*="z-50"] button.bg-accent:hover {
+  transform: scale(1.035) !important;
+}
