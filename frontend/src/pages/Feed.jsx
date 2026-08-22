@@ -255,14 +255,14 @@ export default function Feed({ user, savedOnly = false }) {
         {navItems.map(({ label, icon: Icon, to }) => (
           <Link key={label} to={to} className="flex h-12 w-full items-center whitespace-nowrap rounded-2xl px-3 text-sm font-semibold text-[#A6A09A] transition-all hover:bg-accent/80 hover:backdrop-blur-sm hover:text-[#F3EBDD]" title={label}>
             <Icon className="h-6 w-6 shrink-0" />
-            <span className={`font-display ml-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100 ${label === 'liBraRy' ? 'text-accent' : 'text-[#34483B]'}`}>{label}</span>
+            <span className={`font-display ml-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100 ${label === 'liBraRy' ? 'text-accent' : 'text-[#F3EBDD]'}`}>{label}</span>
           </Link>
         ))}
-        <button onClick={() => setInboxOpen(true)} className="flex h-12 w-full items-center whitespace-nowrap rounded-2xl px-3 text-sm font-semibold text-[#A6A09A] transition-all hover:bg-accent/80 hover:backdrop-blur-sm hover:text-[#F3EBDD]" title="Inbox">
+        <button onClick={() => setInboxOpen(true)} className="flex h-12 w-full items-center whitespace-nowrap rounded-2xl px-3 text-sm font-semibold text-[#F3EBDD] transition-all hover:bg-accent/80 hover:backdrop-blur-sm hover:text-[#F3EBDD]" title="Inbox">
           <MessageCircle className="h-6 w-6 shrink-0" />
           <span className="font-display ml-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100">iNbOx</span>
         </button>
-        <Link to="/settings" className="flex h-12 w-full items-center whitespace-nowrap rounded-2xl px-3 text-sm font-semibold text-[#A6A09A] transition-all hover:bg-accent/80 hover:backdrop-blur-sm hover:text-[#F3EBDD]" title="Settings">
+        <Link to="/settings" className="flex h-12 w-full items-center whitespace-nowrap rounded-2xl px-3 text-sm font-semibold text-[#F3EBDD] transition-all hover:bg-accent/80 hover:backdrop-blur-sm hover:text-[#F3EBDD]" title="Settings">
           <Settings className="h-6 w-6 shrink-0" />
           <span className="font-display ml-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100">sEtTiNgS</span>
         </Link>
