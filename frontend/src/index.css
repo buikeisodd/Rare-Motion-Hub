@@ -81,6 +81,29 @@
     min-width: 0;
   }
 
+  /* Use compact rounded-rectangle controls instead of circular pills for
+     icon actions, with a subtle tactile hover response. */
+  button,
+  a {
+    transition-property: transform, background-color, color, border-color, opacity;
+    transition-duration: 180ms;
+    transition-timing-function: ease-out;
+  }
+
+  button:hover:not(:disabled),
+  a[aria-label]:hover {
+    transform: scale(1.035);
+  }
+
+  button:disabled:hover {
+    transform: none;
+  }
+
+  button.rounded-full,
+  a.rounded-full {
+    border-radius: 12px !important;
+  }
+
   /* Keep interface symbols on the same orange visual system. Text keeps its
      own semantic colors, while SVG icons, including inherited fill-current
      icons and three-dot controls, stay visually consistent everywhere. */
