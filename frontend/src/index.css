@@ -315,3 +315,6 @@
 :root.theme-light * {
   scrollbar-color: rgba(64 64 64 / 0.45) transparent;
 }
+
+.bg-\[\#34483B\] h3, .bg-\[\#34483B\] > div, .bg-\[\#34483B\] button, .bg-\[\#34483B\] span { color: #F3EBDD !important; }
+
