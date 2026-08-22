@@ -605,3 +605,13 @@ button[aria-label="Add tracks"]::after {
 button[aria-label="Add tracks"] svg {
   display: none !important;
 }
+
+/* Exact project action label */
+button[aria-label="Add tracks"] {
+  font-size: 0 !important;
+}
+button[aria-label="Add tracks"]::after {
+  content: "+ Add" !important;
+  font-size: .875rem !important;
+  line-height: 1 !important;
+}
