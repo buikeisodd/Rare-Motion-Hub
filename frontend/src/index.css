@@ -668,3 +668,16 @@ button[aria-label="Add tracks"] {
     height: 2.75rem !important;
   }
 }
+
+/* Remove legacy pseudo-label rules from the rebuilt control */
+.project-add-control::after {
+  content: none !important;
+}
+.project-add-control {
+  text-align: center !important;
+  line-height: 1 !important;
+}
+.project-add-control span {
+  display: inline-block !important;
+  line-height: 1 !important;
+}
