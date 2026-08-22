@@ -826,7 +826,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0e140b] via-[#050505] to-[#050505] text-[#F7F4EC] px-4 py-4 pb-32 sm:px-6 sm:py-6 md:pb-10 lg:px-12">
+    <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#1a0d06] via-[#050505] to-[#050505] text-[#F7F4EC] px-4 py-4 pb-32 sm:px-6 sm:py-6 md:pb-10 lg:px-12">
       {conversionProgress !== null && (
         <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm">
           <div className="w-80 rounded-3xl border border-border bg-shading p-8 shadow-2xl">

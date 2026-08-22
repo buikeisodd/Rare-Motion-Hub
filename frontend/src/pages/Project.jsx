@@ -218,7 +218,7 @@ export default function Project({ user }) {
   const leadTrack = tracks[0];
 
   return (
-    <div className="relative min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0e140b] via-[#050505] to-[#050505] pb-32 text-[#F7F4EC] md:pb-10">
+    <div className="relative min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#1a0d06] via-[#050505] to-[#050505] pb-32 text-[#F7F4EC] md:pb-10">
       {isProjectMenuOpen && (
         <div className="fixed inset-0 z-40" onClick={() => setIsProjectMenuOpen(false)} />
       )}

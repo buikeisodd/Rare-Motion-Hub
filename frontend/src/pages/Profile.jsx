@@ -88,7 +88,7 @@ export default function Profile({ user, onUserUpdate }) {
   };
 
   if (!profile) return (
-    <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0e140b] via-[#050505] to-[#050505] px-4 pb-32 text-[#F7F4EC] sm:px-8 md:pb-20" role="status" aria-label="Loading profile">
+    <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#1a0d06] via-[#050505] to-[#050505] px-4 pb-32 text-[#F7F4EC] sm:px-8 md:pb-20" role="status" aria-label="Loading profile">
       <div className="mx-auto max-w-5xl animate-pulse">
         <header className="flex items-center justify-between py-4">
           <div className="h-10 w-10 rounded-full bg-shading" />
@@ -114,7 +114,7 @@ export default function Profile({ user, onUserUpdate }) {
   );
 
   return (
-    <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0e140b] via-[#050505] to-[#050505] px-4 pb-32 text-[#F7F4EC] sm:px-8 md:pb-20">
+    <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#1a0d06] via-[#050505] to-[#050505] px-4 pb-32 text-[#F7F4EC] sm:px-8 md:pb-20">
       <header className="mx-auto flex max-w-5xl items-center justify-between py-4">
         <Link to="/feed" className="grid h-10 w-10 place-items-center rounded-full bg-shading hover:bg-highlight" aria-label="Back"><ArrowLeft className="h-5 w-5" /></Link>
         <h1 className="font-display text-base font-bold tracking-wider text-[#F7F4EC]">pRoFiLe</h1>
