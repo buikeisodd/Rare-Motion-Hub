@@ -244,7 +244,7 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
                 className="h-11 w-full rounded-xl bg-white/80 border border-[#bdcdbf] pl-11 pr-12 text-left text-sm font-medium text-[#17221c] placeholder:text-[#718078] focus:outline-none focus:border-[#FF8A3D] focus:ring-1 focus:ring-[#FF8A3D] transition-all"
                 required
               />
-              <button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#A6A09A] transition-colors hover:text-[#F7F4EC]" aria-label={showPassword ? 'Hide password' : 'Show password'}>
+              <button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#A6A09A] transition-colors hover:text-[#34483B]" aria-label={showPassword ? 'Hide password' : 'Show password'}>
                 {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>
             </label>
@@ -267,10 +267,10 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirm password"
-                className="h-12 w-full rounded-xl bg-[#171717] border border-[rgba(255,255,255,.09)] pl-11 pr-12 text-left text-sm font-medium text-[#F7F4EC] placeholder:text-[#77736E] focus:outline-none focus:border-[#FF8A3D] focus:ring-1 focus:ring-[#FF8A3D] transition-all"
+                className="h-12 w-full rounded-xl bg-[#171717] border border-[rgba(255,255,255,.09)] pl-11 pr-12 text-left text-sm font-medium text-[#34483B] placeholder:text-[#77736E] focus:outline-none focus:border-[#FF8A3D] focus:ring-1 focus:ring-[#FF8A3D] transition-all"
                 required
               />
-              <button type="button" onClick={() => setShowConfirmPassword((value) => !value)} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#A6A09A] transition-colors hover:text-[#F7F4EC]" aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}>
+              <button type="button" onClick={() => setShowConfirmPassword((value) => !value)} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#A6A09A] transition-colors hover:text-[#34483B]" aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}>
                 {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>
             </label>}
@@ -302,9 +302,9 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
             <button
               type="submit"
               disabled={loading || lockCountdown > 0}
-              className="mx-auto flex h-11 w-[92%] items-center justify-center rounded-xl bg-[#FF8A3D] text-sm font-bold text-[#050505] transition-all hover:bg-[#FFB067] active:scale-[0.99] disabled:opacity-50 shadow-md mt-1"
+              className="mx-auto flex h-11 w-[92%] items-center justify-center rounded-xl bg-[#FF8A3D] text-sm font-bold text-[#F3EBDD] transition-all hover:bg-[#FFB067] active:scale-[0.99] disabled:opacity-50 shadow-md mt-1"
             >
-              {loading ? <Loader2 className="w-5 h-5 animate-spin text-[#050505]" /> : (resetMode ? 'Reset password' : isRegister ? 'Create account' : 'Sign in')}
+              {loading ? <Loader2 className="w-5 h-5 animate-spin text-[#F3EBDD]" /> : (resetMode ? 'Reset password' : isRegister ? 'Create account' : 'Sign in')}
             </button>
           </form>
 

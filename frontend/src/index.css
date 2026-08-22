@@ -10,8 +10,8 @@
     --rmh-panel-soft: #E5DFD2;
     --rmh-panel-hover: #D8D8C9;
 
-    --rmh-ink: #171714;
-    --rmh-ink-strong: #0B0B09;
+    --rmh-ink: #34483B;
+    --rmh-ink-strong: #22352A;
     --rmh-muted: #667268;
     --rmh-subtle: #7D897F;
 
@@ -34,7 +34,7 @@
 
     /* Legacy mapping helpers */
     --color-primary-background: 243 235 221;
-    --color-primary-label: 23 23 20;
+    --color-primary-label: 52 72 59;
     --color-secondary-label: 102 114 104;
     --color-shading: 240 235 225;
     --color-border: 190 193 180;
@@ -47,15 +47,15 @@
     --rmh-panel: #F0EBE1;
     --rmh-panel-soft: #E5DFD2;
     --rmh-panel-hover: #D8D8C9;
-    --rmh-ink: #171714;
-    --rmh-ink-strong: #0B0B09;
+    --rmh-ink: #34483B;
+    --rmh-ink-strong: #22352A;
     --rmh-muted: #667268;
     --rmh-subtle: #7D897F;
     --rmh-accent: #6F8974;
     --rmh-accent-soft: rgba(111,137,116,.18);
     --rmh-accent-hover: #9BAF9B;
     --color-primary-background: 243 235 221;
-    --color-primary-label: 23 23 20;
+    --color-primary-label: 52 72 59;
     --color-secondary-label: 102 114 104;
     --color-shading: 240 235 225;
     --color-border: 190 193 180;

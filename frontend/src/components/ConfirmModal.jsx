@@ -32,7 +32,7 @@ export default function ConfirmModal({ isOpen, onClose, onConfirm, title, messag
               <button onClick={onClose} className="rounded-xl px-4 py-2 text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
                 Cancel
               </button>
-              <button onClick={onConfirm} className={`rounded-xl px-4 py-2 text-sm font-semibold text-white transition-colors hover:opacity-90 ${confirmColor}`}>
+              <button onClick={onConfirm} className={`rounded-xl px-4 py-2 text-sm font-semibold text-[#34483B] transition-colors hover:opacity-90 ${confirmColor}`}>
                 {confirmText}
               </button>
             </div>

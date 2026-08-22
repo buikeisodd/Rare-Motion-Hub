@@ -93,13 +93,13 @@ export default function ServerStatus() {
       {c.icon}
       <div>
         <p className={`text-xs font-semibold ${c.text}`}>{c.label}</p>
-        {c.sub && <p className="text-[10px] text-white/40">{c.sub}</p>}
+        {c.sub && <p className="text-[10px] text-[#34483B]/40">{c.sub}</p>}
       </div>
       {status !== 'online' && (
         <button
           onClick={retry}
           disabled={retrying}
-          className="ml-2 rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-semibold text-white/70 hover:bg-white/20 transition-colors disabled:opacity-50"
+          className="ml-2 rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-semibold text-[#34483B]/70 hover:bg-white/20 transition-colors disabled:opacity-50"
         >
           {retrying ? 'Checking…' : 'Retry'}
         </button>

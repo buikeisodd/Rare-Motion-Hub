@@ -153,11 +153,11 @@ export default function CoverArtPicker({ isOpen, onClose, onSelect, projectId, u
                     </div>
                   )}
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <ImageIcon className="w-7 h-7 text-white" />
+                    <ImageIcon className="w-7 h-7 text-[#34483B]" />
                   </div>
                   <button
                     onClick={e => handleDelete(e, cover)}
-                    className="absolute top-2 right-2 p-1.5 bg-black/60 text-white rounded-full opacity-0 group-hover:opacity-100 hover:bg-red-500 transition-all"
+                    className="absolute top-2 right-2 p-1.5 bg-black/60 text-[#34483B] rounded-full opacity-0 group-hover:opacity-100 hover:bg-red-500 transition-all"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>

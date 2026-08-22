@@ -292,8 +292,8 @@ export default function Project({ user }) {
               onClick={() => isOwner && setIsCoverPickerOpen(true)}
               disabled={!isOwner}
             >
-              <ImageIcon className="w-8 h-8 text-white mb-2" />
-              <span className="text-white text-sm font-medium">Change Cover</span>
+              <ImageIcon className="w-8 h-8 text-[#34483B] mb-2" />
+              <span className="text-[#34483B] text-sm font-medium">Change Cover</span>
             </button>
           </div>
         </section>

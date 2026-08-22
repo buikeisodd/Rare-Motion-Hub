@@ -43,7 +43,7 @@ function WelcomeBack({ user, onDone }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#080909] text-[#F7F4EC] px-6 py-12 flex flex-col relative overflow-hidden">
+    <div className="min-h-screen bg-[#080909] text-[#34483B] px-6 py-12 flex flex-col relative overflow-hidden">
       <div className="pointer-events-none absolute -left-32 top-[-12rem] h-[28rem] w-[28rem] rounded-full bg-[#FF8A3D]/[0.06] blur-3xl" />
       <main className="flex-1 flex items-center justify-center">
         <div className="w-full max-w-xl text-center animate-welcome-rise">
@@ -75,7 +75,7 @@ function WelcomeAnimation({ user, onDone }) {
   }, [navigate, onDone]);
 
   return (
-    <div className="min-h-screen bg-[#080909] text-[#F7F4EC] px-6 py-12 flex flex-col relative overflow-hidden">
+    <div className="min-h-screen bg-[#080909] text-[#34483B] px-6 py-12 flex flex-col relative overflow-hidden">
       <div className="pointer-events-none absolute -right-32 bottom-[-12rem] h-[28rem] w-[28rem] rounded-full bg-[#8DEBFF]/[0.05] blur-3xl" />
       <main className="flex-1 flex items-center justify-center">
         <div className="text-center animate-welcome-rise">

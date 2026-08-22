@@ -74,7 +74,7 @@ export function LibraryProject({ project, tracks, onDragStart, isDragging, onDel
             />
           ) : (
             <div className="flex h-full items-center justify-center">
-              <Disc3 className="h-12 w-12 text-white/40 drop-shadow-lg" />
+              <Disc3 className="h-12 w-12 text-[#34483B]/40 drop-shadow-lg" />
             </div>
           )}
           {leadTrack && (
@@ -247,7 +247,7 @@ export function LibraryFolder({ folder, projects, tracks, onSave, onDrop, onDrag
                 ) : (
                   <div
                     key={p.id}
-                    className="flex h-full w-full items-center justify-center rounded-xl bg-black/30 backdrop-blur-sm text-white/50"
+                    className="flex h-full w-full items-center justify-center rounded-xl bg-black/30 backdrop-blur-sm text-[#34483B]/50"
                     style={{ backgroundImage: gradientFor(p.id) }}
                   >
                     <Disc3 className="h-6 w-6 mix-blend-overlay" />
@@ -508,7 +508,7 @@ function EditProfileModal({ isOpen, user, onClose, onSave, saving, error }) {
                 ) : (
                   <ProfileAvatar user={{ name }} size="h-24 w-24 text-3xl" />
                 )}
-                <span className="absolute inset-0 grid place-items-center bg-black/0 text-white opacity-0 transition-opacity hover:bg-black/40 hover:opacity-100">
+                <span className="absolute inset-0 grid place-items-center bg-black/0 text-[#34483B] opacity-0 transition-opacity hover:bg-black/40 hover:opacity-100">
                   <UploadCloud className="h-7 w-7" />
                 </span>
               </button>
@@ -857,7 +857,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
       )}
       <header className="sticky top-0 z-50 flex items-center justify-between gap-3 bg-transparent pb-4 pt-2">
         <div className="flex min-w-0 max-w-lg flex-1 items-center gap-4">
-          <h1 className="font-display text-2xl font-bold tracking-wider text-[#F7F4EC] shrink-0">liBraRy</h1>
+          <h1 className="font-display text-2xl font-bold tracking-wider text-[#34483B] shrink-0">liBraRy</h1>
         </div>
 
         <div className="flex shrink-0 items-center gap-3">

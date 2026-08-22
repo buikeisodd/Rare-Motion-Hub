@@ -50,15 +50,15 @@ function QueuePanel({ playQueue, queueIndex, onSelect, onClose }) {
   return (
     <div className="rounded-2xl bg-[#1e1e1e] border border-white/10 p-3 shadow-2xl max-h-56 flex flex-col">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-bold text-white/60 uppercase tracking-wider">Queue · {playQueue.length}</span>
-        <button onClick={onClose} className="text-white/40 hover:text-white"><X className="h-3.5 w-3.5" /></button>
+        <span className="text-xs font-bold text-[#34483B]/60 uppercase tracking-wider">Queue · {playQueue.length}</span>
+        <button onClick={onClose} className="text-[#34483B]/40 hover:text-[#34483B]"><X className="h-3.5 w-3.5" /></button>
       </div>
       <div className="overflow-y-auto hide-scrollbar space-y-0.5">
         {playQueue.length === 0
-          ? <p className="text-xs text-white/30 px-2 py-4 text-center">No tracks in queue</p>
+          ? <p className="text-xs text-[#34483B]/30 px-2 py-4 text-center">No tracks in queue</p>
           : playQueue.map((t, i) => (
             <button key={t.id + i} onClick={() => onSelect(t)}
-              className={`w-full text-left px-2 py-1.5 rounded-lg text-xs transition-colors ${i === queueIndex ? 'bg-white/20 text-white font-semibold' : 'text-white/55 hover:bg-white/10 hover:text-white'}`}>
+              className={`w-full text-left px-2 py-1.5 rounded-lg text-xs transition-colors ${i === queueIndex ? 'bg-white/20 text-[#34483B] font-semibold' : 'text-[#34483B]/55 hover:bg-white/10 hover:text-[#34483B]'}`}>
               <div className="truncate">{t.title}</div>
               <div className="truncate text-[10px] opacity-60">{t.artist || t.producer}</div>
             </button>
@@ -72,25 +72,25 @@ function SettingsPanel({ playbackRate, setRate, pitchShift, setPitch, onClose, c
   return (
     <div className={`rounded-2xl bg-[#1e1e1e] border border-white/10 shadow-2xl ${compact ? 'p-3' : 'p-4'}`}>
       <div className="flex items-center justify-between mb-2">
-        <span className={`font-bold text-white/60 uppercase tracking-wider ${compact ? 'text-[10px]' : 'text-xs'}`}>Playback</span>
-        <button onClick={onClose} className="text-white/40 hover:text-white"><X className={compact ? 'h-3 w-3' : 'h-3.5 w-3.5'} /></button>
+        <span className={`font-bold text-[#34483B]/60 uppercase tracking-wider ${compact ? 'text-[10px]' : 'text-xs'}`}>Playback</span>
+        <button onClick={onClose} className="text-[#34483B]/40 hover:text-[#34483B]"><X className={compact ? 'h-3 w-3' : 'h-3.5 w-3.5'} /></button>
       </div>
       <div className="space-y-3">
         <div>
-          <div className={`flex justify-between text-white/50 mb-1 ${compact ? 'text-[10px]' : 'text-xs'}`}>
+          <div className={`flex justify-between text-[#34483B]/50 mb-1 ${compact ? 'text-[10px]' : 'text-xs'}`}>
             <span className="flex items-center gap-1"><Activity className="h-3 w-3" /> Speed</span>
             <span className="font-mono">{playbackRate.toFixed(2)}x</span>
           </div>
           <input type="range" min="0.5" max="2" step="0.05" value={playbackRate} onChange={e => setRate(parseFloat(e.target.value))} className="w-full accent-white" />
-          <button onClick={() => setRate(1)} className="mt-0.5 text-[10px] text-white/35 hover:text-white">Reset</button>
+          <button onClick={() => setRate(1)} className="mt-0.5 text-[10px] text-[#34483B]/35 hover:text-[#34483B]">Reset</button>
         </div>
         <div>
-          <div className={`flex justify-between text-white/50 mb-1 ${compact ? 'text-[10px]' : 'text-xs'}`}>
+          <div className={`flex justify-between text-[#34483B]/50 mb-1 ${compact ? 'text-[10px]' : 'text-xs'}`}>
             <span className="flex items-center gap-1"><Settings2 className="h-3 w-3" /> Pitch</span>
             <span className="font-mono">{pitchShift > 0 ? '+' : ''}{pitchShift} st</span>
           </div>
           <input type="range" min="-7" max="7" step="1" value={pitchShift} onChange={e => setPitch(parseInt(e.target.value, 10))} className="w-full accent-white" />
-          <button onClick={() => setPitch(0)} className="mt-0.5 text-[10px] text-white/35 hover:text-white">Reset</button>
+          <button onClick={() => setPitch(0)} className="mt-0.5 text-[10px] text-[#34483B]/35 hover:text-[#34483B]">Reset</button>
         </div>
       </div>
     </div>
@@ -205,16 +205,16 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
 
         {/* Title + progress */}
         <div className="relative z-10 min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-3"><MarqueeText text={currentTrack.title} className="text-sm font-semibold text-white" /><span className="shrink-0 text-[10px] font-mono text-white/45">{fmt(progress)} / {fmt(duration)}</span></div>
+          <div className="flex items-center justify-between gap-3"><MarqueeText text={currentTrack.title} className="text-sm font-semibold text-[#34483B]" /><span className="shrink-0 text-[10px] font-mono text-[#34483B]/45">{fmt(progress)} / {fmt(duration)}</span></div>
           <ProgressBar progress={progress} duration={duration} onSeek={seek} className="mt-2 h-7 w-full" />
         </div>
 
         {/* Core controls */}
         <div className="relative z-10 flex shrink-0 items-center gap-0.5 text-accent sm:gap-1" onClick={(event) => event.stopPropagation()}>
-          <button title="Shuffle" onClick={toggleShuffle} className={`hidden h-8 w-8 place-items-center rounded-full sm:grid ${isShuffled ? 'text-white' : 'text-white/30 hover:text-white/60'}`}>
+          <button title="Shuffle" onClick={toggleShuffle} className={`hidden h-8 w-8 place-items-center rounded-full sm:grid ${isShuffled ? 'text-[#34483B]' : 'text-[#34483B]/30 hover:text-[#34483B]/60'}`}>
             <Shuffle className="h-4 w-4" />
           </button>
-          <button title="Previous" onClick={handlePrev} className="hidden h-8 w-8 place-items-center rounded-full text-white/70 transition-colors hover:text-white sm:grid">
+          <button title="Previous" onClick={handlePrev} className="hidden h-8 w-8 place-items-center rounded-full text-[#34483B]/70 transition-colors hover:text-[#34483B] sm:grid">
             <SkipBack className="h-4 w-4 fill-current" />
           </button>
           <button title={isPlaying ? 'Pause' : 'Play'} onClick={() => setIsPlaying(p => !p)} className="h-11 w-11 grid place-items-center rounded-full bg-accent text-primary-background hover:bg-accent-hover hover:scale-105 transition-transform">
@@ -222,23 +222,23 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
               ? <div className="h-3 w-3 animate-spin rounded-full border-2 border-black border-t-transparent" />
               : isPlaying ? <Pause className="h-5 w-5 fill-current" /> : <Play className="h-5 w-5 fill-current ml-0.5" />}
           </button>
-          <button title="Next" onClick={handleNext} className="hidden h-8 w-8 place-items-center rounded-full text-white/70 transition-colors hover:text-white sm:grid">
+          <button title="Next" onClick={handleNext} className="hidden h-8 w-8 place-items-center rounded-full text-[#34483B]/70 transition-colors hover:text-[#34483B] sm:grid">
             <SkipForward className="h-4 w-4 fill-current" />
           </button>
-          <button onClick={() => setRepeatMode(m => (m+1)%3)} className={`hidden h-7 w-7 place-items-center rounded-full sm:grid ${repeatMode > 0 ? 'text-white' : 'text-white/30 hover:text-white/60'}`}>
+          <button onClick={() => setRepeatMode(m => (m+1)%3)} className={`hidden h-7 w-7 place-items-center rounded-full sm:grid ${repeatMode > 0 ? 'text-[#34483B]' : 'text-[#34483B]/30 hover:text-[#34483B]/60'}`}>
             {repeatMode === 2 ? <Repeat1 className="h-3.5 w-3.5" /> : <Repeat className="h-3.5 w-3.5" />}
           </button>
         </div>
 
         {/* Extra controls */}
         <div className="relative z-10 hidden items-center gap-0.5 text-accent/75 sm:flex shrink-0" onClick={(event) => event.stopPropagation()}>
-          <button onClick={() => { setShowQueue(q => !q); setShowSettings(false); }} className={`relative h-7 w-7 grid place-items-center rounded-full transition-colors ${showQueue ? 'text-white bg-white/15' : 'hover:text-white'}`}>
+          <button onClick={() => { setShowQueue(q => !q); setShowSettings(false); }} className={`relative h-7 w-7 grid place-items-center rounded-full transition-colors ${showQueue ? 'text-[#34483B] bg-white/15' : 'hover:text-[#34483B]'}`}>
             <ListMusic className="h-3.5 w-3.5" />
           </button>
-          <button onClick={() => { setShowSettings(s => !s); setShowQueue(false); }} className={`h-7 w-7 grid place-items-center rounded-full transition-colors ${showSettings ? 'text-white bg-white/15' : 'hover:text-white'}`}>
+          <button onClick={() => { setShowSettings(s => !s); setShowQueue(false); }} className={`h-7 w-7 grid place-items-center rounded-full transition-colors ${showSettings ? 'text-[#34483B] bg-white/15' : 'hover:text-[#34483B]'}`}>
             <Activity className="h-3.5 w-3.5" />
           </button>
-          <button title={isMuted ? 'Unmute' : 'Mute'} onClick={() => handleMute(!isMuted)} className="h-7 w-7 grid place-items-center rounded-full hover:text-white">
+          <button title={isMuted ? 'Unmute' : 'Mute'} onClick={() => handleMute(!isMuted)} className="h-7 w-7 grid place-items-center rounded-full hover:text-[#34483B]">
             {isMuted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
           </button>
           <input aria-label="Volume" type="range" min="0" max="1" step="0.01" value={isMuted ? 0 : volume} onChange={e => handleVolume(parseFloat(e.target.value))} className="h-1 w-16 accent-accent" />
@@ -305,33 +305,33 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
         <div className="relative z-10 p-3">
           <div className="flex items-center gap-2 mb-2">
             <div className="min-w-0 flex-1">
-              <MarqueeText text={currentTrack.title} className="text-xs font-bold text-white" />
-              <MarqueeText text={isBuffering && isPlaying ? 'Buffering…' : (projectName || currentTrack.artist || 'Starlight Station')} className="text-[10px] text-white/50 mt-0.5" />
+              <MarqueeText text={currentTrack.title} className="text-xs font-bold text-[#34483B]" />
+              <MarqueeText text={isBuffering && isPlaying ? 'Buffering…' : (projectName || currentTrack.artist || 'Starlight Station')} className="text-[10px] text-[#34483B]/50 mt-0.5" />
             </div>
             {!hideCover && collapsed && (
-              <button onClick={() => setCollapsed(false)} className="shrink-0 text-white/40 hover:text-white"><ChevronUp className="h-3.5 w-3.5" /></button>
+              <button onClick={() => setCollapsed(false)} className="shrink-0 text-[#34483B]/40 hover:text-[#34483B]"><ChevronUp className="h-3.5 w-3.5" /></button>
             )}
           </div>
           <ProgressBar progress={progress} duration={duration} onSeek={seek} className="h-1 w-full mb-1" />
-          <div className="flex justify-between text-[9px] font-mono text-white/35 mb-3">
+          <div className="flex justify-between text-[9px] font-mono text-[#34483B]/35 mb-3">
             <span>{fmt(progress)}</span>
             <span>-{fmt(Math.max(0, duration - progress))}</span>
           </div>
           <div className="flex items-center justify-between text-accent mb-2">
-            <button onClick={toggleShuffle} className={`h-7 w-7 grid place-items-center rounded-full ${isShuffled ? 'text-white' : 'text-white/30 hover:text-white/60'}`}><Shuffle className="h-3.5 w-3.5" /></button>
-            <button onClick={handlePrev} className="h-8 w-8 grid place-items-center rounded-full text-white/70 hover:text-white transition-colors"><SkipBack className="h-4 w-4 fill-current" /></button>
+            <button onClick={toggleShuffle} className={`h-7 w-7 grid place-items-center rounded-full ${isShuffled ? 'text-[#34483B]' : 'text-[#34483B]/30 hover:text-[#34483B]/60'}`}><Shuffle className="h-3.5 w-3.5" /></button>
+            <button onClick={handlePrev} className="h-8 w-8 grid place-items-center rounded-full text-[#34483B]/70 hover:text-[#34483B] transition-colors"><SkipBack className="h-4 w-4 fill-current" /></button>
             <button onClick={() => setIsPlaying(p => !p)} className="h-9 w-9 grid place-items-center rounded-full bg-accent text-primary-background hover:bg-accent-hover hover:scale-105 transition-transform">
               {isBuffering && isPlaying ? <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-black border-t-transparent" />
                 : isPlaying ? <Pause className="h-4 w-4 fill-current" /> : <Play className="h-4 w-4 fill-current ml-0.5" />}
             </button>
-            <button onClick={handleNext} className="h-8 w-8 grid place-items-center rounded-full text-white/70 hover:text-white transition-colors"><SkipForward className="h-4 w-4 fill-current" /></button>
-            <button onClick={() => setRepeatMode(m => (m+1)%3)} className={`h-7 w-7 grid place-items-center rounded-full ${repeatMode > 0 ? 'text-white' : 'text-white/30 hover:text-white/60'}`}>
+            <button onClick={handleNext} className="h-8 w-8 grid place-items-center rounded-full text-[#34483B]/70 hover:text-[#34483B] transition-colors"><SkipForward className="h-4 w-4 fill-current" /></button>
+            <button onClick={() => setRepeatMode(m => (m+1)%3)} className={`h-7 w-7 grid place-items-center rounded-full ${repeatMode > 0 ? 'text-[#34483B]' : 'text-[#34483B]/30 hover:text-[#34483B]/60'}`}>
               {repeatMode === 2 ? <Repeat1 className="h-3.5 w-3.5" /> : <Repeat className="h-3.5 w-3.5" />}
             </button>
           </div>
           {!minimal && <div className="flex items-center justify-between pt-2 border-t border-white/10">
-            <button onClick={() => { setShowSettings(s => !s); setShowQueue(false); }} className={`h-6 w-6 grid place-items-center rounded-full ${showSettings ? 'text-white bg-white/20' : 'text-white/35 hover:text-white'}`}><Activity className="h-3.5 w-3.5" /></button>
-            <button onClick={() => { setShowQueue(q => !q); setShowSettings(false); }} className={`relative h-6 w-6 grid place-items-center rounded-full ${showQueue ? 'text-white bg-white/20' : 'text-white/35 hover:text-white'}`}>
+            <button onClick={() => { setShowSettings(s => !s); setShowQueue(false); }} className={`h-6 w-6 grid place-items-center rounded-full ${showSettings ? 'text-[#34483B] bg-white/20' : 'text-[#34483B]/35 hover:text-[#34483B]'}`}><Activity className="h-3.5 w-3.5" /></button>
+            <button onClick={() => { setShowQueue(q => !q); setShowSettings(false); }} className={`relative h-6 w-6 grid place-items-center rounded-full ${showQueue ? 'text-[#34483B] bg-white/20' : 'text-[#34483B]/35 hover:text-[#34483B]'}`}>
               <ListMusic className="h-3.5 w-3.5" />
               {playQueue.length > 0 && <span className="absolute -right-1 -top-1 h-3 min-w-3 grid place-items-center rounded-full bg-white text-black text-[7px] font-bold">{playQueue.length}</span>}
             </button>
@@ -341,10 +341,10 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
               </button>
               <input type="range" min="0" max="1" step="0.01" value={isMuted ? 0 : volume} onChange={e => handleVolume(parseFloat(e.target.value))} className="w-14 accent-white h-1" />
             </div>
-            <button onClick={() => onDismiss ? onDismiss() : null} className="text-white/35 hover:text-red-400 transition-colors"><X className="h-3.5 w-3.5" /></button>
+            <button onClick={() => onDismiss ? onDismiss() : null} className="text-[#34483B]/35 hover:text-red-400 transition-colors"><X className="h-3.5 w-3.5" /></button>
           </div>}
           {minimal && <div className="flex items-center justify-end gap-3 border-t border-white/10 pt-2">
-            <button onClick={() => handleMute(!isMuted)} className="text-white/60 hover:text-white" aria-label={isMuted ? 'Unmute' : 'Mute'}>
+            <button onClick={() => handleMute(!isMuted)} className="text-[#34483B]/60 hover:text-[#34483B]" aria-label={isMuted ? 'Unmute' : 'Mute'}>
               {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
             </button>
             <input aria-label="Volume" type="range" min="0" max="1" step="0.01" value={isMuted ? 0 : volume} onChange={e => handleVolume(parseFloat(e.target.value))} className="w-24 accent-white h-1" />

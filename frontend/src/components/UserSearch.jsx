@@ -66,7 +66,7 @@ export default function UserSearch({ currentUser, onSelectUser }) {
           }}
           onFocus={() => setIsOpen(true)}
           placeholder="sEaRcH uSeRs..."
-          className="h-11 w-full rounded-2xl border border-white/10 bg-shading/60 pl-11 pr-10 text-sm text-[#F7F4EC] placeholder-secondary-label outline-none backdrop-blur-md transition-all focus:border-[#FF8A3D]/50 focus:bg-shading/90"
+          className="h-11 w-full rounded-2xl border border-white/10 bg-shading/60 pl-11 pr-10 text-sm text-[#34483B] placeholder-secondary-label outline-none backdrop-blur-md transition-all focus:border-[#FF8A3D]/50 focus:bg-shading/90"
         />
         {query && (
           <button
@@ -74,7 +74,7 @@ export default function UserSearch({ currentUser, onSelectUser }) {
               setQuery('');
               setUsers([]);
             }}
-            className="absolute right-3 grid h-6 w-6 place-items-center rounded-full text-secondary-label hover:bg-highlight hover:text-white"
+            className="absolute right-3 grid h-6 w-6 place-items-center rounded-full text-secondary-label hover:bg-highlight hover:text-[#34483B]"
           >
             <X className="h-3.5 w-3.5" />
           </button>
@@ -109,7 +109,7 @@ export default function UserSearch({ currentUser, onSelectUser }) {
                       className="flex items-center justify-between rounded-2xl p-2.5 transition-colors hover:bg-highlight/60 group"
                     >
                       <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-highlight text-sm font-semibold text-[#F7F4EC]">
+                        <div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-highlight text-sm font-semibold text-[#34483B]">
                           {person.avatarUrl ? (
                             <img src={person.avatarUrl} alt="" className="h-full w-full object-cover" />
                           ) : (
@@ -117,7 +117,7 @@ export default function UserSearch({ currentUser, onSelectUser }) {
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-semibold text-[#F7F4EC] group-hover:underline">
+                          <p className="truncate text-sm font-semibold text-[#34483B] group-hover:underline">
                             {person.name}
                           </p>
                           <p className="truncate text-xs text-secondary-label">

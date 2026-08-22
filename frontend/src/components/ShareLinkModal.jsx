@@ -125,7 +125,7 @@ export default function ShareLinkModal({ isOpen, onClose, type, targetId, userId
                   <button
                     onClick={handleCopy}
                     className={`flex items-center justify-center rounded-lg p-2 transition-colors ${
-                      copied ? 'bg-green-500 text-white' : 'bg-highlight text-primary-label hover:bg-border'
+                      copied ? 'bg-green-500 text-[#34483B]' : 'bg-highlight text-primary-label hover:bg-border'
                     }`}
                   >
                     {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
