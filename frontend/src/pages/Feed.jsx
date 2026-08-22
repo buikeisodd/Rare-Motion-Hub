@@ -247,8 +247,8 @@ export default function Feed({ user, savedOnly = false }) {
   const navItems = [{ label: 'pRoFiLe', icon: UserRound, to: '/profile/' + user.id }, { label: 'sEaRcH', icon: Search, to: '/search' }, { label: 'sAvEd', icon: Bookmark, to: '/saved' }, { label: 'liBraRy', icon: Library, to: '/library' }];
   return <div className="min-h-screen bg-primary-background pb-24 text-primary-label md:pb-0">
     <aside className="group fixed bottom-4 left-4 top-4 z-40 hidden w-20 flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#0a0a0a]/80 px-3 py-6 shadow-2xl backdrop-blur-2xl transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:w-64 hover:border-white/20 lg:flex">
-      <Link to="/feed" className="mb-8 flex h-12 w-full shrink-0 items-center overflow-hidden whitespace-nowrap px-2.5" aria-label="Feed">
-        <StarlightMark className="h-8 w-8 shrink-0 rounded-lg mix-blend-multiply object-cover" />
+      <Link to="/feed" className="mb-8 flex h-14 w-full shrink-0 items-center overflow-hidden whitespace-nowrap rounded-2xl bg-[#34483B] px-2.5 transition-colors hover:bg-accent" aria-label="Feed">
+        <StarlightMark className="h-10 w-10 shrink-0 rounded-lg object-cover mix-blend-multiply" />
         <div className="ml-4 flex flex-col leading-none opacity-0 transition-opacity duration-300 group-hover:opacity-100">
         </div>
       </Link>
@@ -279,7 +279,7 @@ export default function Feed({ user, savedOnly = false }) {
         <ArrowLeft className="h-4 w-4" />
       </Link>
       <Link to="/feed" className="grid h-9 w-9 place-items-center rounded-full bg-shading text-[#34483B] hover:bg-highlight" aria-label="Feed">
-        <StarlightMark className="h-6 w-6 rounded-md mix-blend-multiply object-cover" />
+        <StarlightMark className="h-8 w-8 rounded-md object-cover mix-blend-multiply" />
       </Link>
       <Link to="/settings" className="grid h-9 w-9 place-items-center rounded-full bg-shading hover:bg-highlight" aria-label="Open settings">
         <Settings className="h-4 w-4" />
@@ -309,5 +309,6 @@ export default function Feed({ user, savedOnly = false }) {
     <ChatInbox user={user} isOpen={inboxOpen} onToggle={() => setInboxOpen((value) => !value)} />
   </div>;
 }
+
 
 
