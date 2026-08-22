@@ -703,3 +703,9 @@ button[aria-label="Add tracks"] {
 .library-folder-card:hover > a > div:first-child {
   box-shadow: inset 0 0 0 1px rgba(111, 137, 116, .48), 0 16px 30px rgba(52, 72, 59, .18);
 }
+
+/* Comfortable inset around library card content */
+.library-project-card > a > div.mt-4,
+.library-folder-card > div.mt-4 {
+  padding: 0 .35rem .35rem;
+}
