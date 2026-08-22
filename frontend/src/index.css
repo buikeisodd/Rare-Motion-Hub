@@ -478,3 +478,19 @@ button[aria-label="Add tracks"] {
   right: auto !important;
   transform: translateX(-50%) !important;
 }
+
+/* Match project add control responsiveness to library control */
+button[aria-label="Add tracks"] {
+  position: fixed !important;
+  bottom: max(1rem, env(safe-area-inset-bottom)) !important;
+  left: 50% !important;
+  right: auto !important;
+  display: grid !important;
+  place-items: center !important;
+  width: clamp(2.75rem, 8vw, 3rem) !important;
+  height: clamp(2.75rem, 8vw, 3rem) !important;
+  min-width: 2.75rem !important;
+  min-height: 2.75rem !important;
+  padding: 0 !important;
+  transform: translateX(-50%) !important;
+}
