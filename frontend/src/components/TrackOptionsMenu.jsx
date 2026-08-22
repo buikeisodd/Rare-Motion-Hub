@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import {
@@ -237,7 +237,7 @@ function TrackNotesModal({ isOpen, onClose, track, userId, onSaved }) {
           </div>
           <div className="flex items-center gap-3">
             <span className={`text-[10px] font-bold uppercase tracking-widest transition-colors ${saving ? 'text-amber-400' : saved ? 'text-green-400' : 'text-secondary-label/50'}`}>
-              {saving ? '● Saving' : saved ? '✓ Saved' : '● Auto-save'}
+              {saving ? 'â— Saving' : saved ? 'âœ“ Saved' : 'â— Auto-save'}
             </span>
             <button onClick={onClose} className="grid h-8 w-8 place-items-center rounded-xl bg-shading text-secondary-label hover:bg-highlight transition-colors">
               <X className="h-4 w-4" />
@@ -268,7 +268,7 @@ function TrackNotesModal({ isOpen, onClose, track, userId, onSaved }) {
           <textarea
             value={notes}
             onChange={e => autoSave(e.target.value)}
-            placeholder={"Write your ideas, lyrics, mix notes…"}
+            placeholder={"Write your ideas, lyrics, mix notesâ€¦"}
             className="relative w-full h-full resize-none bg-transparent pl-20 pr-6 pt-14 pb-6 text-sm font-semibold text-primary-label placeholder:text-secondary-label/30 outline-none z-10"
             style={{ lineHeight: '34px', fontFamily: "'DM Sans', sans-serif", letterSpacing: '0.01em' }}
           />
@@ -427,7 +427,7 @@ function VersionRowMenu({ onExport, onDelete, onClose }) {
   return (
     <>
       <div className="fixed inset-0 z-[110]" onClick={onClose} />
-      <div className="absolute right-0 top-full z-[111] mt-1 w-44 rounded-xl border border-border panel-bg p-1.5 shadow-2xl">
+      <div className="absolute right-0 top-full z-[111] mt-2 w-56 rounded-[1.25rem] border border-transparent bg-primary-background/95 p-3 shadow-[0_24px_60px_rgba(52,72,59,.24)] backdrop-blur-2xl">
         <button onClick={onExport} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-highlight">
           <Download className="h-3.5 w-3.5" /> Export version
         </button>
@@ -565,7 +565,7 @@ function TrackVersionsModal({ isOpen, onClose, onBack, track, userId, onTrackUpd
       </div>
 
       <div className="border-b border-border px-5 py-3 text-center text-xs text-secondary-label">
-        {track.mimeType?.includes('wav') ? 'WAV' : 'MP3'} · {formatTrackDate(track.uploadedAt)}
+        {track.mimeType?.includes('wav') ? 'WAV' : 'MP3'} Â· {formatTrackDate(track.uploadedAt)}
       </div>
 
       <div className="max-h-[50vh] space-y-1 overflow-y-auto px-3 py-3">
@@ -726,7 +726,7 @@ function TrackDetailsModal({
             <h2 className="mb-2 text-2xl font-bold leading-tight">{track.title}</h2>
             <p className="mb-5 text-sm text-secondary-label">
               {formatDuration(duration)}
-              {track.versions?.length > 1 && ` · ${track.activeVersionId ? track.versions.length : track.versions.length + 1} versions`}
+              {track.versions?.length > 1 && ` Â· ${track.activeVersionId ? track.versions.length : track.versions.length + 1} versions`}
             </p>
             <button
               onClick={() => setShowVersions(true)}
@@ -906,3 +906,4 @@ export async function switchTrackVersion(track, versionId, userId, versionIndex)
   if (!res.ok) throw new Error(data.error || 'Could not switch version.');
   return data.track;
 }
+
