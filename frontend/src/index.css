@@ -471,3 +471,10 @@ button[aria-label="Add tracks"] {
 button[aria-label="Add tracks"] {
   bottom: 1.5rem !important;
 }
+
+/* Keep the project add control centered in the page composition */
+button[aria-label="Add tracks"] {
+  left: 50% !important;
+  right: auto !important;
+  transform: translateX(-50%) !important;
+}
