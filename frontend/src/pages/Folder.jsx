@@ -178,7 +178,7 @@ export default function Folder({ user, onLogout }) {
       {/* Header */}
       <header className="sticky top-0 z-50 flex items-start justify-end gap-3 bg-transparent pb-4">
         <Link to="/library" className="hidden">
-          <span className="font-display">← liBraRy</span>
+          <span className="font-display text-accent">← liBraRy</span>
         </Link>
         <div className="flex shrink-0 items-center gap-3">
           
@@ -230,7 +230,7 @@ export default function Folder({ user, onLogout }) {
       </header>
 
       {/* Breadcrumbs */}
-      <nav className="mt-0 flex items-center gap-2 text-sm text-secondary-label" aria-label="Breadcrumb">
+      <nav className="mt-0 flex items-center gap-2 text-sm text-accent" aria-label="Breadcrumb">
         <Link to="/library" className="flex items-center gap-1 hover:text-primary-label transition-colors">
           <Home className="h-4 w-4" />
           Library
@@ -326,7 +326,7 @@ export default function Folder({ user, onLogout }) {
         </AnimatePresence>
         <button
           onClick={() => { setIsAddMenuOpen((o) => !o); setIsFolderMenuOpen(false); }}
-          className="grid h-12 w-12 place-items-center rounded-full bg-primary-label text-primary-background shadow-2xl transition-transform hover:scale-105"
+          className="grid h-12 w-12 place-items-center rounded-full bg-accent text-primary-background shadow-2xl transition-transform hover:bg-accent-hover hover:scale-105"
           aria-label="Add"
         >
           {isAddMenuOpen ? <X className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
@@ -357,7 +357,7 @@ export default function Folder({ user, onLogout }) {
         </AnimatePresence>
         <button
           onClick={() => { setIsAddMenuOpen((o) => !o); setIsFolderMenuOpen(false); }}
-          className="grid h-12 w-12 place-items-center rounded-full bg-primary-label text-primary-background shadow-2xl transition-transform hover:scale-105"
+          className="grid h-12 w-12 place-items-center rounded-full bg-accent text-primary-background shadow-2xl transition-transform hover:bg-accent-hover hover:scale-105"
           aria-label="Add"
         >
           {isAddMenuOpen ? <X className="h-5 w-5" /> : <Plus className="h-5 w-5" />}

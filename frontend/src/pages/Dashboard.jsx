@@ -952,7 +952,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
 
         <button
           onClick={() => { setIsAddMenuOpen(o => !o); setIsProfileOpen(false); setIsNotificationsOpen(false); }}
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-shading border border-border px-5 text-sm font-semibold text-primary-label shadow-xl backdrop-blur-md transition-colors hover:bg-highlight"
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-accent border border-accent px-5 text-sm font-semibold text-primary-background shadow-xl backdrop-blur-md transition-colors hover:bg-accent-hover"
         >
           <Plus className={`h-4 w-4 transition-transform duration-200 ${isAddMenuOpen ? 'rotate-45' : ''}`} />
           {isAddMenuOpen ? 'Close' : currentTrack ? null : 'Add'}

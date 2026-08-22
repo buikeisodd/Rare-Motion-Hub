@@ -336,7 +336,7 @@ export default function Project({ user }) {
                 </button>
               </div>
             </div>
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-secondary-label">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-accent">
               {project.visibility === 'private' ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
               {project.visibility === 'private' ? 'Private' : 'Public'}
             </div>
