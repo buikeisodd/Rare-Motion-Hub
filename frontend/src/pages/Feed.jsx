@@ -4,7 +4,6 @@ import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { defaultGradient, gradientFor } from '../utils/gradients';
 import ChatInbox from '../components/ChatInbox';
-import StarlightMark from '../components/StarlightMark';
 import AudioPlayer from '../components/AudioPlayer';
 import { useAudio } from '../context/AudioContext';
 
@@ -309,6 +308,7 @@ export default function Feed({ user, savedOnly = false }) {
     <ChatInbox user={user} isOpen={inboxOpen} onToggle={() => setInboxOpen((value) => !value)} />
   </div>;
 }
+
 
 
 
