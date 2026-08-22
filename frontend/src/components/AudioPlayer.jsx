@@ -40,7 +40,7 @@ function ProgressBar({ progress, duration, onSeek, className = '' }) {
     <div ref={barRef} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp}
       role="slider" aria-label="Track progress" aria-valuemin="0" aria-valuemax={duration || 0} aria-valuenow={progress}
       className={`relative flex cursor-pointer items-center gap-[2px] rounded-lg bg-white/[0.03] px-1 group ${className}`} style={{ touchAction: 'none' }}>
-      {bars.map((height, index) => <span key={index} className="min-w-0 flex-1 rounded-full transition-colors duration-150" style={{ height: `${height}px`, backgroundColor: index / bars.length <= pct / 100 ? '#FF8A3D' : 'rgba(255,255,255,.2)' }} />)}
+      {bars.map((height, index) => <span key={index} className="min-w-0 flex-1 rounded-full transition-colors duration-150" style={{ height: `${height}px`, backgroundColor: index / bars.length <= pct / 100 ? '#34483B' : 'rgba(52,72,59,.24)' }} />)}
       <span className="pointer-events-none absolute top-1/2 h-4 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white opacity-0 shadow-md transition-opacity group-hover:opacity-100" style={{ left: `${pct}%` }} />
     </div>
   );
@@ -50,7 +50,7 @@ function QueuePanel({ playQueue, queueIndex, onSelect, onClose }) {
   return (
     <div className="rounded-2xl bg-[#1e1e1e] border border-white/10 p-3 shadow-2xl max-h-56 flex flex-col">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-bold text-[#34483B]/60 uppercase tracking-wider">Queue · {playQueue.length}</span>
+        <span className="text-xs font-bold text-[#F3EBDD]/60 uppercase tracking-wider">Queue · {playQueue.length}</span>
         <button onClick={onClose} className="text-[#34483B]/40 hover:text-[#34483B]"><X className="h-3.5 w-3.5" /></button>
       </div>
       <div className="overflow-y-auto hide-scrollbar space-y-0.5">
@@ -205,7 +205,7 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
 
         {/* Title + progress */}
         <div className="relative z-10 min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-3"><MarqueeText text={currentTrack.title} className="text-sm font-semibold text-[#34483B]" /><span className="shrink-0 text-[10px] font-mono text-[#34483B]/45">{fmt(progress)} / {fmt(duration)}</span></div>
+          <div className="flex items-center justify-between gap-3"><MarqueeText text={currentTrack.title} className="text-sm font-semibold text-[#F3EBDD]" /><span className="shrink-0 text-[10px] font-mono text-[#F3EBDD]/70">{fmt(progress)} / {fmt(duration)}</span></div>
           <ProgressBar progress={progress} duration={duration} onSeek={seek} className="mt-2 h-7 w-full" />
         </div>
 
@@ -305,8 +305,8 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
         <div className="relative z-10 p-3">
           <div className="flex items-center gap-2 mb-2">
             <div className="min-w-0 flex-1">
-              <MarqueeText text={currentTrack.title} className="text-xs font-bold text-[#34483B]" />
-              <MarqueeText text={isBuffering && isPlaying ? 'Buffering…' : (projectName || currentTrack.artist || 'Starlight Station')} className="text-[10px] text-[#34483B]/50 mt-0.5" />
+              <MarqueeText text={currentTrack.title} className="text-xs font-bold text-[#F3EBDD]" />
+              <MarqueeText text={isBuffering && isPlaying ? 'Buffering…' : (projectName || currentTrack.artist || 'Starlight Station')} className="text-[10px] text-[#F3EBDD]/70 mt-0.5" />
             </div>
             {!hideCover && collapsed && (
               <button onClick={() => setCollapsed(false)} className="shrink-0 text-[#34483B]/40 hover:text-[#34483B]"><ChevronUp className="h-3.5 w-3.5" /></button>

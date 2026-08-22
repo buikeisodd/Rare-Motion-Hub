@@ -391,7 +391,7 @@ export default function Project({ user }) {
                     setDragTrackId(null);
                     handleReplaceAudioDrop(track, event.dataTransfer.files?.[0]);
                   }}
-                  className={`group grid cursor-pointer grid-cols-[2rem_1fr_auto] items-center gap-4 rounded-2xl px-3 py-4 transition-all ${currentTrack?.id === track.id ? 'bg-highlight' : 'hover:bg-shading'} ${dragTrackId === track.id ? 'ring-2 ring-primary-label/40 bg-highlight' : ''}`}
+                  className={`group grid cursor-pointer grid-cols-[2rem_1fr_auto] items-center gap-3 rounded-xl px-3 py-2.5 text-[#F3EBDD] transition-all ${currentTrack?.id === track.id ? 'bg-[#34483B]' : 'hover:bg-shading'} ${dragTrackId === track.id ? 'ring-2 ring-primary-label/40 bg-highlight' : ''}`}
                 >
                   <div className="text-center text-xl text-secondary-label">
                     {currentTrack?.id === track.id && isPlaying ? (
