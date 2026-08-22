@@ -354,11 +354,7 @@ export default function Project({ user }) {
                 />
               </span>
               <span className="whitespace-nowrap font-medium">
-                â€¢ {tracks.length} track{tracks.length !== 1 ? 's' : ''} â€¢ {
-                  (() => {
-                    return '';
-                  })()
-                }
+                | {tracks.length} track{tracks.length !== 1 ? 's' : ''}
               </span>
             </p>
           </div>
