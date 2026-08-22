@@ -633,3 +633,38 @@ button[aria-label="Add tracks"] {
     height: 2.75rem !important;
   }
 }
+
+/* Rebuilt project add control */
+.project-add-control {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: .35rem !important;
+  width: clamp(4.5rem, 18vw, 5.5rem) !important;
+  height: clamp(2.75rem, 8vw, 3rem) !important;
+  padding: 0 .9rem !important;
+  border: 1px solid rgba(52, 72, 59, .16) !important;
+  border-radius: 9999px !important;
+  background: #6F8974 !important;
+  color: #F3EBDD !important;
+  font-size: .875rem !important;
+  font-weight: 600 !important;
+  box-shadow: 0 8px 18px rgba(52, 72, 59, .14), inset 0 1px 0 rgba(255, 255, 255, .22) !important;
+  transition: transform .18s ease, background-color .18s ease, box-shadow .18s ease !important;
+}
+.project-add-control:hover {
+  background: #9BAF9B !important;
+  transform: translateX(-50%) translateY(-2px) scale(1.035) !important;
+}
+.project-add-control:active {
+  transform: translateX(-50%) scale(.97) !important;
+}
+.project-add-control svg {
+  display: block !important;
+}
+@media (max-width: 420px) {
+  .project-add-control {
+    width: 4.5rem !important;
+    height: 2.75rem !important;
+  }
+}
