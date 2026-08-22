@@ -709,3 +709,61 @@ button[aria-label="Add tracks"] {
 .library-folder-card > div.mt-4 {
   padding: 0 .35rem .35rem;
 }
+
+/* Refined library card shells */
+.library-project-card,
+.library-folder-card {
+  padding: .55rem;
+  border: 1px solid rgba(52, 72, 59, .10);
+  border-radius: 1.25rem;
+  background: rgba(248, 243, 233, .58);
+  box-shadow: 0 10px 24px rgba(52, 72, 59, .07), inset 0 1px 0 rgba(255, 255, 255, .45);
+}
+.library-project-card:hover,
+.library-folder-card:hover {
+  border-color: rgba(111, 137, 116, .34);
+  background: rgba(248, 243, 233, .82);
+  box-shadow: 0 20px 38px rgba(52, 72, 59, .16), inset 0 1px 0 rgba(255, 255, 255, .52);
+}
+.library-project-card > a > div.mt-4,
+.library-folder-card > div.mt-4 {
+  margin-top: .7rem !important;
+  padding: .15rem .25rem .25rem;
+}
+.library-project-card .text-secondary-label,
+.library-folder-card .text-secondary-label {
+  color: #667268 !important;
+}
+
+/* Responsive library grid cards */
+.library-project-card,
+.library-folder-card {
+  width: 100% !important;
+  max-width: 15rem !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+@media (max-width: 640px) {
+  .library-project-card,
+  .library-folder-card {
+    max-width: min(15rem, 100%) !important;
+    padding: .4rem;
+    border-radius: 1.1rem;
+  }
+  .library-project-card > a > div:first-child,
+  .library-folder-card > a > div:first-child {
+    border-radius: .9rem !important;
+  }
+}
+@media (max-width: 380px) {
+  .library-project-card,
+  .library-folder-card {
+    padding: .3rem;
+    border-radius: 1rem;
+  }
+  .library-project-card > a > div.mt-4,
+  .library-folder-card > div.mt-4 {
+    margin-top: .55rem !important;
+    padding-inline: .15rem;
+  }
+}
