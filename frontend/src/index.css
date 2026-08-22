@@ -577,3 +577,14 @@ header + nav[aria-label="Breadcrumb"] + div {
     padding-top: .5rem !important;
   }
 }
+
+/* Project add control matches the folder control */
+button[aria-label="Add tracks"] {
+  border-radius: 9999px !important;
+  background-color: #6F8974 !important;
+  color: #F3EBDD !important;
+  border-color: rgba(52, 72, 59, .16) !important;
+}
+button[aria-label="Add tracks"]:hover {
+  background-color: #9BAF9B !important;
+}
