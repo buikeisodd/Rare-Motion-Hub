@@ -26,9 +26,9 @@ function WelcomeSignal({ compact = false }) {
   const size = compact ? 'h-24 w-32' : 'h-32 w-44';
   return (
     <div className={`relative mx-auto flex items-center justify-center gap-1.5 ${size}`} aria-hidden="true">
-      <div className="absolute inset-x-1/2 top-1/2 h-px -translate-x-1/2 -translate-y-1/2 bg-primary-label/20" />
+      <div className="absolute inset-x-1/2 top-1/2 h-px -translate-x-1/2 -translate-y-1/2 bg-accent/20" />
       {[18, 34, 58, 86, 48, 72, 38, 62, 28, 46, 76, 52, 30].map((height, index) => (
-        <span key={index} className="relative z-10 w-1.5 rounded-full bg-primary-label shadow-[0_0_18px_rgba(215,255,101,0.35)] animate-wave" style={{ height: `${height}%`, animationDelay: `${index * 70}ms` }} />
+        <span key={index} className="relative z-10 w-1.5 rounded-full bg-accent shadow-[0_0_18px_rgba(255,138,61,0.35)] animate-wave" style={{ height: `${height}%`, animationDelay: `${index * 70}ms` }} />
       ))}
     </div>
   );
@@ -44,7 +44,7 @@ function WelcomeBack({ user, onDone }) {
 
   return (
     <div className="min-h-screen bg-[#080909] text-[#F7F4EC] px-6 py-12 flex flex-col relative overflow-hidden">
-      <div className="pointer-events-none absolute -left-32 top-[-12rem] h-[28rem] w-[28rem] rounded-full bg-[#D7FF65]/[0.06] blur-3xl" />
+      <div className="pointer-events-none absolute -left-32 top-[-12rem] h-[28rem] w-[28rem] rounded-full bg-[#FF8A3D]/[0.06] blur-3xl" />
       <main className="flex-1 flex items-center justify-center">
         <div className="w-full max-w-xl text-center animate-welcome-rise">
           <WelcomeSignal />

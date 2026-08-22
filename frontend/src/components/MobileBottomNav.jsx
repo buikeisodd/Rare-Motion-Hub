@@ -19,9 +19,9 @@ export default function MobileBottomNav({ user, onInbox }) {
         {items.map(({ label, to, icon: Icon }) => {
           const active = location.pathname === to || (label === 'Profile' && location.pathname.startsWith('/profile/'));
           return (
-            <Link key={label} to={to} className={`group relative grid min-w-0 place-items-center gap-1 rounded-xl px-3 py-1.5 text-[10px] font-semibold transition-colors ${active ? 'text-[#D7FF65]' : 'text-secondary-label hover:bg-[#D7FF65] hover:text-[#050505]'}`} aria-label={label}>
+            <Link key={label} to={to} className={`group relative grid min-w-0 place-items-center gap-1 rounded-xl px-3 py-1.5 text-[10px] font-semibold transition-colors ${active ? 'text-[#FF8A3D]' : 'text-secondary-label hover:bg-[#FF8A3D] hover:text-[#050505]'}`} aria-label={label}>
               <Icon className="h-5 w-5 transition-transform group-hover:scale-105" />
-              {active && <span className="absolute -top-2 h-1 w-5 rounded-full bg-[#D7FF65]" aria-hidden="true" />}
+              {active && <span className="absolute -top-2 h-1 w-5 rounded-full bg-[#FF8A3D]" aria-hidden="true" />}
               <span className="truncate">{label}</span>
             </Link>
           );

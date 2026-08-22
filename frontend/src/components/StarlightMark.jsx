@@ -1,4 +1,4 @@
-export default function StarlightMark({ className = 'h-8 w-8', color = '#D7FF65' }) {
+export default function StarlightMark({ className = 'h-8 w-8', color = '#FF8A3D' }) {
   return (
     <svg viewBox="0 0 48 48" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
       <path d="M 12 36 C 6 24, 16 10, 28 8" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" />

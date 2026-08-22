@@ -185,7 +185,7 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#080909] px-5 py-8 text-[#F7F4EC] sm:px-8 lg:px-16 lg:py-12">
-      <div className="pointer-events-none absolute -left-40 top-[-14rem] h-[34rem] w-[34rem] rounded-full bg-[#D7FF65]/[0.06] blur-3xl" />
+      <div className="pointer-events-none absolute -left-40 top-[-14rem] h-[34rem] w-[34rem] rounded-full bg-[#FF8A3D]/[0.06] blur-3xl" />
       <div className="pointer-events-none absolute -bottom-48 right-[-8rem] h-[30rem] w-[30rem] rounded-full bg-[#8DEBFF]/[0.05] blur-3xl" />
       <div className="relative mx-auto grid min-h-[calc(100vh-2rem)] w-full max-w-6xl items-center gap-10 py-3 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,27rem)] lg:gap-16">
         <section className="hidden lg:block animate-fade-in">
@@ -206,14 +206,14 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
             onClick={() => { setIsRegister(false); setResetMode(false); setResetToken(''); }}
             className={`text-base font-semibold transition-all relative py-1 ${!isRegister && !resetMode ? 'text-[#F7F4EC]' : 'text-[#A6A09A] hover:text-[#F7F4EC]'}`}>
             Sign in
-            {!isRegister && !resetMode && <span className="absolute bottom-[-13px] left-0 right-0 h-[2px] bg-[#D7FF65] rounded-full" />}
+            {!isRegister && !resetMode && <span className="absolute bottom-[-13px] left-0 right-0 h-[2px] bg-[#FF8A3D] rounded-full" />}
           </button>
           <button 
             type="button"
             onClick={() => { setIsRegister(true); setResetMode(false); setResetToken(''); }}
             className={`text-base font-semibold transition-all relative py-1 ${isRegister && !resetMode ? 'text-[#F7F4EC]' : 'text-[#A6A09A] hover:text-[#F7F4EC]'}`}>
             Create account
-            {isRegister && !resetMode && <span className="absolute bottom-[-13px] left-0 right-0 h-[2px] bg-[#D7FF65] rounded-full" />}
+            {isRegister && !resetMode && <span className="absolute bottom-[-13px] left-0 right-0 h-[2px] bg-[#FF8A3D] rounded-full" />}
           </button>
         </div>
 
@@ -226,7 +226,7 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email address"
-                className="h-11 w-full rounded-xl bg-[#171717] border border-[rgba(255,255,255,.09)] pl-11 pr-4 text-left text-sm font-medium text-[#F7F4EC] placeholder:text-[#77736E] focus:outline-none focus:border-[#D7FF65] focus:ring-1 focus:ring-[#D7FF65] transition-all"
+                className="h-11 w-full rounded-xl bg-[#171717] border border-[rgba(255,255,255,.09)] pl-11 pr-4 text-left text-sm font-medium text-[#F7F4EC] placeholder:text-[#77736E] focus:outline-none focus:border-[#FF8A3D] focus:ring-1 focus:ring-[#FF8A3D] transition-all"
                 required={!resetMode}
                 disabled={resetMode}
               />
@@ -239,7 +239,7 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={resetMode ? 'New password' : 'Password'}
                 minLength={8}
-                className="h-11 w-full rounded-xl bg-[#171717] border border-[rgba(255,255,255,.09)] pl-11 pr-12 text-left text-sm font-medium text-[#F7F4EC] placeholder:text-[#77736E] focus:outline-none focus:border-[#D7FF65] focus:ring-1 focus:ring-[#D7FF65] transition-all"
+                className="h-11 w-full rounded-xl bg-[#171717] border border-[rgba(255,255,255,.09)] pl-11 pr-12 text-left text-sm font-medium text-[#F7F4EC] placeholder:text-[#77736E] focus:outline-none focus:border-[#FF8A3D] focus:ring-1 focus:ring-[#FF8A3D] transition-all"
                 required
               />
               <button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#A6A09A] transition-colors hover:text-[#F7F4EC]" aria-label={showPassword ? 'Hide password' : 'Show password'}>
@@ -251,7 +251,7 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
                 <button
                   type="button"
                   onClick={requestPasswordReset}
-                  className="text-xs font-medium text-[#A6A09A] transition-colors hover:text-[#D7FF65]"
+                  className="text-xs font-medium text-[#A6A09A] transition-colors hover:text-[#FF8A3D]"
                 >
                   Forgot password?
                 </button>
@@ -265,7 +265,7 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirm password"
-                className="h-12 w-full rounded-xl bg-[#171717] border border-[rgba(255,255,255,.09)] pl-11 pr-12 text-left text-sm font-medium text-[#F7F4EC] placeholder:text-[#77736E] focus:outline-none focus:border-[#D7FF65] focus:ring-1 focus:ring-[#D7FF65] transition-all"
+                className="h-12 w-full rounded-xl bg-[#171717] border border-[rgba(255,255,255,.09)] pl-11 pr-12 text-left text-sm font-medium text-[#F7F4EC] placeholder:text-[#77736E] focus:outline-none focus:border-[#FF8A3D] focus:ring-1 focus:ring-[#FF8A3D] transition-all"
                 required
               />
               <button type="button" onClick={() => setShowConfirmPassword((value) => !value)} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#A6A09A] transition-colors hover:text-[#F7F4EC]" aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}>
@@ -292,7 +292,7 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
             )}
 
             {notice && (
-              <div className="rounded-xl border border-[#D7FF65]/20 bg-[#D7FF65]/10 px-4 py-3 text-left text-xs font-medium text-[#D7FF65]">
+              <div className="rounded-xl border border-[#FF8A3D]/20 bg-[#FF8A3D]/10 px-4 py-3 text-left text-xs font-medium text-[#FF8A3D]">
                 {notice}
               </div>
             )}
@@ -300,7 +300,7 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
             <button
               type="submit"
               disabled={loading || lockCountdown > 0}
-              className="mx-auto flex h-11 w-[92%] items-center justify-center rounded-xl bg-[#D7FF65] text-sm font-bold text-[#050505] transition-all hover:bg-[#E3FF91] active:scale-[0.99] disabled:opacity-50 shadow-md mt-1"
+              className="mx-auto flex h-11 w-[92%] items-center justify-center rounded-xl bg-[#FF8A3D] text-sm font-bold text-[#050505] transition-all hover:bg-[#FFB067] active:scale-[0.99] disabled:opacity-50 shadow-md mt-1"
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin text-[#050505]" /> : (resetMode ? 'Reset password' : isRegister ? 'Create account' : 'Sign in')}
             </button>

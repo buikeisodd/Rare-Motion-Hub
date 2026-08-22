@@ -54,7 +54,7 @@ function QuickAdd({ suggestions, onFollow, onDismiss }) {
                         person.isFollowing
                           ? 'bg-shading text-secondary-label'
                           : person.followsYou
-                          ? 'bg-[#D7FF65] text-black hover:bg-[#E3FF91]'
+                          ? 'bg-[#FF8A3D] text-black hover:bg-[#FFB067]'
                           : 'bg-primary-label text-primary-background'
                       }`}
                     >
@@ -117,7 +117,7 @@ function CompactQuickAdd({ suggestions, onFollow, onDismiss }) {
                     person.isFollowing
                       ? 'bg-shading text-secondary-label'
                       : person.followsYou
-                      ? 'bg-[#D7FF65] text-black'
+                      ? 'bg-[#FF8A3D] text-black'
                       : 'bg-primary-label text-primary-background'
                   }`}
                 >
@@ -247,7 +247,7 @@ export default function Feed({ user, savedOnly = false }) {
   return <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0e140b] via-[#050505] to-[#050505] pb-24 text-[#F7F4EC] md:pb-0">
     <aside className="group fixed bottom-4 left-4 top-4 z-40 hidden w-20 flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#0a0a0a]/80 px-3 py-6 shadow-2xl backdrop-blur-2xl transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:w-64 hover:border-white/20 lg:flex">
       <Link to="/feed" className="mb-8 flex h-12 w-full shrink-0 items-center overflow-hidden whitespace-nowrap px-2.5" aria-label="Feed">
-        <Compass className="h-8 w-8 shrink-0 text-[#D7FF65]" />
+        <Compass className="h-8 w-8 shrink-0 text-[#FF8A3D]" />
         <div className="ml-4 flex flex-col leading-none opacity-0 transition-opacity duration-300 group-hover:opacity-100">
           <span className="font-display text-base font-bold tracking-wider text-[#F7F4EC]">fEEd</span>
           <span className="mt-1 text-[10px] font-medium uppercase tracking-wider text-[#A6A09A]">Discover new work</span>
@@ -255,16 +255,16 @@ export default function Feed({ user, savedOnly = false }) {
       </Link>
       <nav className="space-y-2">
         {navItems.map(({ label, icon: Icon, to }) => (
-          <Link key={label} to={to} className="flex h-12 w-full items-center whitespace-nowrap rounded-2xl px-3 text-sm font-semibold text-[#A6A09A] transition-all hover:bg-[#D7FF65] hover:text-[#050505]" title={label}>
+          <Link key={label} to={to} className="flex h-12 w-full items-center whitespace-nowrap rounded-2xl px-3 text-sm font-semibold text-[#A6A09A] transition-all hover:bg-[#FF8A3D] hover:text-[#050505]" title={label}>
             <Icon className="h-6 w-6 shrink-0" />
             <span className="font-display ml-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100">{label}</span>
           </Link>
         ))}
-        <button onClick={() => setInboxOpen(true)} className="flex h-12 w-full items-center whitespace-nowrap rounded-2xl px-3 text-sm font-semibold text-[#A6A09A] transition-all hover:bg-[#D7FF65] hover:text-[#050505]" title="Inbox">
+        <button onClick={() => setInboxOpen(true)} className="flex h-12 w-full items-center whitespace-nowrap rounded-2xl px-3 text-sm font-semibold text-[#A6A09A] transition-all hover:bg-[#FF8A3D] hover:text-[#050505]" title="Inbox">
           <MessageCircle className="h-6 w-6 shrink-0" />
           <span className="font-display ml-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100">iNbOx</span>
         </button>
-        <Link to="/settings" className="flex h-12 w-full items-center whitespace-nowrap rounded-2xl px-3 text-sm font-semibold text-[#A6A09A] transition-all hover:bg-[#D7FF65] hover:text-[#050505]" title="Settings">
+        <Link to="/settings" className="flex h-12 w-full items-center whitespace-nowrap rounded-2xl px-3 text-sm font-semibold text-[#A6A09A] transition-all hover:bg-[#FF8A3D] hover:text-[#050505]" title="Settings">
           <Settings className="h-6 w-6 shrink-0" />
           <span className="font-display ml-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100">sEtTiNgS</span>
         </Link>

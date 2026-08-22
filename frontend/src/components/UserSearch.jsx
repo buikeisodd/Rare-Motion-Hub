@@ -66,7 +66,7 @@ export default function UserSearch({ currentUser, onSelectUser }) {
           }}
           onFocus={() => setIsOpen(true)}
           placeholder="sEaRcH uSeRs..."
-          className="h-11 w-full rounded-2xl border border-white/10 bg-shading/60 pl-11 pr-10 text-sm text-[#F7F4EC] placeholder-secondary-label outline-none backdrop-blur-md transition-all focus:border-[#D7FF65]/50 focus:bg-shading/90"
+          className="h-11 w-full rounded-2xl border border-white/10 bg-shading/60 pl-11 pr-10 text-sm text-[#F7F4EC] placeholder-secondary-label outline-none backdrop-blur-md transition-all focus:border-[#FF8A3D]/50 focus:bg-shading/90"
         />
         {query && (
           <button
@@ -131,7 +131,7 @@ export default function UserSearch({ currentUser, onSelectUser }) {
                           person.isFollowing
                             ? 'bg-shading text-secondary-label'
                             : person.followsYou
-                            ? 'bg-[#D7FF65] text-black'
+                            ? 'bg-[#FF8A3D] text-black'
                             : 'bg-primary-label text-primary-background'
                         }`}
                       >

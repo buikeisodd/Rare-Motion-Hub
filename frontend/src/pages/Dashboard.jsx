@@ -262,8 +262,8 @@ export function LibraryFolder({ folder, projects, tracks, onSave, onDrop, onDrag
           ) : (
             <div className="grid h-full w-full place-items-center bg-black/10">
               {isDragOver
-                ? <FolderOpen className="h-20 w-20 text-[#D7FF65] transition-transform duration-500 group-hover:scale-105" />
-                : <Folder className="h-20 w-20 text-[#D7FF65]/65 transition-transform duration-500 group-hover:scale-105" />}
+                ? <FolderOpen className="h-20 w-20 text-[#FF8A3D] transition-transform duration-500 group-hover:scale-105" />
+                : <Folder className="h-20 w-20 text-[#FF8A3D]/65 transition-transform duration-500 group-hover:scale-105" />}
             </div>
           )}
         </div>
@@ -345,7 +345,7 @@ function ProfileAvatar({ user, size = 'h-11 w-11', className = '' }) {
 
   return (
     <div className={`${size} ${className} relative overflow-hidden shrink-0 rounded-full shadow-lg bg-shading flex items-center justify-center`}>
-      <User className="h-1/2 w-1/2 text-[#D7FF65]" />
+      <User className="h-1/2 w-1/2 text-[#FF8A3D]" />
     </div>
   );
 }
@@ -863,7 +863,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
         <div className="flex shrink-0 items-center gap-3">
           <div className="relative">
             <button onClick={handleOpenNotifications} className="relative grid h-10 w-10 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:h-11 sm:w-11" aria-label="Notifications">
-              <Bell className="h-5 w-5 fill-current text-[#D7FF65]" />
+              <Bell className="h-5 w-5 fill-current text-[#FF8A3D]" />
               {totalNotifications > 0 && <span className="absolute right-2.5 top-2.5 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-primary-background" aria-label="New notifications" />}
             </button>
             <NotificationsMenu isOpen={isNotificationsOpen} notifications={workspace.notifications} conversations={conversations} onRead={handleReadNotification} />
@@ -876,10 +876,10 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
           </div>
 
           <button onClick={() => navigate('/feed')} className="grid h-10 w-10 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:h-14 sm:w-14 sm:rounded-3xl" aria-label="Open feed">
-            <Compass className="h-6 w-6 text-[#D7FF65]" />
+            <Compass className="h-6 w-6 text-[#FF8A3D]" />
           </button>
           <button onClick={onLogout} className="hidden h-14 w-14 place-items-center rounded-3xl bg-shading text-primary-label transition-colors hover:bg-highlight md:grid" aria-label="Log out">
-            <LogOut className="h-6 w-6 text-[#D7FF65]" />
+            <LogOut className="h-6 w-6 text-[#FF8A3D]" />
           </button>
         </div>
       </header>
@@ -887,7 +887,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
       <main className="mx-auto flex min-h-[calc(100vh-16rem)] max-w-4xl items-center justify-center py-6 pb-40 sm:py-10 sm:pb-10">
         {workspace.projects.length === 0 && workspace.folders.length === 0 ? (
           <div className="text-center">
-            <Disc3 className="mx-auto mb-5 h-12 w-12 text-[#D7FF65]" />
+            <Disc3 className="mx-auto mb-5 h-12 w-12 text-[#FF8A3D]" />
             <h1 className="text-2xl font-semibold">No projects yet</h1>
             <p className="mt-2 text-secondary-label">Create your first library project.</p>
           </div>
@@ -935,15 +935,15 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
               className="absolute bottom-full mb-3 left-0 w-52 rounded-2xl panel-bg border border-border p-2 shadow-2xl backdrop-blur-xl"
             >
               <button onClick={() => setIsConvertPickerOpen(true)} disabled={conversionProgress !== null} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors disabled:opacity-50">
-                <Video className="h-4 w-4 shrink-0 text-[#D7FF65]" />
+                <Video className="h-4 w-4 shrink-0 text-[#FF8A3D]" />
                 {conversionProgress !== null ? 'Converting...' : 'Convert'}
               </button>
               <button onClick={createFolder} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
-                <FolderPlus className="h-4 w-4 shrink-0 text-[#D7FF65]" />
+                <FolderPlus className="h-4 w-4 shrink-0 text-[#FF8A3D]" />
                 New Folder
               </button>
               <button onClick={() => createProject()} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
-                <Plus className="h-4 w-4 shrink-0 text-[#D7FF65]" />
+                <Plus className="h-4 w-4 shrink-0 text-[#FF8A3D]" />
                 New Project
               </button>
             </motion.div>

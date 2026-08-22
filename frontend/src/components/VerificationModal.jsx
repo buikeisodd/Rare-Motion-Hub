@@ -86,8 +86,8 @@ export default function VerificationModal({ email, expiresAt, apiUrl, onVerified
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#050505]/80 backdrop-blur-sm px-4 animate-fade-in">
       <div className="w-full max-w-sm rounded-2xl border border-[rgba(255,255,255,.09)] bg-[#111111] p-6 text-center shadow-2xl">
 
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[rgba(215,255,101,.12)]">
-          <Mail className="h-6 w-6 text-[#D7FF65]" />
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[rgba(255,138,61,.12)]">
+          <Mail className="h-6 w-6 text-[#FF8A3D]" />
         </div>
 
         <h2 className="text-xl font-bold text-[#F7F4EC]">Verify your email</h2>
@@ -110,7 +110,7 @@ export default function VerificationModal({ email, expiresAt, apiUrl, onVerified
           <p className="mt-3 text-xs font-medium text-[#FF5C6C]">{errorMsg}</p>
         )}
         {status === 'success' && (
-          <p className="mt-3 text-xs font-medium text-[#D7FF65]">Successfully verified. Redirecting…</p>
+          <p className="mt-3 text-xs font-medium text-[#FF8A3D]">Successfully verified. Redirecting…</p>
         )}
 
         {expired ? (
@@ -118,7 +118,7 @@ export default function VerificationModal({ email, expiresAt, apiUrl, onVerified
             type="button"
             onClick={handleResend}
             disabled={status === 'loading_resend'}
-            className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#D7FF65] text-sm font-bold text-[#050505] transition-all hover:bg-[#E3FF91] active:scale-[0.99] disabled:opacity-50 shadow-md"
+            className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#FF8A3D] text-sm font-bold text-[#050505] transition-all hover:bg-[#FFB067] active:scale-[0.99] disabled:opacity-50 shadow-md"
           >
             {status === 'loading_resend' ? (
               <Loader2 className="h-4 w-4 animate-spin text-[#050505]" />
@@ -132,7 +132,7 @@ export default function VerificationModal({ email, expiresAt, apiUrl, onVerified
             type="button"
             onClick={handleVerifyDirect}
             disabled={status === 'loading_verify' || status === 'success'}
-            className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#D7FF65] text-sm font-bold text-[#050505] transition-all hover:bg-[#E3FF91] active:scale-[0.99] disabled:opacity-50 shadow-md"
+            className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#FF8A3D] text-sm font-bold text-[#050505] transition-all hover:bg-[#FFB067] active:scale-[0.99] disabled:opacity-50 shadow-md"
           >
             {status === 'loading_verify' ? (
               <Loader2 className="h-4 w-4 animate-spin text-[#050505]" />

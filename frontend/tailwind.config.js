@@ -33,9 +33,9 @@ export default {
             label: 'var(--rmh-muted)',
           },
           accent: {
-            DEFAULT: '#D7FF65',
-            hover: '#E3FF91',
-            soft: 'rgba(215,255,101,.12)',
+            DEFAULT: 'var(--rmh-accent)',
+            hover: 'var(--rmh-accent-hover)',
+            soft: 'var(--rmh-accent-soft)',
           },
           shading: 'var(--rmh-panel)',
           border: 'rgba(255,255,255,.09)',
