@@ -322,3 +322,14 @@
 /* Active track animation cream override */
 [class*='bg-[#34483B]'] span[style*='animation'] { background-color: #F3EBDD !important; }
 
+
+/* Track details modal: botanical panel treatment */
+[class*="max-w-3xl"] {
+  background: color-mix(in srgb, var(--color-primary-background, #f3ebdd) 95%, transparent) !important;
+  border-color: color-mix(in srgb, var(--color-border, #d8d8c9) 70%, transparent) !important;
+  box-shadow: 0 24px 80px rgba(52, 72, 59, .28) !important;
+  backdrop-filter: blur(32px) !important;
+}
+[class*="max-w-3xl"] .bg-shading {
+  background: var(--color-primary-background, #f3ebdd) !important;
+}
