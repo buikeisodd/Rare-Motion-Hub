@@ -456,3 +456,18 @@ button[aria-label^="Close"] {
 .version-title-marquee:focus-visible {
   animation-play-state: running;
 }
+
+/* Compact library and project add controls */
+[class*="fixed"][class*="z-50"] button.bg-accent,
+button[aria-label="Add tracks"] {
+  width: 3rem !important;
+  height: 3rem !important;
+  min-width: 3rem !important;
+  padding: 0 !important;
+  gap: 0 !important;
+  border-radius: .9rem !important;
+  font-size: 0 !important;
+}
+button[aria-label="Add tracks"] {
+  bottom: 1.5rem !important;
+}
