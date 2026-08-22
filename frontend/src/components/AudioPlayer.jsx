@@ -210,14 +210,14 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
         </div>
 
         {/* Core controls */}
-        <div className="relative z-10 flex shrink-0 items-center gap-0.5 text-white sm:gap-1" onClick={(event) => event.stopPropagation()}>
+        <div className="relative z-10 flex shrink-0 items-center gap-0.5 text-accent sm:gap-1" onClick={(event) => event.stopPropagation()}>
           <button title="Shuffle" onClick={toggleShuffle} className={`hidden h-8 w-8 place-items-center rounded-full sm:grid ${isShuffled ? 'text-white' : 'text-white/30 hover:text-white/60'}`}>
             <Shuffle className="h-4 w-4" />
           </button>
           <button title="Previous" onClick={handlePrev} className="hidden h-8 w-8 place-items-center rounded-full text-white/70 transition-colors hover:text-white sm:grid">
             <SkipBack className="h-4 w-4 fill-current" />
           </button>
-          <button title={isPlaying ? 'Pause' : 'Play'} onClick={() => setIsPlaying(p => !p)} className="h-11 w-11 grid place-items-center rounded-full bg-white text-black hover:scale-105 transition-transform">
+          <button title={isPlaying ? 'Pause' : 'Play'} onClick={() => setIsPlaying(p => !p)} className="h-11 w-11 grid place-items-center rounded-full bg-accent text-primary-background hover:bg-accent-hover hover:scale-105 transition-transform">
             {isBuffering && isPlaying
               ? <div className="h-3 w-3 animate-spin rounded-full border-2 border-black border-t-transparent" />
               : isPlaying ? <Pause className="h-5 w-5 fill-current" /> : <Play className="h-5 w-5 fill-current ml-0.5" />}
@@ -231,7 +231,7 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
         </div>
 
         {/* Extra controls */}
-        <div className="relative z-10 hidden items-center gap-0.5 text-white/40 sm:flex shrink-0" onClick={(event) => event.stopPropagation()}>
+        <div className="relative z-10 hidden items-center gap-0.5 text-accent/75 sm:flex shrink-0" onClick={(event) => event.stopPropagation()}>
           <button onClick={() => { setShowQueue(q => !q); setShowSettings(false); }} className={`relative h-7 w-7 grid place-items-center rounded-full transition-colors ${showQueue ? 'text-white bg-white/15' : 'hover:text-white'}`}>
             <ListMusic className="h-3.5 w-3.5" />
           </button>
@@ -241,7 +241,7 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
           <button title={isMuted ? 'Unmute' : 'Mute'} onClick={() => handleMute(!isMuted)} className="h-7 w-7 grid place-items-center rounded-full hover:text-white">
             {isMuted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
           </button>
-          <input aria-label="Volume" type="range" min="0" max="1" step="0.01" value={isMuted ? 0 : volume} onChange={e => handleVolume(parseFloat(e.target.value))} className="h-1 w-16 accent-white" />
+          <input aria-label="Volume" type="range" min="0" max="1" step="0.01" value={isMuted ? 0 : volume} onChange={e => handleVolume(parseFloat(e.target.value))} className="h-1 w-16 accent-accent" />
           <button onClick={() => onDismiss ? onDismiss() : null} className="h-7 w-7 grid place-items-center rounded-full hover:text-red-400 transition-colors">
             <X className="h-3.5 w-3.5" />
           </button>
@@ -270,10 +270,10 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
             <span>{fmt(progress)}</span>
             <span>-{fmt(Math.max(0, duration - progress))}</span>
           </div>
-          <div className="mt-7 flex items-center justify-between text-primary-label">
+          <div className="mt-7 flex items-center justify-between text-accent">
             <button onClick={toggleShuffle} className={`grid h-11 w-11 place-items-center rounded-full ${isShuffled ? 'bg-shading text-primary-label' : 'text-secondary-label'}`}><Shuffle className="h-5 w-5" /></button>
             <button onClick={handlePrev} className="grid h-12 w-12 place-items-center rounded-full bg-shading"><SkipBack className="h-5 w-5 fill-current" /></button>
-            <button onClick={() => setIsPlaying(p => !p)} className="grid h-16 w-16 place-items-center rounded-full bg-primary-label text-primary-background">
+            <button onClick={() => setIsPlaying(p => !p)} className="grid h-16 w-16 place-items-center rounded-full bg-accent text-primary-background hover:bg-accent-hover">
               {isBuffering && isPlaying ? <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary-background border-t-transparent" /> : isPlaying ? <Pause className="h-7 w-7 fill-current" /> : <Play className="ml-1 h-7 w-7 fill-current" />}
             </button>
             <button onClick={handleNext} className="grid h-12 w-12 place-items-center rounded-full bg-shading"><SkipForward className="h-5 w-5 fill-current" /></button>
@@ -283,7 +283,7 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
             <SettingsPanel playbackRate={playbackRate} setRate={handleRate} pitchShift={pitchShift} setPitch={handlePitch} onClose={() => {}} compact />
           </div>
           <div className="mt-4 flex items-center gap-3 rounded-2xl border border-border bg-shading/40 px-4 py-3">
-            <button onClick={() => handleMute(!isMuted)} className="text-secondary-label">{isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}</button>
+            <button onClick={() => handleMute(!isMuted)} className="text-accent">{isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}</button>
             <input type="range" min="0" max="1" step="0.01" value={isMuted ? 0 : volume} onChange={e => handleVolume(parseFloat(e.target.value))} className="min-w-0 flex-1 accent-white" />
           </div>
         </div>
@@ -317,10 +317,10 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
             <span>{fmt(progress)}</span>
             <span>-{fmt(Math.max(0, duration - progress))}</span>
           </div>
-          <div className="flex items-center justify-between text-white mb-2">
+          <div className="flex items-center justify-between text-accent mb-2">
             <button onClick={toggleShuffle} className={`h-7 w-7 grid place-items-center rounded-full ${isShuffled ? 'text-white' : 'text-white/30 hover:text-white/60'}`}><Shuffle className="h-3.5 w-3.5" /></button>
             <button onClick={handlePrev} className="h-8 w-8 grid place-items-center rounded-full text-white/70 hover:text-white transition-colors"><SkipBack className="h-4 w-4 fill-current" /></button>
-            <button onClick={() => setIsPlaying(p => !p)} className="h-9 w-9 grid place-items-center rounded-full bg-white text-black hover:scale-105 transition-transform">
+            <button onClick={() => setIsPlaying(p => !p)} className="h-9 w-9 grid place-items-center rounded-full bg-accent text-primary-background hover:bg-accent-hover hover:scale-105 transition-transform">
               {isBuffering && isPlaying ? <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-black border-t-transparent" />
                 : isPlaying ? <Pause className="h-4 w-4 fill-current" /> : <Play className="h-4 w-4 fill-current ml-0.5" />}
             </button>
@@ -336,7 +336,7 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
               {playQueue.length > 0 && <span className="absolute -right-1 -top-1 h-3 min-w-3 grid place-items-center rounded-full bg-white text-black text-[7px] font-bold">{playQueue.length}</span>}
             </button>
             <div className="flex items-center gap-1.5">
-              <button onClick={() => handleMute(!isMuted)} className="text-white/35 hover:text-white">
+              <button onClick={() => handleMute(!isMuted)} className="text-accent/75 hover:text-accent-hover">
                 {isMuted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
               </button>
               <input type="range" min="0" max="1" step="0.01" value={isMuted ? 0 : volume} onChange={e => handleVolume(parseFloat(e.target.value))} className="w-14 accent-white h-1" />
