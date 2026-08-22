@@ -81,6 +81,17 @@
     min-width: 0;
   }
 
+  /* Keep interface symbols on the same orange visual system. Text keeps its
+     own semantic colors, while SVG icons, including inherited fill-current
+     icons and three-dot controls, stay visually consistent everywhere. */
+  svg {
+    color: var(--rmh-accent) !important;
+  }
+
+  .bg-accent svg {
+    color: var(--rmh-bg) !important;
+  }
+
   @keyframes slide-up {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
