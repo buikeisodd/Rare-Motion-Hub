@@ -333,3 +333,22 @@
 [class*="max-w-3xl"] .bg-shading {
   background: var(--color-primary-background, #f3ebdd) !important;
 }
+
+/* Track details actions match the project menu panel */
+[class*="max-w-3xl"] .text-primary-label {
+  color: #34483B !important;
+}
+[class*="max-w-3xl"] .text-secondary-label {
+  color: #667268 !important;
+}
+[class*="max-w-3xl"] button:hover {
+  background-color: #D8D8C9 !important;
+  color: #34483B !important;
+}
+[class*="max-w-3xl"] button.text-red-500,
+[class*="max-w-3xl"] button.text-red-500:hover {
+  color: #EF4444 !important;
+}
+[class*="max-w-3xl"] button.text-red-500:hover {
+  background-color: rgba(239, 68, 68, .10) !important;
+}
