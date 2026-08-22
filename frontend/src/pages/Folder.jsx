@@ -170,7 +170,7 @@ export default function Folder({ user, onLogout }) {
   const isEmpty = folders.length === 0 && projects.length === 0;
 
   return (
-    <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#1a0d06] via-[#050505] to-[#050505] px-4 py-4 pb-32 text-[#F7F4EC] sm:px-8 sm:py-6 md:pb-28 lg:px-14 lg:py-8">
+    <div className="min-h-screen bg-[#050505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#050505] via-[#050505] to-[#050505] px-4 py-4 pb-32 text-[#F7F4EC] sm:px-8 sm:py-6 md:pb-28 lg:px-14 lg:py-8">
       {isAddMenuOpen && (
         <div className="fixed inset-0 z-40" onClick={() => setIsAddMenuOpen(false)} />
       )}

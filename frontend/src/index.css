@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --rmh-bg: #050505;
+    --rmh-bg: #000000;
     --rmh-bg-elevated: #0A0A0A;
     --rmh-panel: #111111;
     --rmh-panel-soft: #171717;
@@ -33,7 +33,7 @@
     --rmh-radius-pill: 999px;
 
     /* Legacy mapping helpers */
-    --color-primary-background: 5 5 5;
+    --color-primary-background: 0 0 0;
     --color-primary-label: 247 244 236;
     --color-secondary-label: 166 160 154;
     --color-shading: 17 17 17;
