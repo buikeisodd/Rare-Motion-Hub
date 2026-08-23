@@ -286,7 +286,7 @@ export default function Feed({ user, savedOnly = false }) {
     }
   });
 
-  useEffect(() => { fetch(`${apiUrl}/api/feed`).then(async (res) => { const data = await res.json(); if (!res.ok) throw new Error(data.error || 'Could not load feed.'); setItems(data.items || []); }).catch((err) => setError(err.message)).finally(() => setLoading(false)); }, []);
+  useEffect(() => { fetch(`${apiUrl}/api/feed`, { credentials: 'include' }).then(async (res) => { const data = await res.json(); if (!res.ok) throw new Error(data.error || 'Could not load feed.'); setItems(Array.isArray(data.items) ? data.items.filter(Boolean) : []); }).catch((err) => setError(err.message)).finally(() => setLoading(false)); }, []);
   useEffect(() => { fetch(`${apiUrl}/api/stories`).then((res) => res.json()).then((data) => setStories(data.stories || [])).catch(() => {}); fetch(`${apiUrl}/api/workspace?userId=${encodeURIComponent(user?.id || '')}`).then((res) => res.json()).then((data) => { const projects = (data.projects || []).filter((project) => project.visibility !== 'private'); const tracks = data.tracks || []; setWorkspaceProjects(projects.map((project) => ({ ...project, tracks: tracks.filter((track) => track.projectId === project.id) }))); }).catch(() => {}); }, [user?.id]);
   useEffect(() => { if (new URLSearchParams(window.location.search).has('create')) setCreateOpen(true); }, []);
   
