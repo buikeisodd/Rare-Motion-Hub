@@ -109,6 +109,8 @@ const StorySchema = new Schema({
   id: { type: String, required: true, unique: true },
   userId: { type: String, required: true, index: true },
   trackId: { type: String, required: true, index: true },
+  contentType: { type: String, enum: ['track', 'text'], default: 'track' },
+  text: String,
   versionId: String,
   caption: String,
   previewStart: { type: Number, default: 0 },
