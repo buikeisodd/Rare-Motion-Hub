@@ -862,3 +862,4 @@ button[aria-label^="Close"]:hover,
     height: 2.7rem !important;
   }
 }
+.fixed button.bg-accent, .project-upload-plus, button[title="Play"], button[title="Pause"] { border-radius: .9rem !important; }
