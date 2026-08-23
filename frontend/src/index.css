@@ -883,3 +883,16 @@ button[title="Pause"] {
 .project-upload-plus {
   border-radius: .9rem !important;
 }
+
+/* Audio player translucent glass surface */
+[class*="bg-[#1b1b1d]"],
+[class*="bg-[#1c1c1e]"] {
+  background-color: rgba(27, 27, 29, .58) !important;
+  border-color: rgba(243, 235, 221, .18) !important;
+  box-shadow: 0 18px 50px rgba(52,72,59,.22), inset 0 1px 0 rgba(255,255,255,.12) !important;
+  backdrop-filter: blur(28px) saturate(1.12) !important;
+}
+[class*="bg-[#1b1b1d]"] > [class*="bg-[#141416]"],
+[class*="bg-[#1c1c1e]"] > [class*="bg-[#141416]"] {
+  opacity: .34 !important;
+}
