@@ -183,7 +183,7 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
   // â”€â”€ FLOATING PILL (all pages except insights/chat) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (!cardModal) return (
     <>
-    <div className="fixed bottom-[4.8rem] right-3 z-50 w-[min(42rem,calc(100vw-1.5rem))] select-none sm:bottom-6 sm:right-6">
+    <div className="rmh-audio-player fixed right-3 z-50 w-[min(42rem,calc(100vw-1.5rem))] select-none sm:right-6">
       {/* Panels pop above */}
       {showQueue && (
         <div className="absolute bottom-full right-0 mb-3 w-[min(18rem,calc(100vw-1.5rem))] sm:w-72">
@@ -197,20 +197,20 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
       )}
 
       {/* Compact floating pill */}
-      <div onClick={() => setExpanded(true)} className="relative flex w-full overflow-hidden items-center gap-3 rounded-[1.35rem] border border-white/10 bg-[#1b1b1d]/[.76] px-3 py-3 shadow-[0_18px_50px_rgba(0,0,0,.45)] backdrop-blur-2xl sm:gap-4 sm:px-4 sm:py-3.5">
+      <div onClick={() => setExpanded(true)} className="rmh-audio-surface relative flex w-full overflow-hidden items-center gap-3 rounded-[1.35rem] border border-white/10 bg-[#1b1b1d]/[.76] px-3 py-3 shadow-[0_18px_50px_rgba(0,0,0,.45)] backdrop-blur-2xl sm:gap-4 sm:px-4 sm:py-3.5">
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 scale-105 bg-cover bg-center opacity-15 blur-md" style={coverStyle} />
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[#141416]/[.76]" />
         {/* Cover art */}
-        <div className={`relative z-10 h-12 w-12 shrink-0 rounded-full border-2 border-white/10 bg-cover bg-center shadow-lg ${isPlaying ? 'animate-spin-slower' : ''}`} style={coverStyle} />
+        <div className={`rmh-audio-cover relative z-10 h-12 w-12 shrink-0 rounded-full border-2 border-white/10 bg-cover bg-center shadow-lg ${isPlaying ? 'animate-spin-slower' : ''}`} style={coverStyle} />
 
         {/* Title + progress */}
-        <div className="relative z-10 min-w-0 flex-1">
+        <div className="rmh-audio-meta relative z-10 min-w-0 flex-1">
           <div className="flex items-center justify-between gap-3"><MarqueeText text={currentTrack.title} className="text-sm font-semibold text-[#F3EBDD]" /><span className="shrink-0 text-[10px] font-mono text-[#F3EBDD]/70">{fmt(progress)} / {fmt(duration)}</span></div>
           <ProgressBar progress={progress} duration={duration} onSeek={seek} className="mt-2 h-7 w-full" />
         </div>
 
         {/* Core controls */}
-        <div className="relative z-10 flex shrink-0 items-center gap-0.5 text-accent sm:gap-1" onClick={(event) => event.stopPropagation()}>
+        <div className="rmh-audio-primary relative z-10 flex shrink-0 items-center gap-0.5 text-accent sm:gap-1" onClick={(event) => event.stopPropagation()}>
           <button title="Shuffle" onClick={toggleShuffle} className={`hidden h-8 w-8 place-items-center rounded-full sm:grid ${isShuffled ? 'text-[#34483B]' : 'text-[#34483B]/30 hover:text-[#34483B]/60'}`}>
             <Shuffle className="h-4 w-4" />
           </button>
@@ -231,7 +231,7 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
         </div>
 
         {/* Extra controls */}
-        <div className="relative z-10 hidden items-center gap-0.5 text-accent/75 sm:flex shrink-0" onClick={(event) => event.stopPropagation()}>
+        <div className="rmh-audio-secondary relative z-10 hidden items-center gap-0.5 text-accent/75 sm:flex shrink-0" onClick={(event) => event.stopPropagation()}>
           <button onClick={() => { setShowQueue(q => !q); setShowSettings(false); }} className={`relative h-7 w-7 grid place-items-center rounded-full transition-colors ${showQueue ? 'text-[#34483B] bg-white/15' : 'hover:text-[#34483B]'}`}>
             <ListMusic className="h-3.5 w-3.5" />
           </button>
