@@ -863,3 +863,23 @@ button[aria-label^="Close"]:hover,
   }
 }
 .fixed button.bg-accent, .project-upload-plus, button[title="Play"], button[title="Pause"] { border-radius: .9rem !important; }
+
+/* Final control color and shape correction */
+button.bg-accent,
+button[title="Play"],
+button[title="Pause"] {
+  border-radius: .9rem !important;
+}
+.project-upload-action,
+.project-upload-plus {
+  background: #F3EBDD !important;
+  color: #34483B !important;
+}
+.project-upload-action:hover,
+.project-upload-plus:hover {
+  background: #D8E2D6 !important;
+  color: #34483B !important;
+}
+.project-upload-plus {
+  border-radius: .9rem !important;
+}
