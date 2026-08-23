@@ -904,3 +904,5 @@ button[title="Pause"] {
 [role="slider"][aria-label="Track progress"] > span.pointer-events-none {
   background-color: #F3EBDD !important;
 }
+.bg-compact-player { padding-top: .65rem !important; padding-bottom: .65rem !important; } [class*="bg-[#1b1b1d]"] > [class*="h-12"] { width: 2.65rem !important; height: 2.65rem !important; }
+[class*="bg-[#1b1b1d]"] { padding-top: .65rem !important; padding-bottom: .65rem !important; }
