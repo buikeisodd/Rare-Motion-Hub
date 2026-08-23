@@ -6,7 +6,7 @@ const BASE_URL = process.env.BASE_URL || process.env.RENDER_EXTERNAL_URL || `htt
 
 const makeId = () => `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
 
-const publicUser = (user) => user ? { id: user.id, name: user.name, username: user.username || user.name, bio: user.bio || '', avatarUrl: user.avatarUrl || null, followerCount: (user.followers || []).length, followingCount: (user.following || []).length } : null;
+const publicUser = (user) => user ? { id: user.id, name: user.name, username: user.username || user.name, bio: user.bio || '', avatarUrl: user.avatarUrl || null, followerCount: (user.followers || []).length, followingCount: (user.following || []).length, lastSeenAt: user.lastSeenAt || null, isOnline: Boolean(user.lastSeenAt && Date.now() - new Date(user.lastSeenAt).getTime() < 90000) } : null;
 
 const userExists = (db, userId) => db.users.some((user) => user.id === userId);
 

@@ -32,6 +32,7 @@ const UserSchema = new Schema({
   passwordHash: String,
   avatarUrl: String,
   avatarUpdatedAt: String,
+  lastSeenAt: String,
   updatedAt: String,
   createdAt: { type: String, default: () => new Date().toISOString() },
 });

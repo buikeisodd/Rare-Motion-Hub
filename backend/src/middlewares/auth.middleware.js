@@ -89,6 +89,7 @@ const requireAuth = async (req, res, next) => {
 
     if (!session) return next(new AppError('Unauthorized: Session expired or revoked', 401));
     if (!user) return next(new AppError('Unauthorized: Account not found', 401));
+    await User.updateOne({ id: userId }, { $set: { lastSeenAt: new Date().toISOString() } });
 
     // CSRF double-submit / custom header protection for browser cookie sessions.
     // OWASP CSRF Prevention: Custom headers (like x-csrf-token) cannot be forged

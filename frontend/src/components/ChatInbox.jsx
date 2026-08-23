@@ -11,8 +11,10 @@ const formatChatTime = (value) => {
 };
 
 function avatar(user, size = 'h-10 w-10') {
-  if (user?.avatarUrl) return <img src={user.avatarUrl} alt="" className={`${size} shrink-0 rounded-full object-cover`} />;
-  return <div className={`${size} grid shrink-0 place-items-center rounded-full bg-[linear-gradient(135deg,#62e5ff,#ff9bdf)] text-sm font-bold text-black`}>{(user?.name || 'U').slice(0, 1).toUpperCase()}</div>;
+  const online = Boolean(user?.isOnline);
+  const className = `${size} shrink-0 rounded-full object-cover ${online ? 'ring-2 ring-[#718A78] ring-offset-2 ring-offset-primary-background shadow-[0_0_12px_rgba(113,138,120,0.9)]' : ''}`;
+  if (user?.avatarUrl) return <img src={user.avatarUrl} alt="" className={className} />;
+  return <div className={`${className} grid place-items-center bg-[linear-gradient(135deg,#62e5ff,#ff9bdf)] text-sm font-bold text-black`}>{(user?.name || 'U').slice(0, 1).toUpperCase()}</div>;
 }
 
 function normalizeUser(value) {
