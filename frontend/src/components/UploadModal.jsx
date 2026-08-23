@@ -1,7 +1,7 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Check, X, UploadCloud, Loader2, Music } from 'lucide-react';
 
-export default function UploadModal({ isOpen, onClose, onSuccess, userId, projectId }) {
+export default function UploadModal({ isOpen, onClose, onSuccess, onProgress, onStart, userId, projectId, inline = false }) {
   const [file, setFile] = useState(null);
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
@@ -11,7 +11,9 @@ export default function UploadModal({ isOpen, onClose, onSuccess, userId, projec
   const [uploadComplete, setUploadComplete] = useState(false);
   const [error, setError] = useState('');
   const fileInputRef = useRef(null);
+  const fileRef = useRef(null);
   const xhrRef = useRef(null);
+  useEffect(() => { if (inline && isOpen) fileInputRef.current?.click(); }, [inline, isOpen]);
 
   if (!isOpen) return null;
 
@@ -19,10 +21,13 @@ export default function UploadModal({ isOpen, onClose, onSuccess, userId, projec
     const selected = e.target.files[0];
     if (selected && selected.type.startsWith('audio/')) {
       setFile(selected);
+      fileRef.current = selected;
       if (!title) {
         setTitle(selected.name.replace(/\.[^/.]+$/, ""));
       }
       setError('');
+      onStart?.(selected.name.replace(/\.[^/.]+$/, ''));
+      if (inline) window.setTimeout(() => handleSubmit({ preventDefault() {} }), 0);
     } else {
       setFile(null);
       setError('Please select a valid audio file.');
@@ -45,7 +50,8 @@ export default function UploadModal({ isOpen, onClose, onSuccess, userId, projec
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!file) {
+    const fileToUpload = fileRef.current || file;
+    if (!fileToUpload) {
       setError('Please select a file first.');
       return;
     }
@@ -53,6 +59,7 @@ export default function UploadModal({ isOpen, onClose, onSuccess, userId, projec
     setLoading(true);
     setUploadComplete(false);
     setUploadProgress(0);
+    onProgress?.(0);
     setError('');
 
     try {
@@ -63,7 +70,7 @@ export default function UploadModal({ isOpen, onClose, onSuccess, userId, projec
       if (!signatureRes.ok) throw new Error(signature.error || 'Cloudinary storage is unavailable.');
 
       const cloudForm = new FormData();
-      cloudForm.append('file', file);
+      cloudForm.append('file', fileToUpload);
       cloudForm.append('api_key', signature.apiKey);
       cloudForm.append('timestamp', String(signature.timestamp));
       cloudForm.append('folder', signature.folder);
@@ -73,7 +80,7 @@ export default function UploadModal({ isOpen, onClose, onSuccess, userId, projec
         xhrRef.current = xhr;
         xhr.open('POST', `https://api.cloudinary.com/v1_1/${signature.cloudName}/${signature.resourceType}/upload`);
         xhr.upload.onprogress = (event) => {
-          if (event.lengthComputable) setUploadProgress(Math.round((event.loaded / event.total) * 100));
+          if (event.lengthComputable) { const nextProgress = Math.round((event.loaded / event.total) * 100); setUploadProgress(nextProgress); onProgress?.(nextProgress); }
         };
         xhr.onload = () => {
           xhrRef.current = null;
@@ -102,6 +109,7 @@ export default function UploadModal({ isOpen, onClose, onSuccess, userId, projec
       const data = await finalizeRes.json();
       if (!finalizeRes.ok) throw new Error(data.error || 'Could not save uploaded track.');
       setUploadProgress(100);
+      onProgress?.(100);
       setUploadComplete(true);
       window.setTimeout(() => {
         setFile(null); setTitle(''); setArtist(''); setProducer(''); setUploadProgress(0); setUploadComplete(false); onSuccess(data.track);
@@ -113,6 +121,8 @@ export default function UploadModal({ isOpen, onClose, onSuccess, userId, projec
       setLoading(false);
     }
   };
+
+  if (inline) return isOpen ? <input type="file" ref={fileInputRef} className="hidden" accept="audio/*" onChange={handleFileChange} /> : null;
 
   return (
     <div className="rmh-modal-shell fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4">

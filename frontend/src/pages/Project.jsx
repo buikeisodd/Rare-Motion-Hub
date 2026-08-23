@@ -45,6 +45,7 @@ export default function Project({ user }) {
   const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false);
   const [editableTitle, setEditableTitle] = useState('');
   const [editableArtist, setEditableArtist] = useState('');
+  const [uploadingTrack, setUploadingTrack] = useState(null);
 
   const fetchProject = async ({ showLoading = false } = {}) => {
     if (showLoading) setLoading(true);
@@ -90,8 +91,10 @@ export default function Project({ user }) {
 
   const handleUploadSuccess = (newTrack) => {
     setTracks((prev) => [...prev, newTrack]);
+    setUploadingTrack(null);
     setIsUploadOpen(false);
   };
+  const handleUploadStart = (title) => setUploadingTrack({ title, progress: 0 });
 
   const handleCoverSelect = (newCoverUrl) => {
     setProject((prev) => ({ ...prev, coverArt: newCoverUrl }));
@@ -360,7 +363,8 @@ export default function Project({ user }) {
           </div>
 
           <div className="space-y-2">
-            {tracks.length === 0 ? (
+            {uploadingTrack && <div className="grid grid-cols-[2rem_1fr] items-center gap-3 rounded-xl bg-shading/60 px-3 py-2.5 opacity-55"><div className="flex h-5 items-end justify-center gap-[2px]">{[60,100,75].map((height, index) => <span key={index} className="w-[3px] rounded-full bg-primary-label" style={{ height: `${height}%` }} />)}</div><div className="min-w-0"><h3 className="truncate text-xl font-semibold text-primary-label">{uploadingTrack.title}</h3><div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-primary-background/70"><div className="h-full rounded-full bg-primary-label transition-[width] duration-300" style={{ width: `${uploadingTrack.progress}%` }} /></div></div></div>}
+            {tracks.length === 0 && !uploadingTrack ? (
               <div className="flex flex-col items-center rounded-2xl border border-dashed border-border bg-shading/50 p-10 text-center">
                 <Music className="w-12 h-12 text-secondary-label mb-4" />
                 <h3 className="text-lg font-medium mb-1">No tracks yet</h3>
@@ -455,6 +459,9 @@ export default function Project({ user }) {
         onSuccess={handleUploadSuccess}
         userId={user.id}
         projectId={id}
+        inline
+        onStart={handleUploadStart}
+        onProgress={(progress) => setUploadingTrack((current) => current ? { ...current, progress } : current)}
       />}
 
       {isOwner && <CoverArtPicker
