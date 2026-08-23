@@ -140,7 +140,7 @@ function CompactQuickAdd({ suggestions, onFollow, onDismiss }) {
   );
 }
 
-+function StoryViewer({ story, stories, onClose, onNavigate }) {
+function StoryViewer({ story, stories, onClose, onNavigate }) {
   const audioRef = useRef(null);
   const [progress, setProgress] = useState(0);
   const group = story?.storyGroup || [story];
