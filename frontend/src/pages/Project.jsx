@@ -437,14 +437,17 @@ export default function Project({ user }) {
       </main>
 
       {/* Add Tracks Button â€” fixed position, never moves */}
-      {isOwner && <button
-        onClick={() => setIsUploadOpen(true)}
-                  className="project-add-control fixed bottom-6 left-1/2 z-[60] -translate-x-1/2"
-        aria-label="Add tracks"
-      >
-        <Plus className="h-4 w-4" />
-        <span>Add</span>
-      </button>}
+      {isOwner && tracks.length > 0 && (
+        <div className="mt-8 flex justify-center px-4 pb-8">
+          <button
+            onClick={() => setIsUploadOpen(true)}
+            className="project-upload-action inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold"
+          >
+            <Plus className="h-4 w-4" />
+            Upload track
+          </button>
+        </div>
+      )}
 
       {isOwner && <UploadModal
         isOpen={isUploadOpen}
