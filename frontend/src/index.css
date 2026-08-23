@@ -797,3 +797,46 @@ button[aria-label="Add tracks"] {
 @media (max-width: 767px) {
   .project-upload-active { left: 1rem; bottom: max(5.5rem, calc(4.5rem + env(safe-area-inset-bottom))); }
 }
+
+/* Final add, close, and upload control finish */
+[class*="fixed"][class*="z-50"] button.bg-accent {
+  display: grid !important;
+  width: 3rem !important;
+  height: 3rem !important;
+  min-width: 3rem !important;
+  min-height: 3rem !important;
+  place-items: center !important;
+  padding: 0 !important;
+  border-radius: 9999px !important;
+  background: #6F8974 !important;
+  color: #F3EBDD !important;
+  border: 1px solid rgba(52,72,59,.18) !important;
+  box-shadow: 0 10px 22px rgba(52,72,59,.16), inset 0 1px 0 rgba(255,255,255,.24) !important;
+}
+[class*="fixed"][class*="z-50"] button.bg-accent svg {
+  display: block !important;
+  visibility: visible !important;
+  color: #F3EBDD !important;
+}
+[class*="fixed"][class*="z-50"] button.bg-accent:hover {
+  background: #9BAF9B !important;
+  transform: scale(1.05) !important;
+  box-shadow: 0 14px 28px rgba(52,72,59,.22), inset 0 1px 0 rgba(255,255,255,.3) !important;
+}
+button[aria-label^="Close"],
+.project-upload-action {
+  border-radius: 1rem !important;
+  border: 1px solid rgba(52,72,59,.14) !important;
+  box-shadow: 0 8px 18px rgba(52,72,59,.12), inset 0 1px 0 rgba(255,255,255,.22) !important;
+}
+button[aria-label^="Close"]:hover,
+.project-upload-action:hover {
+  transform: translateY(-2px) scale(1.025) !important;
+  box-shadow: 0 12px 24px rgba(52,72,59,.18), inset 0 1px 0 rgba(255,255,255,.28) !important;
+}
+.project-upload-action {
+  background: #6F8974 !important;
+  color: #F3EBDD !important;
+  padding: .75rem 1.25rem !important;
+}
+.project-upload-action:hover { background: #9BAF9B !important; }
