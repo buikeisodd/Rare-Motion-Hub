@@ -924,7 +924,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
       </main>
 
       {/* Add button — anchored, menu pops above, never moves */}
-      <div className={`fixed bottom-[4.9rem] z-50 sm:bottom-6 ${currentTrack ? 'left-3 sm:left-6' : 'left-1/2 -translate-x-1/2'}`}>
+      <div className={`rmh-add-track fixed z-50 ${currentTrack ? 'left-3 sm:left-6' : 'left-1/2 -translate-x-1/2'}`}>
         <AnimatePresence>
           {isAddMenuOpen && (
             <motion.div
@@ -952,7 +952,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
 
         <button
           onClick={() => { setIsAddMenuOpen(o => !o); setIsProfileOpen(false); setIsNotificationsOpen(false); }}
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-accent border border-accent px-5 text-sm font-semibold text-primary-background shadow-xl backdrop-blur-md transition-colors hover:bg-accent-hover"
+          className="rmh-add-track-button inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-accent border border-accent px-5 text-sm font-semibold text-primary-background shadow-xl backdrop-blur-md transition-colors hover:bg-accent-hover"
         >
           <Plus className={`h-4 w-4 transition-transform duration-200 ${isAddMenuOpen ? 'rotate-45' : ''}`} />
           {isAddMenuOpen ? 'Close' : currentTrack ? null : 'Add'}

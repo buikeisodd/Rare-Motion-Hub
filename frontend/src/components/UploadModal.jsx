@@ -115,7 +115,7 @@ export default function UploadModal({ isOpen, onClose, onSuccess, userId, projec
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4">
+    <div className="rmh-modal-shell fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4">
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" 
@@ -123,7 +123,7 @@ export default function UploadModal({ isOpen, onClose, onSuccess, userId, projec
       ></div>
 
       {/* Modal Content */}
-      <div className="relative glass w-full max-w-lg max-h-[92dvh] overflow-y-auto rounded-t-3xl border border-border p-4 shadow-2xl animate-slide-up sm:max-h-[90vh] sm:rounded-3xl sm:p-6">
+      <div className="rmh-modal-panel relative glass w-full max-w-lg max-h-[92dvh] overflow-y-auto rounded-t-3xl border border-border p-4 shadow-2xl animate-slide-up sm:max-h-[90vh] sm:rounded-3xl sm:p-6">
         <button 
           onClick={onClose}
           disabled={loading}

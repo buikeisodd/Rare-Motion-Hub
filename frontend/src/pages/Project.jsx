@@ -441,7 +441,7 @@ export default function Project({ user }) {
         <div className={currentTrack ? 'project-upload-active' : 'mt-8 flex justify-center px-4 pb-8'}>
           <button
             onClick={() => setIsUploadOpen(true)}
-            className={currentTrack ? 'project-upload-plus' : 'project-upload-action inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold'}
+            className={currentTrack ? 'rmh-add-track-button project-upload-plus' : 'rmh-add-track-button project-upload-action inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold'}
             aria-label={currentTrack ? 'Add track' : 'Upload track'}
           >
             {currentTrack ? <Plus className="h-5 w-5" /> : <><Plus className="h-4 w-4" />Upload track</>}
