@@ -2,6 +2,59 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer components {
+  /* Shared layout system. Pages should compose these primitives instead of
+     inventing one-off gutters and max-widths. */
+  .rmh-page {
+    min-height: 100%;
+    padding-inline: var(--rmh-gutter);
+  }
+
+  .rmh-container {
+    width: 100%;
+    max-width: var(--rmh-content-max);
+    margin-inline: auto;
+  }
+
+  .rmh-container-dashboard { max-width: var(--rmh-dashboard-max); }
+  .rmh-container-workspace { max-width: var(--rmh-workspace-max); }
+  .rmh-container-readable { max-width: var(--rmh-readable-max); }
+  .rmh-container-media { max-width: var(--rmh-media-max); }
+
+  .rmh-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--rmh-space-4);
+    padding-block: var(--rmh-space-6);
+  }
+
+  .rmh-section-stack > * + * { margin-top: var(--rmh-section-gap); }
+  .rmh-card-stack > * + * { margin-top: var(--rmh-card-gap); }
+  .rmh-form-stack > * + * { margin-top: var(--rmh-form-gap); }
+
+  .rmh-title-stack > * + * { margin-top: var(--rmh-space-2); }
+  .rmh-action-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--rmh-space-3);
+  }
+
+  .rmh-modal-frame {
+    width: min(100%, var(--rmh-modal-max));
+    max-height: min(92svh, 52rem);
+    overflow: hidden;
+    border-radius: var(--rmh-radius-xl);
+  }
+
+  .rmh-modal-body {
+    max-height: calc(min(92svh, 52rem) - 7rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
 @layer base {
   :root {
     --rmh-bg: #F3EBDD;
@@ -32,6 +85,26 @@
     --rmh-radius-xl: 24px;
     --rmh-radius-pill: 999px;
 
+    /* Responsive layout tokens */
+    --rmh-gutter: clamp(1rem, 3vw, 4.5rem);
+    --rmh-content-max: 80rem;
+    --rmh-dashboard-max: 92rem;
+    --rmh-workspace-max: 72rem;
+    --rmh-readable-max: 46rem;
+    --rmh-media-max: 38rem;
+    --rmh-modal-max: 42rem;
+    --rmh-space-1: .25rem;
+    --rmh-space-2: .5rem;
+    --rmh-space-3: .75rem;
+    --rmh-space-4: 1rem;
+    --rmh-space-5: 1.25rem;
+    --rmh-space-6: 1.5rem;
+    --rmh-space-8: 2rem;
+    --rmh-space-10: 2.5rem;
+    --rmh-section-gap: clamp(2rem, 4vw, 4rem);
+    --rmh-card-gap: clamp(.75rem, 2vw, 1.5rem);
+    --rmh-form-gap: 1rem;
+
     /* Legacy mapping helpers */
     --color-primary-background: 243 235 221;
     --color-primary-label: 52 72 59;
@@ -60,6 +133,7 @@
     --color-shading: 240 235 225;
     --color-border: 190 193 180;
     --color-highlight: 216 216 201;
+    --rmh-gutter: clamp(1rem, 3vw, 4.5rem);
   }
 
   body {
@@ -400,6 +474,7 @@
 
 /* Mobile landing gate: the full studio is intentionally desktop-first */
 @media (max-width: 767px) {
+  :root { --rmh-gutter: 1rem; --rmh-section-gap: 2rem; --rmh-card-gap: .75rem; }
   body {
     background: #F3EBDD !important;
     overflow: hidden;
