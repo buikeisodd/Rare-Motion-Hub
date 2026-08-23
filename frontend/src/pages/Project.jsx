@@ -22,12 +22,12 @@ function timeAgo(dateStr) {
   const diffHours = Math.floor(diffMins / 60);
   const diffDays = Math.floor(diffHours / 24);
 
-  if (diffSecs < 60) return '';
+  if (diffSecs < 60 || diffMins < 1) return 'Just now';
   if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays === 1) return 'Yesterday';
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return uploaded.toLocaleDateString();
+  if (uploaded.getFullYear() === now.getFullYear()) {
+    return uploaded.toLocaleDateString([], { day: 'numeric', month: 'short' });
+  }
+  return uploaded.toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 export default function Project({ user }) {
@@ -363,7 +363,7 @@ export default function Project({ user }) {
           </div>
 
           <div className="space-y-2">
-            {uploadingTrack && <div className="grid grid-cols-[2rem_1fr] items-center gap-3 rounded-xl bg-shading/60 px-3 py-2.5 opacity-55"><div className="flex h-5 items-end justify-center gap-[2px]">{[60,100,75].map((height, index) => <span key={index} className="w-[3px] rounded-full bg-primary-label" style={{ height: `${height}%` }} />)}</div><div className="min-w-0"><h3 className="truncate text-xl font-semibold text-primary-label">{uploadingTrack.title}</h3><div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-primary-background/70"><div className="h-full rounded-full bg-primary-label transition-[width] duration-300" style={{ width: `${uploadingTrack.progress}%` }} /></div></div></div>}
+            {uploadingTrack && <div className="grid grid-cols-[2rem_1fr] items-center gap-3 rounded-xl bg-shading/60 px-3 py-2.5 opacity-55"><div className="text-center text-xs text-secondary-label">{tracks.length + 1}</div><div className="min-w-0"><h3 className="truncate text-xl font-semibold text-primary-label">{uploadingTrack.title}</h3><div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-secondary-label"><span>Just now</span><span>1 version</span></div><div className="mt-2 h-1.5 w-full max-w-[14rem] overflow-hidden rounded-full bg-primary-background/70"><div className="h-full rounded-full bg-primary-label transition-[width] duration-300" style={{ width: `${uploadingTrack.progress}%` }} /></div></div></div>}
             {tracks.length === 0 && !uploadingTrack ? (
               <div className="flex flex-col items-center rounded-2xl border border-dashed border-border bg-shading/50 p-10 text-center">
                 <Music className="w-12 h-12 text-secondary-label mb-4" />
@@ -414,7 +414,7 @@ export default function Project({ user }) {
                   <div className="min-w-0">
                     <h3 className="truncate text-xl font-semibold text-primary-label">{track.title}</h3>
                     <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-secondary-label">
-                      {track.uploadedAt && <span>{timeAgo(track.uploadedAt)}</span>}
+                      {track.uploadedAt && <span>{timeAgo(track.uploadedAt) || 'Just now'}</span>}
                       {track.versions?.length > 1 && <span>{track.activeVersionId ? track.versions.length : track.versions.length + 1} versions</span>}
                     </div>
                     {(track.notes || track.noteMemos?.length > 0) && (
