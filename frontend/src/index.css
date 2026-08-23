@@ -899,7 +899,7 @@ button[title="Pause"] {
 
 /* Audio waveform uses the cream botanical accent */
 [role="slider"][aria-label="Track progress"] > span:not(.pointer-events-none) {
-  background-color: #F3EBDD !important;
+  background-color: #F3EBDD;
 }
 [role="slider"][aria-label="Track progress"] > span.pointer-events-none {
   background-color: #F3EBDD !important;
