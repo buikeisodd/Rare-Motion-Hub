@@ -840,3 +840,25 @@ button[aria-label^="Close"]:hover,
   padding: .75rem 1.25rem !important;
 }
 .project-upload-action:hover { background: #9BAF9B !important; }
+
+/* Restore responsive library add control geometry */
+[class*="fixed"][class*="z-50"] button.bg-accent {
+  box-sizing: border-box !important;
+  width: clamp(2.75rem, 8vw, 3.5rem) !important;
+  height: clamp(2.75rem, 8vw, 3.5rem) !important;
+  min-width: 2.75rem !important;
+  min-height: 2.75rem !important;
+  max-width: calc(100vw - 2rem) !important;
+}
+@media (max-width: 640px) {
+  [class*="fixed"][class*="z-50"] button.bg-accent {
+    width: 2.9rem !important;
+    height: 2.9rem !important;
+  }
+}
+@media (max-width: 380px) {
+  [class*="fixed"][class*="z-50"] button.bg-accent {
+    width: 2.7rem !important;
+    height: 2.7rem !important;
+  }
+}
