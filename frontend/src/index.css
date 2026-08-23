@@ -767,3 +767,33 @@ button[aria-label="Add tracks"] {
     padding-inline: .15rem;
   }
 }
+
+/* Active project state: compact add control moves to the left */
+.project-upload-active {
+  position: fixed;
+  left: 1.5rem;
+  bottom: max(1.5rem, env(safe-area-inset-bottom));
+  z-index: 70;
+}
+.project-upload-plus {
+  display: grid;
+  width: 3rem;
+  height: 3rem;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(52,72,59,.16);
+  border-radius: 9999px;
+  background: #6F8974;
+  color: #F3EBDD;
+  box-shadow: 0 8px 18px rgba(52,72,59,.14), inset 0 1px 0 rgba(255,255,255,.22);
+  transition: transform .18s ease, background-color .18s ease, box-shadow .18s ease;
+}
+.project-upload-plus:hover {
+  background: #9BAF9B;
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 12px 24px rgba(52,72,59,.2);
+}
+.project-upload-plus:active { transform: scale(.96); }
+@media (max-width: 767px) {
+  .project-upload-active { left: 1rem; bottom: max(5.5rem, calc(4.5rem + env(safe-area-inset-bottom))); }
+}
