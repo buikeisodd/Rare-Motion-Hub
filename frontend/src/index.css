@@ -557,14 +557,15 @@
 .rmh-audio-surface { background-color: rgba(27,27,29,.58); border-color: rgba(243,235,221,.18); box-shadow: 0 18px 50px rgba(52,72,59,.22), inset 0 1px 0 rgba(255,255,255,.12); backdrop-filter: blur(28px) saturate(1.12); }
 .rmh-audio-surface [role="slider"][aria-label="Track progress"] > span:not(.pointer-events-none), .rmh-audio-surface [role="slider"][aria-label="Track progress"] > span.pointer-events-none { background-color: var(--rmh-bg) !important; }
 .rmh-modal-shell { background: rgba(52,72,59,.22); backdrop-filter: blur(24px); }
-.rmh-modal-panel { background: #F3EBDD; color: #34483B; border-color: rgba(52,72,59,.14); box-shadow: 0 24px 80px rgba(52,72,59,.28); backdrop-filter: blur(28px); }
+.rmh-modal-panel { background: rgba(243,235,221,.86); color: #34483B; border-color: rgba(52,72,59,.14); box-shadow: 0 24px 80px rgba(52,72,59,.28); backdrop-filter: blur(32px) saturate(1.08); }
 .rmh-modal-panel .text-primary-label { color: #34483B !important; }
 .rmh-modal-panel .text-secondary-label { color: #667268 !important; }
 .rmh-modal-panel button:hover:not(:disabled) { background: #D8E2D6; color: #34483B; }
-.panel-bg, .glass { background-color: #F3EBDD !important; color: #34483B !important; border-color: rgba(52,72,59,.14) !important; box-shadow: 0 24px 80px rgba(52,72,59,.28) !important; backdrop-filter: blur(28px) !important; }
+.panel-bg, .glass { background-color: rgba(243,235,221,.86) !important; color: #34483B !important; border-color: rgba(52,72,59,.14) !important; box-shadow: 0 24px 80px rgba(52,72,59,.28) !important; backdrop-filter: blur(32px) saturate(1.08) !important; }
 .panel-bg .text-primary-label, .glass .text-primary-label { color: #34483B !important; }
 .panel-bg .text-secondary-label, .glass .text-secondary-label { color: #667268 !important; }
 .panel-bg button:hover:not(:disabled), .glass button:hover:not(:disabled) { background: #D8E2D6; color: #34483B; transform: none; }
+.bg-\[\#34483B\] { background-color: rgba(52,72,59,.84) !important; backdrop-filter: blur(14px) saturate(1.05); box-shadow: inset 0 1px 0 rgba(243,235,221,.08), 0 10px 24px rgba(52,72,59,.12); }
 .rmh-play-control { transition: background-color .18s ease, box-shadow .18s ease, opacity .18s ease; }
 .rmh-play-control:hover:not(:disabled) { transform: none; box-shadow: 0 10px 22px rgba(0,0,0,.24); }
 .rmh-play-control:active:not(:disabled) { transform: none; opacity: .82; }
