@@ -380,7 +380,7 @@ export default function Feed({ user, savedOnly = false }) {
     </main>
     <ChatInbox user={user} isOpen={inboxOpen} onToggle={() => setInboxOpen((value) => !value)} />
     <CreateModal open={createOpen} onClose={() => setCreateOpen(false)} projects={workspaceProjects} onCreated={(story) => setStories((current) => [story, ...current])} />
-    <StoryViewer story={storyViewer} stories={stories} onNavigate={setStoryViewer} onClose={() => setStoryViewer(null)} />
+    {storyViewer && <StoryViewer story={storyViewer} stories={stories} onNavigate={setStoryViewer} onClose={() => setStoryViewer(null)} />}
   </div>;
 }
 
