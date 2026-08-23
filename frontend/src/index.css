@@ -864,6 +864,27 @@ button[aria-label^="Close"]:hover,
 }
 .fixed button.bg-accent, .project-upload-plus, button[title="Play"], button[title="Pause"] { border-radius: .9rem !important; }
 
+/* Final responsive interaction pass: keep fixed surfaces inside the safe area,
+   preserve readable controls, and give touch users the same hit targets. */
+button, a, input, select, textarea { touch-action: manipulation; }
+button, [role="button"] { min-height: 2.75rem; }
+@media (max-width: 767px) {
+  body { overflow-x: hidden; }
+  main { max-width: 100%; }
+  [class*="fixed"][class*="inset-0"] { padding-left: max(.75rem, env(safe-area-inset-left)); padding-right: max(.75rem, env(safe-area-inset-right)); }
+  [class*="fixed"][class*="bottom-"] { bottom: max(.75rem, env(safe-area-inset-bottom)); }
+  [class*="grid-cols-4"], [class*="grid-cols-3"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .project-upload-action, .project-upload-plus { max-width: calc(100vw - 2rem); }
+  [class*="fixed"][class*="z-50"] { max-width: calc(100vw - 1.5rem); }
+}
+@media (min-width: 768px) and (max-width: 1100px) {
+  .xl\:mr-80 { margin-right: 1rem !important; }
+  .xl\:fixed { position: static !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
+}
+
 /* Final control color and shape correction */
 button.bg-accent,
 button[title="Play"],

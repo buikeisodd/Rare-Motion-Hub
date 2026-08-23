@@ -163,7 +163,7 @@ export default function ChatInbox({ user, isOpen, onToggle, startConversationWit
 
   const visible = useMemo(() => conversations.filter((item) => (tab === 'requests' ? item.isRequest : !item.isRequest) && `${item.partner?.name || item.group?.name || ''} ${item.partner?.username || ''}`.toLowerCase().includes(search.toLowerCase())), [conversations, tab, search]);
   if (!isOpen) return null;
-  const activeName = active?.type === 'group' ? active.group.name : active?.partner?.name;
+  const activeName = active?.type === 'group' ? active.group.name : active?.partner ? `${active.partner.name}${active.partner.isOnline ? ' · Active now' : active.partner.lastSeenAt ? ` · Last seen ${formatChatTime(active.partner.lastSeenAt)}` : ''}` : '';
 
   return <div className="fixed inset-0 z-[80] flex bg-primary-background/80 p-0 backdrop-blur-xl sm:items-center sm:justify-center sm:p-5">
     <div className="flex h-full w-full overflow-hidden border-border bg-primary-background sm:h-[min(42rem,90vh)] sm:max-w-4xl sm:rounded-3xl sm:border sm:shadow-2xl">
