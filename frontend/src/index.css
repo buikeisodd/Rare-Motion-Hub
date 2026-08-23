@@ -582,3 +582,10 @@
 @media (prefers-reduced-motion: reduce) {
   .rmh-add-track-button, .project-upload-action, .project-upload-plus, .rmh-play-control, .library-project-card, .library-folder-card { transition: none; }
 }
+.feed-post-header {
+  background: rgba(52, 72, 59, 0.9);
+  color: #f3ebdd;
+  backdrop-filter: blur(18px) saturate(1.08);
+  -webkit-backdrop-filter: blur(18px) saturate(1.08);
+  opacity: 1;
+}
