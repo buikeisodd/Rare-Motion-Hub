@@ -105,6 +105,21 @@ const TrackSchema = new Schema({
   comments: [{ id: String, userId: String, text: String, parentId: String, createdAt: String, likes: [String] }],
 });
 
+const StorySchema = new Schema({
+  id: { type: String, required: true, unique: true },
+  userId: { type: String, required: true, index: true },
+  trackId: { type: String, required: true, index: true },
+  versionId: String,
+  caption: String,
+  previewStart: { type: Number, default: 0 },
+  previewEnd: Number,
+  displayStyle: { type: String, default: 'default' },
+  cardStyle: { type: String, default: 'default' },
+  cardUrl: String,
+  createdAt: { type: String, default: () => new Date().toISOString(), index: true },
+  expiresAt: { type: String, index: true },
+});
+
 const FolderSchema = new Schema({
   id: { type: String, required: true, unique: true },
   userId: String,
@@ -268,6 +283,7 @@ module.exports = {
   User:         mongoose.model('User',         UserSchema),
   Project:      mongoose.model('Project',      ProjectSchema),
   Track:        mongoose.model('Track',        TrackSchema),
+  Story:        mongoose.model('Story',        StorySchema),
   Folder:       mongoose.model('Folder',       FolderSchema),
   CoverArt:     mongoose.model('CoverArt',     CoverArtSchema),
   Notification: mongoose.model('Notification', NotificationSchema),

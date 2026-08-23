@@ -1,5 +1,5 @@
 ﻿import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Bookmark, Heart, Library, MessageCircle, MoreHorizontal, Pause, Play, Radio, Search, Send, Settings, Trash2, UserRound, Volume2, VolumeX, X } from 'lucide-react';
+import { ArrowLeft, Bookmark, Heart, Library, MessageCircle, MoreHorizontal, Pause, Play, Plus, Radio, Search, Send, Settings, Trash2, UserRound, Volume2, VolumeX, X } from 'lucide-react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { defaultGradient, gradientFor } from '../utils/gradients';
@@ -140,6 +140,20 @@ function CompactQuickAdd({ suggestions, onFollow, onDismiss }) {
   );
 }
 
+function StoryRail({ stories, onCreate, onDelete, user }) {
+  return <section className="mb-7" aria-label="Stories"><div className="mb-3 flex items-center justify-between"><h2 className="font-display text-sm font-bold tracking-wider text-[#34483B]">sToRiEs</h2><button onClick={onCreate} className="inline-flex items-center gap-1.5 rounded-xl bg-accent px-3 py-2 text-xs font-semibold text-primary-background shadow-md transition-transform hover:-translate-y-0.5"><Plus className="h-3.5 w-3.5" />Create</button></div><div className="flex gap-3 overflow-x-auto pb-1">{<button onClick={onCreate} className="grid h-28 w-20 shrink-0 place-items-center rounded-2xl border border-border bg-shading/40 text-[#34483B]/70 transition hover:-translate-y-0.5 hover:bg-highlight"><Plus className="h-6 w-6" /><span className="text-[10px]">New story</span></button>}{stories.map((story) => <article key={story.id} className="group relative h-28 w-20 shrink-0 overflow-hidden rounded-2xl border border-border bg-shading"><div className={`h-full w-full ${story.displayStyle === 'fade' ? 'story-display-fade' : story.displayStyle === 'zoom' ? 'story-display-zoom' : ''}`}>{story.project?.coverArt ? <img src={story.project.coverArt} alt="" className="h-full w-full object-cover" /> : <div className={`h-full w-full bg-gradient-to-br ${gradientFor(story.id) || defaultGradient}`} />}</div><div className="absolute inset-x-1 bottom-1 truncate rounded-lg bg-black/55 px-1.5 py-1 text-[10px] text-[#F3EBDD]">{story.owner?.id === user?.id ? 'You' : story.owner?.name || 'Artist'}</div>{story.owner?.id === user?.id && <button onClick={() => onDelete(story.id)} className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-black/55 text-[#F3EBDD] opacity-0 transition group-hover:opacity-100" aria-label="Delete story"><X className="h-3 w-3" /></button>}</article>)}</div></section>;
+}
+
+function CreateModal({ open, onClose, projects, onCreated }) {
+  const [step, setStep] = useState('destination'); const [track, setTrack] = useState(null); const [start, setStart] = useState(0); const [end, setEnd] = useState(15); const [caption, setCaption] = useState(''); const [displayStyle, setDisplayStyle] = useState('default'); const [saving, setSaving] = useState(false); const [error, setError] = useState('');
+  useEffect(() => { if (!open) { setStep('destination'); setTrack(null); setError(''); } }, [open]);
+  if (!open) return null;
+  const tracks = projects.flatMap((project) => (project.tracks || []).map((item) => ({ ...item, project })));
+  const chooseTrack = (item) => { setTrack(item); setEnd(Math.min(Number(item.duration) || 15, 15)); setStep('story'); };
+  const save = async () => { if (!track) return; setSaving(true); setError(''); const res = await fetch(`${apiUrl}/api/stories`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ trackId: track.id, versionId: track.activeVersionId, previewStart: start, previewEnd: end, caption, displayStyle }) }); const data = await res.json().catch(() => ({})); setSaving(false); if (!res.ok) { setError(data.error || 'Could not create story.'); return; } onCreated(data.story); onClose(); };
+  return <div className="fixed inset-0 z-[80] grid place-items-center bg-black/35 p-4 backdrop-blur-xl"><div className="w-full max-w-lg rounded-3xl border border-white/30 bg-[#F3EBDD]/90 p-5 text-[#34483B] shadow-2xl backdrop-blur-2xl"><div className="mb-5 flex items-center justify-between"><h2 className="font-display text-xl font-bold">Create</h2><button onClick={onClose} className="grid h-9 w-9 place-items-center rounded-xl bg-[#E4E0D4] hover:bg-[#D9DED0]" aria-label="Close"><X className="h-4 w-4" /></button></div>{step === 'destination' && <div className="grid gap-3"><p className="text-sm text-[#34483B]/70">What would you like to publish?</p><button onClick={() => setStep('track')} className="rounded-2xl bg-[#D9DED0] p-4 text-left font-semibold transition hover:-translate-y-0.5 hover:bg-[#C8D2C4]">Story<span className="mt-1 block text-xs font-normal opacity-70">Share a timed preview for 24 hours.</span></button><button onClick={onClose} className="rounded-2xl border border-[#718A78]/30 p-4 text-left font-semibold">Feed<span className="mt-1 block text-xs font-normal opacity-70">Use Create from the feed preview composer.</span></button></div>}{step === 'track' && <div><p className="mb-3 text-sm text-[#34483B]/70">Choose a track from your public projects.</p><div className="max-h-64 space-y-2 overflow-y-auto">{tracks.length ? tracks.map((item) => <button key={item.id} onClick={() => chooseTrack(item)} className="flex w-full items-center justify-between rounded-2xl bg-[#D9DED0] p-3 text-left hover:bg-[#C8D2C4]"><span className="truncate font-semibold">{item.title || item.filename || 'Untitled track'}</span><span className="ml-3 shrink-0 text-xs opacity-70">{item.project.title || item.project.name}</span></button>) : <p className="py-8 text-center text-sm opacity-70">No tracks available yet.</p>}</div></div>}{step === 'story' && track && <div className="space-y-4"><div><p className="text-xs font-semibold uppercase tracking-widest opacity-60">Story preview</p><h3 className="mt-1 font-semibold">{track.title || track.filename}</h3></div><div><div className="mb-2 flex justify-between text-xs"><span>Start {Math.round(start)}s</span><span>End {Math.round(end)}s</span></div><input type="range" min="0" max={Math.max(1, Number(track.duration) || 60) - 1} value={start} onChange={(e) => setStart(Math.min(Number(e.target.value), end - 1))} className="w-full accent-[#718A78]" /><input type="range" min="1" max={Math.max(1, Number(track.duration) || 60)} value={end} onChange={(e) => setEnd(Math.max(Number(e.target.value), start + 1))} className="w-full accent-[#718A78]" /></div><textarea value={caption} onChange={(e) => setCaption(e.target.value)} maxLength={500} placeholder="Add a caption" className="min-h-20 w-full rounded-2xl border border-[#718A78]/30 bg-white/40 p-3 outline-none" /><div className="flex gap-2">{['default', 'zoom', 'fade'].map((style) => <button key={style} onClick={() => setDisplayStyle(style)} className={`flex-1 rounded-xl px-3 py-2 text-xs font-semibold ${displayStyle === style ? 'bg-[#718A78] text-[#F3EBDD]' : 'bg-[#D9DED0]'}`}>{style}</button>)}</div>{error && <p className="text-sm text-red-600">{error}</p>}<button onClick={save} disabled={saving} className="w-full rounded-2xl bg-[#718A78] px-4 py-3 font-semibold text-[#F3EBDD] disabled:opacity-50">{saving ? 'Publishing...' : 'Publish story'}</button></div>}</div></div>;
+}
+
 function FeedCard({ item, user, onUpdate, onDelete, muted, onMutedChange }) {
   const cardRef = useRef(null); const audioRef = useRef(null);
   const navigate = useNavigate();
@@ -198,6 +212,7 @@ function FeedCard({ item, user, onUpdate, onDelete, muted, onMutedChange }) {
 export default function Feed({ user, savedOnly = false }) {
   const [items, setItems] = useState([]); const [loading, setLoading] = useState(true); const [error, setError] = useState(''); const [muted, setMuted] = useState(true);
   const [inboxOpen, setInboxOpen] = useState(false);
+  const [stories, setStories] = useState([]); const [createOpen, setCreateOpen] = useState(false); const [workspaceProjects, setWorkspaceProjects] = useState([]);
   const [allSuggestions, setAllSuggestions] = useState([]);
   const [dismissedIds, setDismissedIds] = useState(() => {
     try {
@@ -208,6 +223,8 @@ export default function Feed({ user, savedOnly = false }) {
   });
 
   useEffect(() => { fetch(`${apiUrl}/api/feed`).then(async (res) => { const data = await res.json(); if (!res.ok) throw new Error(data.error || 'Could not load feed.'); setItems(data.items || []); }).catch((err) => setError(err.message)).finally(() => setLoading(false)); }, []);
+  useEffect(() => { fetch(`${apiUrl}/api/stories`).then((res) => res.json()).then((data) => setStories(data.stories || [])).catch(() => {}); fetch(`${apiUrl}/api/workspace?userId=${encodeURIComponent(user?.id || '')}`).then((res) => res.json()).then((data) => { const projects = (data.projects || []).filter((project) => project.visibility !== 'private'); const tracks = data.tracks || []; setWorkspaceProjects(projects.map((project) => ({ ...project, tracks: tracks.filter((track) => track.projectId === project.id) }))); }).catch(() => {}); }, [user?.id]);
+  useEffect(() => { if (new URLSearchParams(window.location.search).has('create')) setCreateOpen(true); }, []);
   
   useEffect(() => {
     fetch(`${apiUrl}/api/users`)
@@ -252,6 +269,7 @@ export default function Feed({ user, savedOnly = false }) {
         </div>
       </Link>
       <nav className="space-y-2">
+        <button onClick={() => setCreateOpen(true)} className="mb-2 flex h-12 w-full items-center whitespace-nowrap rounded-2xl bg-accent px-3 text-sm font-semibold text-primary-background shadow-md transition-all hover:-translate-y-0.5" title="Create"><Plus className="h-6 w-6 shrink-0" /><span className="font-display ml-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100">cReAtE</span></button>
         {navItems.map(({ label, icon: Icon, to }) => (
           <Link key={label} to={to} className="flex h-12 w-full items-center whitespace-nowrap rounded-2xl px-3 text-sm font-semibold text-[#A6A09A] transition-all hover:bg-accent/80 hover:backdrop-blur-sm hover:text-[#F3EBDD]" title={label}>
             <Icon className="h-6 w-6 shrink-0" />
@@ -297,6 +315,7 @@ export default function Feed({ user, savedOnly = false }) {
         <p className="text-sm text-[#34483B]/70">Preview new music from the Rare Motion community.</p>
         </div>
         <CompactQuickAdd suggestions={activeSuggestions} onFollow={followSuggestion} onDismiss={dismissSuggestion} />
+        <StoryRail stories={stories} user={user} onCreate={() => setCreateOpen(true)} onDelete={async (id) => { const res = await fetch(`${apiUrl}/api/stories/${id}`, { method: 'DELETE' }); if (res.ok) setStories((current) => current.filter((story) => story.id !== id)); }} />
         {currentTrack && <div className="mb-6 w-full max-w-sm rounded-3xl bg-[#1c1c1e]/80 p-1.5 shadow-2xl backdrop-blur-xl xl:fixed xl:right-4 xl:top-[20rem] xl:z-20 xl:mb-0 xl:w-72"><AudioPlayer cardModal minimal /></div>}
         {loading && <p className="py-16 text-center text-sm text-[#34483B]/70">Loading previews...</p>}
         {error && <p className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">{error}</p>}
@@ -306,6 +325,7 @@ export default function Feed({ user, savedOnly = false }) {
       </div>
     </main>
     <ChatInbox user={user} isOpen={inboxOpen} onToggle={() => setInboxOpen((value) => !value)} />
+    <CreateModal open={createOpen} onClose={() => setCreateOpen(false)} projects={workspaceProjects} onCreated={(story) => setStories((current) => [story, ...current])} />
   </div>;
 }
 

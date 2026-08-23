@@ -6,6 +6,7 @@ const { uploadDir, coverDir, avatarDir } = require('./utils/fileHelper');
 const authRoutes = require('./routes/auth.routes');
 const workspaceRoutes = require('./routes/workspace.routes');
 const trackRoutes = require('./routes/track.routes');
+const storyRoutes = require('./routes/story.routes');
 const mediaRoutes = require('./routes/media.routes');
 const chatRoutes = require('./routes/chat.routes');
 
@@ -84,6 +85,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/media', mediaRoutes);
 app.use('/api', workspaceRoutes); // Was mounted at /api/workspaces breaking /api/workspace and /api/folders
 app.use('/api', trackRoutes);     // Was mounted at /api/tracks breaking /api/tracks/:id (became /api/tracks/tracks/:id)
+app.use('/api', storyRoutes);
 app.use('/api', chatRoutes);
 
 // Global Error Handler
