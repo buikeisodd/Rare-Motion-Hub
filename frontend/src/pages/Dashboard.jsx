@@ -390,7 +390,9 @@ function NotificationsMenu({ isOpen, notifications, conversations, onRead, onCle
               </button>
             ))}
           </div>
-          <button type="button" onClick={onClear} className="mb-2 w-full rounded-xl px-3 py-2 text-left text-xs font-semibold text-secondary-label transition-colors hover:bg-highlight hover:text-primary-label">Clear notifications</button>
+          {tab === 'read' && (
+            <button type="button" onClick={onClear} className="mb-2 w-full rounded-xl px-3 py-2 text-left text-xs font-semibold text-secondary-label transition-colors hover:bg-highlight hover:text-primary-label">Clear read notifications</button>
+          )}
           {visibleNotifications.length === 0 ? (
             <p className="px-3 py-6 text-sm text-secondary-label">No {tab} notifications.</p>
           ) : (
@@ -867,7 +869,22 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
               <Bell className="h-5 w-5 fill-current text-[#FF8A3D]" />
               {totalNotifications > 0 && <span className="absolute right-2.5 top-2.5 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-primary-background" aria-label="New notifications" />}
             </button>
-            <NotificationsMenu isOpen={isNotificationsOpen} notifications={workspace.notifications} conversations={conversations} onRead={handleReadNotification} onClear={() => { setWorkspace((prev) => ({ ...prev, notifications: prev.notifications.map((item) => ({ ...item, read: true })) })); fetch(`${apiUrl}/api/notifications/read`, { method: 'POST', credentials: 'include', headers: authHeaders(true) }).catch((error) => console.error('Failed to clear notifications', error)); }} />
+            <NotificationsMenu isOpen={isNotificationsOpen} notifications={workspace.notifications} conversations={conversations} onRead={handleReadNotification} onClear={async () => {
+              try {
+                const response = await fetch(`${apiUrl}/api/notifications/read`, {
+                  method: 'DELETE',
+                  credentials: 'include',
+                  headers: authHeaders(true),
+                });
+                if (!response.ok) throw new Error(`Failed to clear read notifications (${response.status})`);
+                setWorkspace((prev) => ({
+                  ...prev,
+                  notifications: prev.notifications.filter((item) => !item.read),
+                }));
+              } catch (error) {
+                console.error('Failed to clear read notifications', error);
+              }
+            }} />
           </div>
 
           <div className="relative">

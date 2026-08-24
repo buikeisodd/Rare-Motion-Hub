@@ -16,7 +16,8 @@ const {
   forwardMessage,
   getConversations,
   markNotificationsRead,
-  markNotificationRead
+  markNotificationRead,
+  clearReadNotifications
 } = require('../controllers/chat.controller');
 const { requireUserId } = require('../middlewares/auth.middleware');
 const { uploadChatMedia } = require('../middlewares/upload.middleware');
@@ -50,6 +51,7 @@ router.get('/conversations', requireUserId, getConversations);
 
 // Notifications
 router.post('/notifications/read', requireUserId, markNotificationsRead);
+router.delete('/notifications/read', requireUserId, clearReadNotifications);
 router.patch('/notifications/:id/read', requireUserId, markNotificationRead);
 
 module.exports = router;

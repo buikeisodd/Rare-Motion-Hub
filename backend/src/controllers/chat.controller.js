@@ -623,6 +623,24 @@ const markNotificationRead = async (req, res, next) => {
   }
 };
 
+const clearReadNotifications = async (req, res, next) => {
+  try {
+    const userId = String(req.userId);
+    const db = ensureDBShape(await readDB());
+
+    const result = await Notification.deleteMany({ userId, read: true });
+    db.notifications = db.notifications.filter((item) => (
+      !(String(item.userId) === userId && item.read)
+    ));
+    await writeDB(db);
+    await invalidateCache(`workspace:${userId}`);
+
+    res.json({ success: true, deletedCount: result.deletedCount || 0 });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getCallGroup,
   joinCallGroup,
@@ -640,5 +658,6 @@ module.exports = {
   forwardMessage,
   getConversations,
   markNotificationsRead,
-  markNotificationRead
+  markNotificationRead,
+  clearReadNotifications
 };
