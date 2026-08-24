@@ -144,6 +144,11 @@ function StoryViewer({ story, stories, user, onClose, onNavigate, onDelete }) {
   const audioRef = useRef(null);
   const [progress, setProgress] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [liked, setLiked] = useState(() => (story?.likes || []).includes(user?.id));
+  const [reply, setReply] = useState('');
+  const [replyState, setReplyState] = useState('idle');
+  const isOwnStory = (story?.owner?.id || story?.userId) === user?.id;
+  useEffect(() => { setLiked((story?.likes || []).includes(user?.id)); setReply(''); setReplyState('idle'); setMenuOpen(false); }, [story?.id, user?.id]);
   const group = story?.storyGroup || [story];
   const storyIndex = Math.max(0, group.findIndex((item) => item?.id === story?.id));
   const start = Number(story?.previewStart || 0);
@@ -158,6 +163,8 @@ function StoryViewer({ story, stories, user, onClose, onNavigate, onDelete }) {
     const nextOwner = ownerGroups[ownerIndex + direction];
     if (nextOwner?.[0]) onNavigate({ ...nextOwner[0], storyGroup: nextOwner }); else onClose();
   };
+  const toggleLike = async () => { if (isOwnStory) return; const next = !liked; setLiked(next); const response = await fetch(`${apiUrl}/api/stories/${story.id}/like`, { method: 'POST', credentials: 'include' }); if (!response.ok) setLiked(!next); };
+  const sendReply = async (event) => { event.preventDefault(); if (isOwnStory || !reply.trim()) return; setReplyState('sending'); const response = await fetch(`${apiUrl}/api/messages`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ recipientId: story.owner?.id || story.userId, conversationType: 'dm', text: reply.trim(), storyId: story.id }) }); setReplyState(response.ok ? 'sent' : 'error'); if (response.ok) setReply(''); };
   useEffect(() => {
     setProgress(0);
     const audio = audioRef.current;
@@ -178,7 +185,7 @@ function StoryViewer({ story, stories, user, onClose, onNavigate, onDelete }) {
       <div className="relative z-10 mt-7 flex items-center justify-between rounded-2xl bg-[#34483B]/72 px-4 py-3 text-[#F3EBDD] shadow-lg backdrop-blur-xl"><span className="truncate text-sm font-semibold">{(story.owner?.id || story.userId) === user?.id ? 'You' : story.owner?.name || 'Story'}</span>{(story.owner?.id || story.userId) === user?.id && <div className="relative"><button onClick={() => setMenuOpen((value) => !value)} className="grid h-9 w-9 place-items-center rounded-xl text-[#F3EBDD] hover:bg-[#F3EBDD]/15" aria-label="Story options"><MoreHorizontal className="h-5 w-5 !text-[#F3EBDD]" /></button>{menuOpen && <div className="absolute right-0 top-11 z-30 w-40 rounded-2xl border border-[#F3EBDD]/20 bg-[#F3EBDD]/95 p-1 text-[#34483B] shadow-2xl backdrop-blur-xl"><button onClick={() => onDelete(story.id)} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-red-600 hover:bg-red-500/10"><Trash2 className="h-4 w-4" />Delete story</button></div>}</div>}</div>
       <div className="absolute inset-0 flex items-center justify-center text-center">{story.contentType === 'text' ? <p className="max-h-full overflow-auto break-words px-8 text-2xl font-semibold text-[#F3EBDD]">{story.text}</p> : story.project?.coverArt ? <img src={story.project.coverArt} alt="" className="h-full w-full object-cover" /> : <div className={`h-full w-full bg-gradient-to-br ${gradientFor(story.id) || defaultGradient}`} />}<div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#34483B]/35 via-transparent to-[#34483B]/45" /></div>
       {story.contentType === 'track' && <audio ref={audioRef} preload="auto" src={story.url} onTimeUpdate={(event) => { const value = Math.max(0, event.currentTarget.currentTime - start); setProgress(Math.min(100, value / duration * 100)); if (event.currentTarget.currentTime >= maxEnd) { event.currentTarget.pause(); go(1); } }} onEnded={() => go(1)} />}
-      <div className="absolute inset-x-5 bottom-5 rounded-full border border-[#F3EBDD]/70 bg-[#34483B]/30 px-4 py-2 text-sm text-[#F3EBDD]/80">Reply to story...</div>
+      {!isOwnStory && <div className="absolute inset-x-5 bottom-5 flex items-center gap-2"><form onSubmit={sendReply} className="min-w-0 flex-1"><input value={reply} onChange={(event) => setReply(event.target.value)} disabled={replyState === 'sending'} placeholder={replyState === 'sent' ? 'Reply sent' : 'Reply to story...'} className="h-11 w-full rounded-full border border-[#F3EBDD]/70 bg-[#34483B]/45 px-4 text-sm text-[#F3EBDD] outline-none placeholder:text-[#F3EBDD]/75 backdrop-blur-xl" /></form><button type="button" onClick={toggleLike} className={`grid h-11 w-11 shrink-0 place-items-center rounded-full border border-[#F3EBDD]/70 backdrop-blur-xl ${liked ? 'bg-[#F3EBDD] text-red-500' : 'bg-[#34483B]/45 text-[#F3EBDD]'}`} aria-label={liked ? 'Unlike story' : 'Like story'}>♥</button></div>}
     </div>
     <button onClick={(event) => { event.stopPropagation(); go(1); }} className="absolute right-3 grid h-11 w-11 place-items-center rounded-2xl bg-[#F3EBDD]/90 text-[#34483B] shadow-lg sm:right-8" aria-label="Next story"><ArrowLeft className="h-5 w-5 rotate-180" /></button>
   </div>;
