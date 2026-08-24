@@ -140,16 +140,16 @@ function CompactQuickAdd({ suggestions, onFollow, onDismiss }) {
   );
 }
 
-function StoryViewer({ story, stories, user, onClose, onNavigate, onDelete }) {
+function StoryViewer({ story, stories, user, onClose, onNavigate, onDelete, onStoryLiked }) {
   const audioRef = useRef(null);
   const [progress, setProgress] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [liked, setLiked] = useState(() => (story?.likes || []).includes(user?.id));
+  const [liked, setLiked] = useState(() => Boolean(story?.likedByMe) || (story?.likes || []).map(String).includes(String(user?.id)));
   const [reply, setReply] = useState('');
   const [replyState, setReplyState] = useState('idle');
   const replyStateRef = useRef('idle');
   const isOwnStory = String(story?.owner?.id || story?.userId || '') === String(user?.id || user?._id || '');
-  useEffect(() => { setLiked((story?.likes || []).includes(user?.id)); setReply(''); setReplyState('idle'); replyStateRef.current = 'idle'; setMenuOpen(false); }, [story?.id, user?.id]);
+  useEffect(() => { setLiked(Boolean(story?.likedByMe) || (story?.likes || []).map(String).includes(String(user?.id))); setReply(''); setReplyState('idle'); replyStateRef.current = 'idle'; setMenuOpen(false); }, [story?.id, user?.id]);
   const group = story?.storyGroup || [story];
   const storyIndex = Math.max(0, group.findIndex((item) => item?.id === story?.id));
   const start = Number(story?.previewStart || 0);
@@ -164,7 +164,7 @@ function StoryViewer({ story, stories, user, onClose, onNavigate, onDelete }) {
     const nextOwner = ownerGroups[ownerIndex + direction];
     if (nextOwner?.[0]) onNavigate({ ...nextOwner[0], storyGroup: nextOwner }); else onClose();
   };
-  const toggleLike = async () => { if (isOwnStory) return; const next = !liked; setLiked(next); const response = await fetch(`${apiUrl}/api/stories/${story.id}/like`, { method: 'POST', credentials: 'include' }); if (!response.ok) setLiked(!next); };
+  const toggleLike = async () => { if (isOwnStory) return; const next = !liked; setLiked(next); const response = await fetch(`${apiUrl}/api/stories/${story.id}/like`, { method: 'POST', credentials: 'include' }); if (!response.ok) setLiked(!next); else onStoryLiked?.(story.id, next, (await response.json().catch(() => ({}))).likeCount); };
   const sendReply = async (event) => { event?.preventDefault(); const recipientId = story.owner?.id || story.userId; if (isOwnStory || !recipientId || !reply.trim() || replyState === 'sending') return; const audio = audioRef.current; audio?.pause(); replyStateRef.current = 'sending'; setReplyState('sending'); const response = await fetch(`${apiUrl}/api/messages`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ recipientId, conversationType: 'dm', text: reply.trim(), storyId: story.id }) }); const nextState = response.ok ? 'sent' : 'error'; replyStateRef.current = nextState; setReplyState(nextState); if (response.ok) { setReply(''); audio?.play().catch(() => {}); } else if (audio) audio.play().catch(() => {}); };
   useEffect(() => {
     setProgress(0);
@@ -389,7 +389,7 @@ export default function Feed({ user, savedOnly = false }) {
     </main>
     <ChatInbox user={user} isOpen={inboxOpen} onToggle={() => setInboxOpen((value) => !value)} onOpenStory={(storyId) => { const target = stories.find((story) => story.id === storyId); if (target) { setInboxOpen(false); setStoryViewer(target); } }} />
     <CreateModal open={createOpen} onClose={() => setCreateOpen(false)} projects={workspaceProjects} onCreated={(story) => setStories((current) => [story, ...current])} />
-    {storyViewer && <StoryViewer story={storyViewer} stories={stories} user={user} onNavigate={setStoryViewer} onClose={() => setStoryViewer(null)} onDelete={async (id) => { const res = await fetch(`${apiUrl}/api/stories/${id}`, { method: 'DELETE', credentials: 'include' }); if (res.ok) { setStories((current) => current.filter((story) => story.id !== id)); setStoryViewer(null); } }} />}
+    {storyViewer && <StoryViewer story={storyViewer} stories={stories} user={user} onNavigate={setStoryViewer} onClose={() => setStoryViewer(null)} onStoryLiked={(id, likedValue, likeCount) => { setStories((current) => current.map((item) => item.id === id ? { ...item, likedByMe: likedValue, likeCount } : item)); setStoryViewer((current) => current?.id === id ? { ...current, likedByMe: likedValue, likeCount } : current); }} onDelete={async (id) => { const res = await fetch(`${apiUrl}/api/stories/${id}`, { method: 'DELETE', credentials: 'include' }); if (res.ok) { setStories((current) => current.filter((story) => story.id !== id)); setStoryViewer(null); } }} />}
   </div>;
 }
 

@@ -157,6 +157,7 @@ const NotificationSchema = new Schema({
   track: { id: String, title: String },
   project: { id: String, name: String },
   folder: { id: String, name: String },
+  story: { id: String },
   createdAt: { type: String, default: () => new Date().toISOString() },
 });
 
