@@ -298,7 +298,12 @@ const getMessages = async (req, res, next) => {
         name: senderMap[m.senderId].name,
         avatarUrl: senderMap[m.senderId].avatarUrl || '',
       } : { id: m.senderId, name: 'Unknown', avatarUrl: '' },
-      replyTo: null,
+      replyTo: m.replyToMessageId
+        ? (() => {
+          const reply = msgs.find((item) => item.id === m.replyToMessageId);
+          return reply ? { id: reply.id, senderId: reply.senderId, text: reply.deleted ? '' : reply.text, deleted: Boolean(reply.deleted) } : null;
+        })()
+        : null,
       delivery: {
         delivered: true,
         read: m.senderId === userId && (type === 'group'
