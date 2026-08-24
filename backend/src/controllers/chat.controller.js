@@ -333,6 +333,13 @@ const sendMessageController = async (req, res, next) => {
     const db = ensureDBShape(await readDB());
     const sender = db.users.find((user) => user.id === senderId);
     if (!sender) return next(new AppError('Unauthorized user.', 401));
+    let storyReply = null;
+    if (storyId) {
+      storyReply = db.stories.find((story) => story.id === storyId);
+      if (!storyReply) return next(new AppError('Story not found.', 404));
+      if (storyReply.userId === senderId) return next(new AppError('You cannot reply to your own story.', 400));
+      if (storyReply.userId !== recipientId) return next(new AppError('Story reply recipient mismatch.', 400));
+    }
 
     let access = { kind: 'message' };
     if (type === 'dm') access = await getDirectMessageAccess(senderId, recipientId);
@@ -347,7 +354,7 @@ const sendMessageController = async (req, res, next) => {
       conversationType: type,
       recipientId,
       groupId: type === 'group' ? groupId : null,
-      messageKind: access.kind,
+      messageKind: storyReply ? 'story_reply' : access.kind,
       text,
       replyToMessageId: replyToMessageId || null,
       storyId: storyId || null,

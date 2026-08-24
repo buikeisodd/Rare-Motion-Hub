@@ -148,7 +148,7 @@ function StoryViewer({ story, stories, user, onClose, onNavigate, onDelete }) {
   const [reply, setReply] = useState('');
   const [replyState, setReplyState] = useState('idle');
   const replyStateRef = useRef('idle');
-  const isOwnStory = (story?.owner?.id || story?.userId) === user?.id;
+  const isOwnStory = String(story?.owner?.id || story?.userId || '') === String(user?.id || user?._id || '');
   useEffect(() => { setLiked((story?.likes || []).includes(user?.id)); setReply(''); setReplyState('idle'); replyStateRef.current = 'idle'; setMenuOpen(false); }, [story?.id, user?.id]);
   const group = story?.storyGroup || [story];
   const storyIndex = Math.max(0, group.findIndex((item) => item?.id === story?.id));
