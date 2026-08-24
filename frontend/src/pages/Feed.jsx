@@ -388,7 +388,7 @@ export default function Feed({ user, savedOnly = false }) {
       </div>
     </main>
     <ChatInbox user={user} isOpen={inboxOpen} onToggle={() => setInboxOpen((value) => !value)} onOpenStory={(storyId) => { const target = stories.find((story) => story.id === storyId); if (target) { setInboxOpen(false); setStoryViewer(target); } }} />
-    <CreateModal open={createOpen} onClose={() => setCreateOpen(false)} projects={workspaceProjects} onCreated={(story) => setStories((current) => [story, ...current])} />
+    <CreateModal open={createOpen} onClose={() => setCreateOpen(false)} projects={workspaceProjects} onCreated={async () => { const response = await fetch(`${apiUrl}/api/stories`, { credentials: 'include' }); const data = await response.json().catch(() => ({})); if (response.ok) setStories(data.stories || []); }} />
     {storyViewer && <StoryViewer story={storyViewer} stories={stories} user={user} onNavigate={setStoryViewer} onClose={() => setStoryViewer(null)} onStoryLiked={(id, likedValue, likeCount) => { setStories((current) => current.map((item) => item.id === id ? { ...item, likedByMe: likedValue, likeCount } : item)); setStoryViewer((current) => current?.id === id ? { ...current, likedByMe: likedValue, likeCount } : current); }} onDelete={async (id) => { const res = await fetch(`${apiUrl}/api/stories/${id}`, { method: 'DELETE', credentials: 'include' }); if (res.ok) { setStories((current) => current.filter((story) => story.id !== id)); setStoryViewer(null); } }} />}
   </div>;
 }
