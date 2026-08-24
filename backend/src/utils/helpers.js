@@ -203,7 +203,7 @@ const notifyMessage = (db, message) => {
     db.notifications.push({
       id: makeId(),
       userId: recipientId,
-      type: 'message',
+      type: message.messageKind === 'story_reply' ? 'story_reply' : message.messageKind === 'request' ? 'message_request' : 'message',
       actor: publicUser(sender),
       chat: {
         type: message.conversationType,
