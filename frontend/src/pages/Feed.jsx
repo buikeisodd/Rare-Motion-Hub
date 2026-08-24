@@ -326,8 +326,8 @@ export default function Feed({ user, savedOnly = false }) {
   const { currentTrack } = useAudio();
 
   const navItems = [{ label: 'pRoFiLe', icon: UserRound, to: '/profile/' + (user?.id || '') }, { label: 'sEaRcH', icon: Search, to: '/search' }, { label: 'sAvEd', icon: Bookmark, to: '/saved' }, { label: 'liBraRy', icon: Library, to: '/library' }];
-  return <div className="min-h-screen bg-primary-background pb-24 text-primary-label md:pb-0">
-    <aside className="group fixed bottom-4 left-4 top-4 z-40 hidden w-20 flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#0a0a0a]/80 px-3 py-6 shadow-2xl backdrop-blur-2xl transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:w-64 hover:border-white/20 lg:flex">
+  return <div className="feed-shell min-h-screen bg-primary-background pb-24 text-primary-label md:pb-0">
+    <aside className="feed-sidebar group fixed bottom-4 left-4 top-4 z-40 hidden w-20 flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#0a0a0a]/80 px-3 py-6 shadow-2xl backdrop-blur-2xl transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:w-64 hover:border-white/20 lg:flex">
       <Link to="/feed" className="mb-8 flex h-14 w-full shrink-0 items-center overflow-hidden whitespace-nowrap px-2.5" aria-label="Feed">
         
         <div className="ml-4 flex flex-col leading-none opacity-0 transition-opacity duration-300 group-hover:opacity-100">
@@ -367,7 +367,7 @@ export default function Feed({ user, savedOnly = false }) {
       </Link>
     </header>
     <QuickAdd suggestions={activeSuggestions} onFollow={followSuggestion} onDismiss={dismissSuggestion} />
-    <main className="px-4 pb-20 pt-4 sm:px-8 lg:ml-28 xl:mr-80">
+    <main className="feed-main px-4 pb-20 pt-4 sm:px-8 lg:ml-28 xl:mr-80">
       <div className="mx-auto max-w-2xl py-3">
         <CompactQuickAdd suggestions={activeSuggestions} onFollow={followSuggestion} onDismiss={dismissSuggestion} />
         <StoryRail stories={Object.values(stories.reduce((groups, story) => { const key = story.owner?.id || story.userId || story.id; (groups[key] ||= []).push(story); return groups; }, {})).map((group) => ({ ...group[0], storyGroup: group }))} user={user} onCreate={() => setCreateOpen(true)} onOpen={setStoryViewer} onDelete={async (id) => { const res = await fetch(`${apiUrl}/api/stories/${id}`, { method: 'DELETE' }); if (res.ok) setStories((current) => current.filter((story) => story.id !== id)); }} />
