@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, CheckCheck, Copy, Inbox, MessageCircle, MoreHorizontal, Pin, Reply, Search, Send, Star, Trash2, UserPlus, Users, X } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 import { Link } from 'react-router-dom';
@@ -70,6 +70,7 @@ export default function ChatInbox({ user, isOpen, onToggle, startConversationWit
   const [creatingGroup, setCreatingGroup] = useState(false);
   const [messageMenu, setMessageMenu] = useState(null);
   const [replyingTo, setReplyingTo] = useState(null);
+  const handledTargetId = useRef(null);
 
   const loadConversations = useCallback(async () => {
     if (!user?.id) return;
@@ -108,9 +109,10 @@ export default function ChatInbox({ user, isOpen, onToggle, startConversationWit
   useEffect(() => { if (isOpen) loadConversations(); }, [isOpen, loadConversations]);
 
   useEffect(() => {
-    if (!isOpen || !startConversationWith?.id || startConversationWith.id === user?.id) return;
+    if (!isOpen || !startConversationWith?.id || startConversationWith.id === user?.id || handledTargetId.current === startConversationWith.id) return;
     const target = normalizeUser(startConversationWith);
     if (!target) return;
+    handledTargetId.current = target.id;
     const existing = conversations.find((item) => item.type === 'dm' && item.partner.id === target.id);
     setActive(existing || { type: 'dm', partner: target, isRequest: false, unreadCount: 0, lastMessage: null });
     setTab('inbox');
