@@ -387,7 +387,7 @@ export default function Feed({ user, savedOnly = false }) {
         </div>
       </div>
     </main>
-    <ChatInbox user={user} isOpen={inboxOpen} onToggle={() => setInboxOpen((value) => !value)} />
+    <ChatInbox user={user} isOpen={inboxOpen} onToggle={() => setInboxOpen((value) => !value)} onOpenStory={(storyId) => { const target = stories.find((story) => story.id === storyId); if (target) { setInboxOpen(false); setStoryViewer(target); } }} />
     <CreateModal open={createOpen} onClose={() => setCreateOpen(false)} projects={workspaceProjects} onCreated={(story) => setStories((current) => [story, ...current])} />
     {storyViewer && <StoryViewer story={storyViewer} stories={stories} user={user} onNavigate={setStoryViewer} onClose={() => setStoryViewer(null)} onDelete={async (id) => { const res = await fetch(`${apiUrl}/api/stories/${id}`, { method: 'DELETE', credentials: 'include' }); if (res.ok) { setStories((current) => current.filter((story) => story.id !== id)); setStoryViewer(null); } }} />}
   </div>;

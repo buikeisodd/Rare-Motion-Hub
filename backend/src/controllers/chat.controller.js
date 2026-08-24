@@ -349,6 +349,9 @@ const sendMessageController = async (req, res, next) => {
     }
     if (access.error) return next(new AppError(access.error, access.status));
 
+    const storyTrack = storyReply?.trackId ? db.tracks.find((track) => track.id === storyReply.trackId) : null;
+    const storyProject = storyTrack?.projectId ? db.projects.find((project) => project.id === storyTrack.projectId) : null;
+    const storyPreview = storyReply ? { id: storyReply.id, contentType: storyReply.contentType, text: storyReply.text || '', coverArt: storyProject?.coverArt || '', title: storyTrack?.title || storyTrack?.filename || 'Story preview', ownerId: storyReply.userId } : null;
     const msg = createMessage(db, {
       senderId,
       conversationType: type,
@@ -358,6 +361,7 @@ const sendMessageController = async (req, res, next) => {
       text,
       replyToMessageId: replyToMessageId || null,
       storyId: storyId || null,
+      storyPreview,
     });
 
     db.messages.push(msg);

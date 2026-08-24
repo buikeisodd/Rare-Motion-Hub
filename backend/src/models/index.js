@@ -175,6 +175,7 @@ const MessageSchema = new Schema({
   conversationType: String,
   messageKind: String,
   storyId: String,
+  storyPreview: Schema.Types.Mixed,
   attachments: [Schema.Types.Mixed],
   replyToMessageId: String,
   forwardedFrom: Schema.Types.Mixed,
