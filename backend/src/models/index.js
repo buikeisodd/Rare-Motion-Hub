@@ -193,6 +193,7 @@ const MessageSchema = new Schema({
   replyTo: Schema.Types.Mixed,
   reactions: Schema.Types.Mixed,
   pinned: Boolean,
+  starredBy: [String],
   forwarded: Boolean,
   createdAt: { type: String, default: () => new Date().toISOString() },
   readBy: [String],

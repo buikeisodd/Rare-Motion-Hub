@@ -12,6 +12,7 @@ const {
   sendMessageController,
   sendMediaMessage,
   pinMessage,
+  starMessage,
   deleteMessage,
   forwardMessage,
   getConversations,
@@ -43,6 +44,7 @@ router.get('/messages', requireUserId, getMessages);
 router.post('/messages', requireUserId, sendMessageController);
 router.post('/messages/media', requireUserId, uploadChatMedia.single('media'), sendMediaMessage);
 router.patch('/messages/:id/pin', requireUserId, pinMessage);
+router.patch('/messages/:id/star', requireUserId, starMessage);
 router.delete('/messages/:id', requireUserId, deleteMessage);
 router.post('/messages/:id/forward', requireUserId, forwardMessage);
 

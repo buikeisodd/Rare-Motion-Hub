@@ -451,6 +451,10 @@ const pinMessage = async (req, res, next) => {
     const message = db.messages.find((item) => item.id === req.params.id);
     if (!message) return next(new AppError('Message not found.', 404));
     if (!userExists(db, userId)) return next(new AppError('Unauthorized user.', 401));
+    const participantIds = message.conversationType === 'group'
+      ? (db.groups.find((group) => group.id === message.groupId)?.participantIds || [])
+      : [message.senderId, message.recipientId].filter(Boolean);
+    if (!participantIds.includes(userId)) return next(new AppError('You are not part of this conversation.', 403));
     
     message.pinned = Boolean(pinned);
     message.pinnedBy = pinned ? userId : null;
@@ -599,6 +603,26 @@ const markNotificationsRead = async (req, res, next) => {
   }
 };
 
+const starMessage = async (req, res, next) => {
+  try {
+    const db = ensureDBShape(await readDB());
+    const userId = req.userId;
+    const message = db.messages.find((item) => item.id === req.params.id);
+    if (!message) return next(new AppError('Message not found.', 404));
+    const participantIds = message.conversationType === 'group'
+      ? (db.groups.find((group) => group.id === message.groupId)?.participantIds || [])
+      : [message.senderId, message.recipientId].filter(Boolean);
+    if (!participantIds.includes(userId)) return next(new AppError('You are not part of this conversation.', 403));
+    const starredBy = Array.isArray(message.starredBy) ? message.starredBy : [];
+    const starred = !starredBy.includes(userId);
+    message.starredBy = starred ? [...starredBy, userId] : starredBy.filter((id) => id !== userId);
+    await writeDB(db);
+    res.json({ message: hydrateMessage(db, message), starred });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const markNotificationRead = async (req, res, next) => {
   try {
     const db = ensureDBShape(await readDB());
@@ -654,6 +678,7 @@ module.exports = {
   sendMessageController,
   sendMediaMessage,
   pinMessage,
+  starMessage,
   deleteMessage,
   forwardMessage,
   getConversations,
