@@ -84,7 +84,7 @@ export default function VerificationModal({ email, expiresAt, apiUrl, onVerified
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#050505]/80 backdrop-blur-sm px-4 animate-fade-in">
-      <div className="w-full max-w-sm rounded-2xl border border-[rgba(255,255,255,.09)] bg-[#111111] p-6 text-center shadow-2xl">
+      <div className="rmh-modal-panel w-full max-w-sm rounded-2xl border border-border p-6 text-center shadow-2xl">
 
         <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[rgba(255,138,61,.12)]">
           <Mail className="h-6 w-6 text-[#FF8A3D]" />
@@ -97,7 +97,7 @@ export default function VerificationModal({ email, expiresAt, apiUrl, onVerified
         </p>
         <p className="mt-1 font-semibold text-[#34483B] break-all">{email}</p>
 
-        <div className="mt-5 rounded-xl bg-[#171717] border border-[rgba(255,255,255,.09)] px-4 py-3">
+        <div className="mt-5 rounded-xl border border-border bg-shading px-4 py-3">
           <p className="text-[11px] uppercase tracking-wider font-medium text-[#A6A09A]">
             {expired ? 'Verification window expired' : 'Verification window closes in'}
           </p>

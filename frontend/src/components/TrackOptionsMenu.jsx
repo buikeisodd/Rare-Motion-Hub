@@ -427,7 +427,7 @@ function VersionRowMenu({ onExport, onDelete, onClose }) {
   return (
     <>
       <div className="fixed inset-0 z-[110]" onClick={onClose} />
-      <div className="absolute right-0 top-full z-[111] mt-2 w-56 rounded-[1.25rem] border border-transparent bg-primary-background/95 p-3 shadow-[0_24px_60px_rgba(52,72,59,.24)] backdrop-blur-2xl">
+      <div className="panel-bg absolute right-0 top-full z-[111] mt-2 w-56 rounded-[1.25rem] border border-border p-3 shadow-[0_24px_60px_rgba(52,72,59,.24)]">
         <button onClick={onExport} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-highlight">
           <Download className="h-3.5 w-3.5" /> Export version
         </button>
