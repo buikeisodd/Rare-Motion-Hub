@@ -562,6 +562,9 @@
 .rmh-modal-panel .text-secondary-label { color: #667268 !important; }
 .rmh-modal-panel button:hover:not(:disabled) { background: #D8E2D6; color: #34483B; }
 .panel-bg, .glass { background-color: rgba(243,235,221,.86) !important; color: #34483B !important; border-color: rgba(52,72,59,.14) !important; box-shadow: 0 24px 80px rgba(52,72,59,.28) !important; backdrop-filter: blur(32px) saturate(1.08) !important; }
+.create-flow-surface,
+div[class*="bg-\\[\\#F3EBDD\\]\\/90"],
+div[class*="bg-\\[\\#F3EBDD\\]\\/92"] { background: rgba(243,235,221,.98) !important; color: #34483B !important; border-color: rgba(52,72,59,.16) !important; box-shadow: 0 24px 80px rgba(52,72,59,.28) !important; backdrop-filter: blur(32px) saturate(1.08) !important; }
 .panel-bg .text-primary-label, .glass .text-primary-label { color: #34483B !important; }
 .panel-bg .text-secondary-label, .glass .text-secondary-label { color: #667268 !important; }
 .panel-bg button:hover:not(:disabled), .glass button:hover:not(:disabled) { background: #D8E2D6; color: #34483B; transform: none; }
