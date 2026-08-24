@@ -147,8 +147,9 @@ function StoryViewer({ story, stories, user, onClose, onNavigate, onDelete }) {
   const [liked, setLiked] = useState(() => (story?.likes || []).includes(user?.id));
   const [reply, setReply] = useState('');
   const [replyState, setReplyState] = useState('idle');
+  const replyStateRef = useRef('idle');
   const isOwnStory = (story?.owner?.id || story?.userId) === user?.id;
-  useEffect(() => { setLiked((story?.likes || []).includes(user?.id)); setReply(''); setReplyState('idle'); setMenuOpen(false); }, [story?.id, user?.id]);
+  useEffect(() => { setLiked((story?.likes || []).includes(user?.id)); setReply(''); setReplyState('idle'); replyStateRef.current = 'idle'; setMenuOpen(false); }, [story?.id, user?.id]);
   const group = story?.storyGroup || [story];
   const storyIndex = Math.max(0, group.findIndex((item) => item?.id === story?.id));
   const start = Number(story?.previewStart || 0);
@@ -164,7 +165,7 @@ function StoryViewer({ story, stories, user, onClose, onNavigate, onDelete }) {
     if (nextOwner?.[0]) onNavigate({ ...nextOwner[0], storyGroup: nextOwner }); else onClose();
   };
   const toggleLike = async () => { if (isOwnStory) return; const next = !liked; setLiked(next); const response = await fetch(`${apiUrl}/api/stories/${story.id}/like`, { method: 'POST', credentials: 'include' }); if (!response.ok) setLiked(!next); };
-  const sendReply = async (event) => { event?.preventDefault(); const recipientId = story.owner?.id || story.userId; if (isOwnStory || !recipientId || !reply.trim() || replyState === 'sending') return; setReplyState('sending'); const response = await fetch(`${apiUrl}/api/messages`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ recipientId, conversationType: 'dm', text: reply.trim(), storyId: story.id }) }); setReplyState(response.ok ? 'sent' : 'error'); if (response.ok) setReply(''); };
+  const sendReply = async (event) => { event?.preventDefault(); const recipientId = story.owner?.id || story.userId; if (isOwnStory || !recipientId || !reply.trim() || replyState === 'sending') return; const audio = audioRef.current; audio?.pause(); replyStateRef.current = 'sending'; setReplyState('sending'); const response = await fetch(`${apiUrl}/api/messages`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ recipientId, conversationType: 'dm', text: reply.trim(), storyId: story.id }) }); const nextState = response.ok ? 'sent' : 'error'; replyStateRef.current = nextState; setReplyState(nextState); if (response.ok) { setReply(''); audio?.play().catch(() => {}); } else if (audio) audio.play().catch(() => {}); };
   useEffect(() => {
     setProgress(0);
     const audio = audioRef.current;
@@ -174,7 +175,7 @@ function StoryViewer({ story, stories, user, onClose, onNavigate, onDelete }) {
       if (audio.readyState >= 1) ready();
       return () => { audio.removeEventListener('loadedmetadata', ready); audio.pause(); };
     }
-    const timer = window.setInterval(() => setProgress((value) => { const next = value + 100 / (duration * 10); if (next >= 100) { window.clearInterval(timer); go(1); return 100; } return next; }), 100);
+    const timer = window.setInterval(() => { if (replyStateRef.current === 'sending') return; setProgress((value) => { const next = value + 100 / (duration * 10); if (next >= 100) { window.clearInterval(timer); go(1); return 100; } return next; }); }, 100);
     return () => window.clearInterval(timer);
   }, [story?.id]);
   if (!story) return null;

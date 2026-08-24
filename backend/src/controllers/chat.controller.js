@@ -323,7 +323,7 @@ const getMessages = async (req, res, next) => {
 const sendMessageController = async (req, res, next) => {
   try {
     const body = req.body && typeof req.body === 'object' ? req.body : {};
-    const { recipientId, groupId, conversationType, text, replyToMessageId } = body;
+    const { recipientId, groupId, conversationType, text, replyToMessageId, storyId } = body;
     const senderId = req.userId;
     if (!text?.trim()) return next(new AppError('text required.', 400));
     const type = conversationType || 'dm';
@@ -349,7 +349,8 @@ const sendMessageController = async (req, res, next) => {
       groupId: type === 'group' ? groupId : null,
       messageKind: access.kind,
       text,
-      replyToMessageId: replyToMessageId || null
+      replyToMessageId: replyToMessageId || null,
+      storyId: storyId || null,
     });
 
     db.messages.push(msg);

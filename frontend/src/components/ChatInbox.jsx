@@ -44,7 +44,7 @@ function ConversationRow({ conversation, active, onClick }) {
   const name = conversation.type === 'group' ? person.name : person.name;
   return <button onClick={onClick} className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition-colors ${active ? 'bg-highlight' : 'hover:bg-highlight/60'}`}>
     {conversation.type === 'group' ? <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[linear-gradient(135deg,#62e5ff,#ff9bdf)]"><MessageCircle className="h-4 w-4 text-black" /></div> : avatar(person)}
-    <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-primary-label">{name}</span><span className="block truncate text-xs text-secondary-label">{conversation.isRequest ? 'Message request' : conversation.lastMessage?.text || 'No messages yet'}</span></span>
+    <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-primary-label">{name}</span><span className="block truncate text-xs text-secondary-label">{conversation.lastMessage?.storyId ? 'Story reply · ' : conversation.isRequest ? 'Message request' : ''}{conversation.lastMessage?.text || 'No messages yet'}</span></span>
     <span className="flex w-12 shrink-0 flex-col items-end gap-1"><span className="text-[10px] text-secondary-label">{formatChatTime(conversation.lastMessage?.createdAt)}</span>{conversation.unreadCount > 0 && <span className="grid h-5 min-w-5 place-items-center rounded-full bg-primary-label px-1 text-[10px] text-primary-background">{conversation.unreadCount}</span>}</span>
   </button>;
 }
