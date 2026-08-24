@@ -140,7 +140,7 @@ function CompactQuickAdd({ suggestions, onFollow, onDismiss }) {
   );
 }
 
-function StoryViewer({ story, stories, onClose, onNavigate, onDelete }) {
+function StoryViewer({ story, stories, user, onClose, onNavigate, onDelete }) {
   const audioRef = useRef(null);
   const [progress, setProgress] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -175,7 +175,7 @@ function StoryViewer({ story, stories, onClose, onNavigate, onDelete }) {
     <button onClick={(event) => { event.stopPropagation(); go(-1); }} className="absolute left-3 grid h-11 w-11 place-items-center rounded-2xl bg-[#F3EBDD]/90 text-[#34483B] shadow-lg sm:left-8" aria-label="Previous story"><ArrowLeft className="h-5 w-5" /></button>
     <div onClick={(event) => event.stopPropagation()} className="relative flex h-[min(88vh,720px)] w-[min(92vw,420px)] flex-col overflow-hidden rounded-[2rem] border border-[#F3EBDD]/30 bg-[#718A78] shadow-2xl">
       <div className="absolute inset-x-4 top-4 z-10 flex gap-1">{group.map((item, itemIndex) => <div key={item.id} className="h-1 flex-1 rounded-full bg-[#F3EBDD]/40"><div className="h-full rounded-full bg-[#F3EBDD]" style={{ width: itemIndex < storyIndex ? '100%' : itemIndex === storyIndex ? `${progress}%` : '0%' }} /></div>)}</div>
-      <div className="relative z-10 mt-7 flex items-center justify-between rounded-2xl bg-[#34483B]/72 px-4 py-3 text-[#F3EBDD] shadow-lg backdrop-blur-xl"><span className="truncate text-sm font-semibold">{story.owner?.name || 'Story'}</span><div className="relative"><button onClick={() => setMenuOpen((value) => !value)} className="grid h-9 w-9 place-items-center rounded-xl text-[#F3EBDD] hover:bg-[#F3EBDD]/15" aria-label="Story options"><MoreHorizontal className="h-5 w-5 !text-[#F3EBDD]" /></button>{menuOpen && <div className="absolute right-0 top-11 z-30 w-40 rounded-2xl border border-[#F3EBDD]/20 bg-[#F3EBDD]/95 p-1 text-[#34483B] shadow-2xl backdrop-blur-xl"><button onClick={() => onDelete(story.id)} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-red-600 hover:bg-red-500/10"><Trash2 className="h-4 w-4" />Delete story</button></div>}</div></div>
+      <div className="relative z-10 mt-7 flex items-center justify-between rounded-2xl bg-[#34483B]/72 px-4 py-3 text-[#F3EBDD] shadow-lg backdrop-blur-xl"><span className="truncate text-sm font-semibold">{story.owner?.name || 'Story'}</span>{(story.owner?.id || story.userId) === user?.id && <div className="relative"><button onClick={() => setMenuOpen((value) => !value)} className="grid h-9 w-9 place-items-center rounded-xl text-[#F3EBDD] hover:bg-[#F3EBDD]/15" aria-label="Story options"><MoreHorizontal className="h-5 w-5 !text-[#F3EBDD]" /></button>{menuOpen && <div className="absolute right-0 top-11 z-30 w-40 rounded-2xl border border-[#F3EBDD]/20 bg-[#F3EBDD]/95 p-1 text-[#34483B] shadow-2xl backdrop-blur-xl"><button onClick={() => onDelete(story.id)} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-red-600 hover:bg-red-500/10"><Trash2 className="h-4 w-4" />Delete story</button></div>}</div>}</div>
       <div className="flex min-h-0 flex-1 items-center justify-center p-5 text-center">{story.contentType === 'text' ? <p className="max-h-full overflow-auto break-words text-2xl font-semibold text-[#F3EBDD]">{story.text}</p> : story.project?.coverArt ? <img src={story.project.coverArt} alt="" className="max-h-full w-full rounded-2xl object-cover" /> : <div className={`h-full w-full rounded-2xl bg-gradient-to-br ${gradientFor(story.id) || defaultGradient}`} />}</div>
       {story.contentType === 'track' && <audio ref={audioRef} preload="auto" src={story.url} onTimeUpdate={(event) => { const value = Math.max(0, event.currentTarget.currentTime - start); setProgress(Math.min(100, value / duration * 100)); if (event.currentTarget.currentTime >= maxEnd) { event.currentTarget.pause(); go(1); } }} onEnded={() => go(1)} />}
       <div className="absolute inset-x-5 bottom-5 rounded-full border border-[#F3EBDD]/70 bg-[#34483B]/30 px-4 py-2 text-sm text-[#F3EBDD]/80">Reply to story...</div>
@@ -381,7 +381,7 @@ export default function Feed({ user, savedOnly = false }) {
     </main>
     <ChatInbox user={user} isOpen={inboxOpen} onToggle={() => setInboxOpen((value) => !value)} />
     <CreateModal open={createOpen} onClose={() => setCreateOpen(false)} projects={workspaceProjects} onCreated={(story) => setStories((current) => [story, ...current])} />
-    {storyViewer && <StoryViewer story={storyViewer} stories={stories} onNavigate={setStoryViewer} onClose={() => setStoryViewer(null)} onDelete={async (id) => { const res = await fetch(`${apiUrl}/api/stories/${id}`, { method: 'DELETE', credentials: 'include' }); if (res.ok) { setStories((current) => current.filter((story) => story.id !== id)); setStoryViewer(null); } }} />}
+    {storyViewer && <StoryViewer story={storyViewer} stories={stories} user={user} onNavigate={setStoryViewer} onClose={() => setStoryViewer(null)} onDelete={async (id) => { const res = await fetch(`${apiUrl}/api/stories/${id}`, { method: 'DELETE', credentials: 'include' }); if (res.ok) { setStories((current) => current.filter((story) => story.id !== id)); setStoryViewer(null); } }} />}
   </div>;
 }
 
