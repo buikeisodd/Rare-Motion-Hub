@@ -119,6 +119,7 @@ const StorySchema = new Schema({
   displayStyle: { type: String, default: 'default' },
   cardStyle: { type: String, default: 'default' },
   cardUrl: String,
+  likes: [String],
   createdAt: { type: String, default: () => new Date().toISOString(), index: true },
   expiresAt: { type: String, index: true },
 });
@@ -173,6 +174,7 @@ const MessageSchema = new Schema({
   recipientId: String,
   conversationType: String,
   messageKind: String,
+  storyId: String,
   attachments: [Schema.Types.Mixed],
   replyToMessageId: String,
   forwardedFrom: Schema.Types.Mixed,
