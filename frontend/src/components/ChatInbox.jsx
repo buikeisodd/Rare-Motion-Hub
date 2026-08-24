@@ -37,7 +37,7 @@ function normalizeConversation(value) {
 function normalizeMessage(value) {
   if (!value || typeof value !== 'object' || !value.id) return null;
   const text = typeof value.text === 'string' ? value.text : '';
-  return { ...value, id: value.id, text: value.storyId ? `Story reply · ${text}` : text, storyLabel: value.storyId ? 'Story reply' : '', deleted: Boolean(value.deleted), senderId: value.senderId || '', sender: normalizeUser(value.sender), createdAt: value.createdAt || new Date().toISOString() };
+  return { ...value, id: value.id, text: value.storyId ? `↳  Story reply\n${text}` : text, storyLabel: value.storyId ? 'Story reply' : '', deleted: Boolean(value.deleted), senderId: value.senderId || '', sender: normalizeUser(value.sender), createdAt: value.createdAt || new Date().toISOString() };
 }
 
 function ConversationRow({ conversation, active, onClick }) {
