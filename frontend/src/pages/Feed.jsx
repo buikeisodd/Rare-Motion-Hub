@@ -34,7 +34,7 @@ function QuickAdd({ suggestions, requests, onFollow, onDismiss, onDecline }) {
       <div className="rounded-3xl border border-white/10 bg-primary-background/60 p-3.5 shadow-2xl backdrop-blur-2xl">
         <div className="mb-3 flex items-center gap-1 rounded-xl bg-shading/40 p-1"><button onClick={() => setMode('quick')} className={`flex-1 rounded-lg px-2 py-1.5 text-[11px] font-semibold ${mode === 'quick' ? 'bg-[#F3EBDD] text-[#34483B]' : 'text-[#34483B]/70'}`}>Quick add</button><button onClick={() => setMode('requests')} className={`flex-1 rounded-lg px-2 py-1.5 text-[11px] font-semibold ${mode === 'requests' ? 'bg-[#F3EBDD] text-[#34483B]' : 'text-[#34483B]/70'}`}>Requests{requests.length ? ` (${requests.length})` : ''}</button></div>
         <div className="mb-3 flex items-center justify-between"><h2 className="font-display text-sm font-bold tracking-wider text-[#34483B]">{mode === 'requests' ? 'fRiEnD rEqUeStS' : 'qUiCk aDd'}</h2><UserRound className="h-4 w-4 text-[#34483B]/70" /></div>
-        {people.length === 0 ? <p className="text-xs text-[#34483B]/70">{mode === 'requests' ? 'No friend requests right now.' : 'You are all caught up.'}</p> : <div className="max-h-[min(24rem,calc(100vh-12rem))] space-y-2.5 overflow-y-auto pr-1">{people.map((person) => <PersonRow key={person.id} person={person} request={mode === 'requests'} onFollow={onFollow} onDismiss={mode === 'requests' ? onDecline : onDismiss} />)}</div>}
+        {people.length === 0 ? <p className="text-xs text-[#34483B]/70">{mode === 'requests' ? 'No friend requests right now.' : 'You are all caught up.'}</p> : <div className="max-h-40 space-y-2.5 overflow-y-auto pr-1">{people.map((person) => <PersonRow key={person.id} person={person} request={mode === 'requests'} onFollow={onFollow} onDismiss={mode === 'requests' ? onDecline : onDismiss} />)}</div>}
         <p className="mt-5 border-t border-white/5 pt-4 text-[11px] text-[#34483B]/60">Â© 2026 Rare Motion Hub</p>
       </div>
     </aside>
@@ -280,7 +280,12 @@ export default function Feed({ user, savedOnly = false }) {
     fetch(`${apiUrl}/api/users`)
       .then((res) => res.json())
       .then((data) => {
-        setAllSuggestions((data.users || []).filter((person) => person.id !== user?.id));
+        const people = (data.users || []).filter((person) => person.id !== user?.id);
+        for (let index = people.length - 1; index > 0; index -= 1) {
+          const randomIndex = Math.floor(Math.random() * (index + 1));
+          [people[index], people[randomIndex]] = [people[randomIndex], people[index]];
+        }
+        setAllSuggestions(people);
       })
       .catch(() => {});
   }, [user?.id]);
