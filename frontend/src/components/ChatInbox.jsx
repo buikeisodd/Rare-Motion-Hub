@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, CheckCheck, Copy, Inbox, Link2, Menu, MessageCircle, MoreHorizontal, Pin, Reply, Search, Send, Settings2, ShieldCheck, Star, Trash2, UserPlus, Users, X } from 'lucide-react';
+import { ArrowLeft, Ban, CheckCheck, Copy, Inbox, Link2, Menu, MessageCircle, MoreHorizontal, Pin, Reply, Search, Send, Settings2, ShieldCheck, Star, Trash2, UserPlus, Users, X } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 import { Link } from 'react-router-dom';
 import ConfirmModal from './ConfirmModal';
@@ -40,7 +40,7 @@ function normalizeMessage(value) {
   if (!value || typeof value !== 'object' || !value.id) return null;
   const text = typeof value.text === 'string' ? value.text : '';
   const isStoryReply = Boolean(value.storyId || value.messageKind === 'story_reply');
-  return { ...value, id: value.id, storyId: value.storyId || (isStoryReply ? value.storyId : null), text, storyLabel: isStoryReply ? 'Story reply' : '', deleted: Boolean(value.deleted), senderId: value.senderId || '', sender: normalizeUser(value.sender), createdAt: value.createdAt || new Date().toISOString() };
+  return { ...value, id: value.id, storyId: value.storyId || (isStoryReply ? value.storyId : null), text, storyLabel: isStoryReply ? 'Story reply' : '', deleted: Boolean(value.deleted), deletedBy: value.deletedBy || null, senderId: value.senderId || '', sender: normalizeUser(value.sender), createdAt: value.createdAt || new Date().toISOString() };
 }
 
 function ChatMenu({ user, privacy, setPrivacy, onBack, onProfile, onClear }) {
@@ -196,8 +196,10 @@ export default function ChatInbox({ user, isOpen, onToggle, startConversationWit
     if (!pendingDeleteMessage) return;
     try {
       const response = await authFetch(`${apiUrl}/api/messages/${pendingDeleteMessage.id}`, { method: 'DELETE' });
-      if (!response.ok) throw new Error('Could not delete message.');
-      setMessages((current) => current.map((item) => item.id === pendingDeleteMessage.id ? { ...item, deleted: true, text: '' } : item));
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Could not delete message.');
+      const deletedMessage = normalizeMessage(data.message);
+      setMessages((current) => current.map((item) => item.id === pendingDeleteMessage.id ? (deletedMessage || { ...item, deleted: true, deletedBy: user.id, text: '' }) : item));
       setDeleteFeedback('Message deleted successfully.');
     } catch (error) { setDeleteFeedback(error.message || 'Could not delete message.'); }
     setPendingDeleteMessage(null);

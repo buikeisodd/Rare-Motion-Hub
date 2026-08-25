@@ -477,11 +477,16 @@ const deleteMessage = async (req, res, next) => {
     const userId = req.userId;
     const message = db.messages.find((item) => item.id === req.params.id);
     if (!message) return next(new AppError('Message not found.', 404));
-    if (message.senderId !== userId) return next(new AppError('Only the sender can delete this message.', 403));
+    const participantIds = message.conversationType === 'group'
+      ? (db.groups.find((group) => group.id === message.groupId)?.participantIds || [])
+      : [message.senderId, message.recipientId].filter(Boolean);
+    if (!participantIds.includes(userId)) return next(new AppError('You are not part of this conversation.', 403));
+    if (message.deleted) return res.json({ message: hydrateMessage(db, message) });
     
     message.deleted = true;
     message.text = '';
     message.attachments = [];
+    message.deletedBy = userId;
     message.deletedAt = new Date().toISOString();
     await writeDB(db);
     res.json({ message: hydrateMessage(db, message) });
