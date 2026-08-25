@@ -20,7 +20,7 @@ function PersonRow({ person, request, onFollow, onDismiss }) {
     </RouterLink>
     <div className="min-w-0 flex-1"><RouterLink to={'/profile/' + person.id} className="block truncate text-sm font-semibold text-[#34483B] hover:underline">{person.name}</RouterLink><p className="truncate text-[11px] text-[#34483B]/70">@{person.username || person.name}</p></div>
     <div className="flex shrink-0 items-center gap-1">
-      <button onClick={() => onFollow(person)} className="rounded-full bg-accent px-3 py-1.5 text-xs font-semibold text-[#F3EBDD] shadow-md transition-all hover:scale-105 hover:bg-accent-hover">{request ? 'Follow' : person.isFollowing ? 'Following' : person.followsYou ? 'Follow Back' : 'Follow'}</button>
+      <button onClick={() => onFollow(person)} className="rounded-full bg-accent px-3 py-1.5 text-xs font-semibold text-[#F3EBDD] shadow-md transition-all hover:scale-105 hover:bg-accent-hover">{request ? 'Follow Back' : person.isFollowing ? 'Following' : person.followsYou ? 'Follow Back' : 'Follow'}</button>
       <button onClick={() => onDismiss(person)} className="grid h-6 w-6 place-items-center rounded-full text-[#34483B]/70 opacity-60 transition-colors hover:bg-accent hover:text-[#F3EBDD] hover:opacity-100" title={request ? 'Decline request' : 'Remove suggestion'} aria-label={request ? 'Decline friend request' : 'Remove suggestion'}><X className="h-3.5 w-3.5" /></button>
     </div>
   </div>;
@@ -67,7 +67,7 @@ function CompactQuickAdd({ suggestions, requests, onFollow, onDismiss, onDecline
                 <p className="truncate text-[11px] text-[#34483B]/70">@{person.username || person.name}</p>
               </div>
               <div className="flex items-center gap-1 shrink-0">
-                <button onClick={() => onFollow(person)} className="rounded-full bg-accent px-2.5 py-1 text-[11px] font-semibold text-[#F3EBDD] transition-all hover:bg-accent-hover">{mode === 'requests' ? 'Follow' : person.isFollowing ? 'Following' : person.followsYou ? 'Follow Back' : 'Follow'}</button>
+                <button onClick={() => onFollow(person)} className="rounded-full bg-accent px-2.5 py-1 text-[11px] font-semibold text-[#F3EBDD] transition-all hover:bg-accent-hover">{mode === 'requests' ? 'Follow Back' : person.isFollowing ? 'Following' : person.followsYou ? 'Follow Back' : 'Follow'}</button>
                 <button
                   onClick={() => (mode === 'requests' ? onDecline(person) : onDismiss(person))}
                   className="grid h-6 w-6 place-items-center rounded-full text-[#34483B]/70 opacity-60 transition-colors hover:bg-accent hover:text-[#F3EBDD] hover:opacity-100"
