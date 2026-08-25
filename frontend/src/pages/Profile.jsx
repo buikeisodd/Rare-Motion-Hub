@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ArrowLeft, Camera, Check, Edit3, Loader2, MessageCircle, Play, UserPlus, X } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import ChatInbox from '../components/ChatInbox';
+import ConfirmModal from '../components/ConfirmModal';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 const authFetch = (url, options = {}) => {
@@ -13,6 +14,7 @@ export default function Profile({ user, onUserUpdate }) {
   const [profile, setProfile] = useState(null);
   const [posts, setPosts] = useState([]);
   const [following, setFollowing] = useState(false);
+  const [unfollowConfirmOpen, setUnfollowConfirmOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [inboxOpen, setInboxOpen] = useState(false);
   const [messageTarget, setMessageTarget] = useState(null);
@@ -34,11 +36,26 @@ export default function Profile({ user, onUserUpdate }) {
   }, [id]);
 
   const toggleFollow = async () => {
+    if (following) {
+      setUnfollowConfirmOpen(true);
+      return;
+    }
     const next = !following;
     setFollowing(next);
     setProfile((current) => ({ ...current, followerCount: Math.max(0, (current.followerCount || 0) + (next ? 1 : -1)) }));
     const res = await authFetch(`${apiUrl}/api/auth/${id}/follow`, { method: 'POST' });
     if (!res.ok) setFollowing(!next);
+  };
+
+  const confirmUnfollow = async () => {
+    setUnfollowConfirmOpen(false);
+    setFollowing(false);
+    setProfile((current) => ({ ...current, followerCount: Math.max(0, (current.followerCount || 0) - 1) }));
+    const res = await authFetch(`${apiUrl}/api/auth/${id}/follow`, { method: 'POST' });
+    if (!res.ok) {
+      setFollowing(true);
+      setProfile((current) => ({ ...current, followerCount: (current.followerCount || 0) + 1 }));
+    }
   };
 
   const saveProfile = async (event) => {
@@ -144,6 +161,7 @@ export default function Profile({ user, onUserUpdate }) {
         </form>
       </div>}
       <ChatInbox user={user} isOpen={inboxOpen} onToggle={() => setInboxOpen((value) => !value)} startConversationWith={messageTarget} />
+      <ConfirmModal isOpen={unfollowConfirmOpen} onClose={() => setUnfollowConfirmOpen(false)} onConfirm={confirmUnfollow} title="Unfollow this account?" message={`You will stop following ${profile.name || 'this account'}.`} confirmText="Unfollow" />
     </div>
   );
 }
