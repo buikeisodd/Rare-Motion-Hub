@@ -292,6 +292,7 @@ export default function Feed({ user, savedOnly = false }) {
   const [items, setItems] = useState([]); const [loading, setLoading] = useState(true); const [error, setError] = useState(''); const [muted, setMuted] = useState(true); const [volume, setVolume] = useState(0.8);
   const [inboxOpen, setInboxOpen] = useState(false);
   const [stories, setStories] = useState([]); const [createOpen, setCreateOpen] = useState(false); const [storyViewer, setStoryViewer] = useState(null); const [workspaceProjects, setWorkspaceProjects] = useState([]);
+  const [pendingDeletePost, setPendingDeletePost] = useState(null); const [deleteFeedback, setDeleteFeedback] = useState('');
   const [allSuggestions, setAllSuggestions] = useState([]);
   const [dismissedIds, setDismissedIds] = useState(() => {
     try {
@@ -315,7 +316,20 @@ export default function Feed({ user, savedOnly = false }) {
   }, [user?.id]);
 
   const updateItem = (id, value, type) => setItems((current) => current.map((item) => { if (item.id !== id) return item; if (type === 'like' || type === 'save') return { ...item, ...value }; if (type === 'comment-like') return { ...item, comments: (item.comments || []).map((entry) => entry.id === value.id ? value : entry) }; return { ...item, comments: [...(item.comments || []), value] }; }));
-  const deleteItem = async (id) => { if (!window.confirm('Delete this feed preview?')) return; const res = await fetch(`${apiUrl}/api/feed/tracks/${id}`, { method: 'DELETE' }); if (res.ok) setItems((current) => current.filter((item) => item.id !== id)); };
+  const requestDeletePost = (id) => setPendingDeletePost(items.find((item) => item.id === id) || { id });
+  const confirmDeletePost = async () => {
+    if (!pendingDeletePost) return;
+    try {
+      const res = await fetch(`${apiUrl}/api/feed/tracks/${pendingDeletePost.id}`, { method: 'DELETE', credentials: 'include' });
+      if (!res.ok) throw new Error('Could not delete feed post.');
+      setItems((current) => current.filter((item) => item.id !== pendingDeletePost.id));
+      setDeleteFeedback('Feed post deleted successfully.');
+    } catch (err) {
+      setDeleteFeedback(err.message || 'Could not delete feed post.');
+    } finally {
+      setPendingDeletePost(null);
+    }
+  };
 
   const dismissSuggestion = (person) => {
     setDismissedIds((prev) => {
@@ -389,13 +403,15 @@ export default function Feed({ user, savedOnly = false }) {
         {loading && <p className="py-16 text-center text-sm text-[#34483B]/70">Loading previews...</p>}
         {error && <p className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">{error}</p>}
         <div className="space-y-6">
-          {items.map((item) => <FeedCard key={item.id} item={item} user={user} muted={muted} volume={volume} onMutedChange={setMuted} onVolumeChange={setVolume} onUpdate={updateItem} onDelete={deleteItem} />)}
+          {items.map((item) => <FeedCard key={item.id} item={item} user={user} muted={muted} volume={volume} onMutedChange={setMuted} onVolumeChange={setVolume} onUpdate={updateItem} onDelete={requestDeletePost} />)}
         </div>
       </div>
     </main>
     <ChatInbox user={user} isOpen={inboxOpen} onToggle={() => setInboxOpen((value) => !value)} onOpenStory={(storyId) => { const target = stories.find((story) => story.id === storyId); if (target) { setInboxOpen(false); setStoryViewer(target); } }} />
     <CreateModal open={createOpen} onClose={() => setCreateOpen(false)} projects={workspaceProjects} onCreated={async () => { const response = await fetch(`${apiUrl}/api/stories`, { credentials: 'include' }); const data = await response.json().catch(() => ({})); if (response.ok) setStories(data.stories || []); }} />
     {storyViewer && <StoryViewer story={storyViewer} stories={stories} user={user} onNavigate={setStoryViewer} onClose={() => setStoryViewer(null)} onStoryLiked={(id, likedValue, likeCount) => { setStories((current) => current.map((item) => item.id === id ? { ...item, likedByMe: likedValue, likeCount } : item)); setStoryViewer((current) => current?.id === id ? { ...current, likedByMe: likedValue, likeCount } : current); }} onDelete={async (id) => { const res = await fetch(`${apiUrl}/api/stories/${id}`, { method: 'DELETE', credentials: 'include' }); if (res.ok) setStories((current) => current.filter((story) => story.id !== id)); return res.ok; }} />}
+    {deleteFeedback && <div role="status" className="fixed bottom-5 left-1/2 z-[110] -translate-x-1/2 rounded-xl bg-[#F3EBDD]/95 px-4 py-2 text-sm font-semibold text-[#34483B] shadow-xl">{deleteFeedback}</div>}
+    <ConfirmModal isOpen={Boolean(pendingDeletePost)} onClose={() => setPendingDeletePost(null)} onConfirm={confirmDeletePost} title="Delete feed post?" message="This preview will be removed from the feed." confirmText="Delete post" />
   </div>;
 }
 
