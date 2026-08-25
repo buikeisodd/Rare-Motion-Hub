@@ -701,7 +701,7 @@ const getUser = async (req, res, next) => {
       const project = projects.find((item) => item.id === track.projectId);
       return { id: track.id, title: track.title, url: track.url, projectId: track.projectId, coverArt: project?.coverArt || null, publishedAt: track.publishedAt };
     });
-    res.json({ user: { ...publicUser(userSafe), email, emailVerified: user.emailVerified !== false }, isFollowing: (user.followers || []).includes(req.userId), posts });
+    res.json({ user: { ...publicUser(userSafe), email, emailVerified: user.emailVerified !== false, followsYou: (user.following || []).includes(req.userId) }, isFollowing: (user.followers || []).includes(req.userId), posts });
   } catch (error) {
     next(error);
   }
