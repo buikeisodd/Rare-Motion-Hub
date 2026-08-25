@@ -569,6 +569,10 @@ div[class*="bg-\\[\\#F3EBDD\\]\\/92"] { background: rgba(243,235,221,.98) !impor
 .panel-bg .text-primary-label, .glass .text-primary-label { color: #34483B !important; }
 .panel-bg .text-secondary-label, .glass .text-secondary-label { color: #667268 !important; }
 .panel-bg button:hover:not(:disabled), .glass button:hover:not(:disabled) { background: #D8E2D6; color: #34483B; transform: none; }
+
+/* Tombstones are immutable: their action trigger must never remain interactive. */
+[aria-label="Message actions"]:has(+ div) { }
+[class*="rounded-2xl"]:has(> i) > button[aria-label="Message actions"] { display: none; }
 .bg-\[\#34483B\] { background-color: rgba(52,72,59,.84) !important; backdrop-filter: blur(14px) saturate(1.05); box-shadow: inset 0 1px 0 rgba(243,235,221,.08), 0 10px 24px rgba(52,72,59,.12); }
 .rmh-play-control { transition: background-color .18s ease, box-shadow .18s ease, opacity .18s ease; }
 .rmh-play-control:hover:not(:disabled) { transform: none; box-shadow: 0 10px 22px rgba(0,0,0,.24); }
