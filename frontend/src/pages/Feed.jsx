@@ -13,89 +13,44 @@ const MAX_QUICK_ADD_SUGGESTIONS = 5;
 const Link = (props) => <RouterLink {...props} to={(props.children === 'Settings' || (Array.isArray(props.children) && props.children.includes('Settings'))) ? '/settings' : props.to} />;
 const dateLabel = (value) => value ? new Date(value).toLocaleDateString([], { month: 'short', day: 'numeric' }) : '';
 
-function QuickAdd({ suggestions, onFollow, onDismiss }) {
+function PersonRow({ person, request, onFollow, onDismiss }) {
+  return <div className="group relative flex items-center gap-2.5">
+    <RouterLink to={'/profile/' + person.id} className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-highlight text-xs font-semibold shadow-inner">
+      {person.avatarUrl ? <img src={person.avatarUrl} alt="" className="h-full w-full object-cover" /> : (person.name || '?').slice(0, 1).toUpperCase()}
+    </RouterLink>
+    <div className="min-w-0 flex-1"><RouterLink to={'/profile/' + person.id} className="block truncate text-sm font-semibold text-[#34483B] hover:underline">{person.name}</RouterLink><p className="truncate text-[11px] text-[#34483B]/70">@{person.username || person.name}</p></div>
+    <div className="flex shrink-0 items-center gap-1">
+      <button onClick={() => onFollow(person)} className="rounded-full bg-accent px-3 py-1.5 text-xs font-semibold text-[#F3EBDD] shadow-md transition-all hover:scale-105 hover:bg-accent-hover">{request ? 'Follow' : person.isFollowing ? 'Following' : person.followsYou ? 'Follow Back' : 'Follow'}</button>
+      <button onClick={() => onDismiss(person)} className="grid h-6 w-6 place-items-center rounded-full text-[#34483B]/70 opacity-60 transition-colors hover:bg-accent hover:text-[#F3EBDD] hover:opacity-100" title={request ? 'Decline request' : 'Remove suggestion'} aria-label={request ? 'Decline friend request' : 'Remove suggestion'}><X className="h-3.5 w-3.5" /></button>
+    </div>
+  </div>;
+}
+
+function QuickAdd({ suggestions, requests, onFollow, onDismiss, onDecline }) {
+  const [mode, setMode] = useState('quick');
+  const people = mode === 'requests' ? requests : suggestions;
   return (
     <aside className="fixed right-4 top-4 z-30 hidden w-72 xl:block">
       <div className="rounded-3xl border border-white/10 bg-primary-background/60 p-3.5 shadow-2xl backdrop-blur-2xl">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-display text-sm font-bold tracking-wider text-[#34483B]">qUiCk aDd</h2>
-          <UserRound className="h-4 w-4 text-[#34483B]/70" />
-        </div>
-        {suggestions.length === 0 ? (
-          <p className="text-xs text-[#34483B]/70">You are all caught up.</p>
-        ) : (
-          <div className="space-y-2.5">
-            {suggestions.slice(0, Math.min(3, MAX_QUICK_ADD_SUGGESTIONS)).map((person) => {
-              const buttonText = person.isFollowing
-                ? 'Following'
-                : person.followsYou
-                ? 'Follow Back'
-                : 'Follow';
-              return (
-                <div key={person.id} className="group relative flex items-center gap-2.5">
-                  <RouterLink to={'/profile/' + person.id} className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-highlight text-xs font-semibold shadow-inner">
-                    {person.avatarUrl ? (
-                      <img src={person.avatarUrl} alt="" className="h-full w-full object-cover" />
-                    ) : (
-                      (person.name || '?').slice(0, 1).toUpperCase()
-                    )}
-                  </RouterLink>
-                  <div className="min-w-0 flex-1">
-                    <RouterLink to={'/profile/' + person.id} className="truncate text-sm font-semibold block hover:underline text-[#34483B]">
-                      {person.name}
-                    </RouterLink>
-                    <p className="truncate text-[11px] text-[#34483B]/70">
-                      @{person.username || person.name}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button
-                      onClick={() => onFollow(person)}
-                      className={`rounded-full px-3 py-1.5 text-xs font-semibold shadow-md transition-all hover:scale-105 ${
-                        person.isFollowing
-                          ? 'bg-shading text-[#34483B]/70'
-                          : person.followsYou
-                          ? 'bg-accent text-[#F3EBDD] hover:bg-accent-hover'
-                          : 'bg-accent text-[#F3EBDD] hover:bg-accent-hover'
-                      }`}
-                    >
-                      {buttonText}
-                    </button>
-                    <button
-                      onClick={() => onDismiss(person)}
-                      className="grid h-6 w-6 place-items-center rounded-full text-[#34483B]/70 opacity-60 transition-colors hover:bg-accent hover:text-[#F3EBDD] hover:opacity-100"
-                      title="Remove suggestion"
-                      aria-label="Remove suggestion"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+        <div className="mb-3 flex items-center gap-1 rounded-xl bg-shading/40 p-1"><button onClick={() => setMode('quick')} className={`flex-1 rounded-lg px-2 py-1.5 text-[11px] font-semibold ${mode === 'quick' ? 'bg-[#F3EBDD] text-[#34483B]' : 'text-[#34483B]/70'}`}>Quick add</button><button onClick={() => setMode('requests')} className={`flex-1 rounded-lg px-2 py-1.5 text-[11px] font-semibold ${mode === 'requests' ? 'bg-[#F3EBDD] text-[#34483B]' : 'text-[#34483B]/70'}`}>Requests{requests.length ? ` (${requests.length})` : ''}</button></div>
+        <div className="mb-3 flex items-center justify-between"><h2 className="font-display text-sm font-bold tracking-wider text-[#34483B]">{mode === 'requests' ? 'fRiEnD rEqUeStS' : 'qUiCk aDd'}</h2><UserRound className="h-4 w-4 text-[#34483B]/70" /></div>
+        {people.length === 0 ? <p className="text-xs text-[#34483B]/70">{mode === 'requests' ? 'No friend requests right now.' : 'You are all caught up.'}</p> : <div className="space-y-2.5">{people.slice(0, MAX_QUICK_ADD_SUGGESTIONS).map((person) => <PersonRow key={person.id} person={person} request={mode === 'requests'} onFollow={onFollow} onDismiss={mode === 'requests' ? onDecline : onDismiss} />)}</div>}
         <p className="mt-5 border-t border-white/5 pt-4 text-[11px] text-[#34483B]/60">Â© 2026 Rare Motion Hub</p>
       </div>
     </aside>
   );
 }
 
-function CompactQuickAdd({ suggestions, onFollow, onDismiss }) {
-  if (!suggestions.length) return null;
+function CompactQuickAdd({ suggestions, requests, onFollow, onDismiss, onDecline }) {
+  const [mode, setMode] = useState('quick');
+  const people = mode === 'requests' ? requests : suggestions;
+  if (!suggestions.length && !requests.length) return null;
   return (
     <section className="mb-6 xl:hidden" aria-label="Quick Add">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="font-display text-sm font-bold tracking-wider text-[#34483B]">qUiCk aDd</h2>
-        <UserRound className="h-4 w-4 text-[#34483B]/70" />
-      </div>
+      <div className="mb-3 flex items-center gap-1 rounded-xl bg-shading/40 p-1"><button onClick={() => setMode('quick')} className={`flex-1 rounded-lg px-2 py-1.5 text-xs font-semibold ${mode === 'quick' ? 'bg-[#F3EBDD] text-[#34483B]' : 'text-[#34483B]/70'}`}>Quick add</button><button onClick={() => setMode('requests')} className={`flex-1 rounded-lg px-2 py-1.5 text-xs font-semibold ${mode === 'requests' ? 'bg-[#F3EBDD] text-[#34483B]' : 'text-[#34483B]/70'}`}>Requests{requests.length ? ` (${requests.length})` : ''}</button></div>
+      <div className="mb-3 flex items-center justify-between"><h2 className="font-display text-sm font-bold tracking-wider text-[#34483B]">{mode === 'requests' ? 'fRiEnD rEqUeStS' : 'qUiCk aDd'}</h2><UserRound className="h-4 w-4 text-[#34483B]/70" /></div>
       <div className="flex snap-x gap-3 overflow-x-auto pb-1">
-        {suggestions.slice(0, MAX_QUICK_ADD_SUGGESTIONS).map((person) => {
-          const buttonText = person.isFollowing
-            ? 'Following'
-            : person.followsYou
-            ? 'Follow Back'
-            : 'Follow';
+        {people.slice(0, MAX_QUICK_ADD_SUGGESTIONS).map((person) => {
           return (
             <div key={person.id} className="relative flex min-w-[220px] snap-start items-center gap-2 rounded-2xl border border-border bg-shading/30 p-3">
               <RouterLink to={'/profile/' + person.id} className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-highlight text-sm font-semibold">
@@ -112,22 +67,11 @@ function CompactQuickAdd({ suggestions, onFollow, onDismiss }) {
                 <p className="truncate text-[11px] text-[#34483B]/70">@{person.username || person.name}</p>
               </div>
               <div className="flex items-center gap-1 shrink-0">
+                <button onClick={() => onFollow(person)} className="rounded-full bg-accent px-2.5 py-1 text-[11px] font-semibold text-[#F3EBDD] transition-all hover:bg-accent-hover">{mode === 'requests' ? 'Follow' : person.isFollowing ? 'Following' : person.followsYou ? 'Follow Back' : 'Follow'}</button>
                 <button
-                  onClick={() => onFollow(person)}
-                  className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all ${
-                    person.isFollowing
-                      ? 'bg-shading text-[#34483B]/70'
-                      : person.followsYou
-                      ? 'bg-accent text-[#F3EBDD] hover:bg-accent-hover'
-                      : 'bg-accent text-[#F3EBDD] hover:bg-accent-hover'
-                  }`}
-                >
-                  {buttonText}
-                </button>
-                <button
-                  onClick={() => onDismiss(person)}
+                  onClick={() => (mode === 'requests' ? onDecline(person) : onDismiss(person))}
                   className="grid h-6 w-6 place-items-center rounded-full text-[#34483B]/70 opacity-60 transition-colors hover:bg-accent hover:text-[#F3EBDD] hover:opacity-100"
-                  aria-label="Remove suggestion"
+                  aria-label={mode === 'requests' ? 'Decline friend request' : 'Remove suggestion'}
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -302,6 +246,9 @@ export default function Feed({ user, savedOnly = false }) {
       return [];
     }
   });
+  const [dismissedRequestIds, setDismissedRequestIds] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('rmh_dismissed_friend_requests') || '[]'); } catch { return []; }
+  });
 
   const loadFeedPage = async (cursor = null) => {
     const params = new URLSearchParams({ limit: '20' });
@@ -373,7 +320,17 @@ export default function Feed({ user, savedOnly = false }) {
     }
   };
 
-  const activeSuggestions = allSuggestions.filter((person) => !person.isFollowing && !dismissedIds.includes(person.id));
+  const declineFriendRequest = (person) => {
+    setDismissedRequestIds((current) => {
+      const next = [...new Set([...current, person.id])];
+      try { localStorage.setItem('rmh_dismissed_friend_requests', JSON.stringify(next)); } catch {}
+      return next;
+    });
+    setAllSuggestions((current) => current.filter((item) => item.id !== person.id));
+  };
+
+  const activeSuggestions = allSuggestions.filter((person) => !person.isFollowing && !person.followsYou && !dismissedIds.includes(person.id));
+  const friendRequests = allSuggestions.filter((person) => person.followsYou && !person.isFollowing && !dismissedRequestIds.includes(person.id));
   const { currentTrack } = useAudio();
 
   const navItems = [{ label: 'pRoFiLe', icon: UserRound, to: '/profile/' + (user?.id || '') }, { label: 'sEaRcH', icon: Search, to: '/search' }, { label: 'sAvEd', icon: Bookmark, to: '/saved' }, { label: 'liBraRy', icon: Library, to: '/library' }];
@@ -417,10 +374,10 @@ export default function Feed({ user, savedOnly = false }) {
         <Settings className="h-4 w-4" />
       </Link>
     </header>
-    <QuickAdd suggestions={activeSuggestions} onFollow={followSuggestion} onDismiss={dismissSuggestion} />
+    <QuickAdd suggestions={activeSuggestions} requests={friendRequests} onFollow={followSuggestion} onDismiss={dismissSuggestion} onDecline={declineFriendRequest} />
     <main className="feed-main px-4 pb-20 pt-4 sm:px-8 lg:ml-28 xl:mr-80">
       <div className="mx-auto max-w-2xl py-3">
-        <CompactQuickAdd suggestions={activeSuggestions} onFollow={followSuggestion} onDismiss={dismissSuggestion} />
+        <CompactQuickAdd suggestions={activeSuggestions} requests={friendRequests} onFollow={followSuggestion} onDismiss={dismissSuggestion} onDecline={declineFriendRequest} />
         <StoryRail stories={stories} user={user} onCreate={() => setCreateOpen(true)} onOpen={setStoryViewer} onDelete={async (id) => { const res = await fetch(`${apiUrl}/api/stories/${id}`, { method: 'DELETE' }); if (res.ok) setStories((current) => current.filter((story) => story.id !== id)); return res.ok; }} />
         {currentTrack && <div className="mb-6 w-full max-w-sm rounded-3xl bg-[#1c1c1e]/80 p-1.5 shadow-2xl backdrop-blur-xl xl:fixed xl:right-4 xl:top-[20rem] xl:z-20 xl:mb-0 xl:w-72"><AudioPlayer cardModal minimal /></div>}
         {loading && <p className="py-16 text-center text-sm text-[#34483B]/70">Loading previews...</p>}
