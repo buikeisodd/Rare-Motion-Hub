@@ -39,7 +39,7 @@ function normalizeMessage(value) {
   if (!value || typeof value !== 'object' || !value.id) return null;
   const text = typeof value.text === 'string' ? value.text : '';
   const isStoryReply = Boolean(value.storyId || value.messageKind === 'story_reply');
-  return { ...value, id: value.id, storyId: value.storyId || (isStoryReply ? value.storyId : null), text, storyLabel: isStoryReply ? 'Story reply' : '', deleted: Boolean(value.deleted), senderId: value.senderId || '', sender: normalizeUser(value.sender), createdAt: value.createdAt || new Date().toISOString() };
+  return { ...value, id: value.id, storyId: value.storyId || (isStoryReply ? value.storyId : null), text: value.starred ? `⭐ ${text}` : text, storyLabel: isStoryReply ? 'Story reply' : '', deleted: Boolean(value.deleted), senderId: value.senderId || '', sender: normalizeUser(value.sender), createdAt: value.createdAt || new Date().toISOString() };
 }
 
 function ChatMenu({ user, privacy, setPrivacy, onBack, onProfile, onClear, starred, onOpenStarred }) {
