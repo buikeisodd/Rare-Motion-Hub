@@ -289,7 +289,8 @@ function FeedCard({ item, user, onUpdate, onDelete, muted, onMutedChange, volume
 }
 
 export default function Feed({ user, savedOnly = false }) {
-  const [items, setItems] = useState([]); const [loading, setLoading] = useState(true); const [error, setError] = useState(''); const [muted, setMuted] = useState(true); const [volume, setVolume] = useState(0.8);
+  const [items, setItems] = useState([]); const [loading, setLoading] = useState(true); const [loadingMore, setLoadingMore] = useState(false); const [nextCursor, setNextCursor] = useState(null); const [hasMore, setHasMore] = useState(true); const [error, setError] = useState(''); const [muted, setMuted] = useState(true); const [volume, setVolume] = useState(0.8);
+  const feedSentinel = useRef(null);
   const [inboxOpen, setInboxOpen] = useState(false);
   const [stories, setStories] = useState([]); const [createOpen, setCreateOpen] = useState(false); const [storyViewer, setStoryViewer] = useState(null); const [workspaceProjects, setWorkspaceProjects] = useState([]);
   const [pendingDeletePost, setPendingDeletePost] = useState(null); const [deleteFeedback, setDeleteFeedback] = useState('');
@@ -302,7 +303,29 @@ export default function Feed({ user, savedOnly = false }) {
     }
   });
 
-  useEffect(() => { fetch(`${apiUrl}/api/feed`, { credentials: 'include' }).then(async (res) => { const data = await res.json(); if (!res.ok) throw new Error(data.error || 'Could not load feed.'); setItems(Array.isArray(data.items) ? data.items.filter(Boolean) : []); }).catch((err) => setError(err.message)).finally(() => setLoading(false)); }, []);
+  const loadFeedPage = async (cursor = null) => {
+    const params = new URLSearchParams({ limit: '20' });
+    if (cursor) params.set('cursor', cursor);
+    const res = await fetch(`${apiUrl}/api/feed?${params}`, { credentials: 'include' });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Could not load feed.');
+    const incoming = Array.isArray(data.items) ? data.items.filter(Boolean) : [];
+    setItems((current) => cursor ? [...current, ...incoming.filter((item) => !current.some((existing) => existing.id === item.id))] : incoming);
+    setNextCursor(data.nextCursor || null);
+    setHasMore(Boolean(data.hasMore));
+  };
+  useEffect(() => { loadFeedPage().catch((err) => setError(err.message)).finally(() => setLoading(false)); }, []);
+  useEffect(() => {
+    const node = feedSentinel.current;
+    if (!node || !hasMore) return undefined;
+    const observer = new IntersectionObserver((entries) => {
+      if (!entries[0].isIntersecting || loading || loadingMore || !nextCursor) return;
+      setLoadingMore(true);
+      loadFeedPage(nextCursor).catch((err) => setError(err.message)).finally(() => setLoadingMore(false));
+    }, { rootMargin: '600px 0px' });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [hasMore, loading, loadingMore, nextCursor]);
   useEffect(() => { fetch(`${apiUrl}/api/stories`).then((res) => res.json()).then((data) => setStories(data.stories || [])).catch(() => {}); fetch(`${apiUrl}/api/workspace?userId=${encodeURIComponent(user?.id || '')}`).then((res) => res.json()).then((data) => { const projects = (data.projects || []).filter((project) => project.visibility !== 'private'); const tracks = data.tracks || []; setWorkspaceProjects(projects.map((project) => ({ ...project, tracks: tracks.filter((track) => track.projectId === project.id) }))); }).catch(() => {}); }, [user?.id]);
   useEffect(() => { if (new URLSearchParams(window.location.search).has('create')) setCreateOpen(true); }, []);
   
@@ -404,6 +427,9 @@ export default function Feed({ user, savedOnly = false }) {
         {error && <p className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">{error}</p>}
         <div className="space-y-6">
           {items.map((item) => <FeedCard key={item.id} item={item} user={user} muted={muted} volume={volume} onMutedChange={setMuted} onVolumeChange={setVolume} onUpdate={updateItem} onDelete={requestDeletePost} />)}
+        </div>
+        <div ref={feedSentinel} className="flex min-h-20 items-center justify-center py-6 text-xs text-[#34483B]/60" aria-live="polite">
+          {loadingMore ? 'Loading more previews...' : hasMore ? '' : items.length ? 'You are all caught up.' : ''}
         </div>
       </div>
     </main>

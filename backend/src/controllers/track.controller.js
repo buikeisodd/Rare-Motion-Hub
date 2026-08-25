@@ -408,7 +408,16 @@ const publishTrack = async (req, res, next) => {
 const getFeed = async (req, res, next) => {
   try {
     const db = ensureDBShape(await readDB());
-    const items = db.tracks
+    const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 20, 1), 50);
+    let cursor = null;
+    if (req.query.cursor) {
+      try {
+        cursor = JSON.parse(Buffer.from(String(req.query.cursor), 'base64url').toString('utf8'));
+      } catch {
+        return next(new AppError('Invalid feed cursor.', 400));
+      }
+    }
+    const publishedTracks = db.tracks
       .filter((track) => {
         if (!track.isPublished || (!track.url && !track.filename)) return false;
         const project = track.projectId ? db.projects.find((item) => item.id === track.projectId) : null;
@@ -420,8 +429,18 @@ const getFeed = async (req, res, next) => {
         }
         return true;
       })
-      .sort((a, b) => new Date(b.publishedAt || b.uploadedAt) - new Date(a.publishedAt || a.uploadedAt))
-      .slice(0, 50)
+      .sort((a, b) => {
+        const dateDifference = new Date(b.publishedAt || b.uploadedAt) - new Date(a.publishedAt || a.uploadedAt);
+        return dateDifference || String(b.id).localeCompare(String(a.id));
+      });
+    const pageTracks = publishedTracks.filter((track) => {
+      if (!cursor?.timestamp) return true;
+      const timestamp = new Date(track.publishedAt || track.uploadedAt).getTime();
+      const cursorTimestamp = new Date(cursor.timestamp).getTime();
+      return timestamp < cursorTimestamp || (timestamp === cursorTimestamp && String(track.id) < String(cursor.id || ''));
+    }).slice(0, limit + 1);
+    const hasMore = pageTracks.length > limit;
+    const items = pageTracks.slice(0, limit)
       .map((track) => {
         const owner = db.users.find((user) => user.id === trackOwnerId(track));
         const project = db.projects.find((item) => item.id === track.projectId);
@@ -438,7 +457,11 @@ const getFeed = async (req, res, next) => {
           })
         };
       });
-    res.json({ items });
+    const lastTrack = pageTracks[limit - 1];
+    const nextCursor = hasMore && lastTrack
+      ? Buffer.from(JSON.stringify({ timestamp: lastTrack.publishedAt || lastTrack.uploadedAt, id: lastTrack.id })).toString('base64url')
+      : null;
+    res.json({ items, nextCursor, hasMore });
   } catch (error) {
     next(error);
   }
