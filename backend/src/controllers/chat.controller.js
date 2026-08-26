@@ -341,6 +341,31 @@ const uploadGroupAvatar = async (req, res, next) => {
   }
 };
 
+const removeGroupMember = async (req, res, next) => {
+  try {
+    const group = await ChatGroup.findOne({ id: req.params.id });
+    if (!group || (group.adminId || group.createdById) !== req.userId) return next(new AppError('Only the group admin can remove members.', 403));
+    if (req.params.userId === req.userId) return next(new AppError('The admin cannot remove themselves.', 400));
+    group.participantIds = (group.participantIds || []).filter((id) => id !== req.params.userId);
+    group.updatedAt = new Date().toISOString();
+    await group.save();
+    res.json({ group: group.toObject() });
+  } catch (error) { next(error); }
+};
+
+const deleteGroup = async (req, res, next) => {
+  try {
+    const group = await ChatGroup.findOne({ id: req.params.id }).lean();
+    if (!group) return next(new AppError('Group not found.', 404));
+    if ((group.adminId || group.createdById) !== req.userId) return next(new AppError('Only the group admin can delete the group.', 403));
+    await Promise.all([
+      ChatGroup.deleteOne({ id: group.id }),
+      Message.deleteMany({ conversationType: 'group', groupId: group.id })
+    ]);
+    res.json({ success: true, groupId: group.id });
+  } catch (error) { next(error); }
+};
+
 const getMessages = async (req, res, next) => {
   try {
     const userId = req.userId;
@@ -792,6 +817,8 @@ module.exports = {
   getGroupSettings,
   updateGroupSettings,
   uploadGroupAvatar,
+  removeGroupMember,
+  deleteGroup,
   inviteGroupMember,
   getMessages,
   sendMessageController,

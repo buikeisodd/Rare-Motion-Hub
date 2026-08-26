@@ -11,6 +11,8 @@ const {
   getGroupSettings,
   updateGroupSettings,
   uploadGroupAvatar,
+  removeGroupMember,
+  deleteGroup,
   inviteGroupMember,
   getMessages,
   sendMessageController,
@@ -45,6 +47,8 @@ router.post('/groups', requireUserId, createGroup);
 router.get('/groups/:id', requireUserId, getGroupSettings);
 router.patch('/groups/:id', requireUserId, updateGroupSettings);
 router.post('/groups/:id/avatar', requireUserId, uploadGroupAvatarFile.single('avatar'), uploadGroupAvatar);
+router.delete('/groups/:id/members/:userId', requireUserId, removeGroupMember);
+router.delete('/groups/:id', requireUserId, deleteGroup);
 router.post('/groups/:id/invite', requireUserId, inviteGroupMember);
 
 // Messages
