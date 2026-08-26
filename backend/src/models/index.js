@@ -198,6 +198,7 @@ const MessageSchema = new Schema({
   starredBy: [String],
   forwarded: Boolean,
   createdAt: { type: String, default: () => new Date().toISOString() },
+  seenAt: String,
   readBy: [String],
 });
 
