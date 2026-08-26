@@ -85,6 +85,12 @@ export default function ChatInbox({ user, isOpen, onToggle, startConversationWit
   const [highlightedMessageId, setHighlightedMessageId] = useState(null);
   const handledTargetId = useRef(null);
 
+  useEffect(() => {
+    if (!deleteFeedback) return undefined;
+    const timer = window.setTimeout(() => setDeleteFeedback(''), 3000);
+    return () => window.clearTimeout(timer);
+  }, [deleteFeedback]);
+
   const loadConversations = useCallback(async () => {
     if (!user?.id) return;
     try {
