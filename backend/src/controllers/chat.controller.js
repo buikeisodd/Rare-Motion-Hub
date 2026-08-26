@@ -244,6 +244,7 @@ const createGroup = async (req, res, next) => {
       id: makeId(),
       name,
       createdById: userId,
+      adminId: userId,
       participantIds: [userId, ...participants.map((participant) => participant.id)],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
@@ -253,6 +254,49 @@ const createGroup = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
+};
+
+const getGroupSettings = async (req, res, next) => {
+  try {
+    const group = await ChatGroup.findOne({ id: req.params.id }).lean();
+    if (!group || !(group.participantIds || []).includes(req.userId)) return next(new AppError('Group not found.', 404));
+    res.json({ group });
+  } catch (error) { next(error); }
+};
+
+const updateGroupSettings = async (req, res, next) => {
+  try {
+    const group = await ChatGroup.findOne({ id: req.params.id });
+    if (!group || !(group.participantIds || []).includes(req.userId)) return next(new AppError('Group not found.', 404));
+    const isAdmin = (group.adminId || group.createdById) === req.userId;
+    const body = req.body || {};
+    if (body.name !== undefined && (isAdmin || group.membersCanEdit)) group.name = String(body.name).trim().slice(0, 60) || group.name;
+    if (body.avatarUrl !== undefined && (isAdmin || group.membersCanEdit)) group.avatarUrl = String(body.avatarUrl).slice(0, 1000);
+    if (!isAdmin && (body.messagingOpen !== undefined || body.membersCanEdit !== undefined || body.membersCanInvite !== undefined)) return next(new AppError('Only the group admin can change group permissions.', 403));
+    if (isAdmin) {
+      if (body.messagingOpen !== undefined) group.messagingOpen = Boolean(body.messagingOpen);
+      if (body.membersCanEdit !== undefined) group.membersCanEdit = Boolean(body.membersCanEdit);
+      if (body.membersCanInvite !== undefined) group.membersCanInvite = Boolean(body.membersCanInvite);
+    }
+    group.updatedAt = new Date().toISOString();
+    await group.save();
+    res.json({ group: group.toObject() });
+  } catch (error) { next(error); }
+};
+
+const inviteGroupMember = async (req, res, next) => {
+  try {
+    const group = await ChatGroup.findOne({ id: req.params.id });
+    if (!group || !(group.participantIds || []).includes(req.userId)) return next(new AppError('Group not found.', 404));
+    const isAdmin = (group.adminId || group.createdById) === req.userId;
+    if (!isAdmin && !group.membersCanInvite) return next(new AppError('Only the admin can invite members.', 403));
+    const actor = await User.findOne({ id: req.userId }).lean();
+    const invitee = await User.findOne({ id: req.body?.userId }).lean();
+    if (!invitee || !areFriends(actor, invitee)) return next(new AppError('You can only invite mutual friends.', 403));
+    if (!(group.participantIds || []).includes(invitee.id)) group.participantIds.push(invitee.id);
+    await group.save();
+    res.json({ group: group.toObject() });
+  } catch (error) { next(error); }
 };
 
 const getMessages = async (req, res, next) => {
@@ -352,6 +396,7 @@ const sendMessageController = async (req, res, next) => {
     if (type === 'group') {
       const group = db.groups.find((item) => item.id === groupId);
       if (!group || !(group.participantIds || []).includes(senderId)) return next(new AppError('Group not found.', 404));
+      if (group.messagingOpen === false) return next(new AppError('Messaging is closed for this group.', 403));
     }
     if (access.error) return next(new AppError(access.error, access.status));
 
@@ -691,6 +736,9 @@ module.exports = {
   getUsers,
   getFriends,
   createGroup,
+  getGroupSettings,
+  updateGroupSettings,
+  inviteGroupMember,
   getMessages,
   sendMessageController,
   sendMediaMessage,

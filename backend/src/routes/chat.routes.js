@@ -8,6 +8,9 @@ const {
   getUsers,
   getFriends,
   createGroup,
+  getGroupSettings,
+  updateGroupSettings,
+  inviteGroupMember,
   getMessages,
   sendMessageController,
   sendMediaMessage,
@@ -38,6 +41,9 @@ router.get('/friends', requireUserId, getFriends);
 
 // Groups
 router.post('/groups', requireUserId, createGroup);
+router.get('/groups/:id', requireUserId, getGroupSettings);
+router.patch('/groups/:id', requireUserId, updateGroupSettings);
+router.post('/groups/:id/invite', requireUserId, inviteGroupMember);
 
 // Messages
 router.get('/messages', requireUserId, getMessages);
