@@ -201,7 +201,7 @@ export default function ChatInbox({ user, isOpen, onToggle, startConversationWit
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || 'Could not load conversation.');
       if (requestId === messageRequestRef.current) setMessages((Array.isArray(data.messages) ? data.messages : []).map(normalizeMessage).filter(Boolean));
-    } catch (err) { if (!silent) setMessages([]); if (conversation.type === 'group' && err.message === 'Group not found.') setGroupRemoved(true); setError(conversation.type === 'group' && err.message === 'Group not found.' ? 'You were removed from this group by the admin.' : (err.message || 'Could not load conversation.')); }
+    } catch (err) { if (conversation.type === 'group' && err.message === 'Group not found.') setGroupRemoved(true); setError(conversation.type === 'group' && err.message === 'Group not found.' ? 'You were removed from this group by the admin.' : (err.message || 'Could not load conversation.')); }
     finally { if (!silent) setLoading(false); }
   }, []);
 
