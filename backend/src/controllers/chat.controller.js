@@ -323,6 +323,17 @@ const respondToGroupRequest = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
+const leaveGroup = async (req, res, next) => {
+  try {
+    const group = await ChatGroup.findOne({ id: req.params.id });
+    if (!group || !(group.participantIds || []).includes(req.userId)) return next(new AppError('Group not found.', 404));
+    if ((group.adminId || group.createdById) === req.userId) return next(new AppError('The admin must delete the group or transfer admin access before leaving.', 400));
+    group.participantIds = group.participantIds.filter((id) => id !== req.userId);
+    await group.save();
+    res.json({ success: true, groupId: group.id });
+  } catch (error) { next(error); }
+};
+
 const uploadGroupAvatar = async (req, res, next) => {
   let uploadedPublicId = '';
   try {
@@ -846,6 +857,7 @@ module.exports = {
   inviteGroupMember,
   getGroupRequests,
   respondToGroupRequest,
+  leaveGroup,
   getMessages,
   sendMessageController,
   sendMediaMessage,

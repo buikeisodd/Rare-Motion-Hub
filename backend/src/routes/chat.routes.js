@@ -16,6 +16,7 @@ const {
   inviteGroupMember,
   getGroupRequests,
   respondToGroupRequest,
+  leaveGroup,
   getMessages,
   sendMessageController,
   sendMediaMessage,
@@ -54,6 +55,7 @@ router.delete('/groups/:id/members/:userId', requireUserId, removeGroupMember);
 router.delete('/groups/:id', requireUserId, deleteGroup);
 router.post('/groups/:id/invite', requireUserId, inviteGroupMember);
 router.patch('/groups/:id/request', requireUserId, respondToGroupRequest);
+router.delete('/groups/:id/leave', requireUserId, leaveGroup);
 
 // Messages
 router.get('/messages', requireUserId, getMessages);
