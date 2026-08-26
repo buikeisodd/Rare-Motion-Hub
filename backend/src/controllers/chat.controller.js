@@ -431,10 +431,10 @@ const getMessages = async (req, res, next) => {
     const senders = await User.find({ id: { $in: senderIds } }).lean();
     const senderMap = Object.fromEntries(senders.map(u => [u.id, u]));
 
-    const seenQuery = type === 'group'
-      ? { conversationType: 'group', groupId: req.query.groupId, senderId: { $ne: userId } }
-      : { conversationType: 'dm', senderId: partnerId, recipientId: userId };
-    await Message.updateMany(seenQuery, { $set: { seenAt: new Date().toISOString() } });
+    const readQuery = type === 'group'
+      ? { conversationType: 'group', groupId: req.query.groupId, readBy: { $ne: userId } }
+      : { conversationType: 'dm', senderId: partnerId, recipientId: userId, readBy: { $ne: userId } };
+    await Message.updateMany(readQuery, { $addToSet: { readBy: userId } });
     // Re-read after marking messages as seen so the same response exposes the
     // authoritative receipt state instead of the pre-update snapshot.
     msgs = await Message.find(messageFilter).lean().sort({ createdAt: 1 });
@@ -458,7 +458,12 @@ const getMessages = async (req, res, next) => {
         : null,
       delivery: {
         delivered: true,
-        seenAt: m.seenAt || null
+        read: m.senderId === userId && (type === 'group'
+          ? (m.readBy || []).length >= Math.max(1, groupParticipantCount - 1)
+          : (m.readBy || []).some((readerId) => String(readerId) === String(partnerId))),
+        readCount: type === 'group'
+          ? (m.readBy || []).filter((readerId) => String(readerId) !== String(m.senderId)).length
+          : (m.readBy || []).some((readerId) => String(readerId) === String(partnerId)) ? 1 : 0
       }
     }));
 
