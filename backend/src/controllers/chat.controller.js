@@ -407,23 +407,25 @@ const getMessages = async (req, res, next) => {
     if (!userId) return next(new AppError('userId required.', 400));
     const { type, partnerId } = req.query;
 
-    let msgs;
+    let messageFilter;
     if (type === 'group') {
       const groupId = req.query.groupId;
       if (!groupId) return next(new AppError('groupId required for group messages.', 400));
       const group = await ChatGroup.findOne({ id: groupId }).lean();
       if (!group || !(group.participantIds || []).includes(userId)) return next(new AppError('Group not found.', 404));
-      msgs = await Message.find({ conversationType: 'group', groupId }).lean().sort({ createdAt: 1 });
+      messageFilter = { conversationType: 'group', groupId };
     } else {
       if (!partnerId) return next(new AppError('partnerId required for DM.', 400));
-      msgs = await Message.find({
+      messageFilter = {
         conversationType: 'dm',
         $or: [
           { senderId: userId, recipientId: partnerId },
           { senderId: partnerId, recipientId: userId }
         ]
-      }).lean().sort({ createdAt: 1 });
+      };
     }
+
+    let msgs = await Message.find(messageFilter).lean().sort({ createdAt: 1 });
 
     const senderIds = [...new Set(msgs.map(m => m.senderId).filter(Boolean))];
     const senders = await User.find({ id: { $in: senderIds } }).lean();
@@ -433,6 +435,9 @@ const getMessages = async (req, res, next) => {
       ? { conversationType: 'group', groupId: req.query.groupId, readBy: { $ne: userId } }
       : { conversationType: 'dm', senderId: partnerId, recipientId: userId, readBy: { $ne: userId } };
     await Message.updateMany(readQuery, { $addToSet: { readBy: userId } });
+    // Re-read after marking messages as seen so the same response exposes the
+    // authoritative receipt state instead of the pre-update snapshot.
+    msgs = await Message.find(messageFilter).lean().sort({ createdAt: 1 });
     const groupParticipantCount = type === 'group'
       ? ((await ChatGroup.findOne({ id: req.query.groupId }).lean())?.participantIds || []).length
       : 0;
