@@ -562,7 +562,7 @@ const getConversations = async (req, res, next) => {
         group: { id: group.id, name: group.name },
         partner: null,
         participants: (group.participantIds || []).map((id) => publicUser(db.users.find((user) => user.id === id))).filter(Boolean),
-        lastMessage: lastGroup ? hydrateMessage(db, lastGroup) : null,
+        lastMessage: lastGroup ? hydrateMessage(db, lastGroup.deletedFor?.includes(userId) ? { ...lastGroup, deleted: true, deletedBy: userId, text: '' } : lastGroup) : null,
         unreadCount: groupUnreadCount,
         updatedAt: lastGroup?.createdAt || group.updatedAt || group.createdAt
       });
@@ -582,7 +582,7 @@ const getConversations = async (req, res, next) => {
       conversations.push({
         type: 'dm',
         partner: publicUser(other),
-        lastMessage: last ? hydrateMessage(db, last) : null,
+        lastMessage: last ? hydrateMessage(db, last.deletedFor?.includes(userId) ? { ...last, deleted: true, deletedBy: userId, text: '' } : last) : null,
         isRequest: Boolean(last?.messageKind === 'request' && last.senderId === other.id),
         unreadCount,
         updatedAt: last?.createdAt || null
