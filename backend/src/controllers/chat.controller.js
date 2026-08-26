@@ -294,9 +294,32 @@ const inviteGroupMember = async (req, res, next) => {
     const actor = await User.findOne({ id: req.userId }).lean();
     const invitee = await User.findOne({ id: req.body?.userId }).lean();
     if (!invitee || !areFriends(actor, invitee)) return next(new AppError('You can only invite mutual friends.', 403));
-    if (!(group.participantIds || []).includes(invitee.id)) group.participantIds.push(invitee.id);
+    if (!(group.participantIds || []).includes(invitee.id)) {
+      group.groupRequests = (group.groupRequests || []).filter((request) => request.userId !== invitee.id || request.status !== 'pending');
+      group.groupRequests.push({ userId: invitee.id, status: 'pending', createdAt: new Date().toISOString() });
+    }
     await group.save();
     res.json({ group: group.toObject() });
+  } catch (error) { next(error); }
+};
+
+const getGroupRequests = async (req, res, next) => {
+  try {
+    const groups = await ChatGroup.find({ 'groupRequests': { $elemMatch: { userId: req.userId, status: 'pending' } } }).lean();
+    const requests = groups.map((group) => ({ groupId: group.id, groupName: group.name, avatarUrl: group.avatarUrl || '', fromId: group.createdById, createdAt: group.groupRequests.find((request) => request.userId === req.userId && request.status === 'pending')?.createdAt }));
+    res.json({ requests });
+  } catch (error) { next(error); }
+};
+
+const respondToGroupRequest = async (req, res, next) => {
+  try {
+    const group = await ChatGroup.findOne({ id: req.params.id });
+    const request = group?.groupRequests?.find((item) => item.userId === req.userId && item.status === 'pending');
+    if (!group || !request) return next(new AppError('Group request not found.', 404));
+    request.status = req.body?.action === 'accept' ? 'accepted' : 'declined';
+    if (request.status === 'accepted' && !group.participantIds.includes(req.userId)) group.participantIds.push(req.userId);
+    await group.save();
+    res.json({ success: true, group: group.toObject() });
   } catch (error) { next(error); }
 };
 
@@ -821,6 +844,8 @@ module.exports = {
   removeGroupMember,
   deleteGroup,
   inviteGroupMember,
+  getGroupRequests,
+  respondToGroupRequest,
   getMessages,
   sendMessageController,
   sendMediaMessage,

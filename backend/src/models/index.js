@@ -206,6 +206,7 @@ const ChatGroupSchema = new Schema({
   name: String,
   createdById: String,
   participantIds: [String],
+  groupRequests: [{ userId: String, status: String, createdAt: String }],
   adminId: String,
   avatarUrl: String,
   avatarPublicId: String,
