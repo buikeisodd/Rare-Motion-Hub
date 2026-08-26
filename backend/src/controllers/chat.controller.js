@@ -689,7 +689,9 @@ const getConversations = async (req, res, next) => {
 
     const conversations = [];
 
-    const userGroupIds = db.groups
+    const storedGroups = await ChatGroup.find({ participantIds: userId }).lean();
+
+    const userGroupIds = storedGroups
       .filter((group) => (group.participantIds || []).includes(userId))
       .map((group) => group.id);
     const allMessages = await Message.find({
@@ -700,7 +702,7 @@ const getConversations = async (req, res, next) => {
     }).lean();
     db.messages = allMessages;
 
-    for (const group of db.groups.filter((item) => (item.participantIds || []).includes(userId))) {
+    for (const group of storedGroups) {
       const groupMsgs = db.messages.filter((m) => m.conversationType === 'group' && m.groupId === group.id);
       const lastGroup = groupMsgs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] || null;
       const groupUnreadCount = groupMsgs.filter((m) => m.senderId !== userId && !(m.readBy || []).includes(userId)).length;
