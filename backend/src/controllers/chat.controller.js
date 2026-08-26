@@ -260,7 +260,8 @@ const getGroupSettings = async (req, res, next) => {
   try {
     const group = await ChatGroup.findOne({ id: req.params.id }).lean();
     if (!group || !(group.participantIds || []).includes(req.userId)) return next(new AppError('Group not found.', 404));
-    res.json({ group });
+    const members = await User.find({ id: { $in: group.participantIds || [] } }).lean();
+    res.json({ group: { ...group, participants: members.map(publicUser) } });
   } catch (error) { next(error); }
 };
 
