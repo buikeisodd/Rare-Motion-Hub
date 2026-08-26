@@ -10,6 +10,7 @@ const {
   createGroup,
   getGroupSettings,
   updateGroupSettings,
+  uploadGroupAvatar,
   inviteGroupMember,
   getMessages,
   sendMessageController,
@@ -24,7 +25,7 @@ const {
   clearReadNotifications
 } = require('../controllers/chat.controller');
 const { requireUserId } = require('../middlewares/auth.middleware');
-const { uploadChatMedia } = require('../middlewares/upload.middleware');
+const { uploadChatMedia, uploadGroupAvatar: uploadGroupAvatarFile } = require('../middlewares/upload.middleware');
 
 const router = express.Router();
 
@@ -43,6 +44,7 @@ router.get('/friends', requireUserId, getFriends);
 router.post('/groups', requireUserId, createGroup);
 router.get('/groups/:id', requireUserId, getGroupSettings);
 router.patch('/groups/:id', requireUserId, updateGroupSettings);
+router.post('/groups/:id/avatar', requireUserId, uploadGroupAvatarFile.single('avatar'), uploadGroupAvatar);
 router.post('/groups/:id/invite', requireUserId, inviteGroupMember);
 
 // Messages

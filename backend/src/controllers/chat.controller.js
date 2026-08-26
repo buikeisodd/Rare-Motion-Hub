@@ -299,6 +299,48 @@ const inviteGroupMember = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
+const uploadGroupAvatar = async (req, res, next) => {
+  let uploadedPublicId = '';
+  try {
+    if (!req.file) return next(new AppError('No group image uploaded.', 400));
+    const group = await ChatGroup.findOne({ id: req.params.id });
+    if (!group || !(group.participantIds || []).includes(req.userId)) return next(new AppError('Group not found.', 404));
+    const isAdmin = (group.adminId || group.createdById) === req.userId;
+    if (!isAdmin && !group.membersCanEdit) return next(new AppError('Only permitted group members can change the group image.', 403));
+
+    let avatarUrl = `${BASE_URL}/avatars/${req.file.filename}`;
+    if (hasCloudinaryConfig) {
+      const assetId = `group-${group.id}-${makeId()}`;
+      const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+        folder: 'raremotionhub/group-avatars',
+        public_id: assetId,
+        resource_type: 'image'
+      });
+      uploadedPublicId = uploadResult.public_id;
+      avatarUrl = uploadResult.secure_url;
+      removeFileIfExists(req.file.path);
+    }
+
+    const previousPublicId = group.avatarPublicId;
+    group.avatarUrl = avatarUrl;
+    group.avatarPublicId = uploadedPublicId;
+    group.updatedAt = new Date().toISOString();
+    try {
+      await group.save();
+    } catch (saveError) {
+      if (uploadedPublicId && hasCloudinaryConfig) await cloudinary.uploader.destroy(uploadedPublicId, { resource_type: 'image' }).catch(() => {});
+      throw saveError;
+    }
+    if (previousPublicId && previousPublicId !== uploadedPublicId && hasCloudinaryConfig) {
+      await cloudinary.uploader.destroy(previousPublicId, { resource_type: 'image' }).catch(() => {});
+    }
+    res.json({ group: group.toObject() });
+  } catch (error) {
+    if (req.file?.path && !uploadedPublicId) removeFileIfExists(req.file.path);
+    next(error);
+  }
+};
+
 const getMessages = async (req, res, next) => {
   try {
     const userId = req.userId;
@@ -604,7 +646,18 @@ const getConversations = async (req, res, next) => {
       const groupUnreadCount = groupMsgs.filter((m) => m.senderId !== userId && !(m.readBy || []).includes(userId)).length;
       conversations.push({
         type: 'group',
-        group: { id: group.id, name: group.name },
+        group: {
+          id: group.id,
+          name: group.name,
+          avatarUrl: group.avatarUrl || '',
+          avatarPublicId: group.avatarPublicId || '',
+          adminId: group.adminId || group.createdById,
+          createdById: group.createdById,
+          participantIds: group.participantIds || [],
+          messagingOpen: group.messagingOpen !== false,
+          membersCanEdit: Boolean(group.membersCanEdit),
+          membersCanInvite: Boolean(group.membersCanInvite)
+        },
         partner: null,
         participants: (group.participantIds || []).map((id) => publicUser(db.users.find((user) => user.id === id))).filter(Boolean),
         lastMessage: lastGroup ? hydrateMessage(db, lastGroup) : null,
@@ -738,6 +791,7 @@ module.exports = {
   createGroup,
   getGroupSettings,
   updateGroupSettings,
+  uploadGroupAvatar,
   inviteGroupMember,
   getMessages,
   sendMessageController,

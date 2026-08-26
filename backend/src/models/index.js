@@ -208,6 +208,7 @@ const ChatGroupSchema = new Schema({
   participantIds: [String],
   adminId: String,
   avatarUrl: String,
+  avatarPublicId: String,
   messagingOpen: { type: Boolean, default: true },
   membersCanEdit: { type: Boolean, default: false },
   membersCanInvite: { type: Boolean, default: false },

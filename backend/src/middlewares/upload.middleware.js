@@ -30,6 +30,12 @@ const uploadAvatar = multer({
   limits: { fileSize: 5 * 1024 * 1024 } // 5MB
 });
 
+const uploadGroupAvatar = multer({
+  storage: diskStorage(avatarDir),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => cb(null, /^image\/(jpeg|png|webp|gif)$/i.test(file.mimetype))
+});
+
 const uploadNoteMemo = multer({
   storage: localDiskStorage,
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB
@@ -44,6 +50,7 @@ module.exports = {
   uploadTrack,
   uploadCover,
   uploadAvatar,
+  uploadGroupAvatar,
   uploadNoteMemo,
   uploadChatMedia
 };
