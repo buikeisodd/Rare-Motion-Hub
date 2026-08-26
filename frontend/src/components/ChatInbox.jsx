@@ -44,7 +44,7 @@ function normalizeMessage(value) {
 }
 
 function SettingToggle({ checked, disabled, onChange, label }) {
-  return <button type="button" role="switch" aria-checked={checked} aria-label={label} disabled={disabled} onClick={() => onChange(!checked)} className={`relative h-7 w-12 shrink-0 rounded-full p-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-label disabled:cursor-not-allowed disabled:opacity-50 ${checked ? 'bg-primary-label' : 'bg-shading'}`}><span className={`block h-5 w-5 rounded-full bg-primary-background shadow-sm transition-transform ${checked ? 'translate-x-5' : 'translate-x-0'}`} /></button>;
+  return <button type="button" role="switch" aria-checked={checked} aria-label={label} disabled={disabled} onClick={() => onChange(!checked)} className={`relative h-6 w-10 shrink-0 rounded-full p-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-label disabled:cursor-not-allowed disabled:opacity-50 ${checked ? 'bg-primary-label' : 'bg-shading'}`}><span className={`block h-4 w-4 rounded-full bg-primary-background shadow-sm transition-transform ${checked ? 'translate-x-4' : 'translate-x-0'}`} /></button>;
 }
 
 function ChatMenu({ user, privacy, setPrivacy, onBack, onProfile, onClear }) {
