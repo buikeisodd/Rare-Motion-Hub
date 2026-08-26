@@ -460,7 +460,10 @@ const getMessages = async (req, res, next) => {
         delivered: true,
         read: m.senderId === userId && (type === 'group'
           ? (m.readBy || []).length >= Math.max(1, groupParticipantCount - 1)
-          : (m.readBy || []).includes(partnerId))
+          : (m.readBy || []).some((readerId) => String(readerId) === String(partnerId))),
+        readCount: type === 'group'
+          ? (m.readBy || []).filter((readerId) => String(readerId) !== String(m.senderId)).length
+          : (m.readBy || []).some((readerId) => String(readerId) === String(partnerId)) ? 1 : 0
       }
     }));
 
