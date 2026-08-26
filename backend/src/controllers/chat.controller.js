@@ -434,10 +434,16 @@ const getMessages = async (req, res, next) => {
     const seenQuery = type === 'group'
       ? { conversationType: 'group', groupId: req.query.groupId, senderId: { $ne: userId } }
       : { conversationType: 'dm', senderId: partnerId, recipientId: userId };
-    await Message.updateMany(seenQuery, { $set: { seenAt: new Date().toISOString() } });
+    const seenUpdate = type === 'group'
+      ? { $addToSet: { seenBy: userId } }
+      : { $set: { seenAt: new Date().toISOString() } };
+    await Message.updateMany(seenQuery, seenUpdate);
     // Re-read after marking messages as seen so the same response exposes the
     // authoritative receipt state instead of the pre-update snapshot.
     msgs = await Message.find(messageFilter).lean().sort({ createdAt: 1 });
+    const seenIds = [...new Set(msgs.flatMap((message) => message.seenBy || []))];
+    const seenUsers = await User.find({ id: { $in: seenIds } }).lean();
+    const seenUserMap = Object.fromEntries(seenUsers.map((user) => [user.id, user.name || user.username || 'User']));
     const groupParticipantCount = type === 'group'
       ? ((await ChatGroup.findOne({ id: req.query.groupId }).lean())?.participantIds || []).length
       : 0;
@@ -458,7 +464,8 @@ const getMessages = async (req, res, next) => {
         : null,
       delivery: {
         delivered: true,
-        seenAt: m.seenAt || null
+        seenAt: m.seenAt || null,
+        seenBy: (m.seenBy || []).map((id) => ({ id, name: seenUserMap[id] || 'User' }))
       }
     }));
 
