@@ -152,7 +152,7 @@ const uploadTrackController = async (req, res, next) => {
       id: trackId,
       userId,
       projectId: projectId || null,
-      title: title || req.file.originalname,
+      title: typeof title === 'string' && title.trim() ? title.trim() : path.basename(req.file.originalname || 'Untitled track', path.extname(req.file.originalname || '')),
       artist: artist || '',
       producer: producer || '',
       filename: storedFile.filename,
@@ -249,7 +249,7 @@ const createCloudinaryTrack = async (req, res, next) => {
     const versionId = makeId();
     const track = {
       id: makeId(), userId, projectId: projectId || null,
-      title: title || publicId.split('/').pop(), artist: artist || '', producer: producer || '',
+      title: typeof title === 'string' && title.trim() ? title.trim() : path.basename(publicId.split('/').pop() || 'Untitled track', path.extname(publicId.split('/').pop() || '')), artist: typeof artist === 'string' ? artist.trim() : '', producer: typeof producer === 'string' ? producer.trim() : '',
       filename: null, url: secureUrl, publicId, resourceType: resourceType || 'video',
       format: format || null, size: Number(bytes) || 0, duration: Number(duration) || 0,
       storageProvider: 'cloudinary', playbackStatus: 'ready', activeVersionId: versionId,
