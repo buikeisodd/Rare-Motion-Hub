@@ -259,7 +259,7 @@ export default function ChatInbox({ user, isOpen, onToggle, startConversationWit
   if (!isOpen) return null;
   const activeGroupMembers = active?.type === 'group' ? (active.group.participants || []).filter((member) => member.isOnline) : [];
   const activeName = active?.type === 'group' ? active.group.name : active?.partner ? `${active.partner.name}${active.partner.isOnline ? ' · Active now' : active.partner.lastSeenAt ? ` · Last seen ${formatChatTime(active.partner.lastSeenAt)}` : ''}` : '';
-  const activeGroupStatus = activeGroupMembers.length === 1 ? `${activeGroupMembers[0].name} is active` : activeGroupMembers.length > 1 ? `${activeGroupMembers[0].name} and ${activeGroupMembers.length - 1} others are active` : 'No members active';
+  const activeGroupStatus = activeGroupMembers.length === 1 ? `${activeGroupMembers[0].name} is active` : activeGroupMembers.length > 1 ? `${activeGroupMembers[0].name} and ${activeGroupMembers.length - 1} other${activeGroupMembers.length - 1 === 1 ? '' : 's'} are active` : 'No members active';
 
   return <div className="fixed inset-0 z-[80] flex bg-primary-background/80 p-0 backdrop-blur-xl sm:items-center sm:justify-center sm:p-5" onClick={onToggle}>
     <div className="panel-bg flex h-full min-w-0 w-full overflow-hidden border-border sm:h-[min(42rem,90vh)] sm:max-w-4xl sm:rounded-3xl sm:border sm:shadow-2xl" onClick={(event) => event.stopPropagation()}>
