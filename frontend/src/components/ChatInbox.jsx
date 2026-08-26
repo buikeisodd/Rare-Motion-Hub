@@ -209,7 +209,7 @@ export default function ChatInbox({ user, isOpen, onToggle, startConversationWit
 
   useEffect(() => {
     if (!isOpen || !active) return undefined;
-    const timer = window.setInterval(() => loadMessages(active, { silent: true }), 3000);
+    const timer = window.setInterval(() => loadMessages(active, { silent: true }), 1000);
     return () => window.clearInterval(timer);
   }, [isOpen, active, loadMessages]);
 
