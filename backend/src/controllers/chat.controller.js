@@ -718,7 +718,8 @@ const getConversations = async (req, res, next) => {
           participantIds: group.participantIds || [],
           messagingOpen: group.messagingOpen !== false,
           membersCanEdit: Boolean(group.membersCanEdit),
-          membersCanInvite: Boolean(group.membersCanInvite)
+          membersCanInvite: Boolean(group.membersCanInvite),
+          participants: (group.participantIds || []).map((id) => publicUser(db.users.find((user) => user.id === id))).filter(Boolean)
         },
         partner: null,
         participants: (group.participantIds || []).map((id) => publicUser(db.users.find((user) => user.id === id))).filter(Boolean),
