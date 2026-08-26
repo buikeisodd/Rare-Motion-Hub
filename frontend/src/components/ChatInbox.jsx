@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Ban, CheckCheck, Copy, Inbox, Link2, Menu, MessageCircle, MoreHorizontal, Pin, Plus, Reply, Search, Send, ShieldCheck, Star, Trash2, UserPlus, Users, X } from 'lucide-react';
+import { ArrowLeft, Ban, Copy, Inbox, Link2, Menu, MessageCircle, MoreHorizontal, Pin, Plus, Reply, Search, Send, Star, Trash2, UserPlus, Users, X } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 import { Link } from 'react-router-dom';
 import ConfirmModal from './ConfirmModal';
@@ -10,6 +10,18 @@ const formatChatTime = (value) => {
   if (!value) return '';
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? '' : date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
+const formatSeen = (value) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const minutes = Math.max(0, Math.floor((Date.now() - date.getTime()) / 60000));
+  if (minutes < 1) return 'Seen now';
+  if (minutes < 60) return `Seen ${minutes} minute${minutes === 1 ? '' : 's'} ago`;
+  const days = Math.floor(minutes / 1440);
+  if (days >= 1) return `Seen ${days} day${days === 1 ? '' : 's'} ago`;
+  const hours = Math.floor(minutes / 60);
+  return `Seen ${hours} hour${hours === 1 ? '' : 's'} ago`;
 };
 
 function avatar(user, size = 'h-10 w-10') {
@@ -120,7 +132,6 @@ export default function ChatInbox({ user, isOpen, onToggle, startConversationWit
   const [chatMenuOpen, setChatMenuOpen] = useState(false);
   const [groupSettingsOpen, setGroupSettingsOpen] = useState(false);
   const [groupRemoved, setGroupRemoved] = useState(false);
-  const [privacy, setPrivacy] = useState({ lastSeen: true, online: true, readReceipts: true });
   const [menuConversation, setMenuConversation] = useState(null);
   const [highlightedMessageId, setHighlightedMessageId] = useState(null);
   const handledTargetId = useRef(null);
