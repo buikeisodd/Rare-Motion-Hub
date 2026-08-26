@@ -181,6 +181,8 @@ const MessageSchema = new Schema({
   replyToMessageId: String,
   forwardedFrom: Schema.Types.Mixed,
   deleted: Boolean,
+  deletedBy: String,
+  deletedFor: [String],
   deliveredTo: [String],
   fromId: String,
   toId: String,

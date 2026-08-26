@@ -293,6 +293,7 @@ const getMessages = async (req, res, next) => {
 
     const hydrated = msgs.map(m => ({
       ...m,
+      ...(Array.isArray(m.deletedFor) && m.deletedFor.includes(userId) ? { deleted: true, deletedBy: userId, text: '' } : {}),
       sender: senderMap[m.senderId] ? {
         id: senderMap[m.senderId].id,
         name: senderMap[m.senderId].name,
@@ -475,12 +476,18 @@ const deleteMessage = async (req, res, next) => {
   try {
     const db = ensureDBShape(await readDB());
     const userId = req.userId;
+    const scope = req.body?.scope === 'me' ? 'me' : 'everyone';
     const message = db.messages.find((item) => item.id === req.params.id);
     if (!message) return next(new AppError('Message not found.', 404));
     const participantIds = message.conversationType === 'group'
       ? (db.groups.find((group) => group.id === message.groupId)?.participantIds || [])
       : [message.senderId, message.recipientId].filter(Boolean);
     if (!participantIds.includes(userId)) return next(new AppError('You are not part of this conversation.', 403));
+    if (scope === 'me') {
+      message.deletedFor = [...new Set([...(message.deletedFor || []), userId])];
+      await writeDB(db);
+      return res.json({ message: { ...hydrateMessage(db, message), deleted: true, deletedBy: userId, text: '' } });
+    }
     if (message.deleted) return res.json({ message: hydrateMessage(db, message) });
     
     message.deleted = true;

@@ -195,7 +195,7 @@ export default function ChatInbox({ user, isOpen, onToggle, startConversationWit
   const confirmDeleteMessage = async () => {
     if (!pendingDeleteMessage) return;
     try {
-      const response = await authFetch(`${apiUrl}/api/messages/${pendingDeleteMessage.id}`, { method: 'DELETE' });
+      const response = await authFetch(`${apiUrl}/api/messages/${pendingDeleteMessage.id}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scope: pendingDeleteMessage.senderId === user.id ? 'everyone' : 'me' }) });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || 'Could not delete message.');
       const deletedMessage = normalizeMessage(data.message);
