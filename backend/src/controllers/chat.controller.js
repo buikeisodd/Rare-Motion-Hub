@@ -706,6 +706,7 @@ const getConversations = async (req, res, next) => {
       const groupMsgs = db.messages.filter((m) => m.conversationType === 'group' && m.groupId === group.id);
       const lastGroup = groupMsgs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] || null;
       const groupUnreadCount = groupMsgs.filter((m) => m.senderId !== userId && !(m.readBy || []).includes(userId)).length;
+      const groupMembers = await User.find({ id: { $in: group.participantIds || [] } }).lean();
       conversations.push({
         type: 'group',
         group: {
@@ -719,7 +720,7 @@ const getConversations = async (req, res, next) => {
           messagingOpen: group.messagingOpen !== false,
           membersCanEdit: Boolean(group.membersCanEdit),
           membersCanInvite: Boolean(group.membersCanInvite),
-          participants: (group.participantIds || []).map((id) => publicUser(db.users.find((user) => user.id === id))).filter(Boolean)
+          participants: groupMembers.map(publicUser).filter(Boolean)
         },
         partner: null,
         participants: (group.participantIds || []).map((id) => publicUser(db.users.find((user) => user.id === id))).filter(Boolean),
