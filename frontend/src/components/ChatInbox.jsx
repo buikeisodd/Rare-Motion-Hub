@@ -230,6 +230,7 @@ export default function ChatInbox({ user, isOpen, onToggle, startConversationWit
     const value = text.trim();
     if (!value || !active || sending || groupRemoved) return;
     setSending(true); setError('');
+    const sentFrom = active.type === 'group' ? `group:${active.group.id}` : `dm:${active.partner.id}`;
     try {
       const isGroup = active.type === 'group';
       const response = await authFetch(`${apiUrl}/api/messages`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ recipientId: isGroup ? null : active.partner.id, groupId: isGroup ? active.group.id : null, conversationType: isGroup ? 'group' : 'dm', text: value, replyToMessageId: replyingTo?.id || null }) });
@@ -237,7 +238,9 @@ export default function ChatInbox({ user, isOpen, onToggle, startConversationWit
       if (!response.ok) throw new Error(data.error || 'Message could not be sent.');
       const message = normalizeMessage(data.message);
       if (!message) throw new Error('The server returned an invalid message.');
-      setMessages((current) => [...current, message]); setText(''); setReplyingTo(null); loadConversations();
+      const currentConversation = active.type === 'group' ? `group:${active.group.id}` : `dm:${active.partner.id}`;
+      if (sentFrom === currentConversation) setMessages((current) => [...current, message]);
+      setText(''); setReplyingTo(null); loadConversations();
     } catch (err) { setError(err.message || 'Message could not be sent.'); }
     finally { setSending(false); }
   };
