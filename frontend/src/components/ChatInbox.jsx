@@ -135,7 +135,6 @@ export default function ChatInbox({ user, isOpen, onToggle, startConversationWit
   const [menuConversation, setMenuConversation] = useState(null);
   const [highlightedMessageId, setHighlightedMessageId] = useState(null);
   const handledTargetId = useRef(null);
-  const messageRequestRef = useRef(0);
 
   useEffect(() => {
     if (!deleteFeedback) return undefined;
@@ -191,7 +190,6 @@ export default function ChatInbox({ user, isOpen, onToggle, startConversationWit
 
   const loadMessages = useCallback(async (conversation, { silent = false } = {}) => {
     if (!conversation) return;
-    const requestId = ++messageRequestRef.current;
     const isGroup = conversation.type === 'group';
     const query = isGroup ? `type=group&groupId=${conversation.group.id}` : `type=dm&partnerId=${conversation.partner.id}`;
     if (!silent) setLoading(true);
@@ -200,7 +198,7 @@ export default function ChatInbox({ user, isOpen, onToggle, startConversationWit
       const response = await authFetch(`${apiUrl}/api/messages?${query}`);
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || 'Could not load conversation.');
-      if (requestId === messageRequestRef.current) setMessages((Array.isArray(data.messages) ? data.messages : []).map(normalizeMessage).filter(Boolean));
+      setMessages((Array.isArray(data.messages) ? data.messages : []).map(normalizeMessage).filter(Boolean));
     } catch (err) { if (!silent) setMessages([]); if (conversation.type === 'group' && err.message === 'Group not found.') setGroupRemoved(true); setError(conversation.type === 'group' && err.message === 'Group not found.' ? 'You were removed from this group by the admin.' : (err.message || 'Could not load conversation.')); }
     finally { if (!silent) setLoading(false); }
   }, []);
@@ -216,6 +214,7 @@ export default function ChatInbox({ user, isOpen, onToggle, startConversationWit
     )));
     setActive({ ...conversation, unreadCount: 0 });
     setGroupRemoved(false);
+    setMessages([]);
     loadMessages(conversation);
   };
 
