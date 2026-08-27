@@ -408,21 +408,24 @@ const getMessages = async (req, res, next) => {
     const { type, partnerId } = req.query;
 
     let msgs;
+    let messageFilter;
     if (type === 'group') {
       const groupId = req.query.groupId;
       if (!groupId) return next(new AppError('groupId required for group messages.', 400));
       const group = await ChatGroup.findOne({ id: groupId }).lean();
       if (!group || !(group.participantIds || []).includes(userId)) return next(new AppError('Group not found.', 404));
-      msgs = await Message.find({ conversationType: 'group', groupId }).lean().sort({ createdAt: 1 });
+      messageFilter = { conversationType: 'group', groupId };
+      msgs = await Message.find(messageFilter).lean().sort({ createdAt: 1 });
     } else {
       if (!partnerId) return next(new AppError('partnerId required for DM.', 400));
-      msgs = await Message.find({
+      messageFilter = {
         conversationType: 'dm',
         $or: [
           { senderId: userId, recipientId: partnerId },
           { senderId: partnerId, recipientId: userId }
         ]
-      }).lean().sort({ createdAt: 1 });
+      };
+      msgs = await Message.find(messageFilter).lean().sort({ createdAt: 1 });
     }
 
     const senderIds = [...new Set(msgs.map(m => m.senderId).filter(Boolean))];
