@@ -560,7 +560,8 @@
 }
 .rmh-add-track-button, .project-upload-action, .project-upload-plus { min-height: 44px; border: 1px solid rgba(52,72,59,.16); border-radius: .9rem; background: #F3EBDD; color: #34483B; box-shadow: 0 8px 18px rgba(52,72,59,.14); transition: transform .18s ease, background-color .18s ease, box-shadow .18s ease; }
 .rmh-library-add-button, .project-upload-action, .project-upload-plus, .folder-add-button { box-sizing: border-box; min-height: 44px; height: 44px; padding: 0 1.25rem; border-radius: .9rem; background: #34483B; color: #F3EBDD; border: 1px solid rgba(52,72,59,.2); box-shadow: 0 8px 18px rgba(52,72,59,.16); }
-.project-upload-plus, .folder-add-button { width: 44px; min-width: 44px; padding: 0; }
+.rmh-library-add-button, .project-upload-action, .project-upload-plus, .folder-add-button { width: 5.5rem; min-width: 5.5rem; height: 3.75rem; min-height: 3.75rem; padding: 0; color: #F3EBDD !important; background: #34483B !important; }
+.rmh-library-add-button svg, .project-upload-action svg, .project-upload-plus svg, .folder-add-button svg { color: #F3EBDD !important; }
 .rmh-library-add-button:hover:not(:disabled), .project-upload-action:hover:not(:disabled), .project-upload-plus:hover:not(:disabled), .folder-add-button:hover:not(:disabled) { background: #4b6454; transform: translateY(-2px); }
 .rmh-library-add-button { background: #34483B; border-color: #34483B; color: #F3EBDD; }
 .rmh-library-add-button svg { color: #F3EBDD !important; }
