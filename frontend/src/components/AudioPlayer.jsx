@@ -312,7 +312,7 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
               <button onClick={() => setCollapsed(false)} className="shrink-0 text-[#F3EBDD]/70 hover:text-[#F3EBDD]"><ChevronUp className="h-3.5 w-3.5" /></button>
             )}
           </div>
-          <ProgressBar progress={progress} duration={duration} onSeek={seek} activeColor={projectSurface ? '#34483B' : '#9BAF9B'} className="h-1 w-full mb-1" />
+          <ProgressBar progress={progress} duration={duration} onSeek={seek} activeColor={projectSurface ? '#34483B' : '#9BAF9B'} className="mt-2 h-1 w-full mb-1" />
           <div className="flex justify-between text-[9px] font-mono text-[#34483B]/35 mb-3">
             <span>{fmt(progress)}</span>
             <span>-{fmt(Math.max(0, duration - progress))}</span>
