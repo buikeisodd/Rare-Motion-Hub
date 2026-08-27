@@ -237,7 +237,7 @@ const getTrackUploadSignature = (req, res, next) => {
 
 const createCloudinaryTrack = async (req, res, next) => {
   try {
-    const { title, artist, producer, projectId, secureUrl, publicId, resourceType, format, bytes, duration } = req.body;
+    const { title, originalFilename, artist, producer, projectId, secureUrl, publicId, resourceType, format, bytes, duration } = req.body || {};
     const userId = req.userId;
     if (!secureUrl || !publicId) return next(new AppError('Cloudinary upload metadata is incomplete.', 400));
     const db = ensureDBShape(await readDB());
@@ -247,9 +247,15 @@ const createCloudinaryTrack = async (req, res, next) => {
       return next(new AppError('Project not found', 404));
     }
     const versionId = makeId();
+    const originalTitle = typeof originalFilename === 'string' && originalFilename.trim()
+      ? path.basename(originalFilename.trim(), path.extname(originalFilename.trim()))
+      : '';
+    const resolvedTitle = typeof title === 'string' && title.trim()
+      ? title.trim()
+      : originalTitle || 'Untitled track';
     const track = {
       id: makeId(), userId, projectId: projectId || null,
-      title: typeof title === 'string' && title.trim() ? title.trim() : path.basename(publicId.split('/').pop() || 'Untitled track', path.extname(publicId.split('/').pop() || '')), artist: typeof artist === 'string' ? artist.trim() : '', producer: typeof producer === 'string' ? producer.trim() : '',
+      title: resolvedTitle, artist: typeof artist === 'string' ? artist.trim() : '', producer: typeof producer === 'string' ? producer.trim() : '',
       filename: null, url: secureUrl, publicId, resourceType: resourceType || 'video',
       format: format || null, size: Number(bytes) || 0, duration: Number(duration) || 0,
       storageProvider: 'cloudinary', playbackStatus: 'ready', activeVersionId: versionId,

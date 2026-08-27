@@ -97,7 +97,9 @@ export default function UploadModal({ isOpen, onClose, onSuccess, onProgress, on
       const finalizeRes = await fetch(`${apiUrl}/api/upload/cloudinary`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
         body: JSON.stringify({
-          title, artist, producer, projectId,
+          title: title.trim() || fileToUpload.name.replace(/\.[^/.]+$/, ''),
+          originalFilename: fileToUpload.name,
+          artist, producer, projectId,
           secureUrl: cloudinaryResult.secure_url,
           publicId: cloudinaryResult.public_id,
           resourceType: cloudinaryResult.resource_type,
