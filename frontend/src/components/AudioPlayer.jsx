@@ -197,7 +197,7 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
       )}
 
       {/* Compact floating pill */}
-      <div onClick={() => setExpanded(true)} className={`rmh-audio-surface relative flex w-full overflow-hidden items-center gap-3 rounded-[1.35rem] border border-white/10 bg-[#1b1b1d]/[.76] px-3 py-3 shadow-[0_18px_50px_rgba(0,0,0,.45)] backdrop-blur-2xl sm:gap-4 sm:px-4 sm:py-3.5 ${projectSurface ? 'project-audio-surface' : ''}`}>
+      <div onClick={() => setExpanded(true)} className={`rmh-audio-surface relative flex w-full overflow-hidden items-center gap-3 rounded-[1.35rem] border border-white/10 bg-[#1b1b1d]/[.76] px-3 py-3 shadow-[0_18px_50px_rgba(0,0,0,.45)] backdrop-blur-2xl sm:gap-4 sm:px-4 sm:py-3.5 ${projectSurface ? 'dark-waveform-surface' : ''}`}>
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 scale-105 bg-cover bg-center opacity-15 blur-md" style={coverStyle} />
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[#141416]/[.76]" />
         {/* Cover art */}
