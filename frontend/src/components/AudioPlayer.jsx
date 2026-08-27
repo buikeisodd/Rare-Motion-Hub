@@ -40,7 +40,7 @@ function ProgressBar({ progress, duration, onSeek, className = '', activeColor =
     <div ref={barRef} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp}
       role="slider" aria-label="Track progress" aria-valuemin="0" aria-valuemax={duration || 0} aria-valuenow={progress}
       className={`relative flex cursor-pointer items-center gap-[2px] rounded-lg bg-white/[0.03] px-1 group ${className}`} style={{ touchAction: 'none' }}>
-      {bars.map((height, index) => <span key={index} className="min-w-0 flex-1 rounded-full transition-colors duration-150" style={{ height: `${height}px`, backgroundColor: index / bars.length <= pct / 100 ? activeColor : '#F3EBDD' }} />)}
+      {bars.map((height, index) => <span key={index} className={`min-w-0 flex-1 rounded-full transition-colors duration-150 ${index / bars.length <= pct / 100 ? 'is-active' : 'is-inactive'}`} style={{ height: `${height}px`, backgroundColor: index / bars.length <= pct / 100 ? activeColor : '#F3EBDD' }} />)}
       <span className="pointer-events-none absolute top-1/2 h-4 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white opacity-0 shadow-md transition-opacity group-hover:opacity-100" style={{ left: `${pct}%` }} />
     </div>
   );
