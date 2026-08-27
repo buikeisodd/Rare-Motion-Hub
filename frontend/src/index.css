@@ -542,12 +542,18 @@
 
 /* Keep the project artwork/header stable while only the track column scrolls. */
 .project-workspace { align-items: start; }
+.project-page-shell { min-width: 0; }
 .project-cover-panel { position: sticky; top: 1.5rem; align-self: start; }
 .project-track-panel { min-width: 0; min-height: 0; }
 .project-track-list { min-width: 0; height: min(62vh, 42rem); overflow-y: auto; overscroll-behavior: contain; padding: 0 .35rem 9rem 0; scrollbar-gutter: stable; }
 @media (max-width: 767px) {
   .project-cover-panel { position: relative; top: auto; }
   .project-track-list { height: auto; overflow: visible; padding: 0 0 1rem; }
+}
+@media (min-width: 768px) {
+  .project-page-shell { height: 100dvh; min-height: 0; overflow: hidden; }
+  .project-page-shell .project-workspace { height: calc(100dvh - 10rem); min-height: 0; }
+  .project-page-shell .project-track-panel { min-height: 0; }
 }
 .rmh-add-track-button, .project-upload-action, .project-upload-plus { min-height: 44px; border: 1px solid rgba(52,72,59,.16); border-radius: .9rem; background: #F3EBDD; color: #34483B; box-shadow: 0 8px 18px rgba(52,72,59,.14); transition: transform .18s ease, background-color .18s ease, box-shadow .18s ease; }
 .rmh-library-add-button { background: #34483B; border-color: #34483B; color: #F3EBDD; }

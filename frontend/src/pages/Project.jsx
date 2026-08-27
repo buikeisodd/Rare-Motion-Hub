@@ -221,7 +221,7 @@ export default function Project({ user }) {
   const leadTrack = tracks[0];
 
   return (
-    <div className="relative min-h-screen bg-primary-background pb-32 text-primary-label md:pb-10">
+    <div className="project-page-shell relative min-h-screen bg-primary-background pb-32 text-primary-label md:pb-10">
       {isProjectMenuOpen && (
         <div className="fixed inset-0 z-40" onClick={() => setIsProjectMenuOpen(false)} />
       )}
