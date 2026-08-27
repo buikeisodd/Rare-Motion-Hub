@@ -970,7 +970,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
 
         <button
           onClick={() => { setIsAddMenuOpen(o => !o); setIsProfileOpen(false); setIsNotificationsOpen(false); }}
-          className="rmh-add-track-button inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-accent border border-accent px-5 text-sm font-semibold text-primary-background shadow-xl backdrop-blur-md transition-colors hover:bg-accent-hover"
+          className="rmh-add-track-button rmh-library-add-button inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-accent border border-accent px-5 text-sm font-semibold text-primary-background shadow-xl backdrop-blur-md transition-colors hover:bg-accent-hover"
         >
           <Plus className={`h-4 w-4 text-primary-label transition-transform duration-200 ${isAddMenuOpen ? 'rotate-45' : ''}`} />
           {isAddMenuOpen ? 'Close' : currentTrack ? null : 'Add'}
