@@ -539,6 +539,7 @@
 
 /* Semantic controls. These classes are owned by components. */
 .rmh-add-track { bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px)); }
+.project-upload-active { position: fixed; left: 1.5rem; bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px)); z-index: 60; }
 
 /* Keep the project artwork/header stable while only the track column scrolls. */
 .project-workspace { align-items: start; }
