@@ -369,8 +369,9 @@ export default function Project({ user }) {
                 <Music className="w-12 h-12 text-secondary-label mb-4" />
                 <h3 className="text-lg font-medium mb-1">No tracks yet</h3>
                 <p className="text-secondary-label text-sm mb-6">Upload a work-in-progress audio file.</p>
-                <button onClick={() => setIsUploadOpen(true)} className="text-sm font-medium bg-shading hover:bg-highlight px-4 py-2 rounded-full transition-colors border border-border">
-                  Upload Track
+                <button onClick={() => setIsUploadOpen(true)} className="project-upload-action inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold">
+                  <Plus className="h-4 w-4" />
+                  Upload track
                 </button>
               </div>
             ) : (
