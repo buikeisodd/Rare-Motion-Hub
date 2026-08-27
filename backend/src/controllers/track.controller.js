@@ -524,8 +524,8 @@ const addFeedComment = async (req, res, next) => {
     const text = String(req.body.text || '').trim();
     if (!text || text.length > 500) return next(new AppError('Comment must be between 1 and 500 characters.', 400));
     const db = ensureDBShape(await readDB());
-    const track = db.tracks.find((item) => item.id === req.params.id && item.isPublished);
-    if (!track) return next(new AppError('Preview not found', 404));
+    const track = findAccessibleTrack(db, req.params.id, req.userId);
+    if (!track) return next(new AppError('Track is not accessible', 404));
     const parentId = req.body.parentId ? String(req.body.parentId) : null;
     if (parentId && !(track.comments || []).some((entry) => entry.id === parentId)) return next(new AppError('Comment not found', 404));
     const comment = { id: makeId(), userId: req.userId, text, parentId, likes: [], createdAt: new Date().toISOString() };
@@ -564,7 +564,7 @@ const addFeedComment = async (req, res, next) => {
 const toggleCommentLike = async (req, res, next) => {
   try {
     const db = ensureDBShape(await readDB());
-    const track = db.tracks.find((item) => item.id === req.params.id && item.isPublished);
+    const track = findAccessibleTrack(db, req.params.id, req.userId);
     const comment = track?.comments?.find((entry) => entry.id === req.params.commentId);
     if (!comment) return next(new AppError('Comment not found', 404));
     comment.likes ||= [];
