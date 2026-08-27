@@ -430,6 +430,67 @@ const updateProjectCover = async (req, res, next) => {
   }
 };
 
+const saveSharedItem = async (req, res, next) => {
+  try {
+    const db = ensureDBShape(await readDB());
+    const userId = req.userId;
+    const type = req.params.type;
+    const sourceId = req.params.id;
+    if (!['project', 'folder'].includes(type)) return next(new AppError('Invalid shared item type.', 400));
+
+    const source = type === 'project'
+      ? db.projects.find((item) => item.id === sourceId)
+      : db.folders.find((item) => item.id === sourceId);
+    if (!source) return next(new AppError('Shared item not found.', 404));
+    if (source.userId === userId) return next(new AppError('This item is already in your library.', 409));
+
+    const sourceProjects = type === 'project'
+      ? [source]
+      : db.projects.filter((item) => item.folderId === source.id);
+    const sourceFolders = type === 'folder'
+      ? [source, ...db.folders.filter((item) => item.parentFolderId === source.id)]
+      : [];
+    const folderMap = new Map();
+    const savedFolders = sourceFolders.map((folder) => {
+      const copy = { ...folder, id: makeId(), userId, sourceItemId: folder.id, sourceOwnerId: folder.userId, allowedUserIds: [], accessRequests: [] };
+      folderMap.set(folder.id, copy.id);
+      return copy;
+    });
+    savedFolders.forEach((folder, index) => {
+      const original = sourceFolders[index];
+      folder.parentFolderId = original.parentFolderId ? (folderMap.get(original.parentFolderId) || null) : null;
+    });
+
+    const projectMap = new Map();
+    const savedProjects = sourceProjects.map((project) => {
+      const copy = { ...project, id: makeId(), userId, sourceItemId: project.id, sourceOwnerId: project.userId, allowedUserIds: [], accessRequests: [] };
+      copy.folderId = project.folderId ? (folderMap.get(project.folderId) || null) : (type === 'folder' ? folderMap.get(source.id) : null);
+      projectMap.set(project.id, copy.id);
+      return copy;
+    });
+    const savedTracks = db.tracks
+      .filter((track) => projectMap.has(track.projectId))
+      .map((track) => ({ ...track, id: makeId(), userId, projectId: projectMap.get(track.projectId), sourceItemId: track.id, sourceOwnerId: track.userId, uploader: { id: userId, name: db.users.find((item) => item.id === userId)?.name || '' } }));
+
+    db.folders.push(...savedFolders);
+    db.projects.push(...savedProjects);
+    db.tracks.push(...savedTracks);
+    await writeDB(db);
+    invalidateCache(`workspace:${userId}`);
+    const rootFolder = savedFolders.find((folder) => !folder.parentFolderId);
+    const rootProject = savedProjects.find((project) => !project.folderId) || savedProjects[0];
+    res.status(201).json({
+      type,
+      folder: rootFolder ? normalizeLibraryItem(rootFolder, db, 'folder') : null,
+      project: rootProject ? normalizeLibraryItem(rootProject, db, 'project') : null,
+      projects: savedProjects.map((project) => normalizeLibraryItem(project, db, 'project')),
+      tracks: savedTracks.map(normalizeTrack)
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const requestWorkspaceAccess = async (req, res, next) => {
   try {
     const db = ensureDBShape(await readDB());
@@ -558,6 +619,7 @@ module.exports = {
   getWorkspace,
   generateShare,
   getShareLink,
+  saveSharedItem,
   getFolder,
   createFolder,
   moveFolder,

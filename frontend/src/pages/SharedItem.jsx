@@ -73,6 +73,11 @@ export default function SharedItem({ user, isLink }) {
   };
 
   const handleSave = async () => {
+    if (!user?.id) {
+      sessionStorage.setItem('pendingSharedUrl', window.location.pathname);
+      navigate(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+      return;
+    }
     setSaving(true);
     try {
       const actualType = isLink ? sharedItem?.type : type;
@@ -81,7 +86,7 @@ export default function SharedItem({ user, isLink }) {
       const res = await fetch(`${apiUrl}/api/share/${actualType}/${actualId}/save`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id })
+        body: JSON.stringify({})
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not save shared item.');
