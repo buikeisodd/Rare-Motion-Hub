@@ -543,10 +543,11 @@
 /* Keep the project artwork/header stable while only the track column scrolls. */
 .project-workspace { align-items: start; }
 .project-page-shell { min-width: 0; }
+.project-page-shell.has-active-player nav[aria-label="Breadcrumb"] { padding-top: .5rem; padding-bottom: .75rem; }
 .project-cover-panel { position: sticky; top: 1.5rem; align-self: start; }
 .project-track-panel { min-width: 0; min-height: 0; }
 .project-track-list { min-width: 0; overflow: visible; }
-.project-track-list.has-active-player { height: min(62vh, 42rem); overflow-y: auto; overscroll-behavior: contain; padding: 0 .35rem 9rem 0; scrollbar-gutter: stable; }
+.project-track-list.has-active-player { height: min(62vh, 42rem); overflow-y: auto; overscroll-behavior: contain; padding: 0 .35rem 12rem 0; scrollbar-gutter: stable; }
 @media (max-width: 767px) {
   .project-cover-panel { position: relative; top: auto; }
   .project-track-list, .project-track-list.has-active-player { height: auto; overflow: visible; padding: 0 0 1rem; }
