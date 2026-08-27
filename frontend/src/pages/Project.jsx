@@ -221,7 +221,7 @@ export default function Project({ user }) {
   const leadTrack = tracks[0];
 
   return (
-    <div className="project-page-shell relative min-h-screen bg-primary-background pb-32 text-primary-label md:pb-10">
+    <div className={`project-page-shell relative min-h-screen bg-primary-background pb-32 text-primary-label md:pb-10 ${currentTrack ? 'has-active-player' : ''}`}>
       {isProjectMenuOpen && (
         <div className="fixed inset-0 z-40" onClick={() => setIsProjectMenuOpen(false)} />
       )}
@@ -362,7 +362,7 @@ export default function Project({ user }) {
             </p>
           </div>
 
-          <div className="project-track-list space-y-2">
+          <div className={`project-track-list space-y-2 ${currentTrack ? 'has-active-player' : ''}`}>
             {uploadingTrack && <div className="grid grid-cols-[2rem_1fr] items-center gap-3 rounded-xl bg-shading/60 px-3 py-2.5 opacity-55"><div className="text-center text-xs text-secondary-label">{tracks.length + 1}</div><div className="min-w-0"><h3 className="truncate text-xl font-semibold text-primary-label">{uploadingTrack.title}</h3><div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-secondary-label"><span>Just now</span><span>1 version</span></div><div className="mt-2 h-1.5 w-full max-w-[14rem] overflow-hidden rounded-full bg-primary-background/70"><div className="h-full rounded-full bg-primary-label transition-[width] duration-300" style={{ width: `${uploadingTrack.progress}%` }} /></div></div></div>}
             {tracks.length === 0 && !uploadingTrack ? (
               <div className="flex flex-col items-center rounded-2xl border border-dashed border-border bg-shading/50 p-10 text-center">
