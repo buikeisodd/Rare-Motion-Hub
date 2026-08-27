@@ -217,7 +217,7 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
           <button title="Previous" onClick={handlePrev} className="hidden h-8 w-8 place-items-center rounded-full text-[#34483B]/70 transition-colors hover:text-[#34483B] sm:grid">
             <SkipBack className="h-4 w-4 fill-current" />
           </button>
-          <button title={isPlaying ? 'Pause' : 'Play'} onClick={() => setIsPlaying(p => !p)} className="h-11 w-11 grid place-items-center rounded-full bg-accent text-primary-background hover:bg-accent-hover hover:scale-105 transition-transform">
+          <button title={isPlaying ? 'Pause' : 'Play'} onClick={() => setIsPlaying(p => !p)} className="h-10 w-10 grid place-items-center rounded-xl bg-accent text-primary-background hover:bg-accent-hover hover:scale-105 transition-transform">
             {isBuffering && isPlaying
               ? <div className="h-3 w-3 animate-spin rounded-full border-2 border-black border-t-transparent" />
               : isPlaying ? <Pause className="h-5 w-5 fill-current" /> : <Play className="h-5 w-5 fill-current ml-0.5" />}
@@ -273,7 +273,7 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
           <div className="mt-7 flex items-center justify-between text-accent">
             <button onClick={toggleShuffle} className={`grid h-11 w-11 place-items-center rounded-full ${isShuffled ? 'bg-shading text-primary-label' : 'text-secondary-label'}`}><Shuffle className="h-5 w-5" /></button>
             <button onClick={handlePrev} className="grid h-12 w-12 place-items-center rounded-full bg-shading"><SkipBack className="h-5 w-5 fill-current" /></button>
-            <button onClick={() => setIsPlaying(p => !p)} className="grid h-16 w-16 place-items-center rounded-full bg-accent text-primary-background hover:bg-accent-hover">
+            <button onClick={() => setIsPlaying(p => !p)} className="grid h-14 w-14 place-items-center rounded-xl bg-accent text-primary-background hover:bg-accent-hover">
               {isBuffering && isPlaying ? <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary-background border-t-transparent" /> : isPlaying ? <Pause className="h-7 w-7 fill-current" /> : <Play className="ml-1 h-7 w-7 fill-current" />}
             </button>
             <button onClick={handleNext} className="grid h-12 w-12 place-items-center rounded-full bg-shading"><SkipForward className="h-5 w-5 fill-current" /></button>
@@ -320,7 +320,7 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
           <div className="flex items-center justify-between text-accent mb-2">
             <button onClick={toggleShuffle} className={`h-7 w-7 grid place-items-center rounded-full ${isShuffled ? 'text-[#34483B]' : 'text-[#34483B]/30 hover:text-[#34483B]/60'}`}><Shuffle className="h-3.5 w-3.5" /></button>
             <button onClick={handlePrev} className="h-8 w-8 grid place-items-center rounded-full text-[#34483B]/70 hover:text-[#34483B] transition-colors"><SkipBack className="h-4 w-4 fill-current" /></button>
-            <button onClick={() => setIsPlaying(p => !p)} className="h-9 w-9 grid place-items-center rounded-full bg-accent text-primary-background hover:bg-accent-hover hover:scale-105 transition-transform">
+            <button onClick={() => setIsPlaying(p => !p)} className="h-8 w-8 grid place-items-center rounded-xl bg-accent text-primary-background hover:bg-accent-hover hover:scale-105 transition-transform">
               {isBuffering && isPlaying ? <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-black border-t-transparent" />
                 : isPlaying ? <Pause className="h-4 w-4 fill-current" /> : <Play className="h-4 w-4 fill-current ml-0.5" />}
             </button>

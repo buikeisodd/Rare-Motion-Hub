@@ -330,7 +330,7 @@ export default function Project({ user }) {
                       handlePlay(leadTrack);
                     }
                   }}
-                  className="grid h-12 w-12 place-items-center rounded-xl bg-accent text-primary-background transition-transform hover:bg-accent-hover hover:scale-105"
+                  className="grid h-11 w-11 place-items-center rounded-xl bg-accent text-primary-background transition-transform hover:bg-accent-hover hover:scale-105"
                   aria-label={isPlaying ? "Pause project" : "Play project"}
                 >
                   {isPlaying && currentTrack

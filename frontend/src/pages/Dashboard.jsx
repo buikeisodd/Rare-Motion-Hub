@@ -88,7 +88,7 @@ export function LibraryProject({ project, tracks, onDragStart, isDragging, onDel
                   playTrack(leadTrack, projectTracks, title, project.coverArt, project.id);
                 }
               }}
-              className="absolute bottom-3 right-3 z-10 flex h-11 w-11 items-center justify-center rounded-xl bg-accent text-primary-background shadow-xl transition-transform hover:bg-accent-hover hover:scale-110 group-hover:scale-105"
+              className="absolute bottom-3 right-3 z-10 flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-primary-background shadow-xl transition-transform hover:bg-accent-hover hover:scale-110 group-hover:scale-105"
             >
               {isThisProjectPlaying && isPlaying ? (
                 <Pause className="h-5 w-5 fill-current" />

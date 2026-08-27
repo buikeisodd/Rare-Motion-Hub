@@ -326,7 +326,7 @@ export default function Folder({ user, onLogout }) {
         </AnimatePresence>
         <button
           onClick={() => { setIsAddMenuOpen((o) => !o); setIsFolderMenuOpen(false); }}
-          className="grid h-12 w-12 place-items-center rounded-xl bg-accent text-primary-background shadow-2xl transition-transform hover:bg-accent-hover hover:scale-105"
+          className="grid h-11 w-11 place-items-center rounded-xl bg-accent text-primary-background shadow-2xl transition-transform hover:bg-accent-hover hover:scale-105"
           aria-label="Add"
         >
           {isAddMenuOpen ? <X className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
@@ -357,7 +357,7 @@ export default function Folder({ user, onLogout }) {
         </AnimatePresence>
         <button
           onClick={() => { setIsAddMenuOpen((o) => !o); setIsFolderMenuOpen(false); }}
-          className="grid h-12 w-12 place-items-center rounded-xl bg-accent text-primary-background shadow-2xl transition-transform hover:bg-accent-hover hover:scale-105"
+          className="grid h-11 w-11 place-items-center rounded-xl bg-accent text-primary-background shadow-2xl transition-transform hover:bg-accent-hover hover:scale-105"
           aria-label="Add"
         >
           {isAddMenuOpen ? <X className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
