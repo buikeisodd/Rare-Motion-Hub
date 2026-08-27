@@ -603,12 +603,12 @@ const getTrackInsights = async (req, res, next) => {
     if (!track) return next(new AppError('Track not found', 404));
 
     const sourceTrackId = track.sourceTrackId || track.id;
+    const sourceTrack = db.tracks.find((item) => item.id === sourceTrackId) || track;
     const ownerId = trackOwnerId(track) || track.userId;
-    if (String(ownerId) !== String(userId)) return next(new AppError('Only the project owner can view insights.', 403));
-    const playEvents = db.playEvents.filter((event) => (
-      (event.projectId === track.projectId && (event.trackId === track.id || event.sourceTrackId === sourceTrackId)) ||
-      ((event.ownerId === ownerId || event.ownerId === userId) && (event.sourceTrackId === sourceTrackId || event.trackId === track.id))
-    ));
+    const sourceOwnerId = trackOwnerId(sourceTrack) || sourceTrack.userId;
+    if (String(ownerId) !== String(userId) && String(sourceOwnerId) !== String(userId)) return next(new AppError('Only the project owner can view insights.', 403));
+    const canonicalTrackId = (event) => event.sourceTrackId || db.tracks.find((item) => item.id === event.trackId)?.sourceTrackId || event.trackId;
+    const playEvents = db.playEvents.filter((event) => canonicalTrackId(event) === sourceTrackId);
 
     const listenerMap = new Map();
     playEvents.forEach((event) => {
@@ -668,10 +668,11 @@ const getProjectInsights = async (req, res, next) => {
     const tracks = db.tracks.filter((item) => item.projectId === project.id);
     const trackIds = new Set(tracks.map((item) => item.id));
     const sourceTrackIds = new Set(tracks.map((item) => item.sourceTrackId || item.id));
-    const events = db.playEvents.filter((event) => event.projectId === project.id || trackIds.has(event.trackId) || sourceTrackIds.has(event.sourceTrackId || event.trackId));
+    const canonicalTrackId = (event) => event.sourceTrackId || db.tracks.find((item) => item.id === event.trackId)?.sourceTrackId || event.trackId;
+    const events = db.playEvents.filter((event) => event.projectId === project.id || trackIds.has(event.trackId) || sourceTrackIds.has(canonicalTrackId(event)));
     const byTrack = tracks.map((track) => {
       const sourceId = track.sourceTrackId || track.id;
-      return { id: track.id, title: track.title, plays: events.filter((event) => event.trackId === track.id || (event.sourceTrackId || event.trackId) === sourceId).length };
+      return { id: track.id, title: track.title, plays: events.filter((event) => canonicalTrackId(event) === sourceId).length };
     }).sort((a, b) => b.plays - a.plays);
     const listenerMap = new Map();
     events.forEach((event) => {
