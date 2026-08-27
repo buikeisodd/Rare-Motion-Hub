@@ -602,12 +602,12 @@ const getTrackInsights = async (req, res, next) => {
     const track = findAccessibleTrack(db, req.params.id, userId);
     if (!track) return next(new AppError('Track not found', 404));
 
-    const sourceTrackId = track.sourceTrackId || track.id;
+    const sourceTrackId = track.sourceTrackId || track.sourceItemId || track.id;
     const sourceTrack = db.tracks.find((item) => item.id === sourceTrackId) || track;
     const ownerId = trackOwnerId(track) || track.userId;
     const sourceOwnerId = trackOwnerId(sourceTrack) || sourceTrack.userId;
     if (String(ownerId) !== String(userId) && String(sourceOwnerId) !== String(userId)) return next(new AppError('Only the project owner can view insights.', 403));
-    const canonicalTrackId = (event) => event.sourceTrackId || db.tracks.find((item) => item.id === event.trackId)?.sourceTrackId || event.trackId;
+    const canonicalTrackId = (event) => event.sourceTrackId || (() => { const eventTrack = db.tracks.find((item) => item.id === event.trackId); return eventTrack?.sourceTrackId || eventTrack?.sourceItemId || event.trackId; })();
     const playEvents = db.playEvents.filter((event) => canonicalTrackId(event) === sourceTrackId);
 
     const listenerMap = new Map();
@@ -648,7 +648,7 @@ const recordListen = async (req, res, next) => {
     db.playEvents.push({
       id: makeId(),
       trackId: track.id,
-      sourceTrackId: track.sourceTrackId || track.id,
+      sourceTrackId: track.sourceTrackId || track.sourceItemId || track.id,
       projectId: project.id,
       ownerId: project.userId,
       userId: req.userId,
@@ -668,7 +668,7 @@ const getProjectInsights = async (req, res, next) => {
     const tracks = db.tracks.filter((item) => item.projectId === project.id);
     const trackIds = new Set(tracks.map((item) => item.id));
     const sourceTrackIds = new Set(tracks.map((item) => item.sourceTrackId || item.id));
-    const canonicalTrackId = (event) => event.sourceTrackId || db.tracks.find((item) => item.id === event.trackId)?.sourceTrackId || event.trackId;
+    const canonicalTrackId = (event) => event.sourceTrackId || (() => { const eventTrack = db.tracks.find((item) => item.id === event.trackId); return eventTrack?.sourceTrackId || eventTrack?.sourceItemId || event.trackId; })();
     const events = db.playEvents.filter((event) => event.projectId === project.id || trackIds.has(event.trackId) || sourceTrackIds.has(canonicalTrackId(event)));
     const byTrack = tracks.map((track) => {
       const sourceId = track.sourceTrackId || track.id;
