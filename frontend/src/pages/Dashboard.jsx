@@ -58,6 +58,8 @@ export function LibraryProject({ project, tracks, onDragStart, isDragging, onDel
         e.dataTransfer.setData('itemType', 'project');
         onDragStart?.();
       }}
+      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+      onDrop={(e) => { e.preventDefault(); e.stopPropagation(); }}
       className={`library-project-card relative w-full max-w-[15rem] transition-all duration-200 ${isDragging ? 'opacity-40 scale-95 rotate-1' : ''} ${isMenuOpen || isConfirmOpen ? 'z-50' : 'z-0'}`}
     >
       <Link to={`/project/${project.id}`} className="group block w-full" draggable={false}>
