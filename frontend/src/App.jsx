@@ -153,8 +153,8 @@ function AnimatedRoutes({ user, authStatus, handleLogin, handleLogout, handleUse
         <Routes location={location} key={location.pathname}>
           <Route path="/login" element={<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><Login onLogin={handleLogin} /></motion.div>} />
           <Route path="/verify-email" element={<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><VerifyEmail onLogin={handleLogin} /></motion.div>} />
-          <Route path="/shared/:type/:id" element={<motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><SharedItem user={null} /></motion.div>} />
-          <Route path="/shared/link/:token" element={<motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><SharedItem user={null} isLink={true} /></motion.div>} />
+          <Route path="/shared/:type/:id" element={<Navigate to={`/login?redirect=${encodeURIComponent(location.pathname)}`} replace />} />
+          <Route path="/shared/link/:token" element={<Navigate to={`/login?redirect=${encodeURIComponent(location.pathname)}`} replace />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </AnimatePresence>
@@ -433,6 +433,10 @@ function App() {
     localStorage.removeItem('user');
     localStorage.removeItem('token');
     localStorage.removeItem('accessToken');
+    const redirect = new URLSearchParams(window.location.search).get('redirect');
+    if (redirect && redirect.startsWith('/shared/')) {
+      window.location.assign(redirect);
+    }
   };
 
   const handleLogout = async () => {
