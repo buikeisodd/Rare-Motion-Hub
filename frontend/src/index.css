@@ -544,7 +544,7 @@
 .project-workspace { align-items: start; }
 .project-cover-panel { position: sticky; top: 1.5rem; align-self: start; }
 .project-track-panel { min-width: 0; min-height: 0; }
-.project-track-list { min-width: 0; max-height: min(62vh, 42rem); overflow-y: auto; overscroll-behavior: contain; padding-right: .35rem; }
+.project-track-list { min-width: 0; height: min(62vh, 42rem); overflow-y: auto; overscroll-behavior: contain; padding-right: .35rem; }
 @media (max-width: 767px) {
   .project-cover-panel { position: relative; top: auto; }
   .project-track-list { max-height: none; overflow: visible; padding-right: 0; }
