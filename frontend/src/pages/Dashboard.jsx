@@ -887,11 +887,9 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
             }} />
           </div>
 
-          <div className="relative">
-            <button onClick={() => navigate('/settings')} className="hidden" aria-hidden="true">
-              <Settings className="h-6 w-6" />
-            </button>
-          </div>
+          <button onClick={() => navigate(`/profile/${user.id}`)} className="grid h-10 w-10 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:h-11 sm:w-11" aria-label="Open profile">
+            <User className="h-5 w-5 text-[#FF8A3D]" />
+          </button>
 
           <button onClick={() => navigate('/feed')} className="grid h-10 w-10 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:h-14 sm:w-14 sm:rounded-3xl" aria-label="Open feed">
             <Compass className="h-6 w-6 text-[#FF8A3D]" />
