@@ -27,7 +27,7 @@ function MarqueeText({ text, className = '' }) {
 }
 
 // Draggable progress bar with pointer capture
-function ProgressBar({ progress, duration, onSeek, className = '' }) {
+function ProgressBar({ progress, duration, onSeek, className = '', activeColor = '#9BAF9B' }) {
   const barRef = useRef(null);
   const dragging = useRef(false);
   const pct = duration ? Math.min(100, (progress / duration) * 100) : 0;
@@ -40,7 +40,7 @@ function ProgressBar({ progress, duration, onSeek, className = '' }) {
     <div ref={barRef} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp}
       role="slider" aria-label="Track progress" aria-valuemin="0" aria-valuemax={duration || 0} aria-valuenow={progress}
       className={`relative flex cursor-pointer items-center gap-[2px] rounded-lg bg-white/[0.03] px-1 group ${className}`} style={{ touchAction: 'none' }}>
-      {bars.map((height, index) => <span key={index} className="min-w-0 flex-1 rounded-full transition-colors duration-150" style={{ height: `${height}px`, backgroundColor: index / bars.length <= pct / 100 ? '#9BAF9B' : '#F3EBDD' }} />)}
+      {bars.map((height, index) => <span key={index} className="min-w-0 flex-1 rounded-full transition-colors duration-150" style={{ height: `${height}px`, backgroundColor: index / bars.length <= pct / 100 ? activeColor : '#F3EBDD' }} />)}
       <span className="pointer-events-none absolute top-1/2 h-4 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white opacity-0 shadow-md transition-opacity group-hover:opacity-100" style={{ left: `${pct}%` }} />
     </div>
   );
@@ -206,7 +206,7 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
         {/* Title + progress */}
         <div className="rmh-audio-meta relative z-10 min-w-0 flex-1">
           <div className="flex items-center justify-between gap-3"><MarqueeText text={currentTrack.title} className="text-sm font-semibold text-[#F3EBDD]" /><span className="shrink-0 text-[10px] font-mono text-[#F3EBDD]/70">{fmt(progress)} / {fmt(duration)}</span></div>
-          <ProgressBar progress={progress} duration={duration} onSeek={seek} className="mt-2 h-7 w-full" />
+          <ProgressBar progress={progress} duration={duration} onSeek={seek} activeColor={projectSurface ? '#34483B' : '#9BAF9B'} className="mt-2 h-7 w-full" />
         </div>
 
         {/* Core controls */}
@@ -312,7 +312,7 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
               <button onClick={() => setCollapsed(false)} className="shrink-0 text-[#F3EBDD]/70 hover:text-[#F3EBDD]"><ChevronUp className="h-3.5 w-3.5" /></button>
             )}
           </div>
-          <ProgressBar progress={progress} duration={duration} onSeek={seek} className="h-1 w-full mb-1" />
+          <ProgressBar progress={progress} duration={duration} onSeek={seek} activeColor={projectSurface ? '#34483B' : '#9BAF9B'} className="h-1 w-full mb-1" />
           <div className="flex justify-between text-[9px] font-mono text-[#34483B]/35 mb-3">
             <span>{fmt(progress)}</span>
             <span>-{fmt(Math.max(0, duration - progress))}</span>
