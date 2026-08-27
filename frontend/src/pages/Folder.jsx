@@ -314,14 +314,14 @@ export default function Folder({ user, onLogout }) {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               transition={{ duration: 0.15 }}
-              className="absolute bottom-full right-0 mb-3 w-48 max-w-[calc(100vw-2rem)] rounded-2xl panel-bg border border-border p-2 shadow-2xl backdrop-blur-xl origin-bottom-right"
+              className="absolute bottom-full right-0 mb-3 w-52 max-w-[calc(100vw-1.5rem)] rounded-2xl panel-bg border border-border p-2 shadow-2xl backdrop-blur-xl origin-bottom-right"
             >
-              <button onClick={createSubFolder} className="flex w-full items-center gap-4 rounded-xl px-4 py-3 text-left text-lg font-semibold hover:bg-highlight transition-colors">
-                <FolderPlus className="h-5 w-5" />
+              <button onClick={createSubFolder} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
+                <FolderPlus className="h-4 w-4 shrink-0" />
                 New Folder
               </button>
-              <button onClick={createProject} className="flex w-full items-center gap-4 rounded-xl px-4 py-3 text-left text-lg font-semibold hover:bg-highlight transition-colors">
-                <Plus className="h-5 w-5" />
+              <button onClick={createProject} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
+                <Plus className="h-4 w-4 shrink-0" />
                 New Project
               </button>
             </motion.div>
@@ -345,14 +345,14 @@ export default function Folder({ user, onLogout }) {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               transition={{ duration: 0.15 }}
-              className="absolute bottom-full right-0 mb-3 w-48 max-w-[calc(100vw-2rem)] rounded-2xl panel-bg border border-border p-2 shadow-2xl backdrop-blur-xl origin-bottom-right"
+              className="absolute bottom-full right-0 mb-3 w-52 max-w-[calc(100vw-1.5rem)] rounded-2xl panel-bg border border-border p-2 shadow-2xl backdrop-blur-xl origin-bottom-right"
             >
-              <button onClick={createSubFolder} className="flex w-full items-center gap-4 rounded-xl px-4 py-3 text-left text-lg font-semibold hover:bg-highlight transition-colors">
-                <FolderPlus className="h-5 w-5" />
+              <button onClick={createSubFolder} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
+                <FolderPlus className="h-4 w-4 shrink-0" />
                 New Folder
               </button>
-              <button onClick={createProject} className="flex w-full items-center gap-4 rounded-xl px-4 py-3 text-left text-lg font-semibold hover:bg-highlight transition-colors">
-                <Plus className="h-5 w-5" />
+              <button onClick={createProject} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
+                <Plus className="h-4 w-4 shrink-0" />
                 New Project
               </button>
             </motion.div>
