@@ -430,6 +430,36 @@ const updateProjectCover = async (req, res, next) => {
   }
 };
 
+const getSharedItem = async (req, res, next) => {
+  try {
+    const db = ensureDBShape(await readDB());
+    const { type, id } = req.params;
+    if (type === 'project') {
+      const project = db.projects.find((item) => item.id === id);
+      if (!project) return next(new AppError('Project not found.', 404));
+      return res.json(getProjectBundle(db, project));
+    }
+    if (type === 'folder') {
+      const folder = db.folders.find((item) => item.id === id);
+      if (!folder) return next(new AppError('Folder not found.', 404));
+      const subFolders = db.folders.filter((item) => item.parentFolderId === folder.id);
+      const subProjects = db.projects.filter((item) => item.folderId === folder.id);
+      const tracks = db.tracks.filter((track) => subProjects.some((project) => project.id === track.projectId));
+      return res.json({
+        type: 'folder',
+        folder: normalizeLibraryItem(folder, db, 'folder'),
+        owner: publicUser(db.users.find((user) => user.id === folder.userId)),
+        folders: subFolders.map((item) => normalizeLibraryItem(item, db, 'folder')),
+        projects: subProjects.map((item) => normalizeLibraryItem(item, db, 'project')),
+        tracks: tracks.map(normalizeTrack)
+      });
+    }
+    return next(new AppError('Invalid shared item type.', 400));
+  } catch (error) {
+    next(error);
+  }
+};
+
 const saveSharedItem = async (req, res, next) => {
   try {
     const db = ensureDBShape(await readDB());
@@ -619,6 +649,7 @@ module.exports = {
   getWorkspace,
   generateShare,
   getShareLink,
+  getSharedItem,
   saveSharedItem,
   getFolder,
   createFolder,

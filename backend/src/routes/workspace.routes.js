@@ -3,6 +3,7 @@ const {
   getWorkspace,
   generateShare,
   getShareLink,
+  getSharedItem,
   saveSharedItem,
   getFolder,
   createFolder,
@@ -32,6 +33,7 @@ router.get('/workspace', requireUserId, getWorkspace);
 // Sharing
 router.post('/share/generate', requireUserId, generateShare);
 router.get('/share/link/:token', getShareLink);
+router.get('/share/:type/:id', getSharedItem);
 router.post('/share/:type/:id/save', requireUserId, saveSharedItem);
 
 // Folders
