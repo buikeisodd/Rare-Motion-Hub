@@ -557,8 +557,13 @@ button[aria-label="Pause preview"] { border-radius: .75rem; }
 .rmh-play-control:active:not(:disabled) { transform: translateY(0); }
 .rmh-play-control:focus-visible { outline: 2px solid var(--rmh-accent); outline-offset: 3px; }
 .library-project-card, .library-folder-card { width: 100%; min-width: 0; max-width: 100%; padding: .5rem; border: 1px solid rgba(52,72,59,.1); border-radius: 1.25rem; background: rgba(248,243,233,.58); box-shadow: 0 10px 24px rgba(52,72,59,.07); backdrop-filter: blur(14px) saturate(1.05); transition: background-color .22s ease, border-color .22s ease, box-shadow .22s ease, transform .22s ease; }
+.library-project-card, .library-folder-card { border-color: rgba(243,235,221,.2); background: rgba(52,72,59,.84); box-shadow: 0 14px 30px rgba(52,72,59,.2), inset 0 1px 0 rgba(243,235,221,.12); backdrop-filter: blur(22px) saturate(1.08); }
+.library-project-card .text-primary-label, .library-folder-card .text-primary-label { color: #F3EBDD !important; }
+.library-project-card .text-secondary-label, .library-folder-card .text-secondary-label { color: rgba(243,235,221,.72) !important; }
+.library-project-card > a > div.mt-4 button, .library-folder-card > div.mt-4 button,
+.library-project-card > a > div.mt-4 svg, .library-folder-card > div.mt-4 svg { color: #F3EBDD !important; }
 @media (hover: hover) and (pointer: fine) {
-  .library-project-card:hover, .library-folder-card:hover { border-color: rgba(111,137,116,.5); background: rgba(52,72,59,.28); box-shadow: 0 20px 38px rgba(52,72,59,.2), inset 0 1px 0 rgba(243,235,221,.2); backdrop-filter: blur(22px) saturate(1.08); transform: translateY(-4px); }
+  .library-project-card:hover, .library-folder-card:hover { border-color: rgba(243,235,221,.34); background: rgba(52,72,59,.92); box-shadow: 0 20px 38px rgba(52,72,59,.28), inset 0 1px 0 rgba(243,235,221,.2); backdrop-filter: blur(26px) saturate(1.1); transform: translateY(-4px); }
 }
 .library-project-card > a > div:first-child, .library-folder-card > a > div:first-child { border-radius: 1rem; }
 .library-project-card > a > div.mt-4, .library-folder-card > div.mt-4 { margin-top: .7rem; padding: .15rem .6rem .35rem; }
