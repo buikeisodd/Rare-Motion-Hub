@@ -476,6 +476,16 @@ const saveSharedItem = async (req, res, next) => {
     if (!source) return next(new AppError('Shared item not found.', 404));
     if (source.userId === userId) return next(new AppError('This item is already in your library.', 409));
 
+    // Cloned records must receive fresh Mongo identifiers. Copying lean _id
+    // values into a new record causes duplicate-key failures and can also
+    // preserve identifiers belonging to nested version subdocuments.
+    const stripMongoIds = (value) => {
+      if (Array.isArray(value)) return value.map(stripMongoIds);
+      if (!value || typeof value !== 'object') return value;
+      const { _id, ...rest } = value;
+      return Object.fromEntries(Object.entries(rest).map(([key, entry]) => [key, stripMongoIds(entry)]));
+    };
+
     const sourceProjects = type === 'project'
       ? [source]
       : db.projects.filter((item) => item.folderId === source.id);
@@ -484,7 +494,7 @@ const saveSharedItem = async (req, res, next) => {
       : [];
     const folderMap = new Map();
     const savedFolders = sourceFolders.map((folder) => {
-      const copy = { ...folder, id: makeId(), userId, sourceItemId: folder.id, sourceOwnerId: folder.userId, allowedUserIds: [], accessRequests: [] };
+      const copy = { ...stripMongoIds(folder), id: makeId(), userId, sourceItemId: folder.id, sourceOwnerId: folder.userId, allowedUserIds: [], accessRequests: [] };
       folderMap.set(folder.id, copy.id);
       return copy;
     });
@@ -495,14 +505,14 @@ const saveSharedItem = async (req, res, next) => {
 
     const projectMap = new Map();
     const savedProjects = sourceProjects.map((project) => {
-      const copy = { ...project, id: makeId(), userId, sourceItemId: project.id, sourceOwnerId: project.userId, allowedUserIds: [], accessRequests: [] };
+      const copy = { ...stripMongoIds(project), id: makeId(), userId, sourceItemId: project.id, sourceOwnerId: project.userId, allowedUserIds: [], accessRequests: [] };
       copy.folderId = project.folderId ? (folderMap.get(project.folderId) || null) : (type === 'folder' ? folderMap.get(source.id) : null);
       projectMap.set(project.id, copy.id);
       return copy;
     });
     const savedTracks = db.tracks
       .filter((track) => projectMap.has(track.projectId))
-      .map((track) => ({ ...track, id: makeId(), userId, projectId: projectMap.get(track.projectId), sourceItemId: track.id, sourceOwnerId: track.userId, uploader: { id: userId, name: db.users.find((item) => item.id === userId)?.name || '' } }));
+      .map((track) => ({ ...stripMongoIds(track), id: makeId(), userId, projectId: projectMap.get(track.projectId), sourceItemId: track.id, sourceOwnerId: track.userId, uploader: { id: userId, name: db.users.find((item) => item.id === userId)?.name || '' } }));
 
     db.folders.push(...savedFolders);
     db.projects.push(...savedProjects);
