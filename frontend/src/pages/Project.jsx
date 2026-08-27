@@ -369,8 +369,7 @@ export default function Project({ user }) {
                 <Music className="w-12 h-12 text-secondary-label mb-4" />
                 <h3 className="text-lg font-medium mb-1">No tracks yet</h3>
                 <p className="text-secondary-label text-sm mb-6">Upload a work-in-progress audio file.</p>
-                <button onClick={() => setIsUploadOpen(true)} className="project-upload-action inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold">
-                  <Plus className="h-4 w-4" />
+                <button onClick={() => setIsUploadOpen(true)} className="project-upload-action inline-flex min-h-11 items-center justify-center rounded-xl px-7 py-3 text-sm font-semibold">
                   Upload track
                 </button>
               </div>
@@ -446,10 +445,10 @@ export default function Project({ user }) {
         <div className={currentTrack ? 'project-upload-active' : 'mt-8 flex justify-center px-4 pb-8'}>
           <button
             onClick={() => setIsUploadOpen(true)}
-            className={currentTrack ? 'rmh-add-track-button project-upload-plus' : 'rmh-add-track-button project-upload-action inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold'}
+            className={currentTrack ? 'rmh-add-track-button project-upload-plus' : 'rmh-add-track-button project-upload-action inline-flex items-center justify-center rounded-xl px-7 py-3 text-sm font-semibold'}
             aria-label={currentTrack ? 'Add track' : 'Upload track'}
           >
-            {currentTrack ? <Plus className="h-5 w-5" /> : <><Plus className="h-4 w-4" /> Upload track</>}
+            {currentTrack ? <Plus className="h-5 w-5" /> : 'Upload track'}
           </button>
         </div>
       )}
