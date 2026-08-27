@@ -540,10 +540,12 @@
 /* Semantic controls. These classes are owned by components. */
 .rmh-add-track { bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px)); }
 .rmh-add-track-button, .project-upload-action, .project-upload-plus { min-height: 44px; border: 1px solid rgba(52,72,59,.16); border-radius: .9rem; background: #F3EBDD; color: #34483B; box-shadow: 0 8px 18px rgba(52,72,59,.14); transition: transform .18s ease, background-color .18s ease, box-shadow .18s ease; }
-.rmh-library-add-button svg { color: #34483B !important; }
+.rmh-library-add-button { background: #34483B; border-color: #34483B; color: #F3EBDD; }
+.rmh-library-add-button svg { color: #F3EBDD !important; }
 .project-upload-action { padding: .75rem 1.25rem; }
 .project-upload-plus { display: grid; width: 3rem; min-width: 3rem; height: 3rem; place-items: center; padding: 0; }
 .rmh-add-track-button:hover:not(:disabled), .project-upload-action:hover:not(:disabled), .project-upload-plus:hover:not(:disabled) { background: #D8E2D6; transform: translateY(-2px); box-shadow: 0 12px 24px rgba(52,72,59,.2); }
+.rmh-library-add-button:hover:not(:disabled) { background: #718A78; }
 .rmh-add-track-button:active:not(:disabled), .project-upload-action:active:not(:disabled), .project-upload-plus:active:not(:disabled) { transform: translateY(0); }
 .rmh-add-track-button:focus-visible, .project-upload-action:focus-visible, .project-upload-plus:focus-visible { outline: 2px solid var(--rmh-accent); outline-offset: 3px; }
 .rmh-add-track-button:disabled, .project-upload-action:disabled, .project-upload-plus:disabled { cursor: not-allowed; opacity: .55; }
