@@ -648,6 +648,7 @@ const recordListen = async (req, res, next) => {
     db.playEvents.push({
       id: makeId(),
       trackId: track.id,
+      sourceTrackId: track.sourceTrackId || track.id,
       projectId: project.id,
       ownerId: project.userId,
       userId: req.userId,
@@ -666,8 +667,12 @@ const getProjectInsights = async (req, res, next) => {
     if (project.userId !== req.userId) return next(new AppError('Only the project owner can view insights.', 403));
     const tracks = db.tracks.filter((item) => item.projectId === project.id);
     const trackIds = new Set(tracks.map((item) => item.id));
-    const events = db.playEvents.filter((event) => event.projectId === project.id || trackIds.has(event.trackId));
-    const byTrack = tracks.map((track) => ({ id: track.id, title: track.title, plays: events.filter((event) => event.trackId === track.id).length })).sort((a, b) => b.plays - a.plays);
+    const sourceTrackIds = new Set(tracks.map((item) => item.sourceTrackId || item.id));
+    const events = db.playEvents.filter((event) => event.projectId === project.id || trackIds.has(event.trackId) || sourceTrackIds.has(event.sourceTrackId || event.trackId));
+    const byTrack = tracks.map((track) => {
+      const sourceId = track.sourceTrackId || track.id;
+      return { id: track.id, title: track.title, plays: events.filter((event) => event.trackId === track.id || (event.sourceTrackId || event.trackId) === sourceId).length };
+    }).sort((a, b) => b.plays - a.plays);
     const listenerMap = new Map();
     events.forEach((event) => {
       const key = event.userId || 'unknown';

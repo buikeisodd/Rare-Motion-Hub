@@ -512,7 +512,7 @@ const saveSharedItem = async (req, res, next) => {
     });
     const savedTracks = db.tracks
       .filter((track) => projectMap.has(track.projectId))
-      .map((track) => ({ ...stripMongoIds(track), id: makeId(), userId, projectId: projectMap.get(track.projectId), sourceItemId: track.id, sourceOwnerId: track.userId, uploader: { id: userId, name: db.users.find((item) => item.id === userId)?.name || '' } }));
+      .map((track) => ({ ...stripMongoIds(track), id: makeId(), sourceTrackId: track.sourceTrackId || track.id, userId, projectId: projectMap.get(track.projectId), sourceItemId: track.id, sourceOwnerId: track.userId, uploader: { id: userId, name: db.users.find((item) => item.id === userId)?.name || '' } }));
 
     db.folders.push(...savedFolders);
     db.projects.push(...savedProjects);

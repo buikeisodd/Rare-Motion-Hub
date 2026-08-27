@@ -59,6 +59,7 @@ const ProjectSchema = new Schema({
 
 const TrackSchema = new Schema({
   id: { type: String, required: true, unique: true },
+  sourceTrackId: String,
   userId: String,
   projectId: String,
   title: String,
@@ -164,6 +165,7 @@ const NotificationSchema = new Schema({
 const PlayEventSchema = new Schema({
   id: { type: String, required: true, unique: true },
   trackId: String,
+  sourceTrackId: String,
   projectId: String,
   userId: String,
   playedAt: { type: String, default: () => new Date().toISOString() },
