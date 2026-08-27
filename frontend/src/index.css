@@ -550,6 +550,9 @@
 .rmh-add-track-button:focus-visible, .project-upload-action:focus-visible, .project-upload-plus:focus-visible { outline: 2px solid var(--rmh-accent); outline-offset: 3px; }
 .rmh-add-track-button:disabled, .project-upload-action:disabled, .project-upload-plus:disabled { cursor: not-allowed; opacity: .55; }
 .rmh-play-control { display: grid; place-items: center; border: 1px solid rgba(52,72,59,.16); border-radius: .9rem; background: var(--rmh-accent); color: var(--rmh-bg); box-shadow: 0 8px 18px rgba(52,72,59,.14); transition: transform .18s ease, background-color .18s ease, box-shadow .18s ease; }
+.rmh-audio-player button.bg-accent,
+button[aria-label="Play preview"],
+button[aria-label="Pause preview"] { border-radius: .75rem; }
 .rmh-play-control:hover:not(:disabled) { background: var(--rmh-accent-hover); transform: translateY(-2px); box-shadow: 0 12px 24px rgba(52,72,59,.2); }
 .rmh-play-control:active:not(:disabled) { transform: translateY(0); }
 .rmh-play-control:focus-visible { outline: 2px solid var(--rmh-accent); outline-offset: 3px; }
