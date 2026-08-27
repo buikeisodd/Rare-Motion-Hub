@@ -722,7 +722,7 @@ function TrackDetailsModal({
   const actions = [
     { id: 'rename', label: 'Rename', icon: Pencil, onClick: () => onOpenSubModal('rename') },
     { id: 'insights', label: 'Insights', icon: BarChart3, onClick: () => onOpenSubModal('insights') },
-    { id: 'comments', label: 'Comments', icon: MessageCircle, onClick: () => { setDetailsOpen(false); setShowComments(true); } },
+    { id: 'comments', label: 'Comments', icon: MessageCircle, onClick: () => setShowComments(true) },
     { id: 'notes', label: 'Notes', icon: FileText, onClick: () => onOpenSubModal('notes') },
     { id: 'replace', label: 'Replace audio', icon: FileAudio, onClick: () => onOpenSubModal('replace') },
     { id: 'stems', label: 'Split stems', icon: Layers, onClick: () => onOpenSubModal('stems') },
