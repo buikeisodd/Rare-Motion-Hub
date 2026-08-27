@@ -202,6 +202,7 @@ function GlobalAudioPlayer() {
   const location = useLocation();
   const isInsights = /\/project\/[^/]+\/insights/.test(location.pathname);
   const isFeed = location.pathname === '/feed';
+  const isProject = location.pathname.startsWith('/project/');
 
   if (!currentTrack || isFeed) return null;
 
@@ -223,6 +224,7 @@ function GlobalAudioPlayer() {
         setCurrentTrack(track);
         setIsPlaying(true);
       }}
+      projectSurface={isProject}
     />
   );
 
