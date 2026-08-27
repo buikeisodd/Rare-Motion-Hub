@@ -59,9 +59,11 @@ const generateShare = async (req, res, next) => {
     const expiresAt = expiresInMs ? new Date(Date.now() + expiresInMs).toISOString() : null;
 
     const shareLink = {
+      id: makeId(),
       token,
       type,
-      targetId,
+      itemId: targetId,
+      userId: req.userId,
       expiresAt,
       createdAt: new Date().toISOString()
     };
@@ -87,11 +89,11 @@ const getShareLink = async (req, res, next) => {
     }
 
     if (link.type === 'project') {
-      const project = db.projects.find((item) => item.id === link.targetId);
+      const project = db.projects.find((item) => item.id === (link.itemId || link.targetId));
       if (!project) return next(new AppError('Project not found.', 404));
       return res.json(getProjectBundle(db, project));
     } else if (link.type === 'folder') {
-      const folder = db.folders.find((item) => item.id === link.targetId);
+      const folder = db.folders.find((item) => item.id === (link.itemId || link.targetId));
       if (!folder) return next(new AppError('Folder not found.', 404));
       const subFolders = db.folders.filter((f) => f.folderId === folder.id);
       const subProjects = db.projects.filter((p) => p.folderId === folder.id);

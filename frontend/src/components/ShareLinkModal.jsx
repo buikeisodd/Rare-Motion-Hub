@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { X, Copy, Check } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
 export default function ShareLinkModal({ isOpen, onClose, type, targetId, userId }) {
   const [expiration, setExpiration] = useState('never');
@@ -26,6 +26,7 @@ export default function ShareLinkModal({ isOpen, onClose, type, targetId, userId
       const selectedOption = expirationOptions.find(opt => opt.value === expiration);
       const res = await fetch(`${apiUrl}/api/share/generate`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type,
