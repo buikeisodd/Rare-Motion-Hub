@@ -16,7 +16,7 @@ const authHeaders = (json = false) => ({
   ...(json ? { 'Content-Type': 'application/json' } : {})
 });
 
-export function LibraryProject({ project, tracks, onDragStart, isDragging, onDelete }) {
+export function LibraryProject({ project, tracks, onDragStart, isDragging, onDelete, onMoveOut }) {
   const { addTracksToQueue, playTrack, currentTrack, isPlaying, setIsPlaying } = useAudio();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const projectTracks = (tracks || []).filter((track) => track.projectId === project.id);
@@ -128,6 +128,7 @@ export function LibraryProject({ project, tracks, onDragStart, isDragging, onDel
         <>
           <div className="fixed inset-0 z-40" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsMenuOpen(false); }} />
           <div className="absolute right-0 top-full mt-2 z-50 w-48 rounded-[1rem] border border-border panel-bg p-2 shadow-2xl">
+            {project.folderId && <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsMenuOpen(false); onMoveOut?.(project.id); }} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors"><FolderOpen className="h-4 w-4" />Move to library</button>}
             <button onClick={handleQueue} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
               <Plus className="h-4 w-4" />
               Add to queue
@@ -673,6 +674,8 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
     setDraggingId(null);
   };
 
+  const moveProjectToLibrary = (projectId) => moveItem(projectId, 'project', null);
+
   const deleteItem = async (itemId, itemType) => {
     if (itemType === 'project') {
       try {
@@ -933,6 +936,7 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
                 onDragStart={() => setDraggingId(project.id)}
                 isDragging={draggingId === project.id}
                 onDelete={deleteItem}
+                onMoveOut={moveProjectToLibrary}
               />
             ))}
           </div>

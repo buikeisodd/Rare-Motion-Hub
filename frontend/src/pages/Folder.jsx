@@ -120,6 +120,8 @@ export default function Folder({ user, onLogout }) {
     setDraggingId(null);
   };
 
+  const moveProjectToLibrary = (projectId) => moveItem(projectId, 'project', null);
+
   const deleteItem = async (itemId, itemType) => {
     if (itemType === 'project') {
       try {
@@ -296,6 +298,7 @@ export default function Folder({ user, onLogout }) {
                 onDragStart={() => setDraggingId(project.id)}
                 isDragging={draggingId === project.id}
                 onDelete={deleteItem}
+                onMoveOut={moveProjectToLibrary}
               />
             ))}
           </div>
