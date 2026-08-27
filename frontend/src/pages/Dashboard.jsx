@@ -127,7 +127,7 @@ export function LibraryProject({ project, tracks, onDragStart, isDragging, onDel
       {isMenuOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsMenuOpen(false); }} />
-          <div className="absolute right-0 bottom-full mb-2 z-50 w-48 rounded-[1rem] border border-border panel-bg p-2 shadow-2xl">
+          <div className="absolute right-0 bottom-8 z-50 w-48 rounded-[1rem] border border-border panel-bg p-2 shadow-2xl">
             {project.folderId && <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsMenuOpen(false); onMoveOut?.(project.id); }} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors"><FolderOpen className="h-4 w-4" />Move to library</button>}
             <button onClick={handleQueue} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
               <Plus className="h-4 w-4" />
@@ -299,7 +299,7 @@ export function LibraryFolder({ folder, projects, tracks, onSave, onDrop, onDrag
       {isMenuOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsMenuOpen(false); }} />
-          <div className="absolute right-0 bottom-full mb-2 z-50 w-48 rounded-[1rem] border border-border panel-bg p-2 shadow-2xl">
+          <div className="absolute right-0 bottom-8 z-50 w-48 rounded-[1rem] border border-border panel-bg p-2 shadow-2xl">
             <button onClick={handleQueue} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
               <Plus className="h-4 w-4" />
               Add to queue
