@@ -553,8 +553,10 @@
 .rmh-play-control:hover:not(:disabled) { background: var(--rmh-accent-hover); transform: translateY(-2px); box-shadow: 0 12px 24px rgba(52,72,59,.2); }
 .rmh-play-control:active:not(:disabled) { transform: translateY(0); }
 .rmh-play-control:focus-visible { outline: 2px solid var(--rmh-accent); outline-offset: 3px; }
-.library-project-card, .library-folder-card { width: 100%; min-width: 0; border: 1px solid rgba(52,72,59,.1); border-radius: 1.25rem; background: rgba(248,243,233,.58); box-shadow: 0 10px 24px rgba(52,72,59,.07); transition: background-color .22s ease, border-color .22s ease, box-shadow .22s ease, transform .22s ease; }
-.library-project-card:hover, .library-folder-card:hover { border-color: rgba(111,137,116,.34); background: rgba(248,243,233,.82); box-shadow: 0 20px 38px rgba(52,72,59,.16); transform: translateY(-4px); }
+.library-project-card, .library-folder-card { width: 100%; min-width: 0; max-width: 100%; padding: .5rem; border: 1px solid rgba(52,72,59,.1); border-radius: 1.25rem; background: rgba(248,243,233,.58); box-shadow: 0 10px 24px rgba(52,72,59,.07); backdrop-filter: blur(14px) saturate(1.05); transition: background-color .22s ease, border-color .22s ease, box-shadow .22s ease, transform .22s ease; }
+@media (hover: hover) and (pointer: fine) {
+  .library-project-card:hover, .library-folder-card:hover { border-color: rgba(111,137,116,.5); background: rgba(52,72,59,.28); box-shadow: 0 20px 38px rgba(52,72,59,.2), inset 0 1px 0 rgba(243,235,221,.2); backdrop-filter: blur(22px) saturate(1.08); transform: translateY(-4px); }
+}
 .library-project-card > a > div:first-child, .library-folder-card > a > div:first-child { border-radius: 1rem; }
 .library-project-card > a > div.mt-4, .library-folder-card > div.mt-4 { margin-top: .7rem; padding: .15rem .6rem .35rem; }
 .rmh-audio-surface { background-color: rgba(27,27,29,.58); border-color: rgba(243,235,221,.18); box-shadow: 0 18px 50px rgba(52,72,59,.22), inset 0 1px 0 rgba(255,255,255,.12); backdrop-filter: blur(28px) saturate(1.12); }
