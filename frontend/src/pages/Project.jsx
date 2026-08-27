@@ -285,8 +285,8 @@ export default function Project({ user }) {
         <span className="truncate text-primary-label">{project.title || project.name || 'Project'}</span>
       </nav>
 
-      <main className="mx-auto grid max-w-5xl gap-6 px-4 pt-4 grid-cols-1 md:grid-cols-[minmax(14rem,18rem)_minmax(20rem,1fr)] md:gap-8 lg:px-10 lg:pt-8">
-        <section className="flex justify-center md:justify-start">
+      <main className="project-workspace mx-auto grid max-w-5xl gap-6 px-4 pt-4 grid-cols-1 md:grid-cols-[minmax(14rem,18rem)_minmax(20rem,1fr)] md:gap-8 lg:px-10 lg:pt-8">
+        <section className="project-cover-panel flex justify-center md:justify-start">
           <div className="group relative aspect-square w-full max-w-[16rem] md:max-w-[18rem] overflow-hidden rounded-[1rem] bg-[linear-gradient(135deg,#43e97b_0%,#38f9d7_48%,#4facfe_100%)] shadow-2xl">
             {project.coverArt && <img src={project.coverArt} alt={project.title || project.name} onError={(event) => { event.currentTarget.style.display = 'none'; }} className="h-full w-full object-cover" />}
             <button
@@ -301,7 +301,7 @@ export default function Project({ user }) {
           </div>
         </section>
 
-        <section className="pt-2">
+        <section className="project-track-panel pt-2">
           <div className="mb-6 flex flex-col gap-2">
             <div className="flex items-center justify-between gap-4">
               <div className="min-w-0 flex-1 overflow-hidden">
@@ -362,7 +362,7 @@ export default function Project({ user }) {
             </p>
           </div>
 
-          <div className="space-y-2">
+          <div className="project-track-list space-y-2">
             {uploadingTrack && <div className="grid grid-cols-[2rem_1fr] items-center gap-3 rounded-xl bg-shading/60 px-3 py-2.5 opacity-55"><div className="text-center text-xs text-secondary-label">{tracks.length + 1}</div><div className="min-w-0"><h3 className="truncate text-xl font-semibold text-primary-label">{uploadingTrack.title}</h3><div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-secondary-label"><span>Just now</span><span>1 version</span></div><div className="mt-2 h-1.5 w-full max-w-[14rem] overflow-hidden rounded-full bg-primary-background/70"><div className="h-full rounded-full bg-primary-label transition-[width] duration-300" style={{ width: `${uploadingTrack.progress}%` }} /></div></div></div>}
             {tracks.length === 0 && !uploadingTrack ? (
               <div className="flex flex-col items-center rounded-2xl border border-dashed border-border bg-shading/50 p-10 text-center">
