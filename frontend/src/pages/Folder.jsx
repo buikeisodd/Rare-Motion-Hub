@@ -306,7 +306,7 @@ export default function Folder({ user, onLogout }) {
       </main>
 
       {/* Desktop Add Button */}
-      <div className={`fixed bottom-6 z-[60] hidden md:flex flex-col items-end ${currentTrack ? 'left-6' : 'right-4 sm:right-8 lg:right-12'}`}>
+      <div className={`fixed bottom-6 z-[60] hidden md:block h-[3.25rem] w-[4.5rem] ${currentTrack ? 'left-6' : 'right-4 sm:right-8 lg:right-12'}`}>
         <AnimatePresence>
           {isAddMenuOpen && (
             <motion.div
@@ -314,7 +314,7 @@ export default function Folder({ user, onLogout }) {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               transition={{ duration: 0.15 }}
-              className="w-56 mb-4 rounded-2xl panel-bg border border-border p-2 shadow-2xl backdrop-blur-xl origin-bottom-right"
+              className="absolute bottom-full right-0 mb-3 w-48 max-w-[calc(100vw-2rem)] rounded-2xl panel-bg border border-border p-2 shadow-2xl backdrop-blur-xl origin-bottom-right"
             >
               <button onClick={createSubFolder} className="flex w-full items-center gap-4 rounded-xl px-4 py-3 text-left text-lg font-semibold hover:bg-highlight transition-colors">
                 <FolderPlus className="h-5 w-5" />
@@ -337,7 +337,7 @@ export default function Folder({ user, onLogout }) {
       </div>
 
       {/* Mobile Add Button */}
-      <div className={`fixed bottom-6 z-[60] md:hidden flex flex-col items-end ${currentTrack ? 'left-3' : 'left-1/2 -translate-x-1/2'}`}>
+      <div className={`fixed bottom-6 z-[60] md:hidden block h-[3.25rem] w-[4.5rem] ${currentTrack ? 'left-3' : 'left-1/2 -translate-x-1/2'}`}>
         <AnimatePresence>
           {isAddMenuOpen && (
             <motion.div
@@ -345,7 +345,7 @@ export default function Folder({ user, onLogout }) {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               transition={{ duration: 0.15 }}
-              className="w-56 mb-4 rounded-2xl panel-bg border border-border p-2 shadow-2xl backdrop-blur-xl origin-bottom-right"
+              className="absolute bottom-full right-0 mb-3 w-48 max-w-[calc(100vw-2rem)] rounded-2xl panel-bg border border-border p-2 shadow-2xl backdrop-blur-xl origin-bottom-right"
             >
               <button onClick={createSubFolder} className="flex w-full items-center gap-4 rounded-xl px-4 py-3 text-left text-lg font-semibold hover:bg-highlight transition-colors">
                 <FolderPlus className="h-5 w-5" />
