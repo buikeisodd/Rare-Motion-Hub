@@ -432,7 +432,8 @@ const getMessages = async (req, res, next) => {
     const readQuery = type === 'group'
       ? { conversationType: 'group', groupId: req.query.groupId, readBy: { $ne: userId } }
       : { conversationType: 'dm', senderId: partnerId, recipientId: userId, readBy: { $ne: userId } };
-    await Message.updateMany(readQuery, { $addToSet: { readBy: userId } });
+    await Message.updateMany(readQuery, { $set: { seenAt: new Date().toISOString() } });
+    msgs = await Message.find(messageFilter).lean().sort({ createdAt: 1 });
     const groupParticipantCount = type === 'group'
       ? ((await ChatGroup.findOne({ id: req.query.groupId }).lean())?.participantIds || []).length
       : 0;
@@ -455,7 +456,7 @@ const getMessages = async (req, res, next) => {
         delivered: true,
         read: m.senderId === userId && (type === 'group'
           ? (m.readBy || []).length >= Math.max(1, groupParticipantCount - 1)
-          : (m.readBy || []).includes(partnerId))
+          : Boolean(m.seenAt))
       }
     }));
 
