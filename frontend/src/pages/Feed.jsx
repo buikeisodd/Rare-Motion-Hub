@@ -384,7 +384,7 @@ export default function Feed({ user, savedOnly = false }) {
       <div className="mx-auto max-w-2xl py-3">
         <CompactQuickAdd suggestions={activeSuggestions} requests={friendRequests} onFollow={followSuggestion} onDismiss={dismissSuggestion} onDecline={declineFriendRequest} />
         <StoryRail stories={stories} user={user} onCreate={() => setCreateOpen(true)} onOpen={setStoryViewer} onDelete={async (id) => { const res = await fetch(`${apiUrl}/api/stories/${id}`, { method: 'DELETE' }); if (res.ok) setStories((current) => current.filter((story) => story.id !== id)); return res.ok; }} />
-        {currentTrack && <div className="mb-6 w-full max-w-sm rounded-3xl bg-[#1c1c1e]/80 p-1.5 shadow-2xl backdrop-blur-xl xl:fixed xl:bottom-4 xl:right-4 xl:z-20 xl:mb-0 xl:w-72"><AudioPlayer cardModal minimal /></div>}
+        {currentTrack && <div className="mb-6 w-full max-w-sm rounded-3xl bg-[#1c1c1e]/80 shadow-2xl backdrop-blur-xl xl:fixed xl:bottom-4 xl:right-4 xl:z-20 xl:mb-0 xl:w-72"><AudioPlayer cardModal minimal /></div>}
         {loading && <p className="py-16 text-center text-sm text-[#34483B]/70">Loading previews...</p>}
         {error && <p className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">{error}</p>}
         <div className="space-y-6">

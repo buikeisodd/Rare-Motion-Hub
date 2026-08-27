@@ -306,7 +306,7 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
           <div className="flex items-center gap-2 mb-2">
             <div className="min-w-0 flex-1">
               <MarqueeText text={currentTrack.title} className="text-xs font-bold text-[#F3EBDD]" />
-              <MarqueeText text={isBuffering && isPlaying ? 'Bufferingâ€¦' : (projectName || currentTrack.artist || 'Starlight Station')} className="text-[10px] text-[#F3EBDD]/70 mt-0.5" />
+              {!minimal && <MarqueeText text={isBuffering && isPlaying ? 'Bufferingâ€¦' : (projectName || currentTrack.artist || 'Starlight Station')} className="text-[10px] text-[#F3EBDD]/70 mt-0.5" />}
             </div>
             {!hideCover && collapsed && (
               <button onClick={() => setCollapsed(false)} className="shrink-0 text-[#F3EBDD]/70 hover:text-[#F3EBDD]"><ChevronUp className="h-3.5 w-3.5" /></button>
