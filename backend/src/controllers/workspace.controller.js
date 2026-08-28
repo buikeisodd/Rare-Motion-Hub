@@ -574,7 +574,11 @@ const getProject = async (req, res, next) => {
       const project = db.projects.find((item) => item.id === req.params.id);
       if (!project) return { error: 'Project not found', status: 404 };
       if (!canAccessItem(project, userId)) return { error: 'This project is private.', status: 403 };
-      const tracks = db.tracks.filter((track) => track.projectId === project.id).map(normalizeTrack);
+      const tracks = db.tracks.filter((track) => track.projectId === project.id).map((track) => {
+        const sourceId = track.sourceTrackId || track.sourceItemId;
+        const source = sourceId ? db.tracks.find((item) => item.id === sourceId) : null;
+        return normalizeTrack({ ...track, comments: source?.comments || track.comments || [] });
+      });
       return { project: normalizeLibraryItem(project, db, 'project'), tracks };
     });
 
