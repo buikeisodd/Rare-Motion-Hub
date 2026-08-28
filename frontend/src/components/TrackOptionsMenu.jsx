@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft, BarChart3, Download, FileAudio, FileText, Layers,
-  ListPlus, Loader2, MessageCircle, MoreHorizontal, Pencil, Play, Radio, Share2, Trash2, Upload, X
+  Heart, ListPlus, Loader2, MessageCircle, MoreHorizontal, Pencil, Play, Radio, Send, Share2, Trash2, Upload, X
 } from 'lucide-react';
 import ConfirmModal from './ConfirmModal';
 
@@ -108,15 +108,16 @@ function TrackCommentsModal({ isOpen, onClose, track }) {
   const [comments, setComments] = useState(track?.comments || []);
   const [text, setText] = useState('');
   const [error, setError] = useState('');
+  const [replyTo, setReplyTo] = useState(null);
   useEffect(() => { if (isOpen) setComments(track?.comments || []); }, [isOpen, track?.id, track?.comments]);
   if (!isOpen || !track) return null;
   const submit = async (event) => {
     event.preventDefault(); if (!text.trim()) return;
     setError('');
     const csrfToken = localStorage.getItem('csrfToken');
-    const response = await fetch(`${apiUrl}/api/tracks/${track.id}/comments`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', ...(csrfToken ? { 'x-csrf-token': csrfToken } : {}) }, body: JSON.stringify({ text: text.trim() }) });
+    const response = await fetch(`${apiUrl}/api/tracks/${track.id}/comments`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', ...(csrfToken ? { 'x-csrf-token': csrfToken } : {}) }, body: JSON.stringify({ text: text.trim(), parentId: replyTo?.id || null }) });
     if (!response.ok) { const data = await response.json().catch(() => ({})); setError(data.error || 'Could not send comment.'); return; }
-    const data = await response.json(); setComments((items) => [...items, data.comment]); setText('');
+    const data = await response.json(); setComments((items) => [...items, data.comment]); setText(''); setReplyTo(null);
   };
   const like = async (comment) => {
     const liked = !comment.likedByMe;
@@ -124,7 +125,8 @@ function TrackCommentsModal({ isOpen, onClose, track }) {
     const csrfToken = localStorage.getItem('csrfToken');
     await fetch(`${apiUrl}/api/tracks/${track.id}/comments/${comment.id}/like`, { method: 'POST', credentials: 'include', headers: csrfToken ? { 'x-csrf-token': csrfToken } : {} });
   };
-  return createPortal(<div className="fixed inset-0 z-[95] grid place-items-center bg-black/45 p-4 backdrop-blur-xl" onClick={onClose}><div className="w-full max-w-lg rounded-2xl border border-border bg-[#F3EBDD]/95 p-5 text-[#34483B] shadow-2xl backdrop-blur-xl" onClick={(event) => event.stopPropagation()}><div className="mb-4 flex items-start justify-between"><div><h2 className="text-xl font-bold">Comments</h2><p className="mt-1 max-w-[18rem] truncate text-sm opacity-70">{track.title}</p></div><button type="button" onClick={onClose} aria-label="Close comments" className="grid h-9 w-9 place-items-center rounded-xl bg-[#34483B]/10"><X className="h-4 w-4" /></button></div><div className="max-h-[50vh] space-y-3 overflow-y-auto">{comments.length ? comments.map((comment) => <div key={comment.id} className="rounded-xl bg-[#34483B]/10 px-3 py-2 text-sm"><p className="break-words">{comment.text}</p><button type="button" onClick={() => like(comment)} className={`mt-2 text-xs ${comment.likedByMe ? 'font-bold text-red-500' : 'opacity-70'}`}>Like {comment.likeCount || 0}</button></div>) : <p className="py-8 text-center text-sm opacity-65">Be the first to comment.</p>}</div>{error && <p className="mt-3 text-xs text-red-600">{error}</p>}<form onSubmit={submit} className="mt-4 flex gap-2 border-t border-[#34483B]/15 pt-4"><input value={text} onChange={(event) => setText(event.target.value)} placeholder="Add a comment..." className="min-w-0 flex-1 rounded-xl bg-[#34483B]/10 px-3 py-2.5 text-sm outline-none" /><button type="submit" className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#34483B] text-[#F3EBDD]" aria-label="Post comment"><MessageCircle className="h-4 w-4" /></button></form></div></div>, document.body);
+  const roots = comments.filter((comment) => !comment.parentId);
+  return createPortal(<div className="fixed inset-0 z-[95] grid place-items-center bg-black/45 p-4 backdrop-blur-xl" onClick={onClose}><div className="flex max-h-[min(42rem,calc(100dvh-2rem))] w-full max-w-lg flex-col rounded-2xl border border-border bg-[#F3EBDD]/95 p-5 text-[#34483B] shadow-2xl backdrop-blur-xl" onClick={(event) => event.stopPropagation()}><div className="mb-4 flex shrink-0 items-start justify-between"><div><h2 className="text-xl font-bold">Track comments</h2><p className="mt-1 max-w-[18rem] truncate text-sm opacity-70">{track.title}</p></div><button type="button" onClick={onClose} aria-label="Close comments" className="grid h-9 w-9 place-items-center rounded-xl bg-[#34483B]/10"><X className="h-4 w-4" /></button></div><div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">{roots.length ? roots.map((comment) => <div key={comment.id}><div className="rounded-xl bg-[#34483B]/10 px-3 py-2.5 text-sm"><div className="flex items-start gap-3"><div className="min-w-0 flex-1"><p className="mb-1 text-xs font-bold opacity-70">{comment.user?.name || 'Listener'}</p><p className="break-words leading-relaxed">{comment.text}</p></div><button type="button" onClick={() => like(comment)} className={`grid shrink-0 place-items-center gap-0.5 text-xs ${comment.likedByMe ? 'text-red-500' : 'opacity-60'}`} aria-label="Like comment"><Heart className={`h-4 w-4 ${comment.likedByMe ? 'fill-current' : ''}`} /><span>{comment.likeCount || 0}</span></button></div><button type="button" onClick={() => { setReplyTo(comment); setText(''); }} className="mt-2 text-xs font-semibold opacity-70 hover:opacity-100">Reply</button></div>{comments.filter((reply) => reply.parentId === comment.id).map((reply) => <div key={reply.id} className="ml-5 mt-2 rounded-xl border-l-2 border-[#34483B]/25 bg-[#34483B]/5 px-3 py-2 text-sm"><p className="mb-1 text-xs font-bold opacity-70">{reply.user?.name || 'Listener'}</p><p className="break-words">{reply.text}</p></div>)}</div>) : <p className="py-10 text-center text-sm opacity-65">Be the first to comment.</p>}</div>{error && <p className="mt-3 shrink-0 text-xs text-red-600">{error}</p>}{replyTo && <div className="mt-3 flex shrink-0 items-center justify-between rounded-xl bg-[#34483B]/10 px-3 py-2 text-xs"><span className="min-w-0 truncate">Replying to {replyTo.user?.name || 'comment'}</span><button type="button" onClick={() => setReplyTo(null)} aria-label="Cancel reply"><X className="h-4 w-4" /></button></div>}<form onSubmit={submit} className="mt-3 flex shrink-0 gap-2 border-t border-[#34483B]/15 pt-4"><input value={text} onChange={(event) => setText(event.target.value)} placeholder={replyTo ? 'Write a reply...' : 'Add a comment...'} className="min-w-0 flex-1 rounded-xl bg-[#34483B]/10 px-3 py-2.5 text-sm outline-none" /><button type="submit" className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#34483B] text-[#F3EBDD]" aria-label="Post comment"><Send className="h-4 w-4" /></button></form></div></div>, document.body);
 }
 
 function FeedPreviewModal({ isOpen, onClose, track, onSaved }) {
