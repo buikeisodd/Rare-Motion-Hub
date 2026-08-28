@@ -11,6 +11,7 @@ const {
   deleteFeed,
   toggleFeedLike,
   toggleFeedSave,
+  getTrackComments,
   addFeedComment,
   deleteFeedComment,
   toggleCommentLike,
@@ -45,6 +46,7 @@ router.get('/feed', requireUserId, getFeed);
 router.delete('/feed/tracks/:id', requireUserId, deleteFeed);
 router.post('/feed/tracks/:id/like', requireUserId, toggleFeedLike);
 router.post('/feed/tracks/:id/save', requireUserId, toggleFeedSave);
+router.get('/tracks/:id/comments', requireUserId, getTrackComments);
 router.post('/feed/tracks/:id/comments', requireUserId, addFeedComment);
 router.post('/tracks/:id/comments', requireUserId, addFeedComment);
 router.delete('/feed/tracks/:id/comments/:commentId', requireUserId, deleteFeedComment);

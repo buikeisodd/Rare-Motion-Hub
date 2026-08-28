@@ -524,6 +524,25 @@ const toggleFeedLike = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
+const getTrackComments = async (req, res, next) => {
+  try {
+    const db = ensureDBShape(await readDB());
+    const track = canonicalCommentTrack(db, findAccessibleTrack(db, req.params.id, req.userId));
+    if (!track) return next(new AppError('Track is not accessible', 404));
+    const comments = (track.comments || []).map((comment) => {
+      const commenter = db.users.find((user) => user.id === comment.userId);
+      return {
+        ...comment,
+        likes: comment.likes || [],
+        likeCount: (comment.likes || []).length,
+        likedByMe: (comment.likes || []).includes(req.userId),
+        user: commenter ? { id: commenter.id, name: commenter.name, avatarUrl: commenter.avatarUrl || null } : null
+      };
+    });
+    res.json({ comments });
+  } catch (error) { next(error); }
+};
+
 const addFeedComment = async (req, res, next) => {
   try {
     const text = String(req.body.text || '').trim();
@@ -1296,6 +1315,7 @@ module.exports = {
   deleteFeed,
   toggleFeedLike,
   toggleFeedSave,
+  getTrackComments,
   addFeedComment,
   deleteFeedComment,
   toggleCommentLike,

@@ -109,7 +109,19 @@ function TrackCommentsModal({ isOpen, onClose, track }) {
   const [text, setText] = useState('');
   const [error, setError] = useState('');
   const [replyTo, setReplyTo] = useState(null);
-  useEffect(() => { if (isOpen) setComments(track?.comments || []); }, [isOpen, track?.id, track?.comments]);
+  useEffect(() => {
+    if (!isOpen || !track?.id) return;
+    let cancelled = false;
+    // Fetch enriched comments (with populated user.name) rather than trusting
+    // track.comments from the page's cached project payload, which only has
+    // raw userId and no user object — that's what caused every comment to
+    // fall back to "Listener".
+    fetch(`${apiUrl}/api/tracks/${track.id}/comments`, { credentials: 'include' })
+      .then((res) => res.ok ? res.json() : Promise.reject())
+      .then((data) => { if (!cancelled) setComments(data.comments || []); })
+      .catch(() => { if (!cancelled) setComments(track?.comments || []); });
+    return () => { cancelled = true; };
+  }, [isOpen, track?.id]);
   if (!isOpen || !track) return null;
   const submit = async (event) => {
     event.preventDefault(); if (!text.trim()) return;
