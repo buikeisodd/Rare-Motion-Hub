@@ -540,7 +540,8 @@ const addFeedComment = async (req, res, next) => {
     const parent = parentId ? track.comments.find((entry) => entry.id === parentId) : null;
     const notificationTargets = new Map();
     const ownerId = trackOwnerId(track);
-    if (!parentId && ownerId && ownerId !== req.userId) notificationTargets.set(ownerId, { type: 'comment', message: `${actor?.name || 'Someone'} commented on your preview` });
+    const isFeedComment = String(req.path || req.originalUrl || '').includes('/feed/tracks/');
+    if (!parentId && ownerId && ownerId !== req.userId) notificationTargets.set(ownerId, { type: 'comment', message: `${actor?.name || 'Someone'} commented on your ${isFeedComment ? 'preview' : 'track'}` });
     if (parent?.userId && parent.userId !== req.userId) notificationTargets.set(parent.userId, { type: 'comment_reply', message: `${actor?.name || 'Someone'} replied to your comment` });
 
     // Mentions use either @username or @display-name and notify each distinct
