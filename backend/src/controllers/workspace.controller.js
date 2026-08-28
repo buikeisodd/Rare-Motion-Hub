@@ -569,7 +569,9 @@ const decideWorkspaceAccess = async (req, res, next) => {
 const getProject = async (req, res, next) => {
   try {
     const userId = req.userId;
-    const data = await getOrSetCache(`project:${req.params.id}:${userId}`, 3600, async () => {
+    // Project comments are collaborative and must be read fresh. Serving a
+    // long-lived cached project snapshot hides comments from shared listeners.
+    const data = await (async () => {
       const db = ensureDBShape(await readDB());
       const project = db.projects.find((item) => item.id === req.params.id);
       if (!project) return { error: 'Project not found', status: 404 };
@@ -580,7 +582,7 @@ const getProject = async (req, res, next) => {
         return normalizeTrack({ ...track, comments: source?.comments || track.comments || [] });
       });
       return { project: normalizeLibraryItem(project, db, 'project'), tracks };
-    });
+    })();
 
     if (data.error) return next(new AppError(data.error, data.status));
     res.json(data);
