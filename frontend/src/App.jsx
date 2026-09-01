@@ -13,6 +13,7 @@ import Saved from './pages/Saved';
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
 import Search from './pages/Search';
+import MobileLanding from './pages/MobileLanding';
 import { AudioProvider, useAudio } from './context/AudioContext';
 import AudioPlayer from './components/AudioPlayer';
 import MobileBottomNav from './components/MobileBottomNav';
@@ -20,6 +21,21 @@ import ChatInbox from './components/ChatInbox';
 
 function DesktopOnly({ children }) {
   return children;
+}
+
+// Matches the md breakpoint MobileBottomNav already keys off, so the same
+// viewport that would otherwise get the squeezed app shell instead gets the
+// landing page.
+function useIsMobileViewport() {
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 768 : false
+  );
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  return isMobile;
 }
 
 function WelcomeSignal({ compact = false }) {
@@ -108,6 +124,7 @@ function AuthLanding({ user, justAuthenticated, onDone }) {
 
 function AnimatedRoutes({ user, authStatus, handleLogin, handleLogout, handleUserUpdate, justAuthenticated, setJustAuthenticated }) {
   const location = useLocation();
+  const isMobileViewport = useIsMobileViewport();
 
   // While session restore is in-flight, render nothing to avoid a flash
   // of the login page for users who do have a valid session.
@@ -173,7 +190,12 @@ function AnimatedRoutes({ user, authStatus, handleLogin, handleLogout, handleUse
     );
   }
 
-  // authenticated-verified: full application access.
+  // authenticated-verified: full application access on desktop; a proper
+  // landing page (not the squeezed app shell) on narrow viewports.
+  if (isMobileViewport) {
+    return <MobileLanding user={user} onLogout={handleLogout} />;
+  }
+
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
