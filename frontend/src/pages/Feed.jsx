@@ -179,7 +179,7 @@ function CreateModal({ open, onClose, projects, onCreated }) {
 function FeedCard({ item, user, onUpdate, onDelete, muted, onMutedChange, volume, onVolumeChange }) {
   const cardRef = useRef(null); const audioRef = useRef(null);
   const navigate = useNavigate();
-  const [playing, setPlaying] = useState(false); const [comment, setComment] = useState(''); const [replyTo, setReplyTo] = useState(null); const [showComments, setShowComments] = useState(false); const [menuOpen, setMenuOpen] = useState(false); const [mutationBusy, setMutationBusy] = useState(false);
+  const [playing, setPlaying] = useState(false); const [comment, setComment] = useState(''); const [replyTo, setReplyTo] = useState(null); const [showComments, setShowComments] = useState(false); const [menuOpen, setMenuOpen] = useState(false); const [mutationBusy, setMutationBusy] = useState(false); const [commentToDelete, setCommentToDelete] = useState(null);
   const stop = () => { audioRef.current?.pause(); setPlaying(false); };
   const play = async () => { if (!audioRef.current) return; try { await audioRef.current.play(); setPlaying(true); } catch { setPlaying(false); } };
   useEffect(() => {
@@ -196,6 +196,7 @@ function FeedCard({ item, user, onUpdate, onDelete, muted, onMutedChange, volume
   const mutationOptions = (headers = {}) => { const csrfToken = localStorage.getItem('csrfToken'); return { credentials: 'include', headers: { ...headers, ...(csrfToken ? { 'x-csrf-token': csrfToken } : {}) } }; };
   const toggleLike = async () => { if (mutationBusy) return; const next = !item.likedByMe; const previousCount = item.likeCount || 0; setMutationBusy(true); onUpdate(item.id, { likedByMe: next, likeCount: Math.max(0, previousCount + (next ? 1 : -1)) }, 'like'); try { const res = await fetch(`${apiUrl}/api/feed/tracks/${item.id}/like`, { method: 'POST', ...mutationOptions() }); const data = await res.json().catch(() => ({})); if (!res.ok) throw new Error(data.error || data.message || 'Could not update like.'); onUpdate(item.id, { likedByMe: Boolean(data.liked), likeCount: Number.isFinite(data.likeCount) ? data.likeCount : Math.max(0, previousCount + (data.liked ? 1 : -1)) }, 'like'); } catch { onUpdate(item.id, { likedByMe: !next, likeCount: previousCount }, 'like'); } finally { setMutationBusy(false); } };
   const toggleSave = async () => { if (mutationBusy) return; const next = !item.savedByMe; setMutationBusy(true); onUpdate(item.id, { savedByMe: next }, 'save'); try { const res = await fetch(`${apiUrl}/api/feed/tracks/${item.id}/save`, { method: 'POST', ...mutationOptions() }); const data = await res.json().catch(() => ({})); if (!res.ok) throw new Error(data.error || data.message || 'Could not update saved state.'); onUpdate(item.id, { savedByMe: Boolean(data.saved) }, 'save'); } catch { onUpdate(item.id, { savedByMe: !next }, 'save'); } finally { setMutationBusy(false); } };
+  const deleteComment = async () => { if (!commentToDelete) return; try { const res = await fetch(`${apiUrl}/api/feed/tracks/${item.id}/comments/${commentToDelete.id}`, { method: 'DELETE', ...mutationOptions() }); if (!res.ok) throw new Error('Could not delete comment.'); onUpdate(item.id, commentToDelete, 'delete-comment'); } finally { setCommentToDelete(null); } };
   const commentAction = async (event) => { event.preventDefault(); if (!comment.trim()) return; const res = await fetch(`${apiUrl}/api/feed/tracks/${item.id}/comments`, { method: 'POST', ...mutationOptions({ 'Content-Type': 'application/json' }), body: JSON.stringify({ text: comment, parentId: replyTo?.id }) }); if (res.ok) { const data = await res.json(); onUpdate(item.id, data.comment, 'comment'); setComment(''); setReplyTo(null); setShowComments(true); } };
   const reactComment = async (entry) => { const next = !entry.likedByMe; onUpdate(item.id, { ...entry, likedByMe: next, likeCount: Math.max(0, (entry.likeCount || 0) + (next ? 1 : -1)) }, 'comment-like'); const res = await fetch(`${apiUrl}/api/feed/tracks/${item.id}/comments/${entry.id}/like`, { method: 'POST', ...mutationOptions() }); if (!res.ok) onUpdate(item.id, { ...entry, likedByMe: !next, likeCount: entry.likeCount || 0 }, 'comment-like'); };
   const roots = (item.comments || []).filter((entry) => !entry.parentId); const replies = (id) => (item.comments || []).filter((entry) => entry.parentId === id);
@@ -219,7 +220,7 @@ function FeedCard({ item, user, onUpdate, onDelete, muted, onMutedChange, volume
       ) : (
         <span className="font-semibold text-[#34483B]">{entry.user?.name || 'User'}</span>
       )}
-      <span className="min-w-0 flex-1 break-words text-[#34483B]/70">{entry.text}</span>
+      <span className="min-w-0 flex-1 break-words text-[#34483B]/70">{entry.text}</span>{entry.user?.id === user?.id && <button type="button" onClick={() => setCommentToDelete(entry)} className="shrink-0 text-red-500" aria-label="Delete comment"><Trash2 className="h-3.5 w-3.5" /></button>}
     </div><div className="mt-1 flex items-center gap-3 pl-1 text-xs text-[#34483B]/70"><button onClick={() => reactComment(entry)} className={entry.likedByMe ? 'text-accent' : ''}><Heart className={`mr-1 inline h-3.5 w-3.5 ${entry.likedByMe ? 'fill-current' : ''}`} />{entry.likeCount || 0}</button><button onClick={() => { setReplyTo(entry); setComment(`@${entry.user?.name || 'user'} `); }}>Reply</button></div>{replies(entry.id).map((reply) => <div key={reply.id} className="ml-5 mt-2 flex gap-2 border-l border-border pl-3">
       {reply.user?.id ? (
         <RouterLink to={'/profile/' + reply.user.id} className="font-semibold text-[#34483B] hover:underline cursor-pointer shrink-0">
@@ -228,8 +229,8 @@ function FeedCard({ item, user, onUpdate, onDelete, muted, onMutedChange, volume
       ) : (
         <span className="font-semibold text-[#34483B]">{reply.user?.name || 'User'}</span>
       )}
-      <span className="break-words text-[#34483B]/70">{reply.text}</span>
-    </div>)}</div>)}</div><form onSubmit={commentAction} className="mt-3 flex items-center gap-2">{replyTo && <button type="button" onClick={() => { setReplyTo(null); setComment(''); }} className="text-xs text-[#34483B]/70">Cancel reply</button>}<input value={comment} onChange={(event) => setComment(event.target.value)} maxLength={500} placeholder={replyTo ? `Reply to ${replyTo.user?.name || 'user'}...` : 'Add a comment...'} className="min-w-0 flex-1 rounded-full border border-border bg-shading px-3 py-2 text-sm outline-none" /><button className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent text-primary-background" aria-label="Post comment"><Send className="h-4 w-4" /></button></form></div>}</div>
+      <span className="break-words text-[#34483B]/70">{reply.text}</span>{reply.user?.id === user?.id && <button type="button" onClick={() => setCommentToDelete(reply)} className="shrink-0 text-red-500" aria-label="Delete comment"><Trash2 className="h-3.5 w-3.5" /></button>}
+    </div>)}</div>)}</div><form onSubmit={commentAction} className="mt-3 flex items-center gap-2">{replyTo && <button type="button" onClick={() => { setReplyTo(null); setComment(''); }} className="text-xs text-[#34483B]/70">Cancel reply</button>}<input value={comment} onChange={(event) => setComment(event.target.value)} maxLength={500} placeholder={replyTo ? `Reply to ${replyTo.user?.name || 'user'}...` : 'Add a comment...'} className="min-w-0 flex-1 rounded-full border border-border bg-shading px-3 py-2 text-sm outline-none" /><button className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent text-primary-background" aria-label="Post comment"><Send className="h-4 w-4" /></button></form></div>}</div><ConfirmModal isOpen={Boolean(commentToDelete)} onClose={() => setCommentToDelete(null)} onConfirm={deleteComment} title="Delete comment?" message="Your comment will be removed from this feed post." confirmText="Delete comment" />
   </motion.article>;
 }
 
@@ -291,7 +292,7 @@ export default function Feed({ user, savedOnly = false }) {
       .catch(() => {});
   }, [user?.id]);
 
-  const updateItem = (id, value, type) => setItems((current) => current.map((item) => { if (item.id !== id) return item; if (type === 'like' || type === 'save') return { ...item, ...value }; if (type === 'comment-like') return { ...item, comments: (item.comments || []).map((entry) => entry.id === value.id ? value : entry) }; return { ...item, comments: [...(item.comments || []), value] }; }));
+  const updateItem = (id, value, type) => setItems((current) => current.map((item) => { if (item.id !== id) return item; if (type === 'like' || type === 'save') return { ...item, ...value }; if (type === 'delete-comment') return { ...item, comments: (item.comments || []).filter((entry) => entry.id !== value.id) }; if (type === 'comment-like') return { ...item, comments: (item.comments || []).map((entry) => entry.id === value.id ? value : entry) }; return { ...item, comments: [...(item.comments || []), value] }; }));
   const requestDeletePost = (id) => setPendingDeletePost(items.find((item) => item.id === id) || { id });
   const confirmDeletePost = async () => {
     if (!pendingDeletePost) return;

@@ -618,8 +618,11 @@ const toggleCommentLike = async (req, res, next) => {
 const deleteFeedComment = async (req, res, next) => {
   try {
     const db = ensureDBShape(await readDB());
-    const track = db.tracks.find((item) => item.id === req.params.id);
-    if (!track) return next(new AppError('Preview not found', 404));
+    const isFeedComment = String(req.path || req.originalUrl || '').includes('/feed/tracks/');
+    const track = isFeedComment
+      ? db.tracks.find((item) => item.id === req.params.id && item.isPublished)
+      : canonicalCommentTrack(db, findAccessibleTrack(db, req.params.id, req.userId));
+    if (!track) return next(new AppError(isFeedComment ? 'Preview not found' : 'Track is not accessible', 404));
     const index = (track.comments || []).findIndex((comment) => comment.id === req.params.commentId && comment.userId === req.userId);
     if (index < 0) return next(new AppError('Comment not found', 404));
     track.comments.splice(index, 1);
