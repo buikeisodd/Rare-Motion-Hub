@@ -550,11 +550,16 @@ const getTrackComments = async (req, res, next) => {
 
 const addFeedComment = async (req, res, next) => {
   try {
-    const text = String(req.body.text || '').trim();
+    const text = String(req.body?.text || '').trim();
     if (!text || text.length > 500) return next(new AppError('Comment must be between 1 and 500 characters.', 400));
     const db = ensureDBShape(await readDB());
-    const track = canonicalCommentTrack(db, findAccessibleTrack(db, req.params.id, req.userId));
-    if (!track) return next(new AppError('Track is not accessible', 404));
+    const isFeedComment = String(req.path || req.originalUrl || '').includes('/feed/tracks/');
+    // Feed comments belong to the published feed record, just like likes and
+    // saves. Project comments retain the normal private-media access check.
+    const track = isFeedComment
+      ? db.tracks.find((item) => item.id === req.params.id && item.isPublished)
+      : canonicalCommentTrack(db, findAccessibleTrack(db, req.params.id, req.userId));
+    if (!track) return next(new AppError(isFeedComment ? 'Preview not found' : 'Track is not accessible', 404));
     const parentId = req.body.parentId ? String(req.body.parentId) : null;
     if (parentId && !(track.comments || []).some((entry) => entry.id === parentId)) return next(new AppError('Comment not found', 404));
     const comment = { id: makeId(), userId: req.userId, text, parentId, likes: [], createdAt: new Date().toISOString() };
@@ -564,7 +569,6 @@ const addFeedComment = async (req, res, next) => {
     const parent = parentId ? track.comments.find((entry) => entry.id === parentId) : null;
     const notificationTargets = new Map();
     const ownerId = trackOwnerId(track);
-    const isFeedComment = String(req.path || req.originalUrl || '').includes('/feed/tracks/');
     if (!parentId && ownerId && ownerId !== req.userId) notificationTargets.set(ownerId, { type: 'comment', message: `${actor?.name || 'Someone'} commented on your ${isFeedComment ? 'preview' : 'track'}` });
     if (parent?.userId && parent.userId !== req.userId) notificationTargets.set(parent.userId, { type: 'comment_reply', message: `${actor?.name || 'Someone'} replied to your comment` });
 
