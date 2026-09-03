@@ -481,8 +481,11 @@ const getFeed = async (req, res, next) => {
 const toggleFeedSave = async (req, res, next) => {
   try {
     const db = ensureDBShape(await readDB());
-    const track = canonicalCommentTrack(db, findAccessibleTrack(db, req.params.id, req.userId));
-    if (!track) return next(new AppError('Track is not accessible', 404));
+    // Feed interactions belong to the published feed record itself. Do not
+    // resolve through the private-media/source-track helper here: shared or
+    // versioned tracks must keep their own saved state and identity.
+    const track = db.tracks.find((item) => item.id === req.params.id && item.isPublished);
+    if (!track) return next(new AppError('Preview not found', 404));
     track.savedBy ||= [];
     const index = track.savedBy.indexOf(req.userId);
     if (index >= 0) track.savedBy.splice(index, 1); else track.savedBy.push(req.userId);
@@ -507,7 +510,9 @@ const deleteFeed = async (req, res, next) => {
 const toggleFeedLike = async (req, res, next) => {
   try {
     const db = ensureDBShape(await readDB());
-    const track = canonicalCommentTrack(db, findAccessibleTrack(db, req.params.id, req.userId));
+    // Use the exact published feed record. Canonicalizing here can redirect a
+    // like to its source track and makes the client appear to unlike on reload.
+    const track = db.tracks.find((item) => item.id === req.params.id && item.isPublished);
     if (!track) return next(new AppError('Preview not found', 404));
     track.likes ||= [];
     const index = track.likes.indexOf(req.userId);
