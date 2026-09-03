@@ -462,7 +462,7 @@ const getFeed = async (req, res, next) => {
           likeCount: (track.likes || []).length,
           likedByMe: (track.likes || []).includes(req.userId),
           savedByMe: (track.savedBy || []).includes(req.userId),
-          comments: (track.comments || []).map((comment) => {
+          comments: (track.feedComments || []).map((comment) => {
             const commenter = db.users.find((user) => user.id === comment.userId);
             return { ...comment, likes: comment.likes || [], likeCount: (comment.likes || []).length, likedByMe: (comment.likes || []).includes(req.userId), user: commenter ? { id: commenter.id, name: commenter.name, avatarUrl: commenter.avatarUrl || null } : null };
           })
@@ -561,12 +561,13 @@ const addFeedComment = async (req, res, next) => {
       : canonicalCommentTrack(db, findAccessibleTrack(db, req.params.id, req.userId));
     if (!track) return next(new AppError(isFeedComment ? 'Preview not found' : 'Track is not accessible', 404));
     const parentId = req.body.parentId ? String(req.body.parentId) : null;
-    if (parentId && !(track.comments || []).some((entry) => entry.id === parentId)) return next(new AppError('Comment not found', 404));
+    const commentCollection = isFeedComment ? 'feedComments' : 'comments';
+    if (parentId && !(track[commentCollection] || []).some((entry) => entry.id === parentId)) return next(new AppError('Comment not found', 404));
     const comment = { id: makeId(), userId: req.userId, text, parentId, likes: [], createdAt: new Date().toISOString() };
-    track.comments ||= [];
-    track.comments.push(comment);
+    track[commentCollection] ||= [];
+    track[commentCollection].push(comment);
     const actor = db.users.find((user) => user.id === req.userId);
-    const parent = parentId ? track.comments.find((entry) => entry.id === parentId) : null;
+    const parent = parentId ? track[commentCollection].find((entry) => entry.id === parentId) : null;
     const notificationTargets = new Map();
     const ownerId = trackOwnerId(track);
     if (!parentId && ownerId && ownerId !== req.userId) notificationTargets.set(ownerId, { type: 'comment', message: `${actor?.name || 'Someone'} commented on your ${isFeedComment ? 'preview' : 'track'}` });
@@ -598,8 +599,12 @@ const addFeedComment = async (req, res, next) => {
 const toggleCommentLike = async (req, res, next) => {
   try {
     const db = ensureDBShape(await readDB());
-    const track = canonicalCommentTrack(db, findAccessibleTrack(db, req.params.id, req.userId));
-    const comment = track?.comments?.find((entry) => entry.id === req.params.commentId);
+    const isFeedComment = String(req.path || req.originalUrl || '').includes('/feed/tracks/');
+    const track = isFeedComment
+      ? db.tracks.find((item) => item.id === req.params.id && item.isPublished)
+      : canonicalCommentTrack(db, findAccessibleTrack(db, req.params.id, req.userId));
+    const commentCollection = isFeedComment ? 'feedComments' : 'comments';
+    const comment = track?.[commentCollection]?.find((entry) => entry.id === req.params.commentId);
     if (!comment) return next(new AppError('Comment not found', 404));
     comment.likes ||= [];
     const index = comment.likes.indexOf(req.userId);
@@ -623,9 +628,10 @@ const deleteFeedComment = async (req, res, next) => {
       ? db.tracks.find((item) => item.id === req.params.id && item.isPublished)
       : canonicalCommentTrack(db, findAccessibleTrack(db, req.params.id, req.userId));
     if (!track) return next(new AppError(isFeedComment ? 'Preview not found' : 'Track is not accessible', 404));
-    const index = (track.comments || []).findIndex((comment) => comment.id === req.params.commentId && comment.userId === req.userId);
+    const commentCollection = isFeedComment ? 'feedComments' : 'comments';
+    const index = (track[commentCollection] || []).findIndex((comment) => comment.id === req.params.commentId && comment.userId === req.userId);
     if (index < 0) return next(new AppError('Comment not found', 404));
-    track.comments.splice(index, 1);
+    track[commentCollection].splice(index, 1);
     await writeDB(db);
     res.json({ success: true });
   } catch (error) { next(error); }
