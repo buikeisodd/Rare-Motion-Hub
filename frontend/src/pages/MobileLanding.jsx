@@ -6,16 +6,20 @@ import StarlightLogo from '../components/StarlightLogo';
 // assets we don't have captured yet.
 function SnapshotWorkspace() {
   return (
-    <div className="rounded-2xl border border-border bg-shading p-3">
+    <div className="rounded-2xl border border-border bg-shading p-3 shadow-sm">
       <div className="flex items-center gap-2 border-b border-border/60 pb-2">
-        <div className="h-6 w-6 rounded-md bg-primary-label/20" />
-        <div className="h-2 w-20 rounded-full bg-primary-label/20" />
+        <div className="h-6 w-6 rounded-md bg-primary-label/20" aria-hidden="true" />
+        <div className="h-2 w-24 rounded-full bg-primary-label/20" aria-hidden="true" />
+        <div className="ml-auto h-2 w-10 rounded-full bg-primary-label/10" aria-hidden="true" />
       </div>
-      <div className="mt-3 space-y-2">
-        {[70, 45, 60].map((w, i) => (
-          <div key={i} className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-label/10 text-[10px] text-secondary-label">{i + 1}</div>
-            <div className="h-2 rounded-full bg-primary-label/15" style={{ width: `${w}%` }} />
+      <div className="mt-3 space-y-2.5">
+        {[['Struggles', '72%'], ['New arrangement', '48%'], ['Final mix', '61%']].map(([label, width]) => (
+          <div key={label} className="flex min-w-0 items-center gap-2.5">
+            <div className="h-7 w-7 shrink-0 rounded-lg bg-primary-label/10" aria-hidden="true" />
+            <div className="min-w-0 flex-1">
+              <div className="mb-1 h-1.5 w-20 max-w-full rounded-full bg-primary-label/20" aria-label={label} />
+              <div className="h-1.5 rounded-full bg-primary-label/15" style={{ width }} aria-hidden="true" />
+            </div>
           </div>
         ))}
       </div>
@@ -101,7 +105,7 @@ export default function MobileLanding() {
       </div>
 
       {/* Feature snapshots */}
-      <div className="mx-auto mt-10 flex max-w-md flex-col gap-8 px-5">
+      <div className="mx-auto mt-10 flex max-w-md flex-col gap-7 px-5">
         {features.map(({ icon: Icon, title, body, Snapshot }) => (
           <div key={title}>
             <Snapshot />
