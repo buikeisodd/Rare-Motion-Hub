@@ -126,6 +126,11 @@ function AnimatedRoutes({ user, authStatus, handleLogin, handleLogout, handleUse
   const location = useLocation();
   const isMobileViewport = useIsMobileViewport();
 
+  // Phones receive the public product introduction only. Do this before the
+  // auth state machine so a mobile visitor is never sent to sign-in or the
+  // authenticated workspace.
+  if (isMobileViewport) return <MobileLanding />;
+
   // While session restore is in-flight, render nothing to avoid a flash
   // of the login page for users who do have a valid session.
   if (authStatus === 'loading') {
@@ -192,10 +197,6 @@ function AnimatedRoutes({ user, authStatus, handleLogin, handleLogout, handleUse
 
   // authenticated-verified: full application access on desktop; a proper
   // landing page (not the squeezed app shell) on narrow viewports.
-  if (isMobileViewport) {
-    return <MobileLanding user={user} onLogout={handleLogout} />;
-  }
-
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>

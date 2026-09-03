@@ -1,4 +1,4 @@
-import { Mail, Monitor, MessageCircle, Share2, Layers, LogOut } from 'lucide-react';
+import { Mail, Monitor, MessageCircle, Layers } from 'lucide-react';
 import StarlightLogo from '../components/StarlightLogo';
 
 // Small illustrative UI "snapshots" built from real design tokens rather than
@@ -78,7 +78,7 @@ const features = [
   }
 ];
 
-export default function MobileLanding({ user, onLogout }) {
+export default function MobileLanding() {
   return (
     <div className="min-h-screen bg-primary-background pb-10 text-primary-label">
       {/* Persistent desktop nudge */}
@@ -98,22 +98,6 @@ export default function MobileLanding({ user, onLogout }) {
           the people you make music with — built for focused work at a full-size screen.
         </p>
 
-        {user && (
-          <div className="mt-5 flex w-full items-center justify-between rounded-2xl border border-border bg-shading px-4 py-3 text-left">
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold">{user.name || user.email}</p>
-              <p className="text-xs text-secondary-label">Signed in</p>
-            </div>
-            <button
-              type="button"
-              onClick={onLogout}
-              className="flex shrink-0 items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-secondary-label transition-colors hover:text-primary-label"
-            >
-              <LogOut className="h-3.5 w-3.5" />
-              Log out
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Feature snapshots */}
