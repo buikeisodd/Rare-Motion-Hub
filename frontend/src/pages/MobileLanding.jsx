@@ -88,6 +88,7 @@ export default function MobileLanding({ user, onLogout }) {
       </div>
 
       <div className="mx-auto flex max-w-md flex-col items-center px-5 pt-10 text-center">
+        <div className="mobile-landing-signal" aria-hidden="true"><span /><span /><span /></div>
         <StarlightLogo markClassName="h-14 w-14" />
         <h1 className="mt-6 text-2xl font-bold leading-tight">
           Your music, organized and moving.
@@ -132,6 +133,14 @@ export default function MobileLanding({ user, onLogout }) {
           </div>
         ))}
       </div>
+
+      <section className="mx-auto mt-12 max-w-md px-5" aria-labelledby="about-heading">
+        <div className="rounded-2xl border border-border bg-shading p-5">
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-secondary-label">About Starlight Station</p>
+          <h2 id="about-heading" className="mt-2 text-xl font-bold">A calmer home for the work behind the music.</h2>
+          <p className="mt-3 text-sm leading-relaxed text-secondary-label">We bring drafts, versions, feedback, and collaboration into one focused studio so creative teams can keep moving without losing the details.</p>
+        </div>
+      </section>
 
       {/* Contact */}
       <div className="mx-auto mt-12 max-w-md px-5">

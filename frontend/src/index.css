@@ -503,38 +503,11 @@
 
 
 /* Active track animation cream override */
-/* Mobile landing gate: the full studio is intentionally desktop-first */
+/* The phone experience is rendered by MobileLanding. Keep the React page
+   visible so its real hero, snapshots, About, and Contact content can render. */
 @media (max-width: 767px) {
   :root { --rmh-gutter: 1rem; --rmh-section-gap: 2rem; --rmh-card-gap: .75rem; }
-  body {
-    background: #F3EBDD !important;
-    overflow: hidden;
-  }
-  body::before {
-    content: "Starlight Station\\A\\AYour studio belongs on desktop.\\A\\AOpen Starlight Station on a desktop browser for the complete workspace, audio tools, and library experience.\\A\\A• Please switch to a larger screen";
-    white-space: pre-wrap;
-    position: fixed;
-    inset: 0;
-    z-index: 2147483647;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 2rem;
-    text-align: center;
-    color: #34483B;
-    background:
-      radial-gradient(circle at 8% 8%, rgba(111, 137, 116, .20), transparent 34%),
-      radial-gradient(circle at 92% 92%, rgba(216, 226, 214, .85), transparent 38%),
-      #F3EBDD;
-    font-size: 1rem;
-    line-height: 1.75;
-    font-weight: 500;
-    letter-spacing: .01em;
-    text-wrap: balance;
-  }
-  #root {
-    display: none !important;
-  }
+  body { background: #F3EBDD !important; overflow-x: hidden; }
 }
 
 /* Semantic controls. These classes are owned by components. */
@@ -653,3 +626,6 @@ div[class*="bg-\\[\\#F3EBDD\\]\\/92"] { background: rgba(243,235,221,.98) !impor
   opacity: 1;
   box-shadow: 0 10px 26px rgba(24, 35, 28, 0.24);
 }
+
+/* MobileLanding owns the phone presentation. */
+@media (max-width: 767px) { body::before { content: none !important; display: none !important; } #root { display: block !important; } body { overflow-x: hidden; } }
