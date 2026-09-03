@@ -745,7 +745,9 @@ function TrackDetailsModal({
     { id: 'replace', label: 'Replace audio', icon: FileAudio, onClick: () => onOpenSubModal('replace') },
     { id: 'stems', label: 'Split stems', icon: Layers, onClick: () => onOpenSubModal('stems') },
     { id: 'queue', label: 'Add to queue', icon: ListPlus, onClick: () => { onAddToQueue(track); onClose(); } },
-    { id: 'feed', label: 'Create feed preview', icon: Radio, onClick: () => { window.location.assign(`/feed?create=${encodeURIComponent(track.id)}`); } },
+    // Keep the selected track in this flow so publishing starts directly at
+    // the caption/preview editor instead of losing context on a feed redirect.
+    { id: 'feed', label: 'Create feed preview', icon: Radio, onClick: () => setShowFeedEditor(true) },
     ...(track.isPublished ? [{ id: 'remove-feed', label: publishing ? 'Removing preview...' : 'Delete feed preview', icon: Trash2, onClick: toggleFeedPublication, danger: true }] : []),
     { id: 'export', label: 'Export', icon: Download, onClick: exportTrack },
     { id: 'delete', label: 'Delete', icon: Trash2, onClick: () => onOpenSubModal('delete'), danger: true }
