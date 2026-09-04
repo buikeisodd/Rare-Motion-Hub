@@ -230,9 +230,13 @@ export default function ChatInbox({ user, isOpen, onToggle, startConversationWit
     const value = text.trim();
     if (!value || !active || sending || groupRemoved) return;
     setSending(true); setError('');
+    const isGroup = active.type === 'group';
+    const clientRequestId = crypto.randomUUID();
+    const optimistic = normalizeMessage({ id: `pending-${clientRequestId}`, clientRequestId, senderId: user.id, recipientId: isGroup ? null : active.partner.id, groupId: isGroup ? active.group.id : null, conversationType: isGroup ? 'group' : 'dm', text: value, replyToMessageId: replyingTo?.id || null, createdAt: new Date().toISOString(), pending: true });
+    setMessages((current) => [...current, optimistic]);
+    setText(''); setReplyingTo(null);
     try {
-      const isGroup = active.type === 'group';
-      const response = await authFetch(`${apiUrl}/api/messages`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ recipientId: isGroup ? null : active.partner.id, groupId: isGroup ? active.group.id : null, conversationType: isGroup ? 'group' : 'dm', text: value, replyToMessageId: optimistic?.replyToMessageId || null, clientRequestId }) });
+      const response = await authFetch(`${apiUrl}/api/messages`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ recipientId: isGroup ? null : active.partner.id, groupId: isGroup ? active.group.id : null, conversationType: isGroup ? 'group' : 'dm', text: value, replyToMessageId: optimistic.replyToMessageId || null, clientRequestId }) });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || 'Message could not be sent.');
       const message = normalizeMessage(data.message);
