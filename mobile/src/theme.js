@@ -1,21 +1,21 @@
 export const colors = {
-  bg: '#050505',
-  bgElevated: '#0A0A0A',
-  panel: '#111111',
-  panelSoft: '#171717',
-  panelHover: '#1D1D1D',
-  ink: '#F7F4EC',
-  inkStrong: '#FFFFFF',
-  muted: '#A6A09A',
-  subtle: '#77736E',
-  accent: '#D7FF65',
-  accentSoft: 'rgba(215,255,101,0.12)',
-  accentHover: '#E3FF91',
+  bg: '#F3EBDD',
+  bgElevated: '#EAE4D7',
+  panel: '#F0EBE1',
+  panelSoft: '#E5DFD2',
+  panelHover: '#D8D8C9',
+  ink: '#34483B',
+  inkStrong: '#22352A',
+  muted: '#667268',
+  subtle: '#7D897F',
+  accent: '#6F8974',
+  accentSoft: 'rgba(111,137,116,0.18)',
+  accentHover: '#9BAF9B',
   danger: '#FF5C6C',
   info: '#85D7FF',
-  border: 'rgba(255,255,255,0.09)',
-  borderStrong: 'rgba(255,255,255,0.15)',
-  overlay: 'rgba(0,0,0,0.72)',
+  border: 'rgba(23,23,20,0.12)',
+  borderStrong: 'rgba(23,23,20,0.22)',
+  overlay: 'rgba(23,23,20,0.28)',
   red: '#FF5C6C',
   blue: '#85D7FF'
 };
@@ -35,3 +35,4 @@ export function gradientFor(id = '') {
   const sum = String(id).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   return gradients[sum % gradients.length];
 }
+

@@ -235,7 +235,7 @@ function LoginScreen({ onLogin }) {
           </Pressable>
         </View>
       </SafeAreaView>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
     </KeyboardAvoidingView>
   );
 }
@@ -257,7 +257,7 @@ function LibraryHeader({ user, title, subtitle, onBack, onNotifications, onProfi
   return (
     <View style={styles.header}>
       <View style={styles.headerTop}>
-        {onBack ? <IconButton name="chevron-back" label="Back" onPress={onBack} /> : <LogoMark small />}
+        {onBack ? <IconButton name="chevron-back" label="Back" onPress={onBack} /> : <View style={{ width: 36, height: 36 }} />}
         <View style={styles.headerActions}>
           <IconButton name="notifications" label="Notifications" onPress={onNotifications} tone={notificationCount > 0 ? 'light' : 'dark'} badge={notificationCount} />
           <IconButton name="person" label="Profile" onPress={onProfile} />
@@ -1787,10 +1787,15 @@ export default function App() {
 
   if (booting) {
     return (
-      <View style={[styles.screen, styles.center]}>
-        <ActivityIndicator color={colors.accent} />
-        <StatusBar style="light" />
-      </View>
+      <LinearGradient colors={["#F3EBDD", "#D8E2D4", "#6F8974"]} style={[styles.screen, styles.center]}>
+        <View style={{ alignItems: "center" }}>
+          <View style={styles.welcomeMark}><Ionicons name="sparkles" size={28} color={colors.bg} /></View>
+          <Text style={styles.welcomeTitle}>Starlight Station</Text>
+          <Text style={styles.welcomeCopy}>Your work in motion</Text>
+          <ActivityIndicator color={colors.ink} style={{ marginTop: 26 }} />
+        </View>
+        <StatusBar style="dark" />
+      </LinearGradient>
     );
   }
 
@@ -1955,7 +1960,7 @@ export default function App() {
           onShare={shareCurrentTrack}
         />
       )}
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
     </View>
   );
 }
@@ -2035,6 +2040,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700'
   },
+  welcomeMark: { width: 72, height: 72, borderRadius: 22, backgroundColor: colors.ink, alignItems: "center", justifyContent: "center", marginBottom: 20, shadowColor: colors.ink, shadowOpacity: 0.22, shadowRadius: 18, shadowOffset: { width: 0, height: 8 }, elevation: 8 }, welcomeTitle: { color: colors.ink, fontSize: 30, fontWeight: "900", letterSpacing: 0.2 }, welcomeCopy: { color: colors.ink, opacity: 0.72, fontSize: 14, marginTop: 6 },
   pressed: {
     opacity: 0.72,
     transform: [{ scale: 0.99 }]
@@ -3078,3 +3084,6 @@ const styles = StyleSheet.create({
     fontWeight: '900'
   }
 });
+
+
+

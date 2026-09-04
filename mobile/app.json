@@ -32,7 +32,9 @@
         {
           "photosPermission": "Allow Starlight Station to choose a profile picture from your library."
         }
-      ]
+      ],
+      "expo-secure-store",
+      "expo-status-bar"
     ]
   }
 }
