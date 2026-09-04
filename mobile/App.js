@@ -253,7 +253,7 @@ function ProfileAvatar({ user, size = 44 }) {
   );
 }
 
-function LibraryHeader({ user, title, subtitle, onBack, onNotifications, onProfile, onMessages, notificationCount = 0 }) {
+function LibraryHeader({ user, title, subtitle, onBack, onNotifications, onProfile, onMessages, onFeed, notificationCount = 0 }) {
   return (
     <View style={styles.header}>
       <View style={styles.headerTop}>
@@ -262,6 +262,7 @@ function LibraryHeader({ user, title, subtitle, onBack, onNotifications, onProfi
           <IconButton name="notifications" label="Notifications" onPress={onNotifications} tone={notificationCount > 0 ? 'light' : 'dark'} badge={notificationCount} />
           <IconButton name="person" label="Profile" onPress={onProfile} />
           <IconButton name="chatbubble-ellipses" label="Messages" onPress={onMessages} />
+          {onFeed && <IconButton name="sparkles" label="Feed" onPress={onFeed} />}
         </View>
       </View>
       {!!title && <Text style={styles.pageTitle}>{title}</Text>}
@@ -801,7 +802,7 @@ function MoveProjectPage({ project, folders, onBack, onMove }) {
   );
 }
 
-function LibraryScreen({ user, workspace, loading, refreshing, onRefresh, onOpenFolder, onOpenProject, onCreateProject, onCreateFolder, onMoveProject, onDeleteProject, onDeleteFolder, onPlayProject, onNotifications, onProfile, onMessages, playback }) {
+function LibraryScreen({ user, workspace, loading, refreshing, onRefresh, onOpenFolder, onOpenProject, onCreateProject, onCreateFolder, onMoveProject, onDeleteProject, onDeleteFolder, onPlayProject, onNotifications, onProfile, onMessages, onFeed, playback }) {
   const rootProjects = workspace.projects.filter((project) => !project.folderId);
   const rootFolders = workspace.folders;
   const data = [
@@ -816,6 +817,7 @@ function LibraryScreen({ user, workspace, loading, refreshing, onRefresh, onOpen
         onNotifications={onNotifications}
         onProfile={onProfile}
         onMessages={onMessages}
+        onFeed={onFeed}
         notificationCount={workspace.notifications.filter((notification) => !notification.read).length}
       />
       {loading ? (
@@ -995,6 +997,71 @@ function ProjectScreen({
   );
 }
 
+function FeedScreen({ user, feed, stories, loading, onRefresh, onPlay, onLike, onSave, onOpenStory, onLibrary, onMessages, onProfile }) {
+  return (
+    <SafeAreaView style={styles.screen}>
+      <ScrollView
+        contentContainerStyle={{ paddingHorizontal: 18, paddingTop: 18, paddingBottom: 108 }}
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={onRefresh} tintColor={colors.accent} />}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+          <Text style={{ color: colors.ink, fontSize: 28, fontWeight: '900' }}>Feed</Text>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <IconButton name="notifications-outline" label="Notifications" onPress={() => {}} />
+            <IconButton name="person-outline" label="Profile" onPress={onProfile} />
+          </View>
+        </View>
+
+        <Text style={{ color: colors.ink, fontSize: 16, fontWeight: '800', marginBottom: 10 }}>Stories</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingBottom: 22 }}>
+          {(stories || []).map((story) => (
+            <Pressable key={story.id} onPress={() => onOpenStory(story)} style={({ pressed }) => [styles.storyCard, pressed && styles.pressed]}>
+              <Artwork item={{ id: story.id, coverArt: story.project?.coverArt }} size="small" />
+              <Text numberOfLines={1} style={styles.storyLabel}>{story.owner?.id === user?.id ? 'You' : (story.owner?.name || 'Listener')}</Text>
+            </Pressable>
+          ))}
+          {!stories?.length && <Text style={{ color: colors.muted, paddingVertical: 18 }}>No active stories yet.</Text>}
+        </ScrollView>
+
+        <Text style={{ color: colors.ink, fontSize: 16, fontWeight: '800', marginBottom: 10 }}>Preview new music</Text>
+        {(feed || []).map((item) => {
+          const ownerName = item.owner?.name || item.artist || 'Starlight Station';
+          return (
+            <View key={item.id} style={styles.feedCard}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <Artwork item={{ id: item.id, coverArt: item.project?.coverArt }} size="small" />
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text numberOfLines={1} style={{ color: colors.ink, fontWeight: '800', fontSize: 16 }}>{item.title || item.filename || 'Untitled track'}</Text>
+                  <Text numberOfLines={1} style={{ color: colors.muted, marginTop: 3 }}>{ownerName}</Text>
+                </View>
+                <Pressable onPress={() => onPlay(item, item.project, [item])} style={({ pressed }) => [styles.feedPlay, pressed && styles.pressed]}>
+                  <Ionicons name={playbackIcon(item, onPlay)} size={18} color={colors.bg} />
+                </Pressable>
+              </View>
+              <Waveform progress={0} compact />
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, gap: 18 }}>
+                <Pressable onPress={() => onLike(item)}><Text style={{ color: item.likedByMe ? colors.accent : colors.muted }}>♥ {item.likeCount || 0}</Text></Pressable>
+                <Pressable onPress={() => onSave(item)}><Text style={{ color: item.savedByMe ? colors.accent : colors.muted }}>{item.savedByMe ? 'Saved' : 'Save'}</Text></Pressable>
+              </View>
+            </View>
+          );
+        })}
+        {!feed?.length && !loading && <Text style={{ color: colors.muted, paddingVertical: 28 }}>Nothing in the feed yet.</Text>}
+      </ScrollView>
+      <View style={styles.mobileTabs}>
+        <Pressable onPress={onLibrary} style={styles.mobileTab}><Ionicons name="library-outline" size={21} color={colors.muted} /><Text style={styles.mobileTabText}>Library</Text></Pressable>
+        <Pressable style={[styles.mobileTab, styles.mobileTabActive]}><Ionicons name="sparkles-outline" size={21} color={colors.accent} /><Text style={[styles.mobileTabText, { color: colors.accent }]}>Feed</Text></Pressable>
+        <Pressable onPress={onMessages} style={styles.mobileTab}><Ionicons name="chatbubble-ellipses-outline" size={21} color={colors.muted} /><Text style={styles.mobileTabText}>Inbox</Text></Pressable>
+        <Pressable onPress={onProfile} style={styles.mobileTab}><Ionicons name="person-outline" size={21} color={colors.muted} /><Text style={styles.mobileTabText}>Profile</Text></Pressable>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+function playbackIcon(item, onPlay) {
+  return 'play';
+}
+
 export default function App() {
   const [user, setUser] = useState(null);
   const [booting, setBooting] = useState(true);
@@ -1007,6 +1074,8 @@ export default function App() {
   const [profileSaving, setProfileSaving] = useState(false);
   const [theme, setTheme] = useState('dark');
   const [conversations, setConversations] = useState([]);
+  const [feed, setFeed] = useState([]);
+  const [stories, setStories] = useState([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [uploadingTrack, setUploadingTrack] = useState(false);
   const [offlineTracks, setOfflineTracks] = useState({});
@@ -1084,6 +1153,10 @@ export default function App() {
   }, [user?.id]);
 
   useEffect(() => {
+    if (user && route.name === 'feed') refreshFeed();
+  }, [user?.id, route.name]);
+
+  useEffect(() => {
     getOfflineTracks().then(setOfflineTracks).catch(() => {});
   }, []);
 
@@ -1137,6 +1210,37 @@ export default function App() {
       setRefreshing(false);
       setLoading(false);
     }
+  };
+
+  const refreshFeed = async () => {
+    if (!user?.id) return;
+    setLoading(true);
+    try {
+      const [feedData, storyData] = await Promise.all([
+        api('/api/tracks/feed?limit=30'),
+        api('/api/stories')
+      ]);
+      setFeed(feedData?.items || []);
+      setStories(storyData?.stories || []);
+    } catch (error) {
+      Alert.alert('Could not load feed', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleFeedLike = async (item) => {
+    setFeed((current) => current.map((entry) => entry.id === item.id
+      ? { ...entry, likedByMe: !entry.likedByMe, likeCount: Math.max(0, (entry.likeCount || 0) + (entry.likedByMe ? -1 : 1)) }
+      : entry));
+    try { await api(`/api/tracks/feed/tracks/${item.id}/like`, { method: 'POST', body: '{}' }); }
+    catch (error) { await refreshFeed(); Alert.alert('Could not update like', error.message); }
+  };
+
+  const toggleFeedSave = async (item) => {
+    setFeed((current) => current.map((entry) => entry.id === item.id ? { ...entry, savedByMe: !entry.savedByMe } : entry));
+    try { await api(`/api/tracks/feed/tracks/${item.id}/save`, { method: 'POST', body: '{}' }); }
+    catch (error) { await refreshFeed(); Alert.alert('Could not update save', error.message); }
   };
 
   const openFolder = async (folderId) => {
@@ -1694,7 +1798,22 @@ export default function App() {
     return <LoginScreen onLogin={setUser} />;
   }
 
-  const currentScreen = route.name === 'now-playing' ? (
+  const currentScreen = route.name === 'feed' ? (
+    <FeedScreen
+      user={user}
+      feed={feed}
+      stories={stories}
+      loading={loading}
+      onRefresh={refreshFeed}
+      onPlay={playTrack}
+      onLike={toggleFeedLike}
+      onSave={toggleFeedSave}
+      onOpenStory={(story) => Alert.alert(story.owner?.id === user?.id ? 'Your story' : (story.owner?.name || 'Story'), story.contentType === 'text' ? story.text : 'Story preview')}
+      onLibrary={() => setRoute({ name: 'library' })}
+      onMessages={openMessages}
+      onProfile={() => setRoute({ name: 'account', from: route })}
+    />
+  ) : route.name === 'now-playing' ? (
     <NowPlayingPage
       playback={playback}
       settings={playbackSettings}
@@ -1820,6 +1939,7 @@ export default function App() {
       onNotifications={() => setRoute({ name: 'notifications', from: route })}
       onProfile={() => setRoute({ name: 'account', from: route })}
       onMessages={openMessages}
+      onFeed={() => setRoute({ name: 'feed' })}
       playback={playback}
     />
   );
@@ -1827,7 +1947,7 @@ export default function App() {
   return (
     <View style={styles.app} onTouchStart={markActivity} {...edgeSwipeResponder.panHandlers}>
       {currentScreen}
-      {route.name !== 'now-playing' && route.name !== 'player-edit' && (
+      {route.name !== 'now-playing' && route.name !== 'player-edit' && route.name !== 'feed' && (
         <MiniPlayer
           playback={playback}
           onToggle={togglePlayback}
@@ -1856,6 +1976,64 @@ const styles = StyleSheet.create({
   center: {
     alignItems: 'center',
     justifyContent: 'center'
+  },
+  storyCard: {
+    width: 76,
+    alignItems: 'center',
+    gap: 6
+  },
+  storyLabel: {
+    color: colors.ink,
+    fontSize: 12,
+    maxWidth: 76
+  },
+  feedCard: {
+    backgroundColor: colors.panel,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 12
+  },
+  feedPlay: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  mobileTabs: {
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    bottom: 10,
+    minHeight: 66,
+    paddingBottom: 6,
+    paddingTop: 8,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: 'rgba(17,17,17,0.96)',
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center'
+  },
+  mobileTab: {
+    minWidth: 64,
+    minHeight: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 3
+  },
+  mobileTabActive: {
+    borderTopWidth: 2,
+    borderTopColor: colors.accent
+  },
+  mobileTabText: {
+    color: colors.muted,
+    fontSize: 11,
+    fontWeight: '700'
   },
   pressed: {
     opacity: 0.72,
