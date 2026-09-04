@@ -178,6 +178,7 @@ const MessageSchema = new Schema({
   recipientId: String,
   conversationType: String,
   messageKind: String,
+  clientRequestId: { type: String, index: true },
   storyId: String,
   storyPreview: Schema.Types.Mixed,
   attachments: [Schema.Types.Mixed],

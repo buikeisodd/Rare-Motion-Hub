@@ -171,7 +171,7 @@ const hydrateCall = (db, call) => call ? {
   participants: (call.participantIds || []).map((id) => publicUser(db.users.find((user) => user.id === id)))
 } : null;
 
-const createMessage = (db, { senderId, recipientId, groupId = null, conversationType, messageKind = 'message', text = '', attachments = [], replyToMessageId = null, forwardedFrom = null, storyId = null, storyPreview = null }) => {
+const createMessage = (db, { senderId, recipientId, groupId = null, conversationType, messageKind = 'message', text = '', attachments = [], replyToMessageId = null, forwardedFrom = null, storyId = null, storyPreview = null, clientRequestId = null }) => {
   const type = conversationType || 'dm';
   const recipients = type === 'group' ? groupParticipantIds(db, groupId).filter((id) => id !== senderId) : [recipientId].filter(Boolean);
   return {

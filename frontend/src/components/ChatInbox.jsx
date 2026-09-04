@@ -232,7 +232,7 @@ export default function ChatInbox({ user, isOpen, onToggle, startConversationWit
     setSending(true); setError('');
     try {
       const isGroup = active.type === 'group';
-      const response = await authFetch(`${apiUrl}/api/messages`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ recipientId: isGroup ? null : active.partner.id, groupId: isGroup ? active.group.id : null, conversationType: isGroup ? 'group' : 'dm', text: value, replyToMessageId: replyingTo?.id || null }) });
+      const response = await authFetch(`${apiUrl}/api/messages`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ recipientId: isGroup ? null : active.partner.id, groupId: isGroup ? active.group.id : null, conversationType: isGroup ? 'group' : 'dm', text: value, replyToMessageId: replyingTo?.id || null, clientRequestId: crypto.randomUUID() }) });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || 'Message could not be sent.');
       const message = normalizeMessage(data.message);

@@ -479,7 +479,7 @@ const getMessages = async (req, res, next) => {
 const sendMessageController = async (req, res, next) => {
   try {
     const body = req.body && typeof req.body === 'object' ? req.body : {};
-    const { recipientId, groupId, conversationType, text, replyToMessageId, storyId } = body;
+    const { recipientId, groupId, conversationType, text, replyToMessageId, storyId, clientRequestId } = body;
     const senderId = req.userId;
     if (!text?.trim()) return next(new AppError('text required.', 400));
     const type = conversationType || 'dm';
@@ -487,6 +487,10 @@ const sendMessageController = async (req, res, next) => {
     if (type === 'group' && !groupId) return next(new AppError('groupId required for group message.', 400));
 
     const db = ensureDBShape(await readDB());
+    if (clientRequestId) {
+      const previous = db.messages.find((message) => message.senderId === senderId && message.clientRequestId === String(clientRequestId));
+      if (previous) return res.json({ message: hydrateMessage(db, previous), idempotent: true });
+    }
     const sender = db.users.find((user) => user.id === senderId);
     if (!sender) return next(new AppError('Unauthorized user.', 401));
     let storyReply = null;
