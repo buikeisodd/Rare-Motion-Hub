@@ -232,13 +232,13 @@ export default function ChatInbox({ user, isOpen, onToggle, startConversationWit
     setSending(true); setError('');
     try {
       const isGroup = active.type === 'group';
-      const response = await authFetch(`${apiUrl}/api/messages`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ recipientId: isGroup ? null : active.partner.id, groupId: isGroup ? active.group.id : null, conversationType: isGroup ? 'group' : 'dm', text: value, replyToMessageId: replyingTo?.id || null, clientRequestId: crypto.randomUUID() }) });
+      const response = await authFetch(`${apiUrl}/api/messages`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ recipientId: isGroup ? null : active.partner.id, groupId: isGroup ? active.group.id : null, conversationType: isGroup ? 'group' : 'dm', text: value, replyToMessageId: optimistic?.replyToMessageId || null, clientRequestId }) });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || 'Message could not be sent.');
       const message = normalizeMessage(data.message);
       if (!message) throw new Error('The server returned an invalid message.');
-      setMessages((current) => [...current, message]); setText(''); setReplyingTo(null); loadConversations();
-    } catch (err) { setError(err.message || 'Message could not be sent.'); }
+      setMessages((current) => current.map((item) => item.clientRequestId === clientRequestId ? message : item)); loadConversations();
+    } catch (err) { setMessages((current) => current.filter((item) => item.clientRequestId !== clientRequestId)); setText(value); setError(err.message || 'Message could not be sent.'); }
     finally { setSending(false); }
   };
 
