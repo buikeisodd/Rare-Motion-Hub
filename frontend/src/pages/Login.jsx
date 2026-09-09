@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Eye, EyeOff, Loader2, Mail, Lock, Phone, Timer } from 'lucide-react';
 import StarlightLogo from '../components/StarlightLogo';
 import VerificationModal from '../components/VerificationModal';
@@ -184,10 +184,8 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#e8eee9] px-5 py-8 text-[#17221c] sm:px-8 lg:px-16 lg:py-12">
+    <div className="relative min-h-screen overflow-hidden bg-[#F3EBDD] px-5 py-8 text-[#17221c] sm:px-8 lg:px-16 lg:py-12">
       <div className="pointer-events-none absolute inset-0 opacity-40 [background-image:linear-gradient(115deg,transparent_0%,rgba(83,112,92,.16)_46%,transparent_47%),linear-gradient(68deg,transparent_0%,rgba(40,78,51,.12)_62%,transparent_63%)]" />
-      <div className="pointer-events-none absolute -left-24 top-[-12rem] h-[30rem] w-[30rem] rounded-full bg-[#70977a]/20 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-48 right-[-8rem] h-[32rem] w-[32rem] rounded-full bg-[#345b43]/15 blur-3xl" />
       <div className="relative mx-auto grid min-h-[calc(100vh-2rem)] w-full max-w-6xl items-center gap-10 py-3 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,27rem)] lg:gap-16">
         <section className="hidden lg:block animate-fade-in">
           <StarlightLogo className="mb-20 h-10 text-[#17221c]" showTagline={false} markClassName="h-16 w-16 sm:h-20 sm:w-20" />
@@ -330,7 +328,7 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
               disabled={Boolean(providerLoading)}
               className="mx-auto flex min-h-10 w-[92%] items-center justify-center gap-3 rounded-xl border border-[#bdcdbf] bg-white/65 px-4 py-2.5 text-sm font-semibold text-[#17221c] transition-all hover:border-[#6F8974] hover:bg-[#fff] hover:scale-[1.01]"
             >
-              {providerLoading === 'Apple' ? <Loader2 className="h-5 w-5 animate-spin" /> : <AppleIcon className="h-5 w-5" />}
+              {providerLoading === 'Apple' ? <Loader2 className="h-5 w-5 animate-spin" /> : <AppleIcon className="h-5 w-5 text-black" />}
               Continue with Apple
             </button>
             <button
@@ -339,7 +337,7 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
               disabled={Boolean(providerLoading)}
               className="mx-auto flex min-h-10 w-[92%] items-center justify-center gap-3 rounded-xl border border-[#bdcdbf] bg-white/65 px-4 py-2.5 text-sm font-semibold text-[#17221c] transition-all hover:border-[#6F8974] hover:bg-[#fff] hover:scale-[1.01]"
             >
-              {providerLoading === 'Phone' ? <Loader2 className="h-5 w-5 animate-spin" /> : <Phone className="h-5 w-5" />}
+              {providerLoading === 'Phone' ? <Loader2 className="h-5 w-5 animate-spin" /> : <Phone className="h-5 w-5 text-black" />}
               Continue with phone number
             </button>
             {resetMode && (
@@ -371,5 +369,7 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
     </div>
   );
 }
+
+
 
 
