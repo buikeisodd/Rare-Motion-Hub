@@ -184,23 +184,22 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#F3EBDD] px-5 py-8 text-[#17221c] sm:px-8 lg:px-16 lg:py-12">
-      <div className="pointer-events-none absolute inset-0 opacity-40 [background-image:linear-gradient(115deg,transparent_0%,rgba(83,112,92,.16)_46%,transparent_47%),linear-gradient(68deg,transparent_0%,rgba(40,78,51,.12)_62%,transparent_63%)]" />
-      <div className="relative mx-auto grid min-h-[calc(100vh-2rem)] w-full max-w-6xl items-center gap-10 py-3 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,27rem)] lg:gap-16">
+    <div className="relative h-dvh min-h-0 overflow-hidden bg-[#F3EBDD] px-4 py-3 text-[#17221c] sm:px-6 sm:py-4 lg:px-10 lg:py-5">
+      <div className="relative mx-auto grid h-full min-h-0 w-full max-w-6xl items-center gap-5 py-1 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,27rem)] lg:gap-10">
         <section className="hidden lg:block animate-fade-in">
-          <StarlightLogo className="mb-20 h-10 text-[#17221c]" showTagline={false} markClassName="h-16 w-16 sm:h-20 sm:w-20" />
+          <StarlightLogo className="mb-10 h-10 text-[#17221c]" showTagline={false} markClassName="h-16 w-16 sm:h-20 sm:w-20" />
           <p className="mb-5 text-xs font-semibold uppercase tracking-[0.3em] text-[#46624d]">A softer place for unfinished ideas</p>
-          <h1 className="max-w-xl text-6xl font-semibold leading-[0.96] tracking-tight text-[#17221c]">Make room for the next sound.</h1>
+          <h1 className="max-w-xl text-5xl font-semibold leading-[0.96] tracking-tight text-[#17221c]">Make room for the next sound.</h1>
           <p className="mt-7 max-w-md text-base leading-relaxed text-[#52655a]">Keep your projects close, hear every version, and share the work when it feels ready.</p>
         </section>
 
         <div className="mx-auto w-full max-w-sm animate-fade-in">
-          <div className="mb-8 lg:hidden"><StarlightLogo className="h-10 text-[#17221c]" showTagline={false} markClassName="h-16 w-16 sm:h-20 sm:w-20" /></div>
-          <div className="mb-8 lg:hidden"><h1 className="text-3xl font-semibold tracking-tight">Make room for the next sound.</h1><p className="mt-3 text-sm leading-relaxed text-[#52655a]">Your private studio for projects, playback and collaboration.</p></div>
-          <div className="rounded-[2rem] border border-white/70 bg-white/75 p-5 shadow-[0_28px_80px_rgba(35,62,43,.18)] backdrop-blur-xl sm:p-7">
-          <p className="mb-4 max-w-sm text-center text-[11px] leading-tight text-[#52655a]">By continuing you confirm that this email belongs to an approved Starlight Station collaborator.</p>
+          <div className="mb-3 lg:hidden"><StarlightLogo className="h-10 text-[#17221c]" showTagline={false} markClassName="h-16 w-16 sm:h-20 sm:w-20" /></div>
+          <div className="mb-3 lg:hidden"><h1 className="text-2xl font-semibold tracking-tight">Make room for the next sound.</h1><p className="mt-1 text-xs leading-relaxed text-[#52655a]">Your private studio for projects, playback and collaboration.</p></div>
+          <div className="rounded-[1.5rem] border border-white/70 bg-white/75 p-3 shadow-[0_20px_55px_rgba(35,62,43,.16)] backdrop-blur-xl sm:p-5">
+          <p className="mb-2 max-w-sm text-center text-[11px] leading-tight text-[#52655a]">By continuing you confirm that this email belongs to an approved Starlight Station collaborator.</p>
 
-        <div className="flex items-center gap-5 mb-5 border-b border-[rgba(52,72,59,.16)] pb-2 px-3">
+        <div className="flex items-center gap-5 mb-3 border-b border-[rgba(52,72,59,.16)] pb-2 px-3">
           <button 
             type="button"
             onClick={() => { setIsRegister(false); setResetMode(false); setResetToken(''); }}
@@ -218,7 +217,7 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
         </div>
 
         <div className="w-full">
-          <form onSubmit={handleSubmit} className="space-y-3 rounded-2xl border border-[#cbd8ce] bg-white/55 p-4 shadow-sm sm:p-5">
+          <form onSubmit={handleSubmit} className="space-y-2 rounded-xl border border-[#cbd8ce] bg-white/55 p-3 shadow-sm sm:p-4">
             <label className="relative block">
               <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#46624d]" />
               <input
@@ -306,18 +305,18 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
             </button>
           </form>
 
-          <div className="my-2 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.24em] text-[#52655a] md:flex-col md:justify-center">
+          <div className="my-1 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.24em] text-[#52655a] md:flex-col md:justify-center">
             <div className="h-px flex-1 bg-border md:h-full md:w-px" />
             <span>OR</span>
             <div className="h-px flex-1 bg-border md:h-full md:w-px" />
           </div>
 
-            <div className="grid content-center gap-2 rounded-2xl border border-[#cbd8ce] bg-white/45 p-2.5 sm:p-3">
+            <div className="grid content-center gap-1.5 rounded-xl border border-[#cbd8ce] bg-white/45 p-2 sm:p-2.5">
             <button
               type="button"
               onClick={() => handleProviderAuth('Google')}
               disabled={Boolean(providerLoading)}
-              className="mx-auto flex min-h-10 w-[92%] items-center justify-center gap-3 rounded-xl border border-[#bdcdbf] bg-white/65 px-4 py-2.5 text-sm font-semibold text-[#17221c] transition-all hover:border-[#6F8974] hover:bg-[#fff] hover:scale-[1.01]"
+              className="mx-auto flex min-h-9 w-[92%] items-center justify-center gap-3 rounded-xl border border-[#bdcdbf] bg-white/65 px-4 py-2.5 text-sm font-semibold text-[#17221c] transition-all hover:border-[#6F8974] hover:bg-[#fff] hover:scale-[1.01]"
             >
               {providerLoading === 'Google' ? <Loader2 className="h-5 w-5 animate-spin" /> : <GoogleIcon className="h-5 w-5" />}
               Continue with Google
@@ -326,7 +325,7 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
               type="button"
               onClick={() => handleProviderAuth('Apple')}
               disabled={Boolean(providerLoading)}
-              className="mx-auto flex min-h-10 w-[92%] items-center justify-center gap-3 rounded-xl border border-[#bdcdbf] bg-white/65 px-4 py-2.5 text-sm font-semibold text-[#17221c] transition-all hover:border-[#6F8974] hover:bg-[#fff] hover:scale-[1.01]"
+              className="mx-auto flex min-h-9 w-[92%] items-center justify-center gap-3 rounded-xl border border-[#bdcdbf] bg-white/65 px-4 py-2.5 text-sm font-semibold text-[#17221c] transition-all hover:border-[#6F8974] hover:bg-[#fff] hover:scale-[1.01]"
             >
               {providerLoading === 'Apple' ? <Loader2 className="h-5 w-5 animate-spin" /> : <AppleIcon className="h-5 w-5 text-black" />}
               Continue with Apple
@@ -335,7 +334,7 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
               type="button"
               onClick={handlePhoneAuth}
               disabled={Boolean(providerLoading)}
-              className="mx-auto flex min-h-10 w-[92%] items-center justify-center gap-3 rounded-xl border border-[#bdcdbf] bg-white/65 px-4 py-2.5 text-sm font-semibold text-[#17221c] transition-all hover:border-[#6F8974] hover:bg-[#fff] hover:scale-[1.01]"
+              className="mx-auto flex min-h-9 w-[92%] items-center justify-center gap-3 rounded-xl border border-[#bdcdbf] bg-white/65 px-4 py-2.5 text-sm font-semibold text-[#17221c] transition-all hover:border-[#6F8974] hover:bg-[#fff] hover:scale-[1.01]"
             >
               {providerLoading === 'Phone' ? <Loader2 className="h-5 w-5 animate-spin" /> : <Phone className="h-5 w-5 text-black" />}
               Continue with phone number
@@ -369,6 +368,8 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
     </div>
   );
 }
+
+
 
 
 
