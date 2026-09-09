@@ -315,7 +315,7 @@ export default function Project({ user }) {
                 />
               </div>
               <div className="flex shrink-0 items-center gap-3">
-                                {isOwner && <button type="button" onClick={() => setIsUploadOpen(true)} className="project-upload-action inline-flex min-h-11 w-full max-w-[12rem] items-center justify-center whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-semibold sm:w-auto sm:px-5">Upload track</button>}
+                                {isOwner && <button type="button" onClick={() => setIsUploadOpen(true)} className="project-upload-action inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-semibold sm:h-11 sm:w-11" aria-label="Upload track"><Plus className="h-5 w-5" /></button>}
               </div>
             </div>
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-accent">
@@ -456,6 +456,7 @@ export default function Project({ user }) {
     </div>
   );
 }
+
 
 
 
