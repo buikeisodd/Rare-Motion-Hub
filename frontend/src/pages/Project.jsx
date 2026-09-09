@@ -319,6 +319,7 @@ export default function Project({ user }) {
                 <button className="text-secondary-label hover:text-primary-label transition-colors" aria-label="Shuffle project">
                   <Shuffle className="h-5 w-5" />
                 </button>
+                                {isOwner && <button type="button" onClick={() => setIsUploadOpen(true)} className="project-upload-action inline-flex min-h-11 min-w-[9.5rem] items-center justify-center whitespace-nowrap rounded-xl px-5 py-2.5 text-sm font-semibold">Upload track</button>}
                 <button
                   onClick={() => {
                     if (!leadTrack) { setIsUploadOpen(true); return; }
@@ -361,8 +362,6 @@ export default function Project({ user }) {
               </span>
             </p>
           </div>
-
-            {isOwner && <button type="button" onClick={() => setIsUploadOpen(true)} className="project-upload-action mt-4 inline-flex min-h-10 items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold">Upload track</button>}
 
           <div className={`project-track-list space-y-2 ${currentTrack ? 'has-active-player' : ''}`}>
             {uploadingTrack && <div className="grid grid-cols-[2rem_1fr] items-center gap-3 rounded-xl bg-shading/60 px-3 py-2.5 opacity-55"><div className="text-center text-xs text-secondary-label">{tracks.length + 1}</div><div className="min-w-0"><h3 className="truncate text-xl font-semibold text-primary-label">{uploadingTrack.title}</h3><div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-secondary-label"><span>Just now</span><span>1 version</span></div><div className="mt-2 h-1.5 w-full max-w-[14rem] overflow-hidden rounded-full bg-primary-background/70"><div className="h-full rounded-full bg-primary-label transition-[width] duration-300" style={{ width: `${uploadingTrack.progress}%` }} /></div></div></div>}
@@ -479,6 +478,7 @@ export default function Project({ user }) {
     </div>
   );
 }
+
 
 
 
