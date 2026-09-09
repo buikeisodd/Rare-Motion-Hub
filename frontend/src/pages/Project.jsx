@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { BarChart3, Download, FileText, Image as ImageIcon, Link2, Lock, MoreHorizontal, Music, Pause, Play, Plus, Shuffle, Trash2, Unlock } from 'lucide-react';
+import { BarChart3, Download, FileText, Image as ImageIcon, Link2, Lock, MoreHorizontal, Music, Plus, Trash2, Unlock } from 'lucide-react';
 import UploadModal from '../components/UploadModal';
 import PageLoading from '../components/PageLoading';
 import CoverArtPicker from '../components/CoverArtPicker';
@@ -218,7 +218,6 @@ export default function Project({ user }) {
   if (!project) return <div className="text-center mt-20">Project not found</div>;
 
   const isOwner = String(project.userId) === String(user.id);
-  const leadTrack = tracks[0];
 
   return (
     <div className={`project-page-shell relative min-h-screen bg-primary-background pb-32 text-primary-label md:pb-10 ${currentTrack ? 'has-active-player' : ''}`}>
@@ -316,28 +315,7 @@ export default function Project({ user }) {
                 />
               </div>
               <div className="flex shrink-0 items-center gap-3">
-                <button className="text-secondary-label hover:text-primary-label transition-colors" aria-label="Shuffle project">
-                  <Shuffle className="h-5 w-5" />
-                </button>
-                                {isOwner && <button type="button" onClick={() => setIsUploadOpen(true)} className="project-upload-action inline-flex min-h-11 min-w-[9.5rem] items-center justify-center whitespace-nowrap rounded-xl px-5 py-2.5 text-sm font-semibold">Upload track</button>}
-                <button
-                  onClick={() => {
-                    if (!leadTrack) { setIsUploadOpen(true); return; }
-                    if (currentTrack && isPlaying) {
-                      setIsPlaying(false);
-                    } else if (currentTrack) {
-                      setIsPlaying(true);
-                    } else {
-                      handlePlay(leadTrack);
-                    }
-                  }}
-                  className="grid h-11 w-11 place-items-center rounded-xl bg-accent text-primary-background transition-transform hover:bg-accent-hover hover:scale-105"
-                  aria-label={isPlaying ? "Pause project" : "Play project"}
-                >
-                  {isPlaying && currentTrack
-                    ? <Pause className="h-6 w-6 fill-current" />
-                    : <Play className="h-6 w-6 fill-current translate-x-[2px]" />}
-                </button>
+                                {isOwner && <button type="button" onClick={() => setIsUploadOpen(true)} className="project-upload-action inline-flex min-h-11 w-full max-w-[12rem] items-center justify-center whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-semibold sm:w-auto sm:px-5">Upload track</button>}
               </div>
             </div>
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-accent">
@@ -478,6 +456,8 @@ export default function Project({ user }) {
     </div>
   );
 }
+
+
 
 
 
