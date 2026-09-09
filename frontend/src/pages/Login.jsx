@@ -3,6 +3,8 @@ import { Eye, EyeOff, Loader2, Mail, Lock, Phone, Timer } from 'lucide-react';
 import StarlightLogo from '../components/StarlightLogo';
 import VerificationModal from '../components/VerificationModal';
 
+const loginQuotes = ['Make room for the next sound.', 'Let the unfinished become something.', 'Keep the idea moving.', 'Hear what comes next.', 'Give the work a place to grow.'];
+
 function GoogleIcon({ className = '' }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
@@ -24,6 +26,7 @@ function AppleIcon({ className = '' }) {
 
 export default function Login({ onLogin, sessionExpiredNotice = false }) {
   const [isRegister, setIsRegister] = useState(false);
+  const [quoteIndex, setQuoteIndex] = useState(0);
   const [email, setEmail] = useState(() => localStorage.getItem('lastEmail') || '');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -40,6 +43,11 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
   const [lockCountdown, setLockCountdown] = useState(0); // seconds remaining
   const lockTimerRef = useRef(null);
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setQuoteIndex((current) => (current + 1) % loginQuotes.length), 4200);
+    return () => window.clearInterval(timer);
+  }, []);
 
   // Drive the lockout countdown from the server-provided lockedUntil timestamp.
   // The timer is purely cosmetic â€” backend is authoritative on whether the
@@ -189,13 +197,13 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
         <section className="hidden lg:block animate-fade-in">
           <StarlightLogo className="mb-10 h-10 text-[#17221c]" showTagline={false} markClassName="h-16 w-16 sm:h-20 sm:w-20" />
           <p className="mb-5 text-xs font-semibold uppercase tracking-[0.3em] text-[#46624d]">A softer place for unfinished ideas</p>
-          <h1 className="max-w-xl text-5xl font-semibold leading-[0.96] tracking-tight text-[#17221c]">Make room for the next sound.</h1>
+          <h1 className="max-w-xl text-5xl font-semibold leading-[0.96] tracking-tight text-[#17221c]"><span key={quoteIndex} className="inline-block animate-fade-in">{loginQuotes[quoteIndex]}</span></h1>
           <p className="mt-7 max-w-md text-base leading-relaxed text-[#52655a]">Keep your projects close, hear every version, and share the work when it feels ready.</p>
         </section>
 
         <div className="mx-auto w-full max-w-sm animate-fade-in">
           <div className="mb-3 lg:hidden"><StarlightLogo className="h-10 text-[#17221c]" showTagline={false} markClassName="h-16 w-16 sm:h-20 sm:w-20" /></div>
-          <div className="mb-3 lg:hidden"><h1 className="text-2xl font-semibold tracking-tight">Make room for the next sound.</h1><p className="mt-1 text-xs leading-relaxed text-[#52655a]">Your private studio for projects, playback and collaboration.</p></div>
+          <div className="mb-3 lg:hidden"><h1 className="text-2xl font-semibold tracking-tight"><span key={quoteIndex} className="inline-block animate-fade-in">{loginQuotes[quoteIndex]}</span></h1><p className="mt-1 text-xs leading-relaxed text-[#52655a]">Your private studio for projects, playback and collaboration.</p></div>
           <div className="rounded-[1.5rem] border border-white/70 bg-white/75 p-3 shadow-[0_20px_55px_rgba(35,62,43,.16)] backdrop-blur-xl sm:p-5">
           <p className="mb-2 max-w-sm text-center text-[11px] leading-tight text-[#52655a]">By continuing you confirm that this email belongs to an approved Starlight Station collaborator.</p>
 
@@ -368,6 +376,7 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
     </div>
   );
 }
+
 
 
 
