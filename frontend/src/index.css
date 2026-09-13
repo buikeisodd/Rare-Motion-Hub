@@ -630,6 +630,15 @@ div[class*="bg-\\[\\#F3EBDD\\]\\/92"] { background: rgba(243,235,221,.98) !impor
 /* MobileLanding owns the phone presentation. */
 @media (max-width: 767px) { body::before { content: none !important; display: none !important; } #root { display: block !important; } body { overflow-x: hidden; } }
 
+/* Keep the story rail visible while feed posts scroll underneath it. */
+.story-rail {
+  background: color-mix(in srgb, var(--rmh-bg) 88%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, #34483B 10%, transparent);
+  box-shadow: 0 10px 22px rgba(52, 72, 59, .08);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+
 /* Shared tactile interaction for buttons and icon controls. */
 button,
 [role="button"],
