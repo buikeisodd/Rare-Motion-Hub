@@ -1,6 +1,29 @@
 const crypto = require('crypto');
 const fs = require('fs/promises');
 const { MarketplaceBeat } = require('../models');
+const { cloudinary, hasCloudinaryConfig, cloudName } = require('../config/cloudinary');
+const { AppError } = require('../middlewares/error.middleware');
+
+const getUploadSignature = (req, res, next) => {
+  try {
+    if (!hasCloudinaryConfig) return next(new AppError('Cloudinary storage is not configured.', 503));
+    const kind = req.query.kind === 'agreement' ? 'agreement' : 'beat';
+    const timestamp = Math.floor(Date.now() / 1000);
+    const folder = `raremotionhub/marketplace/${kind}`;
+    const resourceType = kind === 'agreement' ? 'raw' : 'video';
+    const signature = cloudinary.utils.api_sign_request({ folder, timestamp }, process.env.CLOUDINARY_API_SECRET);
+    res.json({ timestamp, folder, signature, apiKey: process.env.CLOUDINARY_API_KEY, cloudName, resourceType });
+  } catch (error) { next(error); }
+};
+
+const finalizeCloudinaryBeat = async (req, res, next) => {
+  try {
+    const { title, price, licenseType, genre, bpm, key, beat, agreement } = req.body || {};
+    if (!beat?.secureUrl || !beat.publicId || !agreement?.secureUrl || !agreement.publicId) return next(new AppError('Cloudinary upload metadata is incomplete.', 400));
+    const record = await MarketplaceBeat.create({ id: crypto.randomUUID(), sellerId: req.userId, title: String(title || '').trim(), price: Number(price), licenseType, genre, bpm: Number(bpm), key: String(key || '').trim(), beatUrl: beat.secureUrl, agreementUrl: agreement.secureUrl, beatPublicId: beat.publicId, agreementPublicId: agreement.publicId });
+    res.status(201).json({ beat: record });
+  } catch (error) { next(error); }
+};
 
 const createBeat = async (req, res, next) => {
   try {
@@ -22,4 +45,4 @@ const createBeat = async (req, res, next) => {
 
 const listBeats = async (req, res, next) => { try { res.json({ beats: await MarketplaceBeat.find().sort({ createdAt: -1 }).lean() }); } catch (error) { next(error); } };
 
-module.exports = { createBeat, listBeats };
+module.exports = { createBeat, listBeats, getUploadSignature, finalizeCloudinaryBeat };

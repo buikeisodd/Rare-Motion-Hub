@@ -1,8 +1,10 @@
 const express = require('express');
 const { requireUserId } = require('../middlewares/auth.middleware');
 const { uploadMarketplace } = require('../middlewares/upload.middleware');
-const { createBeat, listBeats } = require('../controllers/marketplace.controller');
+const { createBeat, listBeats, getUploadSignature, finalizeCloudinaryBeat } = require('../controllers/marketplace.controller');
 const router = express.Router();
 router.get('/beats', requireUserId, listBeats);
+router.get('/upload/signature', requireUserId, getUploadSignature);
+router.post('/beats/cloudinary', requireUserId, finalizeCloudinaryBeat);
 router.post('/beats', requireUserId, uploadMarketplace.fields([{ name: 'beat', maxCount: 1 }, { name: 'agreement', maxCount: 1 }]), createBeat);
 module.exports = router;

@@ -26,12 +26,20 @@ export default function Marketplace({ user }) {
     if (!beat || !agreement) return setStatus('Add both the beat and agreement certification.');
     setSaving(true);
     setStatus('');
-    const body = new FormData();
-    Object.entries(form).forEach(([key, value]) => body.append(key, value));
-    body.append('beat', beat);
-    body.append('agreement', agreement);
     try {
-      const response = await fetch(`${apiUrl}/api/marketplace/beats`, { method: 'POST', credentials: 'include', body });
+      const upload = async (file, kind) => {
+        setStatus(`Preparing ${kind} upload...`);
+        const signatureResponse = await fetch(`${apiUrl}/api/marketplace/upload/signature?kind=${kind}`, { credentials: 'include' });
+        const signature = await signatureResponse.json();
+        if (!signatureResponse.ok) throw new Error(signature.error || 'Cloudinary storage is unavailable.');
+        const cloudForm = new FormData();
+        cloudForm.append('file', file); cloudForm.append('api_key', signature.apiKey); cloudForm.append('timestamp', String(signature.timestamp)); cloudForm.append('folder', signature.folder); cloudForm.append('signature', signature.signature);
+        return new Promise((resolve, reject) => { const xhr = new XMLHttpRequest(); xhr.open('POST', `https://api.cloudinary.com/v1_1/${signature.cloudName}/${signature.resourceType}/upload`); xhr.upload.onprogress = (progress) => { if (progress.lengthComputable) setStatus(`Uploading ${kind}... ${Math.round(progress.loaded / progress.total * 100)}%`); }; xhr.onload = () => { const data = JSON.parse(xhr.responseText || '{}'); xhr.status >= 200 && xhr.status < 300 ? resolve({ secureUrl: data.secure_url, publicId: data.public_id, resourceType: data.resource_type, format: data.format, bytes: data.bytes }) : reject(new Error(data.error?.message || `${kind} upload failed.`)); }; xhr.onerror = () => reject(new Error(`${kind} upload failed.`)); xhr.send(cloudForm); });
+      };
+      const uploadedBeat = await upload(beat, 'beat');
+      const uploadedAgreement = await upload(agreement, 'agreement');
+      setStatus('Saving marketplace listing...');
+      const response = await fetch(`${apiUrl}/api/marketplace/beats/cloudinary`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, beat: uploadedBeat, agreement: uploadedAgreement }) });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || 'Could not publish beat.');
       setBeats((current) => [data.beat, ...current]);
