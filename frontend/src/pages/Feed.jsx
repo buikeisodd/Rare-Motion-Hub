@@ -369,15 +369,13 @@ export default function Feed({ user, savedOnly = false }) {
           <MessageCircle className="h-6 w-6 shrink-0" />
           <span className="font-display ml-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100">iNbOx</span>
         </button>
+      </nav>
+      <div className="mt-auto w-full">
         <Link to="/settings" className="flex h-12 w-full items-center whitespace-nowrap rounded-2xl px-3 text-sm font-semibold text-[#F3EBDD] transition-all hover:bg-accent/80 hover:backdrop-blur-sm hover:text-[#F3EBDD]" title="Settings">
           <Settings className="h-6 w-6 shrink-0" />
           <span className="font-display ml-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100">sEtTiNgS</span>
         </Link>
-      </nav>
-      <div className="mt-auto w-full overflow-hidden opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-        <div className="min-w-[200px] rounded-2xl border border-white/5 bg-[#141812]/50 p-4 text-xs leading-relaxed text-[#A6A09A] shadow-inner">
-          Share previews, discover new work, and stay connected.
-        </div>
+        <p className="mt-2 min-w-[200px] text-center text-[10px] text-[#A6A09A] opacity-0 transition-opacity duration-300 group-hover:opacity-100">© 2026 Rare Motion Hub</p>
       </div>
     </aside>
     <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border/40 bg-transparent px-4 py-4 lg:hidden">
