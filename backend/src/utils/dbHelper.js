@@ -1,10 +1,10 @@
 const {
   User, Project, Track, Folder, CoverArt,
-  Notification, PlayEvent, Message, ChatGroup, Call, CallSignal, ShareLink, Story
+  Notification, PlayEvent, Message, ChatGroup, Call, CallSignal, ShareLink, Story, MarketplaceBeat
 } = require('../models');
 
 const readDB = async () => {
-  const [users, projects, tracks, folders, coverArts, notifications, playEvents, messages, groups, calls, callSignals, shareLinks, stories] = await Promise.all([
+  const [users, projects, tracks, folders, coverArts, notifications, playEvents, messages, groups, calls, callSignals, shareLinks, stories, marketplaceBeats] = await Promise.all([
     User.find().lean(),
     Project.find().lean(),
     Track.find().lean(),
@@ -18,8 +18,9 @@ const readDB = async () => {
     CallSignal.find().lean(),
     ShareLink.find().lean(),
     Story.find().lean(),
+    MarketplaceBeat.find().lean(),
   ]);
-  return { users, projects, tracks, folders, coverArts, notifications, playEvents, messages, groups, calls, callSignals, shareLinks, stories };
+  return { users, projects, tracks, folders, coverArts, notifications, playEvents, messages, groups, calls, callSignals, shareLinks, stories, marketplaceBeats };
 };
 
 const writeDB = async (db) => {
@@ -37,6 +38,7 @@ const writeDB = async (db) => {
     ...( db.callSignals  || [] ).map(d => CallSignal.findOneAndUpdate(  { id: d.id }, d, { upsert: true, returnDocument: 'after', lean: true } )),
     ...( db.shareLinks   || [] ).map(d => ShareLink.findOneAndUpdate(   { id: d.id }, d, { upsert: true, returnDocument: 'after', lean: true } )),
     ...( db.stories      || [] ).map(d => Story.findOneAndUpdate(      { id: d.id }, d, { upsert: true, returnDocument: 'after', lean: true } )),
+    ...( db.marketplaceBeats || [] ).map(d => MarketplaceBeat.findOneAndUpdate({ id: d.id }, d, { upsert: true, returnDocument: 'after', lean: true })),
   ];
   await Promise.all(ops);
 };
@@ -55,6 +57,7 @@ const ensureDBShape = (db) => {
   db.callSignals   ||= [];
   db.shareLinks    ||= [];
   db.stories       ||= [];
+  db.marketplaceBeats ||= [];
   return db;
 };
 

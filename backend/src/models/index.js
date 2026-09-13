@@ -301,6 +301,19 @@ const SecurityEventSchema = new Schema({
   createdAt: { type: String, default: () => new Date().toISOString(), index: true },
 });
 
+const MarketplaceBeatSchema = new Schema({
+  id: { type: String, required: true, unique: true },
+  sellerId: { type: String, required: true, index: true },
+  title: { type: String, required: true },
+  price: { type: Number, required: true, min: 0 },
+  licenseType: { type: String, enum: ['lease', 'exclusive'], required: true },
+  beatUrl: { type: String, required: true },
+  agreementUrl: { type: String, required: true },
+  beatPublicId: String,
+  agreementPublicId: String,
+  createdAt: { type: String, default: () => new Date().toISOString() }
+});
+
 module.exports = {
   User:         mongoose.model('User',         UserSchema),
   Project:      mongoose.model('Project',      ProjectSchema),
@@ -317,4 +330,5 @@ module.exports = {
   ShareLink:    mongoose.model('ShareLink',    ShareLinkSchema),
   Session:      mongoose.model('Session',      SessionSchema),
   SecurityEvent: mongoose.model('SecurityEvent', SecurityEventSchema),
+  MarketplaceBeat: mongoose.model('MarketplaceBeat', MarketplaceBeatSchema),
 };

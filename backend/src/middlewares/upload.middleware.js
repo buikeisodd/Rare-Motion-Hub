@@ -46,11 +46,18 @@ const uploadChatMedia = multer({
   limits: { fileSize: 50 * 1024 * 1024 } // 50MB
 });
 
+const uploadMarketplace = multer({ storage: localDiskStorage, limits: { fileSize: 100 * 1024 * 1024 }, fileFilter: (req, file, cb) => {
+  if (file.fieldname === 'beat') return cb(null, /^audio\//i.test(file.mimetype));
+  if (file.fieldname === 'agreement') return cb(null, file.mimetype === 'application/pdf');
+  return cb(null, false);
+} });
+
 module.exports = {
   uploadTrack,
   uploadCover,
   uploadAvatar,
   uploadGroupAvatar,
   uploadNoteMemo,
-  uploadChatMedia
+  uploadChatMedia,
+  uploadMarketplace
 };
