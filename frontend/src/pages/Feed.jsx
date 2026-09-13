@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Bookmark, Heart, Library, MessageCircle, MoreHorizontal, Pause, Play, Plus, Radio, Search, Send, Settings, Trash2, UserRound, Volume2, VolumeX, X } from 'lucide-react';
+import { ArrowLeft, Bookmark, Heart, Library, MessageCircle, MoreHorizontal, Pause, Play, Plus, Radio, Search, Send, Settings, Store, Trash2, UserRound, Volume2, VolumeX, X } from 'lucide-react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { defaultGradient, gradientFor } from '../utils/gradients';
@@ -350,7 +350,7 @@ export default function Feed({ user, savedOnly = false }) {
   const friendRequests = allSuggestions.filter((person) => person.followsYou && !person.isFollowing && !dismissedRequestIds.includes(person.id));
   const { currentTrack } = useAudio();
 
-  const navItems = [{ label: 'pRoFiLe', icon: UserRound, to: '/profile/' + (user?.id || '') }, { label: 'sEaRcH', icon: Search, to: '/search' }, { label: 'sAvEd', icon: Bookmark, to: '/saved' }, { label: 'liBraRy', icon: Library, to: '/library' }];
+  const navItems = [{ label: 'pRoFiLe', icon: UserRound, to: '/profile/' + (user?.id || '') }, { label: 'sEaRcH', icon: Search, to: '/search' }, { label: 'lIvE', icon: Radio, to: '/live' }, { label: 'mArKeTpLaCe', icon: Store, to: '/marketplace' }, { label: 'liBraRy', icon: Library, to: '/library' }];
   return <div className="feed-shell min-h-screen bg-primary-background pb-24 text-primary-label md:pb-0">
     <aside className="feed-sidebar group fixed bottom-4 left-4 top-4 z-40 hidden w-20 flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#0a0a0a]/80 px-3 py-6 shadow-2xl backdrop-blur-2xl transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:w-64 hover:border-white/20 lg:flex">
       <Link to="/feed" className="mb-3 flex h-14 w-full shrink-0 items-center overflow-hidden whitespace-nowrap px-2.5" aria-label="Feed">
