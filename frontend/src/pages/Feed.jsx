@@ -356,6 +356,7 @@ export default function Feed({ user, savedOnly = false }) {
       <Link to="/feed" className="mb-3 flex h-14 w-full shrink-0 items-center overflow-hidden whitespace-nowrap px-2.5" aria-label="Feed">
         
         <div className="ml-4 flex min-w-0 flex-col leading-none opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+          <span className="truncate text-base font-bold text-[#F3EBDD]">{user?.name || 'Account'}</span>
           <span className="truncate text-sm font-semibold text-[#F3EBDD]">@{user?.username || 'user'}</span>
         </div>
       </Link>
