@@ -224,7 +224,7 @@ export default function Project({ user }) {
       {isProjectMenuOpen && (
         <div className="fixed inset-0 z-40" onClick={() => setIsProjectMenuOpen(false)} />
       )}
-      <header className="sticky top-0 z-50 flex flex-wrap items-center justify-between gap-3 bg-transparent px-4 py-4 sm:px-6 sm:py-5 lg:px-14">
+      <header className="workspace-topbar sticky top-0 z-50 flex flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6 sm:py-5 lg:px-14">
         <nav className="flex min-w-0 flex-1 items-center gap-2 text-sm text-secondary-label" aria-label="Breadcrumb">
           <Link to="/library" className="shrink-0 font-semibold transition-colors hover:text-primary-label">Library</Link>
           <span className="shrink-0 opacity-50">/</span>

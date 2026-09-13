@@ -178,7 +178,7 @@ export default function Folder({ user, onLogout }) {
       )}
 
       {/* Header */}
-      <header className="sticky top-0 z-50 flex flex-wrap items-center justify-between gap-3 bg-transparent pb-4">
+      <header className="workspace-topbar sticky top-0 z-50 flex flex-wrap items-center justify-between gap-3 pb-4 pt-2">
         <div className="min-w-0 flex-1">
           <nav className="flex min-w-0 items-center gap-2 overflow-hidden text-sm text-accent" aria-label="Breadcrumb">
             <Link to="/library" className="flex shrink-0 items-center gap-1 transition-colors hover:text-primary-label">
