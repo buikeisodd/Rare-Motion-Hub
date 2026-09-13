@@ -359,6 +359,9 @@ export default function Feed({ user, savedOnly = false }) {
           <span className="truncate text-base font-bold text-[#F3EBDD]">{user?.name || 'Account'}</span>
           <span className="truncate text-sm font-semibold text-[#F3EBDD]">@{user?.username || 'user'}</span>
         </div>
+        <div className="ml-auto grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-[#718A78] text-sm font-bold text-[#F3EBDD] opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+          {user?.avatarUrl ? <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" /> : (user?.name || user?.username || '?').slice(0, 1).toUpperCase()}
+        </div>
       </Link>
       <nav className="space-y-2">
         {navItems.map(({ label, icon: Icon, to }) => (
