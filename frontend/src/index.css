@@ -690,3 +690,5 @@ a[aria-label]:active {
     transform: none;
   }
 }
+
+.create-flow-backdrop { width: 100vw; min-height: 100dvh; overflow-y: auto; padding-top: max(1rem, env(safe-area-inset-top)); padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
