@@ -13,6 +13,7 @@ import Saved from './pages/Saved';
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
 import Search from './pages/Search';
+import Marketplace from './pages/Marketplace';
 import MobileLanding from './pages/MobileLanding';
 import { AudioProvider, useAudio } from './context/AudioContext';
 import AudioPlayer from './components/AudioPlayer';
@@ -206,6 +207,7 @@ function AnimatedRoutes({ user, authStatus, handleLogin, handleLogout, handleUse
         <Route path="/library" element={<motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><Dashboard user={user} onLogout={handleLogout} onUserUpdate={handleUserUpdate} /></motion.div>} />
         <Route path="/feed" element={<motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><Feed user={user} /></motion.div>} />
         <Route path="/search" element={<motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><Search user={user} /></motion.div>} />
+        <Route path="/marketplace" element={<motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><Marketplace user={user} /></motion.div>} />
         <Route path="/saved" element={<motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><Saved /></motion.div>} />
         <Route path="/settings" element={<motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><Settings user={user} onLogout={handleLogout} /></motion.div>} />
         <Route path="/profile/:id" element={<motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><Profile user={user} onUserUpdate={handleUserUpdate} /></motion.div>} />
