@@ -12,7 +12,7 @@ const createBeat = async (req, res, next) => {
     if (!beat || !agreement || !title || !Number.isFinite(price) || price < 0 || !['lease', 'exclusive'].includes(licenseType)) {
       return res.status(400).json({ error: 'Title, price, license type, beat, and agreement certification are required.' });
     }
-    const record = await MarketplaceBeat.create({ id: crypto.randomUUID(), sellerId: req.userId, title, price, licenseType, beatUrl: `/api/media/uploads/${beat.filename}`, agreementUrl: `/api/media/uploads/${agreement.filename}` });
+    const record = await MarketplaceBeat.create({ id: crypto.randomUUID(), sellerId: req.userId, title, price, licenseType, beatUrl: `/uploads/${beat.filename}`, agreementUrl: `/uploads/${agreement.filename}` });
     res.status(201).json({ beat: record });
   } catch (error) { next(error); }
 };
