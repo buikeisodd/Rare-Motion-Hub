@@ -178,11 +178,25 @@ export default function Folder({ user, onLogout }) {
       )}
 
       {/* Header */}
-      <header className="sticky top-0 z-50 flex items-start justify-end gap-3 bg-transparent pb-4">
-        <Link to="/library" className="hidden">
-          <span className="font-display text-accent">← liBraRy</span>
-        </Link>
-        <div className="flex shrink-0 items-center gap-3">
+      <header className="sticky top-0 z-50 flex flex-wrap items-center justify-between gap-3 bg-transparent pb-4">
+        <nav className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden text-sm text-accent" aria-label="Breadcrumb">
+          <Link to="/library" className="flex shrink-0 items-center gap-1 transition-colors hover:text-primary-label">
+            <Home className="h-4 w-4" />
+            Library
+          </Link>
+          {breadcrumbs.map((crumb) => (
+            <span key={crumb.id} className="flex min-w-0 shrink items-center gap-2">
+              <ChevronRight className="h-4 w-4 shrink-0 opacity-50" />
+              <Link to={`/folder/${crumb.id}`} className="truncate transition-colors hover:text-primary-label">
+                {crumb.title}
+              </Link>
+            </span>
+          ))}
+          <ChevronRight className="h-4 w-4 shrink-0 opacity-50" />
+          <span className="min-w-0 truncate font-semibold text-primary-label">{folder?.title || folder?.name || 'Folder'}</span>
+        </nav>
+
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           
           <div className="relative">
             <button
@@ -230,24 +244,6 @@ export default function Folder({ user, onLogout }) {
           )}
         </div>
       </header>
-
-      {/* Breadcrumbs */}
-      <nav className="mt-0 flex items-center gap-2 text-sm text-accent" aria-label="Breadcrumb">
-        <Link to="/library" className="flex items-center gap-1 hover:text-primary-label transition-colors">
-          <Home className="h-4 w-4" />
-          Library
-        </Link>
-        {breadcrumbs.map((crumb) => (
-          <span key={crumb.id} className="flex items-center gap-2">
-            <ChevronRight className="h-4 w-4 opacity-50" />
-            <Link to={`/folder/${crumb.id}`} className="hover:text-primary-label transition-colors">
-              {crumb.title}
-            </Link>
-          </span>
-        ))}
-        <ChevronRight className="h-4 w-4 opacity-50" />
-        <span className="font-semibold text-primary-label">{folder?.title || folder?.name || 'Folder'}</span>
-      </nav>
 
       <div className="mt-4 mb-8 overflow-hidden">
         <MarqueeInput
