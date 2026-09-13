@@ -629,3 +629,41 @@ div[class*="bg-\\[\\#F3EBDD\\]\\/92"] { background: rgba(243,235,221,.98) !impor
 
 /* MobileLanding owns the phone presentation. */
 @media (max-width: 767px) { body::before { content: none !important; display: none !important; } #root { display: block !important; } body { overflow-x: hidden; } }
+
+/* Shared tactile interaction for buttons and icon controls. */
+button,
+[role="button"],
+a[aria-label] {
+  box-shadow: 0 5px 14px rgba(52, 72, 59, .12);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  button:hover:not(:disabled),
+  [role="button"]:hover,
+  a[aria-label]:hover {
+    transform: scale(1.03);
+    box-shadow: 0 9px 20px rgba(52, 72, 59, .18);
+  }
+}
+
+button:active:not(:disabled),
+[role="button"]:active,
+a[aria-label]:active {
+  transform: scale(.98);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button,
+  [role="button"],
+  a[aria-label] {
+    transition: none !important;
+  }
+  button:hover:not(:disabled),
+  [role="button"]:hover,
+  a[aria-label]:hover,
+  button:active:not(:disabled),
+  [role="button"]:active,
+  a[aria-label]:active {
+    transform: none;
+  }
+}
