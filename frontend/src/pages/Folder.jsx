@@ -179,22 +179,38 @@ export default function Folder({ user, onLogout }) {
 
       {/* Header */}
       <header className="sticky top-0 z-50 flex flex-wrap items-center justify-between gap-3 bg-transparent pb-4">
-        <nav className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden text-sm text-accent" aria-label="Breadcrumb">
-          <Link to="/library" className="flex shrink-0 items-center gap-1 transition-colors hover:text-primary-label">
-            <Home className="h-4 w-4" />
-            Library
-          </Link>
-          {breadcrumbs.map((crumb) => (
-            <span key={crumb.id} className="flex min-w-0 shrink items-center gap-2">
-              <ChevronRight className="h-4 w-4 shrink-0 opacity-50" />
-              <Link to={`/folder/${crumb.id}`} className="truncate transition-colors hover:text-primary-label">
-                {crumb.title}
-              </Link>
-            </span>
-          ))}
-          <ChevronRight className="h-4 w-4 shrink-0 opacity-50" />
-          <span className="min-w-0 truncate font-semibold text-primary-label">{folder?.title || folder?.name || 'Folder'}</span>
-        </nav>
+        <div className="min-w-0 flex-1">
+          <nav className="flex min-w-0 items-center gap-2 overflow-hidden text-sm text-accent" aria-label="Breadcrumb">
+            <Link to="/library" className="flex shrink-0 items-center gap-1 transition-colors hover:text-primary-label">
+              <Home className="h-4 w-4" />
+              Library
+            </Link>
+            {breadcrumbs.map((crumb) => (
+              <span key={crumb.id} className="flex min-w-0 shrink items-center gap-2">
+                <ChevronRight className="h-4 w-4 shrink-0 opacity-50" />
+                <Link to={`/folder/${crumb.id}`} className="truncate transition-colors hover:text-primary-label">
+                  {crumb.title}
+                </Link>
+              </span>
+            ))}
+            <ChevronRight className="h-4 w-4 shrink-0 opacity-50" />
+            <span className="min-w-0 truncate font-semibold text-primary-label">{folder?.title || folder?.name || 'Folder'}</span>
+          </nav>
+          <div className="mt-2 max-w-2xl overflow-hidden">
+            <MarqueeInput
+              value={editableTitle}
+              onChange={(event) => setEditableTitle(event.target.value)}
+              onBlur={saveCurrentFolder}
+              className="w-full"
+              textClassName="text-3xl font-bold tracking-tight text-primary-label sm:text-4xl"
+              placeholder="Folder title"
+            />
+            <div className="mt-1 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-secondary-label">
+              {folder?.visibility === 'private' ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
+              {folder?.visibility === 'private' ? 'Private' : 'Public'}
+            </div>
+          </div>
+        </div>
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           
@@ -244,21 +260,6 @@ export default function Folder({ user, onLogout }) {
           )}
         </div>
       </header>
-
-      <div className="mt-4 mb-8 overflow-hidden">
-        <MarqueeInput
-          value={editableTitle}
-          onChange={(event) => setEditableTitle(event.target.value)}
-          onBlur={saveCurrentFolder}
-          className="w-full"
-          textClassName="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-primary-label"
-          placeholder="Folder title"
-        />
-        <div className="mt-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-secondary-label">
-          {folder?.visibility === 'private' ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
-          {folder?.visibility === 'private' ? 'Private' : 'Public'}
-        </div>
-      </div>
 
       {/* Grid */}
       <main className="mx-auto flex min-h-[calc(100vh-22rem)] max-w-4xl items-start justify-center py-4 pb-36">
