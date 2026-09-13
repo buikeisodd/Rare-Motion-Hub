@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowLeft, Upload, Store } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -10,6 +10,14 @@ export default function Marketplace({ user }) {
   const [agreement, setAgreement] = useState(null);
   const [status, setStatus] = useState('');
   const [saving, setSaving] = useState(false);
+  const [beats, setBeats] = useState([]);
+
+  useEffect(() => {
+    fetch(`${apiUrl}/api/marketplace/beats`, { credentials: 'include' })
+      .then((response) => response.ok ? response.json() : { beats: [] })
+      .then((data) => setBeats(Array.isArray(data.beats) ? data.beats : []))
+      .catch(() => setBeats([]));
+  }, []);
 
   const submit = async (event) => {
     event.preventDefault();
@@ -24,6 +32,7 @@ export default function Marketplace({ user }) {
       const response = await fetch(`${apiUrl}/api/marketplace/beats`, { method: 'POST', credentials: 'include', body });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || 'Could not publish beat.');
+      setBeats((current) => [data.beat, ...current]);
       setStatus('Beat listed successfully.');
       setForm({ title: '', price: '', licenseType: 'lease' });
       setBeat(null);
@@ -42,7 +51,7 @@ export default function Marketplace({ user }) {
       <Store className="h-6 w-6 text-accent" />
     </header>
     <main className="mx-auto grid max-w-5xl gap-8 py-8 lg:grid-cols-[1fr_22rem]">
-      <section><h2 className="text-4xl font-bold tracking-tight">Find the next sound.</h2><p className="mt-2 max-w-xl text-secondary-label">Buy beats from independent creators with clear licensing and downloadable agreements.</p><div className="mt-8 rounded-3xl border border-border bg-shading/40 p-6"><p className="text-sm text-secondary-label">Marketplace listings will appear here as creators publish beats.</p></div></section>
+      <section><h2 className="text-4xl font-bold tracking-tight">Find the next sound.</h2><p className="mt-2 max-w-xl text-secondary-label">Buy beats from independent creators with clear licensing and downloadable agreements.</p><div className="mt-8 grid gap-3">{beats.length ? beats.map((beat) => <article key={beat.id} className="rounded-3xl border border-border bg-shading/40 p-5"><div className="flex items-start justify-between gap-4"><div className="min-w-0"><h3 className="truncate text-lg font-bold">{beat.title}</h3><p className="mt-1 text-sm text-secondary-label">{beat.licenseType === 'exclusive' ? 'Exclusive' : 'For lease'} · {Number(beat.price).toFixed(2)}</p></div><span className="shrink-0 rounded-xl bg-highlight px-3 py-1 text-xs font-semibold">Beat</span></div><audio className="mt-4 w-full" controls preload="none" src={beat.beatUrl} /></article>) : <div className="rounded-3xl border border-border bg-shading/40 p-6"><p className="text-sm text-secondary-label">No beats listed yet. Publish the first one.</p></div>}</div></section>
       <form onSubmit={submit} className="rounded-3xl border border-border bg-shading/50 p-5 shadow-xl">
         <h2 className="text-lg font-bold">List a beat</h2>
         <div className="mt-5 grid gap-4">
