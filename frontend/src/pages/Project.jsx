@@ -224,9 +224,14 @@ export default function Project({ user }) {
       {isProjectMenuOpen && (
         <div className="fixed inset-0 z-40" onClick={() => setIsProjectMenuOpen(false)} />
       )}
-      <header className="sticky top-0 z-50 flex items-center justify-end bg-transparent px-6 py-6 lg:px-14">
+      <header className="sticky top-0 z-50 flex flex-wrap items-center justify-between gap-3 bg-transparent px-4 py-4 sm:px-6 sm:py-5 lg:px-14">
+        <nav className="flex min-w-0 flex-1 items-center gap-2 text-sm text-secondary-label" aria-label="Breadcrumb">
+          <Link to="/library" className="shrink-0 font-semibold transition-colors hover:text-primary-label">Library</Link>
+          <span className="shrink-0 opacity-50">/</span>
+          <span className="min-w-0 truncate text-primary-label">{project.title || project.name || 'Project'}</span>
+        </nav>
         
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           <button onClick={handleCopyShareLink} className="relative grid h-10 w-10 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:h-12 sm:w-12 sm:rounded-3xl" aria-label="Copy project link">
             <Link2 className="h-5 w-5 text-accent" />
           </button>
@@ -277,12 +282,6 @@ export default function Project({ user }) {
           </div>
         </div>
       </header>
-
-      <nav className="flex items-center gap-2 px-6 text-sm text-secondary-label lg:px-14" aria-label="Breadcrumb">
-        <Link to="/library" className="font-semibold transition-colors hover:text-primary-label">Library</Link>
-        <span className="opacity-50">/</span>
-        <span className="truncate text-primary-label">{project.title || project.name || 'Project'}</span>
-      </nav>
 
       <main className="project-workspace mx-auto grid max-w-5xl gap-6 px-4 pt-4 grid-cols-1 md:grid-cols-[minmax(14rem,18rem)_minmax(20rem,1fr)] md:gap-8 lg:px-10 lg:pt-8">
         <section className="project-cover-panel flex justify-center md:justify-start">

@@ -863,12 +863,12 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
           }}
         />
       )}
-      <header className="sticky top-0 z-50 flex items-center justify-between gap-3 bg-transparent pb-4 pt-2">
-        <div className="flex min-w-0 max-w-lg flex-1 items-center gap-4">
+      <header className="sticky top-0 z-50 flex flex-wrap items-center justify-between gap-3 bg-transparent pb-4 pt-2">
+        <nav className="flex min-w-0 flex-1 items-center gap-4" aria-label="Library navigation">
           <h1 className="font-display text-2xl font-bold tracking-wider text-[#34483B] shrink-0">liBraRy</h1>
-        </div>
+        </nav>
 
-        <div className="flex shrink-0 items-center gap-3">
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           <div className="relative">
             <button onClick={handleOpenNotifications} className="relative grid h-10 w-10 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:h-11 sm:w-11" aria-label="Notifications">
               <Bell className="h-5 w-5 fill-current text-[#FF8A3D]" />
