@@ -355,7 +355,8 @@ export default function Feed({ user, savedOnly = false }) {
     <aside className="feed-sidebar group fixed bottom-4 left-4 top-4 z-40 hidden w-20 flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#0a0a0a]/80 px-3 py-6 shadow-2xl backdrop-blur-2xl transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:w-64 hover:border-white/20 lg:flex">
       <Link to="/feed" className="mb-3 flex h-14 w-full shrink-0 items-center overflow-hidden whitespace-nowrap px-2.5" aria-label="Feed">
         
-        <div className="ml-4 flex flex-col leading-none opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+        <div className="ml-4 flex min-w-0 flex-col leading-none opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+          <span className="truncate text-sm font-semibold text-[#F3EBDD]">@{user?.username || 'user'}</span>
         </div>
       </Link>
       <nav className="space-y-2">
