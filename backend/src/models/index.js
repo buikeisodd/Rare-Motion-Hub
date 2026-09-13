@@ -305,7 +305,7 @@ const MarketplaceBeatSchema = new Schema({
   id: { type: String, required: true, unique: true },
   sellerId: { type: String, required: true, index: true },
   title: { type: String, required: true },
-  price: { type: Number, required: true, min: 0 },
+  price: { type: Number, required: true, min: 25000 },
   licenseType: { type: String, enum: ['lease', 'exclusive'], required: true },
   genre: { type: String, required: true },
   bpm: { type: Number, required: true },
@@ -335,3 +335,4 @@ module.exports = {
   SecurityEvent: mongoose.model('SecurityEvent', SecurityEventSchema),
   MarketplaceBeat: mongoose.model('MarketplaceBeat', MarketplaceBeatSchema),
 };
+

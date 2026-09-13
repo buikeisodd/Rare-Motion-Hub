@@ -35,7 +35,7 @@ const createBeat = async (req, res, next) => {
     const genre = String(req.body.genre || '').trim();
     const bpm = Number(req.body.bpm);
     const key = String(req.body.key || '').trim();
-    if (!beat || !agreement || !title || !genre || !key || !Number.isFinite(price) || price < 0 || !Number.isFinite(bpm) || bpm < 1 || bpm > 400 || !['lease', 'exclusive'].includes(licenseType)) {
+    if (!beat || !agreement || !title || !genre || !key || !Number.isFinite(price) || price < 25000 || !Number.isFinite(bpm) || bpm < 1 || bpm > 400 || !['lease', 'exclusive'].includes(licenseType)) {
       return res.status(400).json({ error: 'Title, price, license, genre, BPM, key, beat, and agreement certification are required.' });
     }
     const record = await MarketplaceBeat.create({ id: crypto.randomUUID(), sellerId: req.userId, title, price, licenseType, genre, bpm, key, beatUrl: `/uploads/${beat.filename}`, agreementUrl: `/uploads/${agreement.filename}` });
@@ -46,3 +46,4 @@ const createBeat = async (req, res, next) => {
 const listBeats = async (req, res, next) => { try { res.json({ beats: await MarketplaceBeat.find().sort({ createdAt: -1 }).lean() }); } catch (error) { next(error); } };
 
 module.exports = { createBeat, listBeats, getUploadSignature, finalizeCloudinaryBeat };
+
