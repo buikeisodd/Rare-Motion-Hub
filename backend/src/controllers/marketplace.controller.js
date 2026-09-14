@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 const fs = require('fs/promises');
-const { MarketplaceBeat } = require('../models');
+const { MarketplaceBeat, User } = require('../models');
 const { cloudinary, hasCloudinaryConfig, cloudName } = require('../config/cloudinary');
 const { AppError } = require('../middlewares/error.middleware');
 
@@ -20,8 +20,9 @@ const finalizeCloudinaryBeat = async (req, res, next) => {
   try {
     const { title, price, licenseType, genre, bpm, key, beat, agreement } = req.body || {};
     if (!beat?.secureUrl || !beat.publicId || !agreement?.secureUrl || !agreement.publicId) return next(new AppError('Cloudinary upload metadata is incomplete.', 400));
-    const record = await MarketplaceBeat.create({ id: crypto.randomUUID(), sellerId: req.userId, title: String(title || '').trim(), price: Number(price), licenseType, genre, bpm: Number(bpm), key: String(key || '').trim(), beatUrl: beat.secureUrl, agreementUrl: agreement.secureUrl, beatPublicId: beat.publicId, agreementPublicId: agreement.publicId });
-    res.status(201).json({ beat: record });
+    const seller = await User.findOne({ id: req.userId }).select('username').lean();
+    const record = await MarketplaceBeat.create({ id: crypto.randomUUID(), sellerId: req.userId, sellerUsername: seller?.username || '', title: String(title || '').trim(), price: Number(price), licenseType, genre, bpm, key: String(key || '').trim(), beatUrl: beat.secureUrl, agreementUrl: agreement.secureUrl, beatPublicId: beat.publicId, agreementPublicId: agreement.publicId });
+    res.status(201).json({ beat: { ...record.toObject(), sellerUsername: seller?.username || '' } });
   } catch (error) { next(error); }
 };
 
@@ -43,7 +44,15 @@ const createBeat = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
-const listBeats = async (req, res, next) => { try { res.json({ beats: await MarketplaceBeat.find().sort({ createdAt: -1 }).lean() }); } catch (error) { next(error); } };
+const listBeats = async (req, res, next) => {
+  try {
+    const beats = await MarketplaceBeat.find().sort({ createdAt: -1 }).lean();
+    const sellerIds = [...new Set(beats.map((beat) => beat.sellerId).filter(Boolean))];
+    const sellers = await User.find({ id: { $in: sellerIds } }).select('id username').lean();
+    const usernames = new Map(sellers.map((seller) => [String(seller.id), seller.username || '']));
+    res.json({ beats: beats.map((beat) => ({ ...beat, sellerUsername: usernames.get(String(beat.sellerId)) || beat.sellerUsername || '' })) });
+  } catch (error) { next(error); }
+};
 
 const deleteBeat = async (req, res, next) => {
   try {

@@ -304,6 +304,7 @@ const SecurityEventSchema = new Schema({
 const MarketplaceBeatSchema = new Schema({
   id: { type: String, required: true, unique: true },
   sellerId: { type: String, required: true, index: true },
+  sellerUsername: { type: String, default: '' },
   title: { type: String, required: true },
   price: { type: Number, required: true, min: 25000 },
   licenseType: { type: String, enum: ['lease', 'exclusive'], required: true },
