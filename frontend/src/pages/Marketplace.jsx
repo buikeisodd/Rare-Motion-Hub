@@ -56,13 +56,18 @@ export default function Marketplace({ user }) {
     }
   };
 
+  const [openActionId, setOpenActionId] = useState(null);
+
   const deleteBeat = async (beat) => {
     if (!window.confirm('Delete this marketplace listing?')) return;
     const response = await fetch(`${apiUrl}/api/marketplace/beats/${beat.id}`, {
       method: 'DELETE',
       credentials: 'include',
     });
-    if (response.ok) setBeats((current) => current.filter((item) => item.id !== beat.id));
+    if (response.ok) {
+      setBeats((current) => current.filter((item) => item.id !== beat.id));
+      setOpenActionId(null);
+    }
     else setStatus('Could not delete this listing.');
   };
 
@@ -73,7 +78,7 @@ export default function Marketplace({ user }) {
       <Store className="h-6 w-6 text-accent" />
     </header>
     <main className="mx-auto max-w-5xl py-8">
-      <section><h2 className="text-4xl font-bold tracking-tight">Find the next sound.</h2><p className="mt-2 max-w-xl text-secondary-label">Buy beats from independent creators with clear licensing and downloadable agreements.</p><div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{beats.length ? beats.map((beat) => <article key={beat.id} className="rounded-3xl border border-border bg-shading/40 p-5"><div className="flex items-start justify-between gap-4"><div className="min-w-0"><h3 className="truncate text-lg font-bold">{beat.title}</h3><p className="mt-1 text-sm text-secondary-label">@{beat.sellerUsername || 'seller'} · {beat.genre || 'Beat'} · {beat.bpm || '--'} BPM · {beat.key || '--'}</p></div><span className="shrink-0 rounded-xl bg-highlight px-3 py-1 text-xs font-semibold">Beat</span></div><audio className="mt-4 w-full" controls preload="none" onTimeUpdate={(event) => { if (event.currentTarget.currentTime >= 60) { event.currentTarget.pause(); event.currentTarget.currentTime = 0; } }} src={beat.beatUrl?.startsWith('/') ? `${apiUrl}${beat.beatUrl.replace('/api/media/uploads/', '/uploads/')}` : beat.beatUrl} /></article>) : <div className="rounded-3xl border border-border bg-shading/40 p-6"><p className="text-sm text-secondary-label">No beats listed yet. Publish the first one.</p></div>}</div></section>
+      <section><h2 className="text-4xl font-bold tracking-tight">Find the next sound.</h2><p className="mt-2 max-w-xl text-secondary-label">Buy beats from independent creators with clear licensing and downloadable agreements.</p><div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{beats.length ? beats.map((beat) => <article key={beat.id} className="relative rounded-3xl border border-border bg-shading/40 p-5"><div className="absolute right-3 top-3 z-10"><button type="button" onClick={() => setOpenActionId((current) => current === beat.id ? null : beat.id)} className="grid h-9 w-9 place-items-center rounded-xl bg-shading text-primary-label hover:bg-highlight" aria-label="Marketplace listing actions" aria-expanded={openActionId === beat.id}><MoreHorizontal className="h-5 w-5" /></button>{openActionId === beat.id && <div className="absolute right-0 top-11 min-w-36 rounded-xl border border-border bg-primary-background p-1 shadow-xl"><button type="button" onClick={() => deleteBeat(beat)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-red-500 hover:bg-highlight"><Trash2 className="h-4 w-4" />Delete listing</button></div>}</div><div className="flex items-start justify-between gap-4 pr-8"><div className="min-w-0"><h3 className="truncate text-lg font-bold">{beat.title}</h3><p className="mt-1 text-sm text-secondary-label">@{beat.sellerUsername || 'seller'} · {beat.genre || 'Beat'} · {beat.bpm || '--'} BPM · {beat.key || '--'}</p></div><span className="shrink-0 rounded-xl bg-highlight px-3 py-1 text-xs font-semibold">Beat</span></div><audio className="mt-4 w-full" controls preload="none" onTimeUpdate={(event) => { if (event.currentTarget.currentTime >= 60) { event.currentTarget.pause(); event.currentTarget.currentTime = 0; } }} src={beat.beatUrl?.startsWith('/') ? `${apiUrl}${beat.beatUrl.replace('/api/media/uploads/', '/uploads/')}` : beat.beatUrl} /></article>) : <div className="rounded-3xl border border-border bg-shading/40 p-6"><p className="text-sm text-secondary-label">No beats listed yet. Publish the first one.</p></div>}</div></section>
       <button type="button" onClick={() => { setStatus(''); setShowForm(true); }} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary-label px-4 text-sm font-semibold text-primary-background"><Upload className="h-4 w-4" />List a beat</button>
       {showForm && <div className="fixed inset-0 z-50 grid place-items-center bg-[#34483B]/45 p-4 backdrop-blur-xl"><form onSubmit={submit} className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-3xl border border-border bg-primary-background p-5 shadow-2xl">
         <div className="flex items-center justify-between"><h2 className="text-lg font-bold">List a beat</h2><button type="button" onClick={() => setShowForm(false)} className="grid h-9 w-9 place-items-center rounded-xl bg-shading" aria-label="Close"><X className="h-4 w-4" /></button></div>
