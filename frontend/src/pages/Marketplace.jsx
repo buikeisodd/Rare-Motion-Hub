@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Pause, Play, MoreHorizontal, Trash2, Upload, Store, X } from 'lucide-react';
+import { ArrowLeft, Pause, Play, MoreHorizontal, Trash2, Upload, Store, X, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ConfirmModal from '../components/ConfirmModal';
 
@@ -80,7 +80,7 @@ export default function Marketplace({ user }) {
   return <div className="min-h-screen bg-primary-background px-4 pb-24 text-primary-label sm:px-8">
     <header className="mx-auto flex max-w-5xl items-center justify-between py-5">
       <Link to="/feed" className="grid h-10 w-10 place-items-center rounded-2xl bg-shading hover:bg-highlight" aria-label="Back to feed"><ArrowLeft className="h-5 w-5" /></Link>
-      <h1 className="font-display text-xl font-bold tracking-wider">mArKeTpLaCe</h1>
+      <div className="flex items-center gap-3"><h1 className="font-display text-xl font-bold tracking-wider">mArKeTpLaCe</h1><button type="button" onClick={() => { setStatus(String()); setShowForm(true); }} className="grid h-10 w-10 place-items-center rounded-xl bg-[#34483B] text-[#F4EBDD] shadow-lg transition hover:-translate-y-0.5" aria-label="Add marketplace listing"><Plus className="h-5 w-5" /></button></div>
       <Store className="h-6 w-6 text-accent" />
     </header>
     <main className="mx-auto max-w-5xl py-8">
