@@ -47,8 +47,9 @@ const listBeats = async (req, res, next) => { try { res.json({ beats: await Mark
 
 const deleteBeat = async (req, res, next) => {
   try {
-    const beat = await MarketplaceBeat.findOne({ id: req.params.id, sellerId: req.userId });
-    if (!beat) return next(new AppError('Marketplace beat not found.', 404));
+      const beat = await MarketplaceBeat.findOne({ id: req.params.id });
+      if (!beat) return next(new AppError('Marketplace beat not found.', 404));
+      if (String(beat.sellerId) !== String(req.userId)) return next(new AppError('You can only delete your own marketplace listings.', 403));
     if (hasCloudinaryConfig) {
       if (beat.beatPublicId) await cloudinary.uploader.destroy(beat.beatPublicId, { resource_type: 'video' }).catch(() => {});
       if (beat.agreementPublicId) await cloudinary.uploader.destroy(beat.agreementPublicId, { resource_type: 'raw' }).catch(() => {});
