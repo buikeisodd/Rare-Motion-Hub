@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Pause, Play, Upload, Store, X } from 'lucide-react';
+import { ArrowLeft, Pause, Play, MoreHorizontal, Trash2, Upload, Store, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
@@ -56,6 +56,16 @@ export default function Marketplace({ user }) {
     }
   };
 
+  const deleteBeat = async (beat) => {
+    if (!window.confirm('Delete this marketplace listing?')) return;
+    const response = await fetch(`${apiUrl}/api/marketplace/beats/${beat.id}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    if (response.ok) setBeats((current) => current.filter((item) => item.id !== beat.id));
+    else setStatus('Could not delete this listing.');
+  };
+
   return <div className="min-h-screen bg-primary-background px-4 pb-24 text-primary-label sm:px-8">
     <header className="mx-auto flex max-w-5xl items-center justify-between py-5">
       <Link to="/feed" className="grid h-10 w-10 place-items-center rounded-2xl bg-shading hover:bg-highlight" aria-label="Back to feed"><ArrowLeft className="h-5 w-5" /></Link>
@@ -83,6 +93,7 @@ export default function Marketplace({ user }) {
     </main>
   </div>;
 }
+
 
 
 

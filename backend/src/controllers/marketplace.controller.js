@@ -45,5 +45,18 @@ const createBeat = async (req, res, next) => {
 
 const listBeats = async (req, res, next) => { try { res.json({ beats: await MarketplaceBeat.find().sort({ createdAt: -1 }).lean() }); } catch (error) { next(error); } };
 
-module.exports = { createBeat, listBeats, getUploadSignature, finalizeCloudinaryBeat };
+const deleteBeat = async (req, res, next) => {
+  try {
+    const beat = await MarketplaceBeat.findOne({ id: req.params.id, sellerId: req.userId });
+    if (!beat) return next(new AppError('Marketplace beat not found.', 404));
+    if (hasCloudinaryConfig) {
+      if (beat.beatPublicId) await cloudinary.uploader.destroy(beat.beatPublicId, { resource_type: 'video' }).catch(() => {});
+      if (beat.agreementPublicId) await cloudinary.uploader.destroy(beat.agreementPublicId, { resource_type: 'raw' }).catch(() => {});
+    }
+    await MarketplaceBeat.deleteOne({ id: beat.id });
+    res.json({ deleted: true, id: beat.id });
+  } catch (error) { next(error); }
+};
+
+module.exports = { createBeat, listBeats, deleteBeat, getUploadSignature, finalizeCloudinaryBeat };
 
