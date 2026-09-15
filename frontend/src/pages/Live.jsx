@@ -71,8 +71,8 @@ export default function Live({ user }) {
           if (track.kind === Track.Kind.Audio) element.className = 'hidden';
           document.getElementById('live-media-stage')?.appendChild(element);
         };
-        room.on(RoomEvent.TrackSubscribed, attachTrack);
-        await room.connect(data.serverUrl, data.token);
+        room.on(RoomEvent.TrackSubscribed, attachTrack); room.on(RoomEvent.TrackPublished, async (publication) => { try { await publication.setSubscribed(true); } catch { /* already subscribed */ } });
+        await room.connect(data.serverUrl, data.token, { autoSubscribe: true });
         if (data.canPublish) {
           try {
             await room.localParticipant.setCameraEnabled(true);
@@ -146,6 +146,7 @@ export default function Live({ user }) {
     {showCreate && <div className="fixed inset-0 z-50 grid place-items-center bg-primary-label/35 p-4 backdrop-blur-md"><Surface className="w-full max-w-lg p-6"><div className="mb-5 flex items-center justify-between"><h2 className="text-2xl font-semibold">Start a live room</h2><button type="button" onClick={() => setShowCreate(false)} aria-label="Close" className="grid h-10 w-10 place-items-center rounded-xl bg-primary-label/10"><X size={18} /></button></div><form onSubmit={start} className="space-y-4"><label className="block text-sm font-semibold">Room title<input value={title} onChange={(event) => setTitle(event.target.value)} required maxLength={120} className="mt-2 min-h-12 w-full rounded-xl border border-primary-label/15 bg-white/50 px-4 outline-none focus:ring-2 focus:ring-primary-label/30" placeholder="Late night listening session" /></label><label className="block text-sm font-semibold">Description <span className="font-normal text-primary-label/60">(optional)</span><textarea value={description} onChange={(event) => setDescription(event.target.value)} maxLength={500} rows={3} className="mt-2 w-full resize-y rounded-xl border border-primary-label/15 bg-white/50 px-4 py-3 outline-none focus:ring-2 focus:ring-primary-label/30" placeholder="What are we listening to?" /></label><button disabled={busy} className="min-h-12 w-full rounded-xl bg-primary-label px-4 font-semibold text-primary-background disabled:opacity-50">{busy ? 'Starting...' : 'Start live room'}</button></form></Surface></div>}
   </main>;
 }
+
 
 
 
