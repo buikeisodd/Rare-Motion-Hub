@@ -328,6 +328,8 @@ const LiveSessionSchema = new Schema({
   description: { type: String, default: '' },
   status: { type: String, enum: ['live', 'ended'], default: 'live', index: true },
   viewerIds: { type: [String], default: [] },
+  participantIds: { type: [String], default: [] },
+  joinRequests: [{ userId: String, status: { type: String, enum: ['pending', 'accepted', 'declined'], default: 'pending' }, requestedAt: String, cooldownUntil: String }],
   createdAt: { type: String, default: () => new Date().toISOString() },
   endedAt: String,
 });
