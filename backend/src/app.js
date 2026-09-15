@@ -10,6 +10,7 @@ const storyRoutes = require('./routes/story.routes');
 const mediaRoutes = require('./routes/media.routes');
 const chatRoutes = require('./routes/chat.routes');
 const marketplaceRoutes = require('./routes/marketplace.routes');
+const liveRoutes = require('./routes/live.routes');
 
 const app = express();
 
@@ -88,6 +89,7 @@ app.use('/api', workspaceRoutes); // Was mounted at /api/workspaces breaking /ap
 app.use('/api', trackRoutes);     // Was mounted at /api/tracks breaking /api/tracks/:id (became /api/tracks/tracks/:id)
 app.use('/api', storyRoutes);
 app.use('/api', chatRoutes);
+app.use('/api/live', liveRoutes);
 app.use('/api/marketplace', marketplaceRoutes);
 
 // Global Error Handler

@@ -1,0 +1,9 @@
+const crypto = require('crypto');
+const { LiveSession, User } = require('../models');
+const { AppError } = require('../middlewares/error.middleware');
+
+const listLive = async (req, res, next) => { try { const sessions = await LiveSession.find({ status: 'live' }).sort({ createdAt: -1 }).lean(); const hosts = await User.find({ id: { $in: sessions.map((item) => item.hostId) } }).select('id name username avatarUrl').lean(); const map = new Map(hosts.map((host) => [host.id, host])); res.json({ sessions: sessions.map((item) => ({ ...item, host: map.get(item.hostId) || null, viewerCount: item.viewerIds.length })) }); } catch (error) { next(error); } };
+const startLive = async (req, res, next) => { try { const title = String(req.body.title || '').trim(); if (!title) return next(new AppError('A live title is required.', 400)); const session = await LiveSession.create({ id: crypto.randomUUID(), hostId: req.userId, title, description: String(req.body.description || '').trim() }); res.status(201).json({ session }); } catch (error) { next(error); } };
+const endLive = async (req, res, next) => { try { const session = await LiveSession.findOne({ id: req.params.id, hostId: req.userId, status: 'live' }); if (!session) return next(new AppError('Live session not found.', 404)); session.status = 'ended'; session.endedAt = new Date().toISOString(); await session.save(); res.json({ session }); } catch (error) { next(error); } };
+const joinLive = async (req, res, next) => { try { const session = await LiveSession.findOne({ id: req.params.id, status: 'live' }); if (!session) return next(new AppError('Live session not found.', 404)); if (!session.viewerIds.includes(req.userId)) { session.viewerIds.push(req.userId); await session.save(); } res.json({ session, viewerCount: session.viewerIds.length }); } catch (error) { next(error); } };
+module.exports = { listLive, startLive, endLive, joinLive };

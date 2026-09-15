@@ -321,6 +321,17 @@ const MarketplaceBeatSchema = new Schema({
   createdAt: { type: String, default: () => new Date().toISOString() }
 });
 
+const LiveSessionSchema = new Schema({
+  id: { type: String, required: true, unique: true },
+  hostId: { type: String, required: true, index: true },
+  title: { type: String, required: true },
+  description: { type: String, default: '' },
+  status: { type: String, enum: ['live', 'ended'], default: 'live', index: true },
+  viewerIds: { type: [String], default: [] },
+  createdAt: { type: String, default: () => new Date().toISOString() },
+  endedAt: String,
+});
+
 module.exports = {
   User:         mongoose.model('User',         UserSchema),
   Project:      mongoose.model('Project',      ProjectSchema),
@@ -338,5 +349,6 @@ module.exports = {
   Session:      mongoose.model('Session',      SessionSchema),
   SecurityEvent: mongoose.model('SecurityEvent', SecurityEventSchema),
   MarketplaceBeat: mongoose.model('MarketplaceBeat', MarketplaceBeatSchema),
+  LiveSession: mongoose.model('LiveSession', LiveSessionSchema),
 };
 
