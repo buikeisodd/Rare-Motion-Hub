@@ -4,6 +4,17 @@ import { Radio, Video, X, LogOut, Users, ArrowLeft } from 'lucide-react';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
+async function apiRequest(path, options = {}) {
+  const response = await fetch(`${apiUrl}${path}`, { ...options, credentials: 'include' });
+  const contentType = response.headers.get('content-type') || '';
+  const body = contentType.includes('application/json') ? await response.json() : null;
+  if (!response.ok) {
+    throw new Error(body?.error || `Live service returned HTTP ${response.status}.`);
+  }
+  if (!body) throw new Error('Live service returned an invalid response. Check that the backend is deployed and VITE_API_URL points to it.');
+  return body;
+}
+
 function Surface({ children, className = '' }) {
   return <section className={`rounded-[1.5rem] border border-[#34483B]/10 bg-[#F3EBDD]/85 shadow-[0_18px_55px_rgba(52,72,59,0.12)] backdrop-blur-xl ${className}`}>{children}</section>;
 }
@@ -19,10 +30,9 @@ export default function Live({ user }) {
 
   const load = useCallback(async () => {
     try {
-      const response = await fetch(`${apiUrl}/api/live`, { credentials: 'include' });
-      const data = await response.json();
-      if (response.ok) setSessions(Array.isArray(data.sessions) ? data.sessions : []);
-    } catch { setMessage('Live rooms are temporarily unavailable.'); }
+      const data = await apiRequest('/api/live');
+      setSessions(Array.isArray(data.sessions) ? data.sessions : []);
+    } catch (error) { setMessage(error.message || 'Live rooms are temporarily unavailable.'); }
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -32,9 +42,7 @@ export default function Live({ user }) {
     if (!title.trim()) return;
     setBusy(true); setMessage('');
     try {
-      const response = await fetch(`${apiUrl}/api/live`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, description }) });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Could not start live room.');
+      const data = await apiRequest('/api/live', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, description }) });
       setSessions((current) => [data.session, ...current]); setActive(data.session); setTitle(''); setDescription(''); setShowCreate(false);
     } catch (error) { setMessage(error.message); } finally { setBusy(false); }
   };
@@ -42,9 +50,7 @@ export default function Live({ user }) {
   const join = async (session) => {
     setBusy(true); setMessage('');
     try {
-      const response = await fetch(`${apiUrl}/api/live/${session.id}/join`, { method: 'POST', credentials: 'include' });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Could not join live room.');
+      const data = await apiRequest(`/api/live/${session.id}/join`, { method: 'POST' });
       setActive(data.session || session); setSessions((current) => current.map((item) => item.id === session.id ? { ...item, viewerCount: data.viewerCount } : item));
     } catch (error) { setMessage(error.message); } finally { setBusy(false); }
   };
