@@ -9,6 +9,7 @@ const UserSchema = new Schema({
   bio: String,
   followers: [String],
   following: [String],
+  savedMarketplaceBeatIds: { type: [String], default: [] },
   isDeactivated: { type: Boolean, default: false },
   deactivatedAt: String,
   isSuspended: { type: Boolean, default: false },

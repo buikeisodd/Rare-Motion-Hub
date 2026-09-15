@@ -50,11 +50,33 @@ const listBeats = async (req, res, next) => {
     const sellerIds = [...new Set(beats.map((beat) => beat.sellerId).filter(Boolean))];
     const sellers = await User.find({ id: { $in: sellerIds } }).select('id username').lean();
     const usernames = new Map(sellers.map((seller) => [String(seller.id), seller.username || '']));
-    res.json({ beats: beats.map((beat) => ({ ...beat, sellerUsername: usernames.get(String(beat.sellerId)) || beat.sellerUsername || '' })) });
+    const viewer = await User.findOne({ id: req.userId }).select('savedMarketplaceBeatIds').lean();
+    const savedIds = viewer?.savedMarketplaceBeatIds || [];
+    res.json({ beats: beats.map((beat) => ({ ...beat, sellerUsername: usernames.get(String(beat.sellerId)) || beat.sellerUsername || '', savedByMe: savedIds.includes(beat.id) })) });
   } catch (error) { next(error); }
 };
 
-const deleteBeat = async (req, res, next) => {
+const toggleSavedBeat = async (req, res, next) => {
+  try {
+    const beat = await MarketplaceBeat.findOne({ id: req.params.id }).lean();
+    if (!beat) return next(new AppError('Marketplace listing not found.', 404));
+    const user = await User.findOne({ id: req.userId });
+    if (!user) return next(new AppError('User not found.', 404));
+    user.savedMarketplaceBeatIds ||= [];
+    const index = user.savedMarketplaceBeatIds.indexOf(beat.id);
+    if (index >= 0) user.savedMarketplaceBeatIds.splice(index, 1); else user.savedMarketplaceBeatIds.push(beat.id);
+    await user.save();
+    res.json({ saved: index < 0 });
+  } catch (error) { next(error); }
+};
+const listSavedBeats = async (req, res, next) => {
+  try {
+    const user = await User.findOne({ id: req.userId }).lean();
+    const ids = user?.savedMarketplaceBeatIds || [];
+    const beats = await MarketplaceBeat.find({ id: { $in: ids } }).lean();
+    res.json({ beats: ids.map((id) => beats.find((beat) => beat.id === id)).filter(Boolean) });
+  } catch (error) { next(error); }
+};const deleteBeat = async (req, res, next) => {
   try {
       const beat = await MarketplaceBeat.findOne({ id: req.params.id });
       if (!beat) return next(new AppError('Marketplace beat not found.', 404));
@@ -68,5 +90,5 @@ const deleteBeat = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
-module.exports = { createBeat, listBeats, deleteBeat, getUploadSignature, finalizeCloudinaryBeat };
+module.exports = { createBeat, listBeats, listSavedBeats, toggleSavedBeat, deleteBeat, getUploadSignature, finalizeCloudinaryBeat };
 

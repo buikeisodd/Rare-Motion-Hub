@@ -1,9 +1,11 @@
 const express = require('express');
 const { requireUserId } = require('../middlewares/auth.middleware');
 const { uploadMarketplace } = require('../middlewares/upload.middleware');
-const { createBeat, listBeats, deleteBeat, getUploadSignature, finalizeCloudinaryBeat } = require('../controllers/marketplace.controller');
+const { createBeat, listBeats, listSavedBeats, toggleSavedBeat, deleteBeat, getUploadSignature, finalizeCloudinaryBeat } = require('../controllers/marketplace.controller');
 const router = express.Router();
 router.get('/beats', requireUserId, listBeats);
+router.get('/saved', requireUserId, listSavedBeats);
+router.post('/beats/:id/save', requireUserId, toggleSavedBeat);
 router.get('/upload/signature', requireUserId, getUploadSignature);
 router.post('/beats/cloudinary', requireUserId, finalizeCloudinaryBeat);
 router.delete('/beats/:id', requireUserId, deleteBeat);
