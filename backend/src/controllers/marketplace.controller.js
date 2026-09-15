@@ -18,10 +18,12 @@ const getUploadSignature = (req, res, next) => {
 
 const finalizeCloudinaryBeat = async (req, res, next) => {
   try {
-    const { title, price, licenseType, genre, bpm, key, beat, agreement } = req.body || {};
+    const { title, price, licenseType, genre, bpm, key, category, instrument, beat, agreement } = req.body || {};
     if (!beat?.secureUrl || !beat.publicId || !agreement?.secureUrl || !agreement.publicId) return next(new AppError('Cloudinary upload metadata is incomplete.', 400));
     const seller = await User.findOne({ id: req.userId }).select('username').lean();
-    const record = await MarketplaceBeat.create({ id: crypto.randomUUID(), sellerId: req.userId, sellerUsername: seller?.username || '', title: String(title || '').trim(), price: Number(price), licenseType, genre, bpm, key: String(key || '').trim(), beatUrl: beat.secureUrl, agreementUrl: agreement.secureUrl, beatPublicId: beat.publicId, agreementPublicId: agreement.publicId });
+    const mediaType = ['beat', 'sample', 'song'].includes(category) ? category : 'beat';
+    if ((mediaType === 'sample' || mediaType === 'song') && licenseType !== 'exclusive') return next(new AppError('Samples and songs can only be listed as exclusive.', 400));
+    const record = await MarketplaceBeat.create({ id: crypto.randomUUID(), sellerId: req.userId, sellerUsername: seller?.username || '', category: mediaType, instrument: String(instrument || '').trim(), title: String(title || '').trim(), price: Number(price), licenseType, genre, bpm: Number(bpm), key: String(key || '').trim(), beatUrl: beat.secureUrl, agreementUrl: agreement.secureUrl, beatPublicId: beat.publicId, agreementPublicId: agreement.publicId });
     res.status(201).json({ beat: { ...record.toObject(), sellerUsername: seller?.username || '' } });
   } catch (error) { next(error); }
 };
