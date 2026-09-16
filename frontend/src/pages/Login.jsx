@@ -192,40 +192,42 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
   };
 
   return (
-    <div className="relative h-dvh min-h-0 overflow-hidden bg-[#F3EBDD] px-4 py-3 text-[#17221c] sm:px-6 sm:py-4 lg:px-10 lg:py-5">
+    <div className="relative h-dvh min-h-0 overflow-hidden bg-[#080909] px-4 py-3 text-[#F7F4EC] sm:px-6 sm:py-4 lg:px-10 lg:py-5">
+      <div className="pointer-events-none absolute -left-40 top-[-14rem] h-[34rem] w-[34rem] rounded-full bg-[#D7FF65]/[0.06] blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-48 right-[-8rem] h-[30rem] w-[30rem] rounded-full bg-[#8DEBFF]/[0.05] blur-3xl" />
       <div className="relative mx-auto grid h-full min-h-0 w-full max-w-6xl items-center gap-5 py-1 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,27rem)] lg:gap-10">
         <section className="hidden lg:block animate-fade-in">
-          <StarlightLogo className="mb-10 h-10 text-[#17221c]" showTagline={false} markClassName="h-16 w-16 sm:h-20 sm:w-20" />
-          <p className="mb-5 text-xs font-semibold uppercase tracking-[0.3em] text-[#46624d]">A softer place for unfinished ideas</p>
-          <h1 className="max-w-xl text-5xl font-semibold leading-[0.96] tracking-tight text-[#17221c]"><span key={quoteIndex} className="inline-block animate-fade-in">{loginQuotes[quoteIndex]}</span></h1>
-          <p className="mt-7 max-w-md text-base leading-relaxed text-[#52655a]">Keep your projects close, hear every version, and share the work when it feels ready.</p>
+          <StarlightLogo className="mb-10 h-10 text-[#F7F4EC]" showTagline={false} markClassName="h-16 w-16 sm:h-20 sm:w-20" />
+          <p className="mb-5 text-xs font-semibold uppercase tracking-[0.3em] text-primary-label/70">A softer place for unfinished ideas</p>
+          <h1 className="max-w-xl text-5xl font-semibold leading-[0.96] tracking-tight text-white"><span key={quoteIndex} className="inline-block animate-fade-in">{loginQuotes[quoteIndex]}</span></h1>
+          <p className="mt-7 max-w-md text-base leading-relaxed text-[#A6A09A]">Keep your projects close, hear every version, and share the work when it feels ready.</p>
         </section>
 
         <div className="mx-auto w-full max-w-sm animate-fade-in">
-          <div className="mb-3 lg:hidden"><StarlightLogo className="h-10 text-[#17221c]" showTagline={false} markClassName="h-16 w-16 sm:h-20 sm:w-20" /></div>
-          <div className="mb-3 lg:hidden"><h1 className="text-2xl font-semibold tracking-tight"><span key={quoteIndex} className="inline-block animate-fade-in">{loginQuotes[quoteIndex]}</span></h1><p className="mt-1 text-xs leading-relaxed text-[#52655a]">Your private studio for projects, playback and collaboration.</p></div>
-          <div className="rounded-[1.5rem] border border-white/70 bg-white/75 p-3 shadow-[0_20px_55px_rgba(35,62,43,.16)] backdrop-blur-xl sm:p-5">
-          <p className="mb-2 max-w-sm text-center text-[11px] leading-tight text-[#52655a]">By continuing you confirm that this email belongs to an approved Starlight Station collaborator.</p>
+          <div className="mb-3 lg:hidden"><StarlightLogo className="h-10 text-[#F7F4EC]" showTagline={false} markClassName="h-16 w-16 sm:h-20 sm:w-20" /></div>
+          <div className="mb-3 lg:hidden"><h1 className="text-2xl font-semibold tracking-tight text-white"><span key={quoteIndex} className="inline-block animate-fade-in">{loginQuotes[quoteIndex]}</span></h1><p className="mt-1 text-xs leading-relaxed text-[#A6A09A]">Your private studio for projects, playback and collaboration.</p></div>
+          <div className="rounded-[1.5rem] border border-white/[0.08] bg-[#111111] p-3 shadow-2xl sm:p-5">
+          <p className="mb-2 max-w-sm text-center text-[11px] leading-tight text-[#A6A09A]">By continuing you confirm that this email belongs to an approved Starlight Station collaborator.</p>
 
-        <div className="flex items-center gap-5 mb-3 border-b border-[rgba(52,72,59,.16)] pb-2 px-3">
+        <div className="flex items-center gap-5 mb-3 border-b border-white/[0.09] pb-2 px-3">
           <button 
             type="button"
             onClick={() => { setIsRegister(false); setResetMode(false); setResetToken(''); }}
-            className={`text-base font-semibold transition-all relative py-1 ${!isRegister && !resetMode ? 'text-[#17221c]' : 'text-[#718078] hover:text-[#17221c]'}`}>
+            className={`text-base font-semibold transition-all relative py-1 ${!isRegister && !resetMode ? 'text-[#F7F4EC]' : 'text-[#A6A09A] hover:text-[#F7F4EC]'}`}>
             Sign in
-            {!isRegister && !resetMode && <span className="absolute bottom-[-13px] left-0 right-0 h-[2px] bg-[#6F8974] rounded-full" />}
+            {!isRegister && !resetMode && <span className="absolute bottom-[-13px] left-0 right-0 h-[2px] rounded-full bg-[#D7FF65]" />}
           </button>
           <button 
             type="button"
             onClick={() => { setIsRegister(true); setResetMode(false); setResetToken(''); }}
-            className={`text-base font-semibold transition-all relative py-1 ${isRegister && !resetMode ? 'text-[#17221c]' : 'text-[#718078] hover:text-[#17221c]'}`}>
+            className={`text-base font-semibold transition-all relative py-1 ${isRegister && !resetMode ? 'text-[#F7F4EC]' : 'text-[#A6A09A] hover:text-[#F7F4EC]'}`}>
             Create account
-            {isRegister && !resetMode && <span className="absolute bottom-[-13px] left-0 right-0 h-[2px] bg-[#6F8974] rounded-full" />}
+            {isRegister && !resetMode && <span className="absolute bottom-[-13px] left-0 right-0 h-[2px] rounded-full bg-[#D7FF65]" />}
           </button>
         </div>
 
         <div className="w-full">
-          <form onSubmit={handleSubmit} className="space-y-2 rounded-xl border border-[#cbd8ce] bg-white/55 p-3 shadow-sm sm:p-4">
+          <form onSubmit={handleSubmit} className="space-y-2 rounded-xl border border-white/[0.09] bg-[#111111] p-3 shadow-2xl sm:p-4">
             <label className="relative block">
               <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#46624d]" />
               <input
@@ -233,7 +235,7 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email address"
-                className="h-11 w-full rounded-xl bg-white/80 border border-[#bdcdbf] pl-11 pr-4 text-left text-sm font-medium text-[#17221c] placeholder:text-[#718078] focus:outline-none focus:border-[#6F8974] focus:ring-1 focus:ring-[#6F8974] transition-all"
+                className="h-11 w-full rounded-xl bg-[#171717] border border-white/[0.09] pl-11 pr-4 text-left text-sm font-medium text-[#F7F4EC] placeholder:text-[#77736E] focus:outline-none focus:border-[#D7FF65] focus:ring-1 focus:ring-[#D7FF65] transition-all"
                 required={!resetMode}
                 disabled={resetMode}
               />
@@ -246,7 +248,7 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={resetMode ? 'New password' : 'Password'}
                 minLength={8}
-                className="h-11 w-full rounded-xl bg-white/80 border border-[#bdcdbf] pl-11 pr-12 text-left text-sm font-medium text-[#17221c] placeholder:text-[#718078] focus:outline-none focus:border-[#6F8974] focus:ring-1 focus:ring-[#6F8974] transition-all"
+                className="h-11 w-full rounded-xl bg-[#171717] border border-white/[0.09] pl-11 pr-12 text-left text-sm font-medium text-[#F7F4EC] placeholder:text-[#77736E] focus:outline-none focus:border-[#D7FF65] focus:ring-1 focus:ring-[#D7FF65] transition-all"
                 required
               />
               <button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#667268] transition-colors hover:text-[#34483B]" aria-label={showPassword ? 'Hide password' : 'Show password'}>
@@ -258,7 +260,7 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
                 <button
                   type="button"
                   onClick={requestPasswordReset}
-                  className="text-xs font-medium text-[#667268] transition-colors hover:text-[#6F8974]"
+                  className="text-xs font-medium text-[#A6A09A] transition-colors hover:text-[#D7FF65]"
                 >
                   Forgot password?
                 </button>
@@ -307,7 +309,7 @@ export default function Login({ onLogin, sessionExpiredNotice = false }) {
             <button
               type="submit"
               disabled={loading || lockCountdown > 0}
-              className="mx-auto flex h-11 w-[92%] items-center justify-center rounded-xl bg-[#6F8974] text-sm font-bold text-[#F3EBDD] transition-all hover:bg-[#9BAF9B] active:scale-[0.99] disabled:opacity-50 shadow-md mt-1"
+              className="mx-auto flex h-11 w-[92%] items-center justify-center rounded-xl bg-[#D7FF65] text-sm font-bold text-[#050505] transition-all hover:bg-[#E3FF91] active:scale-[0.99] disabled:opacity-50 shadow-md mt-1"
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin text-[#F3EBDD]" /> : (resetMode ? 'Reset password' : isRegister ? 'Create account' : 'Sign in')}
             </button>
