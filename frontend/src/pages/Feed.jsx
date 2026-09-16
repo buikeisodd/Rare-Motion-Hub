@@ -17,7 +17,7 @@ const dateLabel = (value) => value ? new Date(value).toLocaleDateString([], { mo
 function PersonRow({ person, request, onFollow, onDismiss }) {
   return <div className="group relative flex items-center gap-2.5">
     <RouterLink to={'/profile/' + person.id} className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-highlight text-xs font-semibold shadow-inner">
-      {person.avatarUrl ? <img src={person.avatarUrl} alt="" className="h-full w-full object-cover" /> : (person.name || '?').slice(0, 1).toUpperCase()}
+      <UserAvatar user={person} size="h-full w-full" />
     </RouterLink>
     <div className="min-w-0 flex-1"><RouterLink to={'/profile/' + person.id} className="block truncate text-sm font-semibold text-[#34483B] hover:underline">{person.name}</RouterLink><p className="truncate text-[11px] text-[#34483B]/70">@{person.username || person.name}</p></div>
     <div className="flex shrink-0 items-center gap-1">
@@ -55,11 +55,7 @@ function CompactQuickAdd({ suggestions, requests, onFollow, onDismiss, onDecline
           return (
             <div key={person.id} className="relative flex min-w-[220px] snap-start items-center gap-2 rounded-2xl border border-border bg-shading/30 p-3">
               <RouterLink to={'/profile/' + person.id} className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-highlight text-sm font-semibold">
-                {person.avatarUrl ? (
-                  <img src={person.avatarUrl} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  (person.name || '?').slice(0, 1).toUpperCase()
-                )}
+                <UserAvatar user={person} size="h-full w-full" />
               </RouterLink>
               <div className="min-w-0 flex-1">
                 <RouterLink to={'/profile/' + person.id} className="truncate text-xs font-semibold block hover:underline text-[#34483B]">
@@ -361,7 +357,7 @@ export default function Feed({ user, savedOnly = false }) {
           <span className="truncate text-sm font-semibold text-[#F3EBDD]">@{user?.username || 'user'}</span>
         </div>
         <div className="ml-auto grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-[#718A78] text-sm font-bold text-[#F3EBDD] opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-          {user?.avatarUrl ? <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" /> : (user?.name || user?.username || '?').slice(0, 1).toUpperCase()}
+          <UserAvatar user={user} size="h-full w-full" />
         </div>
       </Link>
       <nav className="space-y-2">

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Search, X, UserRound, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import UserAvatar from './UserAvatar';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
@@ -109,13 +110,7 @@ export default function UserSearch({ currentUser, onSelectUser }) {
                       className="flex items-center justify-between rounded-2xl p-2.5 transition-colors hover:bg-highlight/60 group"
                     >
                       <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-highlight text-sm font-semibold text-[#34483B]">
-                          {person.avatarUrl ? (
-                            <img src={person.avatarUrl} alt="" className="h-full w-full object-cover" />
-                          ) : (
-                            (person.name || '?').slice(0, 1).toUpperCase()
-                          )}
-                        </div>
+                        <UserAvatar user={person} size="h-10 w-10" />
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-semibold text-[#34483B] group-hover:underline">
                             {person.name}

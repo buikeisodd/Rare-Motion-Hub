@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, Search as SearchIcon, UserRound } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import UserAvatar from '../components/UserAvatar';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
@@ -64,9 +65,7 @@ export default function Search({ user }) {
             <div className="divide-y divide-border/70">
               {results.map((person) => (
                 <Link key={person.id} to={`/profile/${person.id}`} className="flex items-center gap-3 py-3">
-                  <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-full bg-highlight text-sm font-semibold">
-                    <UserAvatar user={person} size="h-full w-full" />
-                  </div>
+                  <UserAvatar user={person} size="h-12 w-12" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold">{person.name || 'Unknown user'}</p>
                     <p className="truncate text-xs text-secondary-label">@{person.username || person.name || 'user'}</p>
