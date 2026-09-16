@@ -65,7 +65,7 @@ export default function Search({ user }) {
               {results.map((person) => (
                 <Link key={person.id} to={`/profile/${person.id}`} className="flex items-center gap-3 py-3">
                   <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-full bg-highlight text-sm font-semibold">
-                    {person.avatarUrl ? <img src={person.avatarUrl} alt="" className="h-full w-full object-cover" /> : (person.name || '?').slice(0, 1).toUpperCase()}
+                    <UserAvatar user={person} size="h-full w-full" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold">{person.name || 'Unknown user'}</p>
@@ -81,3 +81,5 @@ export default function Search({ user }) {
     </div>
   );
 }
+
+

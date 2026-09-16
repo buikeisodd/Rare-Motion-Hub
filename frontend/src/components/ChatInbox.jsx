@@ -3,6 +3,7 @@ import { ArrowLeft, Ban, CheckCheck, Copy, Inbox, Link2, Menu, MessageCircle, Mo
 import EmojiPicker from 'emoji-picker-react';
 import { Link } from 'react-router-dom';
 import ConfirmModal from './ConfirmModal';
+import UserAvatar from './UserAvatar';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 const authFetch = (url, options = {}) => fetch(url, { ...options, credentials: 'include' });
@@ -26,9 +27,7 @@ const formatSeen = (value, prefix = 'Seen') => {
 
 function avatar(user, size = 'h-10 w-10') {
   const online = Boolean(user?.isOnline);
-  const className = `${size} shrink-0 rounded-full object-cover ${online ? 'ring-2 ring-[#718A78] ring-offset-2 ring-offset-primary-background shadow-[0_0_12px_rgba(113,138,120,0.9)]' : ''}`;
-  if (user?.avatarUrl) return <img src={user.avatarUrl} alt="" className={className} />;
-  return <div className={`${className} grid place-items-center bg-[linear-gradient(135deg,#62e5ff,#ff9bdf)] text-sm font-bold text-black`}>{(user?.name || 'U').slice(0, 1).toUpperCase()}</div>;
+  return <UserAvatar user={user} size={size} className={online ? 'ring-2 ring-[#718A78] ring-offset-2 ring-offset-primary-background shadow-[0_0_12px_rgba(113,138,120,0.9)]' : ''} />;
 }
 
 function normalizeUser(value) {

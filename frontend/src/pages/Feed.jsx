@@ -7,6 +7,7 @@ import ChatInbox from '../components/ChatInbox';
 import AudioPlayer from '../components/AudioPlayer';
 import ConfirmModal from '../components/ConfirmModal';
 import { useAudio } from '../context/AudioContext';
+import UserAvatar from '../components/UserAvatar';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 const MAX_QUICK_ADD_SUGGESTIONS = 5;
@@ -213,7 +214,7 @@ function FeedCard({ item, user, onUpdate, onDelete, muted, onMutedChange, volume
   return <motion.article ref={cardRef} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="relative mx-auto w-full max-w-xl overflow-hidden rounded-2xl border border-border bg-shading/35">
     <header className="feed-post-header absolute inset-x-0 top-0 z-20 flex items-center gap-3 border-b border-[#F3EBDD]/15 bg-[#34483B]/78 px-4 py-3 text-[#F3EBDD] shadow-[0_8px_22px_rgba(52,72,59,.38)] backdrop-blur-xl">
       <RouterLink to={'/profile/' + item.owner?.id} className="flex items-center gap-3 min-w-0 flex-1 group">
-        {item.owner?.avatarUrl ? <img src={item.owner.avatarUrl} alt="" className="h-8 w-8 rounded-full object-cover" /> : <div className="grid h-8 w-8 place-items-center rounded-full bg-highlight text-sm font-semibold">{(item.owner?.name || user?.name || '?').slice(0, 1).toUpperCase()}</div>}
+        <UserAvatar user={item.owner || user} size="h-8 w-8" />
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-[#F3EBDD] group-hover:underline">{item.owner?.name || 'Unknown artist'}</p>
           <p className="text-xs text-[#F3EBDD]/75">{dateLabel(item.publishedAt || item.uploadedAt)}</p>
@@ -418,6 +419,8 @@ export default function Feed({ user, savedOnly = false }) {
     <ConfirmModal isOpen={Boolean(pendingDeletePost)} onClose={() => setPendingDeletePost(null)} onConfirm={confirmDeletePost} title="Delete feed post?" message="This preview will be removed from the feed." confirmText="Delete post" />
   </div>;
 }
+
+
 
 
 
