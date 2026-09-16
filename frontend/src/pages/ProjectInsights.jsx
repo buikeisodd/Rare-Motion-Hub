@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import UserAvatar from '../components/UserAvatar';
 import { Link, useParams } from 'react-router-dom';
 import { ChevronLeft, Music, Play } from 'lucide-react';
 import PageLoading from '../components/PageLoading';
@@ -6,15 +7,7 @@ import PageLoading from '../components/PageLoading';
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
 function ListenerAvatar({ listener }) {
-  if (listener.avatarUrl) {
-    return <img src={listener.avatarUrl} alt="" className="h-9 w-9 rounded-full object-cover sm:h-11 sm:w-11" />;
-  }
-
-  return (
-    <div className="grid h-9 w-9 place-items-center rounded-full bg-[linear-gradient(135deg,#f7fbf1,#ff9bdf,#62e5ff)] text-xs font-bold text-black sm:h-11 sm:w-11 sm:text-sm">
-      {listener.name?.slice(0, 1).toUpperCase() || 'U'}
-    </div>
-  );
+  return <UserAvatar user={listener} size="h-9 w-9 sm:h-11 sm:w-11" />;
 }
 
 export default function ProjectInsights({ user }) {
@@ -124,3 +117,5 @@ export default function ProjectInsights({ user }) {
     </div>
   );
 }
+
+

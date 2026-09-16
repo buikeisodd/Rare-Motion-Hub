@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import UserAvatar from '../components/UserAvatar';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, Folder, Music, Play, Plus } from 'lucide-react';
 import { useAudio } from '../context/AudioContext';
@@ -7,15 +8,7 @@ import PageLoading from '../components/PageLoading';
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
 function OwnerAvatar({ owner }) {
-  if (owner?.avatarUrl) {
-    return <img src={owner.avatarUrl} alt="" className="h-10 w-10 rounded-full object-cover" />;
-  }
-
-  return (
-    <div className="grid h-10 w-10 place-items-center rounded-full bg-[linear-gradient(135deg,#f7fbf1,#ff9bdf,#62e5ff)] text-sm font-bold text-black">
-      {owner?.name?.slice(0, 1).toUpperCase() || 'U'}
-    </div>
-  );
+  return <UserAvatar user={owner} size="h-10 w-10" />;
 }
 
 export default function SharedItem({ user, isLink }) {
@@ -184,3 +177,5 @@ export default function SharedItem({ user, isLink }) {
     </div>
   );
 }
+
+
