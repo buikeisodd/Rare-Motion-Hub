@@ -667,6 +667,24 @@ div[class*="bg-\\[\\#F3EBDD\\]\\/92"] { background: rgba(243,235,221,.98) !impor
   background-color: rgba(255, 255, 255, .08) !important;
   border-color: rgba(255, 255, 255, .16) !important;
 }
+
+/* Explicit legacy text utilities must not leak green into dark overlays. */
+.rmh-modal-panel :is(.text-primary-label, .text-secondary-label, [class*="text-[#34483B]"], [class*="text-[#17221c]"], [class*="text-[#46624d]"], [class*="text-[#52655a]"]),
+.panel-bg :is(.text-primary-label, .text-secondary-label, [class*="text-[#34483B]"], [class*="text-[#17221c]"], [class*="text-[#46624d]"], [class*="text-[#52655a]"]),
+.glass :is(.text-primary-label, .text-secondary-label, [class*="text-[#34483B]"], [class*="text-[#17221c]"], [class*="text-[#46624d]"], [class*="text-[#52655a]"]),
+.create-flow-surface :is(.text-primary-label, .text-secondary-label, [class*="text-[#34483B]"], [class*="text-[#17221c]"], [class*="text-[#46624d]"], [class*="text-[#52655a]"]) { color: #F7F4EC !important; }
+.rmh-modal-panel button:hover:not(:disabled),
+.panel-bg button:hover:not(:disabled),
+.glass button:hover:not(:disabled),
+.create-flow-surface button:hover:not(:disabled) { color: #080909 !important; background: rgba(247, 244, 236, .9) !important; }
+.rmh-modal-panel :is(.text-red-500, .text-red-600, [class*="text-red"]),
+.panel-bg :is(.text-red-500, .text-red-600, [class*="text-red"]),
+.glass :is(.text-red-500, .text-red-600, [class*="text-red"]),
+.create-flow-surface :is(.text-red-500, .text-red-600, [class*="text-red"]) { color: #FF5C6C !important; }
+.rmh-modal-panel button:is(.text-red-500, .text-red-600, [class*="text-red"]):hover:not(:disabled),
+.panel-bg button:is(.text-red-500, .text-red-600, [class*="text-red"]):hover:not(:disabled),
+.glass button:is(.text-red-500, .text-red-600, [class*="text-red"]):hover:not(:disabled),
+.create-flow-surface button:is(.text-red-500, .text-red-600, [class*="text-red"]):hover:not(:disabled) { color: #080909 !important; background: #FF5C6C !important; }
 .feed-post-header {
   background: rgba(52, 72, 59, 0.82);
   color: #f3ebdd;
