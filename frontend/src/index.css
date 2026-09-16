@@ -627,6 +627,46 @@ div[class*="bg-\\[\\#F3EBDD\\]\\/92"] { background: rgba(243,235,221,.98) !impor
 @media (prefers-reduced-motion: reduce) {
   .rmh-add-track-button, .project-upload-action, .project-upload-plus, .rmh-play-control, .library-project-card, .library-folder-card { transition: none; }
 }
+
+/* Monochrome modal and panel surfaces. Keep the established glass treatment,
+   but remove the legacy cream/green contrast inside overlays. */
+.rmh-modal-panel,
+.panel-bg,
+.glass,
+.create-flow-surface {
+  background: rgba(17, 17, 17, .86) !important;
+  color: #F7F4EC !important;
+  border-color: rgba(255, 255, 255, .14) !important;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, .42) !important;
+  backdrop-filter: blur(32px) saturate(1.08) !important;
+}
+.rmh-modal-panel *,
+.panel-bg *,
+.glass *,
+.create-flow-surface * { color: inherit; }
+.rmh-modal-panel .text-secondary-label,
+.panel-bg .text-secondary-label,
+.glass .text-secondary-label,
+.create-flow-surface .text-secondary-label { color: #B9B9B4 !important; }
+.rmh-modal-panel button:hover:not(:disabled),
+.panel-bg button:hover:not(:disabled),
+.glass button:hover:not(:disabled),
+.create-flow-surface button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, .12) !important;
+  color: #FFFFFF !important;
+}
+.rmh-modal-panel input,
+.rmh-modal-panel textarea,
+.panel-bg input,
+.panel-bg textarea,
+.glass input,
+.glass textarea,
+.create-flow-surface input,
+.create-flow-surface textarea {
+  color: #F7F4EC !important;
+  background-color: rgba(255, 255, 255, .08) !important;
+  border-color: rgba(255, 255, 255, .16) !important;
+}
 .feed-post-header {
   background: rgba(52, 72, 59, 0.82);
   color: #f3ebdd;
