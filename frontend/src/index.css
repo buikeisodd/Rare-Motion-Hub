@@ -172,27 +172,27 @@
 
 @layer base {
   :root {
-    --rmh-bg: #F3EBDD;
-    --rmh-bg-elevated: #EAE4D7;
-    --rmh-panel: #F0EBE1;
-    --rmh-panel-soft: #E5DFD2;
-    --rmh-panel-hover: #D8D8C9;
+    --rmh-bg: #080909;
+    --rmh-bg-elevated: #111111;
+    --rmh-panel: #151515;
+    --rmh-panel-soft: #1d1d1d;
+    --rmh-panel-hover: #292929;
 
-    --rmh-ink: #34483B;
-    --rmh-ink-strong: #22352A;
-    --rmh-muted: #667268;
-    --rmh-subtle: #7D897F;
+    --rmh-ink: #F7F4EC;
+    --rmh-ink-strong: #FFFFFF;
+    --rmh-muted: #B9B9B4;
+    --rmh-subtle: #858580;
 
-    --rmh-accent: #6F8974;
-    --rmh-accent-soft: rgba(111,137,116,.18);
-    --rmh-accent-hover: #9BAF9B;
+    --rmh-accent: #F7F4EC;
+    --rmh-accent-soft: rgba(247,244,236,.14);
+    --rmh-accent-hover: #FFFFFF;
 
     --rmh-danger: #FF5C6C;
     --rmh-info: #85D7FF;
 
-    --rmh-border: rgba(23,23,20,.12);
-    --rmh-border-strong: rgba(23,23,20,.22);
-    --rmh-overlay: rgba(23,23,20,.28);
+    --rmh-border: rgba(255,255,255,.12);
+    --rmh-border-strong: rgba(255,255,255,.22);
+    --rmh-overlay: rgba(0,0,0,.58);
 
     --rmh-radius-sm: 8px;
     --rmh-radius-md: 12px;
@@ -221,33 +221,33 @@
     --rmh-form-gap: 1rem;
 
     /* Legacy mapping helpers */
-    --color-primary-background: 243 235 221;
-    --color-primary-label: 52 72 59;
-    --color-secondary-label: 102 114 104;
-    --color-shading: 240 235 225;
-    --color-border: 190 193 180;
-    --color-highlight: 216 216 201;
+    --color-primary-background: 8 9 9;
+    --color-primary-label: 247 244 236;
+    --color-secondary-label: 185 185 180;
+    --color-shading: 21 21 21;
+    --color-border: 255 255 255;
+    --color-highlight: 41 41 41;
   }
 
   :root.theme-light {
-    --rmh-bg: #F3EBDD;
-    --rmh-bg-elevated: #EAE4D7;
-    --rmh-panel: #F0EBE1;
-    --rmh-panel-soft: #E5DFD2;
-    --rmh-panel-hover: #D8D8C9;
-    --rmh-ink: #34483B;
-    --rmh-ink-strong: #22352A;
-    --rmh-muted: #667268;
-    --rmh-subtle: #7D897F;
-    --rmh-accent: #6F8974;
-    --rmh-accent-soft: rgba(111,137,116,.18);
-    --rmh-accent-hover: #9BAF9B;
-    --color-primary-background: 243 235 221;
-    --color-primary-label: 52 72 59;
-    --color-secondary-label: 102 114 104;
-    --color-shading: 240 235 225;
-    --color-border: 190 193 180;
-    --color-highlight: 216 216 201;
+    --rmh-bg: #080909;
+    --rmh-bg-elevated: #111111;
+    --rmh-panel: #151515;
+    --rmh-panel-soft: #1d1d1d;
+    --rmh-panel-hover: #292929;
+    --rmh-ink: #F7F4EC;
+    --rmh-ink-strong: #FFFFFF;
+    --rmh-muted: #B9B9B4;
+    --rmh-subtle: #858580;
+    --rmh-accent: #F7F4EC;
+    --rmh-accent-soft: rgba(247,244,236,.14);
+    --rmh-accent-hover: #FFFFFF;
+    --color-primary-background: 8 9 9;
+    --color-primary-label: 247 244 236;
+    --color-secondary-label: 185 185 180;
+    --color-shading: 21 21 21;
+    --color-border: 255 255 255;
+    --color-highlight: 41 41 41;
     --rmh-gutter: clamp(1rem, 3vw, 4.5rem);
   }
 
@@ -509,6 +509,15 @@
   :root { --rmh-gutter: 1rem; --rmh-section-gap: 2rem; --rmh-card-gap: .75rem; }
   body { background: #F3EBDD !important; overflow-x: hidden; }
 }
+
+/* Legacy literal-color compatibility: keeps older screens on the shared
+   monochrome palette while their components are migrated to rmh tokens. */
+[class*="bg-[#F3EBDD]"], [class*="bg-[#F0EBE1]"], [class*="bg-[#E5DFD2]"] { background-color: var(--rmh-panel) !important; }
+[class*="bg-[#34483B]"], [class*="bg-[#6F8974]"], [class*="bg-[#718A78]"] { background-color: var(--rmh-accent) !important; }
+[class*="text-[#34483B]"], [class*="text-[#17221c]"], [class*="text-[#22352A]"], [class*="text-[#46624d]"], [class*="text-[#52655a]"] { color: var(--rmh-ink) !important; }
+[class*="text-[#F3EBDD]"], [class*="text-[#F7F4EC]"] { color: var(--rmh-ink) !important; }
+[class*="border-[#cbd8ce]"], [class*="border-[#bdcdbf]"] { border-color: var(--rmh-border) !important; }
+[class*="bg-[#34483B]"] [class*="text-[#F3EBDD]"], [class*="bg-[#6F8974]"] [class*="text-[#F3EBDD]"] { color: var(--rmh-bg) !important; }
 
 /* Semantic controls. These classes are owned by components. */
 .rmh-add-track { bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px)); }
