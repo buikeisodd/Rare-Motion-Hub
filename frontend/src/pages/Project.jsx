@@ -35,7 +35,7 @@ export default function Project({ user }) {
   const navigate = useNavigate();
   const [project, setProject] = useState(null);
   const [tracks, setTracks] = useState([]);
-  const { currentTrack, isPlaying, playTrack, addToQueue, setCurrentTrack, setIsPlaying, setProjectCover } = useAudio();
+  const { currentTrack, isPlaying, playTrack, addToQueue, setCurrentTrack, setIsPlaying, setProjectCover, audioRef } = useAudio();
   const [loading, setLoading] = useState(true);
   const [dragTrackId, setDragTrackId] = useState(null);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
@@ -80,7 +80,13 @@ export default function Project({ user }) {
   const fetchWorkspace = fetchProject;
 
   const handlePlay = (track) => {
-    playTrack(track, tracks, project.title || project.name, project.coverArt, project.id);
+    if (currentTrack?.id === track.id && audioRef.current) {
+      audioRef.current.currentTime = 0;
+      setIsPlaying(true);
+      audioRef.current.play().catch((err) => console.error('Failed to restart track', err));
+    } else {
+      playTrack(track, tracks, project.title || project.name, project.coverArt, project.id);
+    }
     fetch(`${apiUrl}/api/listen`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
