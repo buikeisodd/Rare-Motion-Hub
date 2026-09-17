@@ -138,12 +138,12 @@ export default function Profile({ user, onUserUpdate }) {
         <h1 className="font-display text-base font-bold tracking-wider text-[#34483B]">pRoFiLe</h1>
         <span className="w-10" />
       </header>
-      <main className="profile-dossier mx-auto max-w-5xl py-8 sm:py-12">
-        <div className="mb-8 flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.22em] text-secondary-label"><span className="h-px w-10 bg-primary-label/30" />Artist dossier<span className="h-px flex-1 bg-primary-label/15" /></div>
-        <section className="profile-dossier-hero grid gap-7 rounded-[2rem] border border-border bg-shading/35 p-5 shadow-sm sm:grid-cols-[12rem_1fr] sm:gap-10 sm:p-8 lg:grid-cols-[15rem_1fr] lg:gap-14">
-          <div className="mx-auto sm:mx-0"><UserAvatar user={profile} size="h-36 w-36 sm:h-48 sm:w-48 lg:h-60 lg:w-60" className="rounded-[2rem] ring-1 ring-border" /></div>
+      <main className="profile-dossier mx-auto w-full max-w-5xl py-5 sm:py-8">
+        <div className="mb-5 flex min-w-0 items-center gap-3 text-[10px] font-bold uppercase tracking-[0.22em] text-secondary-label sm:mb-7"><span className="h-px w-6 shrink-0 bg-primary-label/30 sm:w-10" /><span className="min-w-0 truncate">{profile.name || 'Profile'}</span><span className="h-px min-w-0 flex-1 bg-primary-label/15" /></div>
+        <section className="profile-dossier-hero grid gap-5 rounded-[1.5rem] border border-border bg-shading/35 p-4 shadow-sm sm:grid-cols-[10rem_1fr] sm:gap-7 sm:p-6 lg:grid-cols-[13rem_1fr] lg:gap-10">
+          <div className="mx-auto sm:mx-0"><UserAvatar user={profile} size="h-28 w-28 sm:h-40 sm:w-40 lg:h-52 lg:w-52" className="rounded-[1.5rem] ring-1 ring-border" /></div>
           <div className="min-w-0">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5"><div><h1 className="text-2xl font-semibold sm:text-3xl">{profile.name}</h1><p className="mt-1 text-sm text-secondary-label">@{profile.username || profile.name}</p></div><div className="flex flex-wrap gap-2">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5"><div className="min-w-0"><h1 className="truncate text-2xl font-semibold sm:text-3xl">@{profile.username || profile.name || 'user'}</h1><p className="mt-1 truncate text-sm text-secondary-label">{profile.name || 'Profile'}</p></div><div className="flex flex-wrap gap-2">
               {profile.id === user?.id ? <button onClick={() => setEditing((value) => !value)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-shading px-5 py-2.5 text-sm font-semibold transition-colors hover:bg-highlight"><Edit3 className="h-4 w-4" />{editing ? 'Close editor' : 'Edit profile'}</button> : <button onClick={toggleFollow} className={`inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-colors ${following ? 'bg-shading hover:bg-highlight' : 'bg-primary-label text-primary-background hover:opacity-85'}`}>{following ? <Check className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}{following ? 'Following' : profile.followsYou ? 'Follow Back' : 'Follow'}</button>}
               {profile.id !== user?.id && <button onClick={openMessage} className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-shading px-5 py-2.5 text-sm font-semibold transition-colors hover:bg-highlight"><MessageCircle className="h-4 w-4" />Message</button>}
             </div></div>
