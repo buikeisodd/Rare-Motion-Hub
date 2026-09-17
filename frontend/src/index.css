@@ -778,6 +778,8 @@ a[aria-label]:active {
 .rmh-audio-player input[type="range"] { accent-color: #F7F4EC !important; }
 .rmh-audio-player input[type="range"]::-webkit-slider-thumb { background: #F7F4EC; }
 .rmh-audio-player input[type="range"]::-moz-range-thumb { background: #F7F4EC; }
+.rmh-audio-surface .is-active,
+.dark-waveform-surface [role="slider"][aria-label="Track progress"] > span.is-active { background-color: #F3EBDD !important; }
 .project-track-row-active {
   background: rgba(48, 48, 48, .9) !important;
   color: #F7F4EC !important;

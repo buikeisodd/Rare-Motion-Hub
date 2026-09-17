@@ -27,7 +27,7 @@ function MarqueeText({ text, className = '' }) {
 }
 
 // Draggable progress bar with pointer capture
-function ProgressBar({ progress, duration, onSeek, className = '', activeColor = '#9BAF9B' }) {
+function ProgressBar({ progress, duration, onSeek, className = '', activeColor = '#F3EBDD' }) {
   const barRef = useRef(null);
   const dragging = useRef(false);
   const pct = duration ? Math.min(100, (progress / duration) * 100) : 0;
@@ -206,7 +206,7 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
         {/* Title + progress */}
         <div className="rmh-audio-meta relative z-10 min-w-0 flex-1">
           <div className="flex items-center justify-between gap-3"><MarqueeText text={currentTrack.title} className="text-sm font-semibold text-[#F3EBDD]" /><span className="shrink-0 text-[10px] font-mono text-[#F3EBDD]/70">{fmt(progress)} / {fmt(duration)}</span></div>
-          <ProgressBar progress={progress} duration={duration} onSeek={seek} activeColor={projectSurface ? '#34483B' : '#9BAF9B'} className="mt-2 h-7 w-full" />
+          <ProgressBar progress={progress} duration={duration} onSeek={seek} activeColor="#F3EBDD" className="mt-2 h-7 w-full" />
         </div>
 
         {/* Core controls */}
@@ -312,7 +312,7 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
               <button onClick={() => setCollapsed(false)} className="shrink-0 text-[#F3EBDD]/70 hover:text-[#F3EBDD]"><ChevronUp className="h-3.5 w-3.5" /></button>
             )}
           </div>
-          <ProgressBar progress={progress} duration={duration} onSeek={seek} activeColor={projectSurface ? '#34483B' : '#9BAF9B'} className="mt-2 h-1 w-full mb-1" />
+          <ProgressBar progress={progress} duration={duration} onSeek={seek} activeColor="#F3EBDD" className="mt-2 h-1 w-full mb-1" />
           <div className="flex justify-between text-[9px] font-mono text-[#34483B]/35 mb-3">
             <span>{fmt(progress)}</span>
             <span>-{fmt(Math.max(0, duration - progress))}</span>
