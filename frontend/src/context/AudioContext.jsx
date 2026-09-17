@@ -58,18 +58,28 @@ export function AudioProvider({ children }) {
     const audio = audioRef.current;
     const sourceUrl = resolveActiveTrackUrl(currentTrack);
     if (!sourceUrl) { audio.pause(); audio.removeAttribute('src'); return; }
-    setProgress(0);
+    const sameSource = audio.src === sourceUrl;
+    const previousTime = sameSource ? audio.currentTime : 0;
+    setProgress(previousTime);
     setDuration(0);
     setIsBuffering(true);
     audio.pause();
     audio.src = sourceUrl;
+    const restorePlayback = () => {
+      if (previousTime > 0 && Number.isFinite(audio.duration)) {
+        audio.currentTime = Math.min(previousTime, audio.duration);
+        setProgress(audio.currentTime);
+      }
+      if (isPlaying) {
+        audio.play().catch((err) => {
+          console.error('Audio resume failed:', err, 'for track URL:', sourceUrl);
+          setIsPlaying(false);
+        });
+      }
+      audio.removeEventListener('loadedmetadata', restorePlayback);
+    };
+    audio.addEventListener('loadedmetadata', restorePlayback);
     audio.load();
-    if (isPlaying) {
-      audio.play().catch((err) => {
-        console.error('Audio resume failed:', err, 'for track URL:', sourceUrl);
-        setIsPlaying(false);
-      });
-    }
   }, [currentTrack?.id, currentTrack?.activeVersionId, currentTrack?.playbackUrl, currentTrack?.url, currentTrack?.versions]);
 
   // Play / pause
@@ -218,3 +228,5 @@ export function useAudio() {
   if (!ctx) throw new Error('useAudio must be used within an AudioProvider');
   return ctx;
 }
+
+
