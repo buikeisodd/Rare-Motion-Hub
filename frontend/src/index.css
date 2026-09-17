@@ -737,3 +737,45 @@ a[aria-label]:active {
 
 .create-flow-backdrop { width: 100vw; min-height: 100dvh; overflow-y: auto; padding-top: max(1rem, env(safe-area-inset-top)); padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
 
+/* Dark ash control surfaces */
+.rmh-library-add-button,
+.project-upload-action,
+.project-upload-plus,
+.folder-add-button,
+.library-project-card,
+.library-folder-card,
+.rmh-play-control,
+.rmh-audio-primary button.bg-accent,
+.rmh-audio-secondary button.bg-accent {
+  background: rgba(43, 43, 43, .86) !important;
+  color: #F7F4EC !important;
+  border-color: rgba(255, 255, 255, .14) !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .28), inset 0 1px 0 rgba(255, 255, 255, .08) !important;
+  backdrop-filter: blur(18px) saturate(1.05) !important;
+}
+.rmh-library-add-button svg,
+.project-upload-action svg,
+.project-upload-plus svg,
+.folder-add-button svg,
+.rmh-play-control svg { color: #F7F4EC !important; }
+.rmh-library-add-button:hover:not(:disabled),
+.project-upload-action:hover:not(:disabled),
+.project-upload-plus:hover:not(:disabled),
+.folder-add-button:hover:not(:disabled),
+.rmh-play-control:hover:not(:disabled) {
+  background: rgba(62, 62, 62, .94) !important;
+  color: #FFFFFF !important;
+  transform: translateY(-2px);
+}
+.library-project-card:hover,
+.library-folder-card:hover { background: rgba(43, 43, 43, .94) !important; }
+.rmh-audio-primary,
+.rmh-audio-secondary { color: #F7F4EC !important; }
+.rmh-audio-primary button,
+.rmh-audio-secondary button { color: #F7F4EC !important; }
+.rmh-audio-primary button:hover:not(:disabled),
+.rmh-audio-secondary button:hover:not(:disabled) { color: #FFFFFF !important; }
+.rmh-audio-player input[type="range"] { accent-color: #F7F4EC !important; }
+.rmh-audio-player input[type="range"]::-webkit-slider-thumb { background: #F7F4EC; }
+.rmh-audio-player input[type="range"]::-moz-range-thumb { background: #F7F4EC; }
+
