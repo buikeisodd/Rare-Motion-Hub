@@ -727,14 +727,15 @@ const updateUser = async (req, res, next) => {
       if (Number.isFinite(changedAt) && Date.now() < availableAt) return next(new AppError(`You can change your name or username again on ${new Date(availableAt).toLocaleDateString()}.`, 429));
     }
     if (nextUsername !== currentUsername) {
-      const usernameOwner = await User.findOne({ username: nextUsername, id: { $ne: req.userId } }).select('id').lean();
+      const usernameOwner = await User.findOne({ $or: [{ username: nextUsername }, { usernameHistory: nextUsername }], id: { $ne: req.userId } }).select('id').lean();
       if (usernameOwner) return next(new AppError('That username is already in use. Choose another one.', 409));
     }
     const update = { name: nextName, username: nextUsername, bio: nextBio, updatedAt: new Date().toISOString() };
     if (identityChanged) update.profileIdentityChangedAt = new Date().toISOString();
+    if (nextUsername !== currentUsername && currentUsername) update.$addToSet = { usernameHistory: currentUsername };
     const updatedUser = await User.findOneAndUpdate(
       { id: req.params.id },
-      { $set: update },
+      { $set: Object.fromEntries(Object.entries(update).filter(([key]) => key !== '$addToSet')), ...(update.$addToSet ? { $addToSet: update.$addToSet } : {}) },
       { returnDocument: 'after', lean: true }
     );
     res.json({ user: updatedUser });
