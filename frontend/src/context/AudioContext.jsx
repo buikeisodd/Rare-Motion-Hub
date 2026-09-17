@@ -64,6 +64,12 @@ export function AudioProvider({ children }) {
     audio.pause();
     audio.src = sourceUrl;
     audio.load();
+    if (isPlaying) {
+      audio.play().catch((err) => {
+        console.error('Audio resume failed:', err, 'for track URL:', sourceUrl);
+        setIsPlaying(false);
+      });
+    }
   }, [currentTrack?.id, currentTrack?.activeVersionId, currentTrack?.playbackUrl, currentTrack?.url, currentTrack?.versions]);
 
   // Play / pause
