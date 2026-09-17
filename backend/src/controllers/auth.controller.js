@@ -719,9 +719,22 @@ const updateUser = async (req, res, next) => {
 
     const nextUsername = String(username || currentUser.username || nextName).trim().toLowerCase().replace(/[^a-z0-9_]/g, '_');
     const nextBio = bio === undefined ? String(currentUser.bio || '').trim().slice(0, 160) : String(bio || '').trim().slice(0, 160);
+    const currentUsername = String(currentUser.username || '').trim().toLowerCase();
+    const identityChanged = nextName !== String(currentUser.name || '').trim() || nextUsername !== currentUsername;
+    if (identityChanged && currentUser.profileIdentityChangedAt) {
+      const changedAt = new Date(currentUser.profileIdentityChangedAt).getTime();
+      const availableAt = changedAt + 7 * 24 * 60 * 60 * 1000;
+      if (Number.isFinite(changedAt) && Date.now() < availableAt) return next(new AppError(`You can change your name or username again on ${new Date(availableAt).toLocaleDateString()}.`, 429));
+    }
+    if (nextUsername !== currentUsername) {
+      const usernameOwner = await User.findOne({ username: nextUsername, id: { $ne: req.userId } }).select('id').lean();
+      if (usernameOwner) return next(new AppError('That username is already in use. Choose another one.', 409));
+    }
+    const update = { name: nextName, username: nextUsername, bio: nextBio, updatedAt: new Date().toISOString() };
+    if (identityChanged) update.profileIdentityChangedAt = new Date().toISOString();
     const updatedUser = await User.findOneAndUpdate(
       { id: req.params.id },
-      { $set: { name: nextName, username: nextUsername, bio: nextBio, updatedAt: new Date().toISOString() } },
+      { $set: update },
       { returnDocument: 'after', lean: true }
     );
     res.json({ user: updatedUser });

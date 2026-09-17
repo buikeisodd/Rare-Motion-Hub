@@ -6,6 +6,7 @@ const UserSchema = new Schema({
   id: { type: String, required: true, unique: true },
   name: String,
   username: String,
+  profileIdentityChangedAt: String,
   bio: String,
   followers: [String],
   following: [String],
