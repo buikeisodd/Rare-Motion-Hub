@@ -25,7 +25,7 @@ function AppleIcon({ className = '' }) {
 }
 
 export default function Login({ onLogin, sessionExpiredNotice = false }) {
-  const [isRegister, setIsRegister] = useState(false);
+  const [isRegister, setIsRegister] = useState(() => new URLSearchParams(window.location.search).get('mode') === 'register');
   const [quoteIndex, setQuoteIndex] = useState(0);
   const [email, setEmail] = useState(() => localStorage.getItem('lastEmail') || '');
   const [password, setPassword] = useState('');
