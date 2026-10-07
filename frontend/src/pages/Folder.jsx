@@ -292,10 +292,12 @@ export default function Folder({ user, onLogout }) {
                 key={project.id}
                 project={project}
                 tracks={tracks}
+                folders={data?.folders || []}
                 onDragStart={() => setDraggingId(project.id)}
                 isDragging={draggingId === project.id}
                 onDelete={deleteItem}
                 onMoveOut={moveProjectToLibrary}
+                onMove={(projectId, targetFolderId) => moveItem(projectId, 'project', targetFolderId)}
               />
             ))}
           </div>
