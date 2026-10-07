@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft, BarChart3, Download, FileAudio, FileText, Layers,
-  Heart, ListPlus, Loader2, MessageCircle, MoreHorizontal, Pencil, Play, Radio, Send, Share2, Trash2, Upload, X
+  Heart, ListPlus, Loader2, MessageCircle, MoreHorizontal, Pencil, Play, Radio, Send, Trash2, Upload, X
 } from 'lucide-react';
 import ConfirmModal from './ConfirmModal';
 
@@ -780,13 +780,6 @@ function TrackDetailsModal({
           {/* Right: actions */}
           <div className="p-3">
             <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-secondary-label">Details</p>
-            <button
-              disabled
-              className="flex w-full items-center justify-between rounded-xl px-3 py-3 text-left text-sm text-secondary-label/50"
-            >
-              <span className="flex items-center gap-3"><Share2 className="h-4 w-4" /> Share</span>
-              <span className="text-xs">Disabled</span>
-            </button>
             {actions.map(({ id, label, icon: Icon, onClick, danger }) => (
               <button
                 key={id}
