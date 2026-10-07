@@ -30,6 +30,19 @@ function timeAgo(dateStr) {
   return uploaded.toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+function formatProjectDuration(trackList) {
+  const totalSeconds = trackList.reduce((total, track) => {
+    const value = Number(track.durationSeconds ?? track.duration ?? track.metadata?.duration ?? 0);
+    return total + (Number.isFinite(value) ? value : 0);
+  }, 0);
+  if (!totalSeconds) return null;
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = Math.floor(totalSeconds % 60);
+  if (hours) return `${hours}h ${String(minutes).padStart(2, '0')}m`;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
+
 export default function Project({ user }) {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -46,6 +59,7 @@ export default function Project({ user }) {
   const [editableTitle, setEditableTitle] = useState('');
   const [editableArtist, setEditableArtist] = useState('');
   const [uploadingTrack, setUploadingTrack] = useState(null);
+  const totalDuration = formatProjectDuration(tracks);
 
   const fetchProject = async ({ showLoading = false } = {}) => {
     if (showLoading) setLoading(true);
@@ -343,6 +357,7 @@ export default function Project({ user }) {
               <span className="whitespace-nowrap font-medium">
                 | {tracks.length} track{tracks.length !== 1 ? 's' : ''}
               </span>
+              {totalDuration && <span className="whitespace-nowrap font-medium">| {totalDuration}</span>}
             </p>
           </div>
 
