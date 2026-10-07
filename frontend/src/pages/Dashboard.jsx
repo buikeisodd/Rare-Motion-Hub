@@ -160,12 +160,13 @@ export function LibraryProject({ project, tracks, folders = [], onDragStart, isD
   );
 }
 
-export function LibraryFolder({ folder, projects, tracks, onSave, onDrop, onDragStart, isDragging, onDelete }) {
+export function LibraryFolder({ folder, projects, tracks, folders = [], onSave, onDrop, onDragStart, isDragging, onDelete, onMove }) {
   const { addTracksToQueue } = useAudio();
   const [title, setTitle] = useState(folder.title || folder.name || 'Untitled folder');
   const [artist, setArtist] = useState(folder.artist || 'Unknown artist');
   const [isDragOver, setIsDragOver] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMoveOpen, setIsMoveOpen] = useState(false);
 
   // Up to 4 preview items — projects with cover art first, then placeholders
   const previewProjects = (projects || []).slice(0, 4);
@@ -309,6 +310,11 @@ export function LibraryFolder({ folder, projects, tracks, onSave, onDrop, onDrag
         <>
           <div className="fixed inset-0 z-40" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsMenuOpen(false); }} />
           <div onMouseLeave={() => setIsMenuOpen(false)} className="absolute right-0 bottom-8 z-50 w-48 rounded-[1rem] border border-border panel-bg p-2 shadow-2xl">
+            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsMoveOpen((open) => !open); }} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors"><FolderOpen className="h-4 w-4" />Move</button>
+            {isMoveOpen && <div className="mt-1 max-h-48 space-y-0.5 overflow-y-auto border-t border-border pt-1">
+              <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsMenuOpen(false); setIsMoveOpen(false); onMove?.(folder.id, null); }} className="flex w-full items-center rounded-lg px-3 py-2 text-left text-xs font-semibold text-secondary-label hover:bg-highlight">Library</button>
+              {folders.filter((target) => target.id !== folder.id && target.folderId !== folder.id).map((target) => <button key={target.id} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsMenuOpen(false); setIsMoveOpen(false); onMove?.(folder.id, target.id); }} className="flex w-full items-center rounded-lg px-3 py-2 text-left text-xs font-semibold text-secondary-label hover:bg-highlight">{target.title || target.name || 'Untitled folder'}</button>)}
+            </div>}
             <button onClick={handleQueue} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-primary-label hover:bg-highlight transition-colors">
               <Plus className="h-4 w-4" />
               Add to queue
@@ -943,9 +949,11 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
                 project={project}
                 tracks={workspace.tracks}
                 folders={workspace.folders}
+                folders={workspace.folders}
                 onDragStart={() => setDraggingId(project.id)}
                 isDragging={draggingId === project.id}
                 onDelete={deleteItem}
+                onMove={(folderId, targetFolderId) => moveItem(folderId, 'folder', targetFolderId)}
                 onMoveOut={moveProjectToLibrary}
                 onMove={(projectId, targetFolderId) => moveItem(projectId, 'project', targetFolderId)}
               />

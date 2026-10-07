@@ -279,11 +279,13 @@ export default function Folder({ user, onLogout }) {
                   folder={subFolder}
                   projects={subProjects}
                   tracks={tracks}
+                  folders={data?.folders || []}
                   onSave={saveFolderMetadata}
                   onDrop={moveItem}
                   onDragStart={() => setDraggingId(subFolder.id)}
                   isDragging={draggingId === subFolder.id}
                   onDelete={deleteItem}
+                  onMove={(folderId, targetFolderId) => moveItem(folderId, 'folder', targetFolderId)}
                 />
               );
             })}
