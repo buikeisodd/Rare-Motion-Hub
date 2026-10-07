@@ -584,6 +584,9 @@ button[aria-label="Pause preview"] { border-radius: .75rem; }
 .rmh-audio-surface [role="slider"][aria-label="Track progress"] > span.pointer-events-none { background-color: #F3EBDD !important; }
 .rmh-audio-surface [role="slider"][aria-label="Track progress"] > span.is-active { background-color: #F3EBDD !important; }
 .rmh-audio-surface [role="slider"][aria-label="Track progress"] > span.is-inactive { background-color: rgba(243, 235, 221, .22) !important; }
+.rmh-audio-player [role="slider"][aria-label="Track progress"] > span.is-active { background-color: #F3EBDD !important; }
+.rmh-audio-player [role="slider"][aria-label="Track progress"] > span.is-inactive { background-color: rgba(243, 235, 221, .22) !important; }
+.rmh-audio-player [role="slider"][aria-label="Track progress"] > span.pointer-events-none { background-color: #F3EBDD !important; }
 .dark-waveform-surface [role="slider"][aria-label="Track progress"] > span.is-active { background-color: #9BAF9B !important; }
 .rmh-modal-shell { background: rgba(52,72,59,.22); backdrop-filter: blur(24px); }
 .rmh-modal-panel { background: rgba(243,235,221,.86); color: #34483B; border-color: rgba(52,72,59,.14); box-shadow: 0 24px 80px rgba(52,72,59,.28); backdrop-filter: blur(32px) saturate(1.08); }
