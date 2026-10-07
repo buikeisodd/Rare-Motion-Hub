@@ -119,6 +119,7 @@ export function LibraryProject({ project, tracks, onDragStart, isDragging, onDel
           </div>
           <button
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsMenuOpen((o) => !o); }}
+            onMouseEnter={() => setIsMenuOpen(true)}
             className="mt-8 shrink-0 text-primary-label opacity-90 transition-opacity hover:opacity-100 group-hover:opacity-100"
             aria-label="Project options"
           >
@@ -292,6 +293,7 @@ export function LibraryFolder({ folder, projects, tracks, onSave, onDrop, onDrag
         </div>
         <button
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); setIsMenuOpen((o) => !o); }}
+          onMouseEnter={() => setIsMenuOpen(true)}
           className="mt-8 shrink-0 text-primary-label opacity-90 transition-opacity hover:opacity-100 group-hover:opacity-100"
           aria-label="Folder options"
         >
