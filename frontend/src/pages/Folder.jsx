@@ -18,6 +18,7 @@ export default function Folder({ user, onLogout }) {
   const { currentTrack } = useAudio();
 
   const [data, setData] = useState(null);
+  const [allFolders, setAllFolders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [draggingId, setDraggingId] = useState(null);
   const [isFolderMenuOpen, setIsFolderMenuOpen] = useState(false);
@@ -32,6 +33,11 @@ export default function Folder({ user, onLogout }) {
       if (!res.ok) { navigate('/library'); return; }
       const json = await res.json();
       setData(json);
+      const workspaceRes = await fetch(`${apiUrl}/api/workspace?userId=${encodeURIComponent(user.id)}&_t=${Date.now()}`);
+      if (workspaceRes.ok) {
+        const workspace = await workspaceRes.json();
+        setAllFolders(workspace.folders || []);
+      }
       setEditableTitle(json.folder?.title || json.folder?.name || 'Folder');
       setEditableArtist(json.folder?.artist || '');
     } catch {
@@ -279,7 +285,7 @@ export default function Folder({ user, onLogout }) {
                   folder={subFolder}
                   projects={subProjects}
                   tracks={tracks}
-                  folders={data?.folders || []}
+                  folders={allFolders.length ? allFolders : (data?.folders || [])}
                   onSave={saveFolderMetadata}
                   onDrop={moveItem}
                   onDragStart={() => setDraggingId(subFolder.id)}
@@ -294,7 +300,7 @@ export default function Folder({ user, onLogout }) {
                 key={project.id}
                 project={project}
                 tracks={tracks}
-                folders={data?.folders || []}
+                folders={allFolders.length ? allFolders : (data?.folders || [])}
                 onDragStart={() => setDraggingId(project.id)}
                 isDragging={draggingId === project.id}
                 onDelete={deleteItem}
