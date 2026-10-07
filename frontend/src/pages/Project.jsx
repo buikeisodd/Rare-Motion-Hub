@@ -39,8 +39,8 @@ function formatProjectDuration(trackList) {
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = Math.floor(totalSeconds % 60);
-  if (hours) return `${hours}h ${String(minutes).padStart(2, '0')}m`;
-  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+  if (hours) return `${hours}hr ${minutes}min ${seconds}secs`;
+  return `${minutes}min ${seconds}secs`;
 }
 
 export default function Project({ user }) {
