@@ -935,11 +935,13 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
                   folder={folder}
                   projects={folderProjects}
                   tracks={workspace.tracks}
+                  folders={workspace.folders}
                   onSave={saveFolderMetadata}
                   onDrop={moveItem}
                   onDragStart={() => setDraggingId(folder.id)}
                   isDragging={draggingId === folder.id}
                   onDelete={deleteItem}
+                  onMove={(folderId, targetFolderId) => moveItem(folderId, 'folder', targetFolderId)}
                 />
               );
             })}
@@ -948,7 +950,6 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
                 key={project.id}
                 project={project}
                 tracks={workspace.tracks}
-                folders={workspace.folders}
                 folders={workspace.folders}
                 onDragStart={() => setDraggingId(project.id)}
                 isDragging={draggingId === project.id}
