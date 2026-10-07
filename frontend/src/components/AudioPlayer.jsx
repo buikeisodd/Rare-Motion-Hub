@@ -217,7 +217,7 @@ export default function AudioPlayer({ cardModal = false, hideCover = false, mini
           <button title="Previous" onClick={handlePrev} className="hidden h-8 w-8 place-items-center rounded-full text-[#34483B]/70 transition-colors hover:text-[#34483B] sm:grid">
             <SkipBack className="h-4 w-4 fill-current" />
           </button>
-          <button title={isPlaying ? 'Pause' : 'Play'} onClick={() => setIsPlaying(p => !p)} className="h-10 w-10 grid place-items-center rounded-xl bg-accent text-primary-background hover:bg-accent-hover hover:scale-105 transition-transform">
+          <button title={isPlaying ? 'Pause' : 'Play'} onClick={() => setIsPlaying(p => !p)} className="rmh-play-control h-10 w-10 grid place-items-center rounded-xl bg-accent text-primary-background hover:bg-accent-hover hover:scale-105 transition-transform">
             {isBuffering && isPlaying
               ? <div className="h-3 w-3 animate-spin rounded-full border-2 border-black border-t-transparent" />
               : isPlaying ? <Pause className="h-5 w-5 fill-current" /> : <Play className="h-5 w-5 fill-current ml-0.5" />}
