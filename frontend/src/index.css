@@ -791,9 +791,14 @@ a[aria-label]:active {
 .feed-volume-control,
 .feed-follow-button { min-height: 36px; color: #F3EBDD !important; }
 .feed-post-options { min-width: 36px; background: rgba(43, 43, 43, .78) !important; }
-.feed-volume-control { background: rgba(43, 43, 43, .84) !important; border: 1px solid rgba(243, 235, 221, .18); }
+.feed-volume-control { background: rgba(243, 235, 221, .94) !important; color: #2B2B2B !important; border: 1px solid rgba(43, 43, 43, .16); }
+.feed-volume-control button { color: #2B2B2B !important; }
+.feed-volume-control input[type="range"]::-webkit-slider-thumb { background: #2B2B2B; }
+.feed-volume-control input[type="range"]::-moz-range-thumb { background: #2B2B2B; }
+.feed-preview-status { background: rgba(243, 235, 221, .94) !important; color: #2B2B2B !important; border: 1px solid rgba(43, 43, 43, .16); }
 .feed-follow-button { background: #2B2B2B !important; border: 1px solid rgba(243, 235, 221, .16); box-shadow: 0 6px 16px rgba(0, 0, 0, .18); }
-.feed-follow-button:hover:not(:disabled), .feed-post-options:hover, .feed-volume-control:hover { background: #3E3E3E !important; }
+.feed-follow-button:hover:not(:disabled), .feed-post-options:hover { background: #3E3E3E !important; }
+.feed-volume-control:hover { background: #FFFDF7 !important; color: #2B2B2B !important; }
 .feed-volume-control input[type="range"] { accent-color: #F3EBDD !important; }
 article button[aria-label="Like preview"],
 article button[aria-label="Show comments"],
