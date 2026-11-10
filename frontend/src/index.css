@@ -837,7 +837,12 @@ a[aria-label]:active {
   box-shadow: 0 1px 4px rgba(0, 0, 0, .28);
 }
 .feed-volume-control input[type="range"]:focus-visible { outline: 2px solid #2B2B2B; outline-offset: 3px; }
-.feed-preview-status { background: rgba(243, 235, 221, .94) !important; color: #2B2B2B !important; border: 1px solid rgba(43, 43, 43, .16); }
+.feed-preview-status {
+  background: rgba(243, 235, 221, .68) !important;
+  color: #2B2B2B !important;
+  border-block: 1px solid rgba(43, 43, 43, .12);
+  backdrop-filter: blur(14px);
+}
 .feed-follow-button { background: #2B2B2B !important; border: 1px solid rgba(243, 235, 221, .16); box-shadow: 0 6px 16px rgba(0, 0, 0, .18); }
 .feed-follow-button:hover:not(:disabled), .feed-post-options:hover { background: #3E3E3E !important; }
 .feed-volume-control:hover { background: #FFFDF7 !important; color: #2B2B2B !important; }
