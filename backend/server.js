@@ -3,6 +3,7 @@ const app = require('./src/app');
 const { configCloudinary, hasCloudinaryConfig } = require('./src/config/cloudinary');
 const { connectRedis } = require('./src/config/redis');
 const { connectDB } = require('./src/config/db');
+const { expireIdleLives } = require('./src/controllers/live.controller');
 
 const PORT = process.env.PORT || 4000;
 
@@ -22,6 +23,11 @@ async function startServer() {
   const server = app.listen(PORT, () => {
     console.log(`Backend server running on http://localhost:${PORT}`);
   });
+
+  const liveCleanup = setInterval(() => {
+    expireIdleLives().catch((error) => console.warn('Live cleanup failed:', error.message));
+  }, 60 * 1000);
+  liveCleanup.unref?.();
   
   // Set connection and header timeouts to 10 minutes to support large uploads on slow connections
   server.timeout = 600000;

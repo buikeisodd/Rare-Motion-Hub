@@ -3,6 +3,15 @@ const { LiveSession, User } = require('../models');
 const { AppError } = require('../middlewares/error.middleware');
 const { AccessToken } = require('livekit-server-sdk');
 
+const IDLE_LIVE_LIMIT_MS = 30 * 60 * 1000;
+
+// Live rooms are intentionally cleaned up on the server so an abandoned host
+// tab cannot keep a room discoverable forever.
+const expireIdleLives = async () => {
+  const cutoff = new Date(Date.now() - IDLE_LIVE_LIMIT_MS).toISOString();
+  return LiveSession.updateMany({ status: 'live', createdAt: { $lte: cutoff }, viewerIds: { $size: 0 } }, { $set: { status: 'ended', endedAt: new Date().toISOString() } });
+};
+
 const listLive = async (req, res, next) => { try { const sessions = await LiveSession.find({ status: 'live' }).sort({ createdAt: -1 }).lean(); const hosts = await User.find({ id: { $in: sessions.map((item) => item.hostId) } }).select('id name username avatarUrl').lean(); const map = new Map(hosts.map((host) => [host.id, host])); res.json({ sessions: sessions.map((item) => ({ ...item, host: map.get(item.hostId) || null, viewerCount: item.viewerIds.length })) }); } catch (error) { next(error); } };
 const startLive = async (req, res, next) => { try { const title = String(req.body.title || '').trim(); if (!title) return next(new AppError('A live title is required.', 400)); const session = await LiveSession.create({ id: crypto.randomUUID(), hostId: req.userId, title, description: String(req.body.description || '').trim() }); res.status(201).json({ session }); } catch (error) { next(error); } };
 const endLive = async (req, res, next) => { try { const session = await LiveSession.findOne({ id: req.params.id, hostId: req.userId, status: 'live' }); if (!session) return next(new AppError('Live session not found.', 404)); session.status = 'ended'; session.endedAt = new Date().toISOString(); await session.save(); res.json({ session }); } catch (error) { next(error); } };
@@ -13,4 +22,4 @@ const listJoinRequests = async (req, res, next) => { try { const session = await
 const resolveJoinRequest = async (req, res, next) => { try { const session = await LiveSession.findOne({ id: req.params.id, hostId: req.userId, status: 'live' }); if (!session) return next(new AppError('Live session not found.', 404)); const request = session.joinRequests.find((item) => item.userId === req.body.userId && item.status === 'pending'); if (!request) return next(new AppError('Join request not found.', 404)); if (req.body.action === 'accept') { if (session.participantIds.length >= 6) return next(new AppError('This live call is full.', 409)); request.status = 'accepted'; session.participantIds.push(request.userId); } else { request.status = 'declined'; request.cooldownUntil = new Date(Date.now() + 15000).toISOString(); } await session.save(); res.json({ status: request.status, userId: request.userId }); } catch (error) { next(error); } };
 const leaveParticipants = async (req, res, next) => { try { const session = await LiveSession.findOne({ id: req.params.id, status: 'live' }); if (!session) return next(new AppError('Live session not found.', 404)); session.participantIds = session.participantIds.filter((id) => id !== req.userId); await session.save(); res.json({ ok: true }); } catch (error) { next(error); } };
 const getJoinRequestStatus = async (req, res, next) => { try { const session = await LiveSession.findOne({ id: req.params.id, status: 'live' }); if (!session) return next(new AppError('Live session not found.', 404)); const request = session.joinRequests.find((item) => item.userId === req.userId); res.json({ status: session.participantIds.includes(req.userId) ? 'accepted' : request?.status || 'none' }); } catch (error) { next(error); } };
-module.exports = { listLive, startLive, endLive, joinLive, getLiveToken, requestToJoin, listJoinRequests, resolveJoinRequest, leaveParticipants, getJoinRequestStatus };
+module.exports = { listLive, startLive, endLive, joinLive, getLiveToken, requestToJoin, listJoinRequests, resolveJoinRequest, leaveParticipants, getJoinRequestStatus, expireIdleLives };

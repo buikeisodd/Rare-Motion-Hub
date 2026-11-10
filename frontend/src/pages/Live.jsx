@@ -51,6 +51,11 @@ export default function Live({ user }) {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    if (!message) return undefined;
+    const timer = window.setTimeout(() => setMessage(''), 20000);
+    return () => window.clearTimeout(timer);
+  }, [message]);
   useEffect(() => { if (liveId && sessions.length) { const room = sessions.find((item) => item.id === liveId); if (room) setActive(room); } }, [liveId, sessions]);
 
   useEffect(() => {
@@ -139,7 +144,7 @@ export default function Live({ user }) {
   const sendLiveData = async (event) => { if (!roomRef.current || !connected) return; const payload = { ...event, sender: user?.username || user?.name || 'Listener' }; setLiveMessages((current) => [...current.slice(-49), payload]); await roomRef.current.localParticipant.publishData(new TextEncoder().encode(JSON.stringify(payload)), { reliable: true }); };
   const sendChat = async (event) => { event.preventDefault(); if (!chatText.trim()) return; const text = chatText.trim(); setChatText(''); await sendLiveData({ type: 'chat', text }); };
   const sendReaction = async () => { await sendLiveData({ type: 'reaction', emoji: '♥️', text: '♥️ reaction' }); };
-  const requestToSpeak = async () => { try { const data = await apiRequest(`/api/live/${active.id}/request`, { method: 'POST' }); setRequestStatus(data.status); } catch (error) { setMessage(error.message); } };
+  const requestToSpeak = async () => { try { const data = await apiRequest(`/api/live/${active.id}/request`, { method: 'POST' }); setRequestStatus(data.status); } catch (error) { setMessage(error.message?.toLowerCase().includes('source not found') ? 'This live room is no longer available. The room will close shortly.' : error.message || 'We could not send your request right now.'); } };
   const resolveRequest = async (request, action) => { try { await apiRequest(`/api/live/${active.id}/requests/resolve`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: request.userId, action }) }); setJoinRequests((current) => current.filter((item) => item.userId !== request.userId)); } catch (error) { setMessage(error.message); } };
   useEffect(() => { if (!active || active.hostId !== user?.id) return undefined; const timer = window.setInterval(async () => { try { const data = await apiRequest(`/api/live/${active.id}/requests`); setJoinRequests(data.requests || []); } catch { /* host request polling is best effort */ } }, 3000); return () => window.clearInterval(timer); }, [active, user?.id]);
   useEffect(() => { if (!active || active.hostId === user?.id || requestStatus !== 'pending') return undefined; const timer = window.setInterval(async () => { try { const data = await apiRequest(`/api/live/${active.id}/request-status`); if (data.status === 'accepted') { setRequestStatus('accepted'); setActive({ ...active }); } } catch { /* request polling is best effort */ } }, 2000); return () => window.clearInterval(timer); }, [active, requestStatus, user?.id]);
@@ -150,7 +155,7 @@ export default function Live({ user }) {
         <div><Link to="/feed" className="live-back-nav inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-primary-label/70 hover:bg-primary-label/10 hover:text-primary-label"><ArrowLeft size={16} /> Back to feed</Link>{!active && <><h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">Live</h1><p className="mt-2 max-w-xl text-primary-label/70">Listen together in real time, with room for conversation.</p></>}</div>
         {!active && <button type="button" onClick={() => setShowCreate(true)} className="live-create-button grid h-11 w-11 place-items-center rounded-xl bg-primary-label text-xl font-semibold text-primary-background shadow-lg transition hover:-translate-y-0.5 active:translate-y-0" aria-label="Create live room" title="Create live room"><span aria-hidden="true">+</span></button>}
       </header>
-      {message && <p className="mb-4 rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-700">{message}</p>}
+      {message && <p role="status" className="live-warning mb-4 rounded-xl border border-primary-label/10 bg-primary-label/5 px-4 py-3 text-sm text-primary-label/80">{message}</p>}
       {active ? (
         <Surface className="live-room-shell flex min-h-[calc(100vh-8rem)] min-h-0 flex-col overflow-hidden">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-primary-label/10 px-5 py-4">
