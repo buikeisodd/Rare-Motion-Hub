@@ -792,7 +792,13 @@ a[aria-label]:active {
 .feed-follow-button { min-height: 36px; color: #F3EBDD !important; }
 .feed-post-options { min-width: 36px; background: rgba(43, 43, 43, .78) !important; }
 .feed-volume-control { background: rgba(243, 235, 221, .94) !important; color: #2B2B2B !important; border: 1px solid rgba(43, 43, 43, .16); }
-.feed-volume-control button { color: #2B2B2B !important; }
+.feed-volume-control button {
+  color: #F3EBDD !important;
+  background: #2B2B2B !important;
+  border: 1px solid rgba(43, 43, 43, .2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .18);
+}
+.feed-volume-control button:hover { background: #3E3E3E !important; color: #FFFDF7 !important; }
 .feed-volume-control input[type="range"]::-webkit-slider-thumb { background: #2B2B2B; }
 .feed-volume-control input[type="range"]::-moz-range-thumb { background: #2B2B2B; }
 .feed-volume-control input[type="range"] {
