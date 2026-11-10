@@ -633,6 +633,24 @@ div[class*="bg-\\[\\#F3EBDD\\]\\/92"] { background: rgba(243,235,221,.98) !impor
   .rmh-add-track-button, .project-upload-action, .project-upload-plus, .rmh-play-control, .library-project-card, .library-folder-card { transition: none; }
 }
 
+/* Live room: the stage owns the viewport once a room is active. */
+.live-page-active .live-page-inner { max-width: none; min-height: 100svh; padding: 1rem; }
+.live-page-active .live-page-header { position: absolute; inset: 1rem 1rem auto; z-index: 20; margin: 0; pointer-events: none; }
+.live-page-active .live-page-header > * { pointer-events: auto; }
+.live-page-active .live-room-shell { min-height: calc(100svh - 2rem); border-radius: 1.5rem; }
+.live-stage { background: #111; }
+.live-chat-panel { background: rgba(243,235,221,.58); backdrop-filter: blur(24px) saturate(1.1); }
+.live-chat-list p { animation: live-comment-in .3s ease both; }
+.live-chat-list p:nth-last-child(n+6) { opacity: .18; filter: blur(.25px); }
+@keyframes live-comment-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 1023px) {
+  .live-page-active .live-page-inner { padding: .75rem; }
+  .live-page-active .live-page-header { inset: .75rem; }
+  .live-page-active .live-room-shell { min-height: calc(100svh - 1.5rem); }
+  .live-chat-panel { max-height: 42svh; }
+}
+@media (prefers-reduced-motion: reduce) { .live-chat-list p { animation: none; } }
+
 /* Monochrome modal and panel surfaces. Keep the established glass treatment,
    but remove the legacy cream/green contrast inside overlays. */
 .rmh-modal-panel,
