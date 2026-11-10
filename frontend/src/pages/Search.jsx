@@ -16,15 +16,31 @@ export default function Search({ user }) {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    authFetch(`${apiUrl}/api/users`)
+    const term = query.trim();
+    if (!term) {
+      setUsers([]);
+      setLoading(false);
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    setLoading(true);
+    const timeout = window.setTimeout(() => authFetch(`${apiUrl}/api/users?search=${encodeURIComponent(term)}`, { signal: controller.signal })
       .then((res) => res.json())
       .then((data) => setUsers(data.users || []))
-      .catch(() => setUsers([]))
-      .finally(() => setLoading(false));
-  }, []);
+      .catch((error) => {
+        if (error.name !== 'AbortError') setUsers([]);
+      })
+      .finally(() => setLoading(false)), 250);
+
+    return () => {
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [query]);
 
   const results = useMemo(() => {
     const term = query.trim().toLowerCase();
@@ -59,6 +75,8 @@ export default function Search({ user }) {
         <section className="mt-5">
           {loading ? (
             <p className="py-12 text-center text-sm text-secondary-label">Searching...</p>
+          ) : !query.trim() ? (
+            <p className="py-12 text-center text-sm text-secondary-label">Search for a username or account name.</p>
           ) : results.length === 0 ? (
             <p className="py-12 text-center text-sm text-secondary-label">No users found.</p>
           ) : (

@@ -175,11 +175,16 @@ const sendCallSignal = async (req, res, next) => {
 const getUsers = async (req, res, next) => {
   try {
     const userId = req.userId;
+    const search = String(req.query.search || '').trim().slice(0, 80);
+    const searchPattern = search
+      ? new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
+      : null;
     const [allUsers, actor] = await Promise.all([
       User.find({
         id: { $ne: userId },
         isDeactivated: { $ne: true },
-        isSuspended: { $ne: true }
+        isSuspended: { $ne: true },
+        ...(searchPattern ? { $or: [{ name: searchPattern }, { username: searchPattern }] } : {})
       }).lean(),
       User.findOne({ id: userId }).lean()
     ]);
