@@ -785,6 +785,28 @@ a[aria-label]:active {
 .rmh-audio-player input[type="range"]::-moz-range-thumb { background: #F7F4EC; }
 .rmh-audio-surface .is-active,
 .dark-waveform-surface [role="slider"][aria-label="Track progress"] > span.is-active { background-color: #F3EBDD !important; }
+
+/* Feed controls keep their contrast and touch targets across narrow layouts. */
+.feed-post-options,
+.feed-volume-control,
+.feed-follow-button { min-height: 36px; color: #F3EBDD !important; }
+.feed-post-options { min-width: 36px; background: rgba(43, 43, 43, .78) !important; }
+.feed-volume-control { background: rgba(43, 43, 43, .84) !important; border: 1px solid rgba(243, 235, 221, .18); }
+.feed-follow-button { background: #2B2B2B !important; border: 1px solid rgba(243, 235, 221, .16); box-shadow: 0 6px 16px rgba(0, 0, 0, .18); }
+.feed-follow-button:hover:not(:disabled), .feed-post-options:hover, .feed-volume-control:hover { background: #3E3E3E !important; }
+.feed-volume-control input[type="range"] { accent-color: #F3EBDD !important; }
+article button[aria-label="Like preview"],
+article button[aria-label="Show comments"],
+article button[aria-label="Save preview"],
+article button[aria-label="Remove from saved"] { min-height: 40px; color: #2B2B2B; }
+article button[aria-label="Like preview"]:hover,
+article button[aria-label="Show comments"]:hover,
+article button[aria-label="Save preview"]:hover,
+article button[aria-label="Remove from saved"]:hover { color: #3E3E3E; }
+@media (max-width: 479px) {
+  .feed-follow-button { max-width: 7rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-inline: .6rem; }
+  .feed-volume-control { right: .65rem; bottom: .65rem; }
+}
 .project-track-row-active {
   background: rgba(48, 48, 48, .9) !important;
   color: #F7F4EC !important;
