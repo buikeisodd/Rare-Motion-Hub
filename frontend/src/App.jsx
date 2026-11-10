@@ -15,7 +15,6 @@ import Profile from './pages/Profile';
 import Search from './pages/Search';
 import Marketplace from './pages/Marketplace';
 import Live from './pages/Live';
-import MobileLanding from './pages/MobileLanding';
 import { AudioProvider, useAudio } from './context/AudioContext';
 import AudioPlayer from './components/AudioPlayer';
 import MobileBottomNav from './components/MobileBottomNav';
@@ -28,20 +27,6 @@ function DesktopOnly({ children }) {
 // Matches the md breakpoint MobileBottomNav already keys off, so the same
 // viewport that would otherwise get the squeezed app shell instead gets the
 // landing page.
-function useIsMobileViewport() {
-  const [isMobile, setIsMobile] = useState(() => (
-    typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches
-  ));
-  useEffect(() => {
-    const media = window.matchMedia('(max-width: 767px)');
-    const onChange = (event) => setIsMobile(event.matches);
-    setIsMobile(media.matches);
-    media.addEventListener?.('change', onChange);
-    return () => media.removeEventListener?.('change', onChange);
-  }, []);
-  return isMobile;
-}
-
 function WelcomeSignal({ compact = false }) {
   const size = compact ? 'h-24 w-32' : 'h-32 w-44';
   return (
@@ -128,12 +113,6 @@ function AuthLanding({ user, justAuthenticated, onDone }) {
 
 function AnimatedRoutes({ user, authStatus, handleLogin, handleLogout, handleUserUpdate, justAuthenticated, setJustAuthenticated }) {
   const location = useLocation();
-  const isMobileViewport = useIsMobileViewport();
-
-  // Phones receive the public product introduction only. Do this before the
-  // auth state machine so a mobile visitor is never sent to sign-in or the
-  // authenticated workspace.
-  if (isMobileViewport) return <MobileLanding />;
 
   // While session restore is in-flight, render nothing to avoid a flash
   // of the login page for users who do have a valid session.
