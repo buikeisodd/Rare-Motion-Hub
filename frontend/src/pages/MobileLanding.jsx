@@ -1,4 +1,4 @@
-import { Mail, Monitor, MessageCircle, Layers } from 'lucide-react';
+import { Monitor } from 'lucide-react';
 import StarlightLogo from '../components/StarlightLogo';
 
 // Small illustrative UI "snapshots" built from real design tokens rather than
@@ -84,73 +84,18 @@ const features = [
 
 export default function MobileLanding() {
   return (
-    <div className="min-h-screen bg-primary-background pb-10 text-primary-label">
-      {/* Persistent desktop nudge */}
-      <div className="sticky top-0 z-20 flex items-center justify-center gap-2 bg-primary-label px-4 py-2 text-center text-xs font-semibold text-primary-background">
-        <Monitor className="h-3.5 w-3.5 shrink-0" />
-        Open Starlight Station on desktop for the full experience
-      </div>
-
-      <div className="mx-auto flex max-w-md flex-col items-center px-5 pt-10 text-center">
-        <div className="mobile-landing-signal" aria-hidden="true"><span /><span /><span /></div>
-        <StarlightLogo markClassName="h-14 w-14" />
-        <h1 className="mt-6 text-2xl font-bold leading-tight">
-          Your music, organized and moving.
-        </h1>
-        <p className="mt-3 text-sm leading-relaxed text-secondary-label">
-          Starlight Station is where you upload tracks, manage versions, and collaborate with
-          the people you make music with — built for focused work at a full-size screen.
+    <main className="mobile-landing min-h-[100svh] overflow-x-hidden bg-primary-background px-4 py-6 text-primary-label sm:px-6 sm:py-10">
+      <section className="mx-auto flex min-h-[calc(100svh-3rem)] w-full max-w-xl flex-col items-center justify-center text-center sm:min-h-[calc(100svh-5rem)]">
+        <StarlightLogo markClassName="h-14 w-14 sm:h-16 sm:w-16" />
+        <p className="mt-6 text-[10px] font-bold uppercase tracking-[0.24em] text-secondary-label sm:mt-8 sm:text-xs">Starlight Station</p>
+        <h1 className="mt-3 max-w-md text-[clamp(1.7rem,8vw,2.75rem)] font-bold leading-[1.05]">Open on desktop</h1>
+        <p className="mt-4 max-w-sm text-sm leading-6 text-secondary-label sm:text-base sm:leading-7">
+          The full workspace is designed for a larger screen. Open Starlight Station on a desktop or laptop to continue.
         </p>
-
-      </div>
-
-      {/* Feature snapshots */}
-      <div className="mx-auto mt-10 flex max-w-md flex-col gap-7 px-5">
-        {features.map(({ icon: Icon, title, body, Snapshot }) => (
-          <div key={title}>
-            <Snapshot />
-            <div className="mt-4 flex items-start gap-3">
-              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-label/10">
-                <Icon className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold">{title}</p>
-                <p className="mt-1 text-sm leading-relaxed text-secondary-label">{body}</p>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <section className="mx-auto mt-12 max-w-md px-5" aria-labelledby="about-heading">
-        <div className="rounded-2xl border border-border bg-shading p-5">
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-secondary-label">About Starlight Station</p>
-          <h2 id="about-heading" className="mt-2 text-xl font-bold">A calmer home for the work behind the music.</h2>
-          <p className="mt-3 text-sm leading-relaxed text-secondary-label">We bring drafts, versions, feedback, and collaboration into one focused studio so creative teams can keep moving without losing the details.</p>
+        <div className="mt-7 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-label/10 sm:mt-9" aria-hidden="true">
+          <Monitor className="h-6 w-6 sm:h-7 sm:w-7" />
         </div>
       </section>
-
-      {/* Contact */}
-      <div className="mx-auto mt-12 max-w-md px-5">
-        <div className="rounded-2xl border border-border bg-shading p-5 text-center">
-          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-primary-label/10">
-            <Mail className="h-5 w-5" />
-          </div>
-          <p className="mt-3 text-sm font-semibold">Questions or feedback?</p>
-          <p className="mt-1 text-sm text-secondary-label">We read every message.</p>
-          <a
-            href="mailto:hello@starlightstation.app"
-            className="mt-4 inline-flex h-11 items-center justify-center rounded-full bg-primary-label px-6 text-sm font-semibold text-primary-background"
-          >
-            Contact us
-          </a>
-        </div>
-      </div>
-
-      <p className="mx-auto mt-10 max-w-md px-5 text-center text-xs text-secondary-label">
-        Starlight Station works best on a laptop or desktop browser. Come back on a bigger
-        screen to upload, mix, and manage your projects.
-      </p>
-    </div>
+    </main>
   );
 }
