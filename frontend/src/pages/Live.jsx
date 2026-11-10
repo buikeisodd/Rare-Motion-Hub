@@ -167,11 +167,11 @@ export default function Live({ user }) {
               <button type="button" onClick={() => navigate('/live')} aria-label="Close live room" className="grid h-10 w-10 place-items-center rounded-xl bg-primary-label/10"><X size={18} /></button>
             </div>
           </div>
-          <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[minmax(0,1fr)_20rem]">
-            <div id="live-media-stage" className="live-stage relative grid min-h-[18rem] grid-cols-1 content-center items-center justify-items-stretch gap-2 overflow-y-auto px-6 py-12 text-center text-primary-background sm:grid-cols-2 xl:grid-cols-3">
+          <div className="live-room-content relative min-h-0 flex-1 overflow-hidden">
+            <div id="live-media-stage" className="live-stage absolute inset-0 grid min-h-[18rem] grid-cols-1 content-center items-center justify-items-stretch gap-2 overflow-y-auto px-6 py-12 text-center text-primary-background sm:grid-cols-2 xl:grid-cols-3">
               {!connected && <div className="pointer-events-none relative z-10 rounded-xl bg-primary-label/70 p-4"><Video size={42} className="mx-auto mb-4 opacity-70" /><h3 className="text-xl font-semibold">Connecting...</h3><p className="mt-2 max-w-md text-sm text-primary-background/70">Joining the live room...</p></div>}
             </div>
-            <aside className="live-chat-panel flex min-h-0 flex-col border-t border-primary-background/10 p-4 text-primary-label lg:border-l lg:border-t-0">
+            <aside className="live-chat-panel live-chat-overlay absolute bottom-0 right-0 top-0 flex min-h-0 w-full max-w-sm flex-col border-l border-primary-background/10 p-4 text-primary-label">
               <div className="mb-3 flex items-center justify-between"><strong>Live chat</strong><button type="button" onClick={sendReaction} aria-label="Send reaction" className="rounded-xl p-2 text-red-600"><Heart size={18} /></button></div>
               <div className="live-chat-list min-h-0 flex-1 space-y-2 overflow-y-auto text-sm">{liveMessages.map((item, index) => <p key={`${item.sender}-${index}`}><strong>{item.sender}</strong> {item.text}</p>)}</div>
               <form onSubmit={sendChat} className="mt-3 flex gap-2"><input value={chatText} onChange={(event) => setChatText(event.target.value)} placeholder="Say something..." className="min-w-0 flex-1 rounded-xl border border-primary-label/15 bg-white/60 px-3 py-2 outline-none" /><button type="submit" aria-label="Send message" className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary-label text-primary-background"><Send size={16} /></button></form>
