@@ -640,13 +640,16 @@ div[class*="bg-\\[\\#F3EBDD\\]\\/92"] { background: rgba(243,235,221,.98) !impor
 .live-page-active .live-room-shell { min-height: calc(100svh - 2rem); border-radius: 1.5rem; }
 .live-stage { background: #000; display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: .75rem; padding: 1.25rem; }
 .live-room-shell .live-stage { height: 100%; min-height: 0; }
+.live-page-active .live-room-shell { border: 0; }
+.live-page-active .live-room-shell > div:first-child { border-bottom: 0; }
 .live-room-content { min-height: 0; }
 .live-stage > video { flex: 0 0 10rem; width: 10rem; height: 7rem; object-fit: cover; border-radius: .75rem; background: #171717; box-shadow: 0 8px 22px rgba(0,0,0,.35); }
 .live-stage > video:first-of-type { flex: 1 0 100%; width: min(100%, 72rem); height: calc(100% - 9rem); min-height: 14rem; object-fit: contain; border-radius: 1rem; box-shadow: none; }
 .live-stage:has(> video:only-child) { display: block; padding: 0; }
 .live-stage:has(> video:only-child) > video { display: block; width: 100%; height: 100%; min-height: 100%; object-fit: contain; border-radius: 0; }
-.live-chat-panel { background: rgba(243,235,221,.22); backdrop-filter: blur(24px) saturate(1.1); -webkit-backdrop-filter: blur(24px) saturate(1.1); }
+.live-chat-panel { background: rgba(243,235,221,.10); border: 0 !important; backdrop-filter: blur(24px) saturate(1.1); -webkit-backdrop-filter: blur(24px) saturate(1.1); }
 .live-chat-overlay { box-shadow: -18px 0 50px rgba(0,0,0,.18); }
+.live-controls { border: 0 !important; }
 .live-chat-list p { animation: live-comment-in .3s ease both; }
 .live-chat-list p:nth-last-child(n+6) { opacity: .18; filter: blur(.25px); }
 @keyframes live-comment-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
