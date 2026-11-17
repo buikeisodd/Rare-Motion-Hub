@@ -409,28 +409,6 @@ const apiUrl = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || 'htt
     return () => { cancelled = true; };
   }, [apiUrl]);
 
-  // Keep user profile fresh after login.
-  useEffect(() => {
-    if (!user?.id) return;
-    let cancelled = false;
-
-    async function refreshUser() {
-      try {
-        const res = await fetch(`${apiUrl}/api/auth/${user.id}`, { credentials: 'include' });
-        const data = await res.json();
-        if (!cancelled && res.ok && data.user) {
-          setUser(data.user);
-          setAuthStatus(deriveAuthStatus(data.user));
-        }
-      } catch {
-        // Non-fatal — cached user state remains
-      }
-    }
-
-    refreshUser();
-    return () => { cancelled = true; };
-  }, [apiUrl, user?.id]);
-
   // Listen for the forced-logout event dispatched by the fetch interceptor.
   useEffect(() => {
     const onAuthLogout = () => {
