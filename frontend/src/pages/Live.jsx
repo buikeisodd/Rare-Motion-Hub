@@ -86,6 +86,7 @@ export default function Live({ user }) {
   const [screenSharing, setScreenSharing] = useState(false);
   const [liveMessages, setLiveMessages] = useState([]);
   const [chatText, setChatText] = useState('');
+  const [videoTileCount, setVideoTileCount] = useState(0);
   const roomRef = useRef(null);
   const screenTracksRef = useRef([]);
   const screenElementsRef = useRef([]);
@@ -159,6 +160,7 @@ export default function Live({ user }) {
           }
           if (track.kind === Track.Kind.Audio) element.className = 'hidden';
           document.getElementById('live-media-stage')?.appendChild(element);
+          setVideoTileCount(videoTilesRef.current.size);
         };
         room.on(RoomEvent.TrackSubscribed, attachTrack); room.on(RoomEvent.TrackPublished, async (publication) => { try { await publication.setSubscribed(true); } catch { /* already subscribed */ } });
         await room.connect(data.serverUrl, data.token, { autoSubscribe: true });
@@ -181,6 +183,7 @@ export default function Live({ user }) {
               const trackId = publication.track.sid || publication.track.mediaStreamTrack?.id;
               if (trackId) attachedTrackIds.current.add(trackId);
               document.getElementById('live-media-stage')?.appendChild(element);
+              setVideoTileCount(videoTilesRef.current.size);
             }
           });
         }
@@ -191,7 +194,7 @@ export default function Live({ user }) {
       } catch (error) { setMessage(error.message || 'Could not connect to the live room.'); }
     };
     connect();
-    return () => { cancelled = true; screenTracksRef.current.forEach((track) => { try { room?.localParticipant.unpublishTrack(track); } catch {} track.stop(); }); screenTracksRef.current = []; screenElementsRef.current.forEach((element) => element.remove()); screenElementsRef.current = []; videoTilesRef.current.clear(); setScreenSharing(false); setConnected(false); setPublishing(false); setVideoUnavailable(false); setCameraOn(true); setMicOn(true); setLiveMessages([]); attachedTrackIds.current.clear(); roomRef.current = null; room?.disconnect(); document.getElementById('live-media-stage')?.replaceChildren(); };
+    return () => { cancelled = true; screenTracksRef.current.forEach((track) => { try { room?.localParticipant.unpublishTrack(track); } catch {} track.stop(); }); screenTracksRef.current = []; screenElementsRef.current.forEach((element) => element.remove()); screenElementsRef.current = []; videoTilesRef.current.clear(); setVideoTileCount(0); setScreenSharing(false); setConnected(false); setPublishing(false); setVideoUnavailable(false); setCameraOn(true); setMicOn(true); setLiveMessages([]); attachedTrackIds.current.clear(); roomRef.current = null; room?.disconnect(); document.getElementById('live-media-stage')?.replaceChildren(); };
   }, [active?.id, connectionNonce]);
 
   const start = async (event) => {
@@ -230,6 +233,18 @@ export default function Live({ user }) {
     screenTracksRef.current = [];
     screenElementsRef.current.forEach((element) => element.remove());
     screenElementsRef.current = [];
+    const localKey = user?.id || 'local-camera';
+    videoTilesRef.current.delete(localKey);
+    const cameraPublication = Array.from(room?.localParticipant?.videoTrackPublications?.values?.() || [])
+      .find((publication) => publication.source === Track.Source.Camera && publication.track);
+    if (cameraPublication?.track) {
+      const cameraElement = cameraPublication.track.attach();
+      cameraElement.className = 'h-full w-full object-cover';
+      cameraElement.dataset.liveSource = 'camera';
+      videoTilesRef.current.set(localKey, cameraElement);
+      document.getElementById('live-media-stage')?.appendChild(cameraElement);
+    }
+    setVideoTileCount(videoTilesRef.current.size);
     setScreenSharing(false);
   };
   const toggleScreenShare = async () => {
@@ -254,6 +269,7 @@ export default function Live({ user }) {
       videoTilesRef.current.set(user?.id || 'local-camera', localElement);
       document.getElementById('live-media-stage')?.appendChild(localElement);
       screenElementsRef.current = [localElement];
+      setVideoTileCount(videoTilesRef.current.size);
       const audioSource = stream.getAudioTracks()[0];
       if (audioSource) {
         const audioTrack = new LocalAudioTrack(audioSource);
@@ -293,7 +309,7 @@ export default function Live({ user }) {
             </div>
           </div>
           <div className="live-room-content relative min-h-0 flex-1 overflow-hidden">
-            <div id="live-media-stage" className="live-stage absolute inset-0 grid min-h-[18rem] grid-cols-1 content-center items-center justify-items-stretch gap-2 overflow-y-auto px-6 py-12 text-center text-primary-background sm:grid-cols-2 xl:grid-cols-3">
+            <div id="live-media-stage" className={`live-stage live-stage-${Math.min(Math.max(videoTileCount, 1), 6)} absolute inset-0 min-h-[18rem] overflow-y-auto text-center text-primary-background`}>
               {!connected && <div className="pointer-events-none relative z-10 rounded-xl bg-primary-label/70 p-4"><Video size={42} className="mx-auto mb-4 opacity-70" /><h3 className="text-xl font-semibold">Connecting...</h3><p className="mt-2 max-w-md text-sm text-primary-background/70">Joining the live room...</p></div>}
             </div>
             <aside className="live-chat-panel live-chat-overlay absolute bottom-0 right-0 top-0 flex min-h-0 w-full max-w-sm flex-col border-l border-primary-background/10 p-4 text-primary-label">
