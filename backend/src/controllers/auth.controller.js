@@ -120,20 +120,19 @@ const userResponse = (user) => ({ ...publicUser(user), email: user.email, emailV
 // defence. Set SAME_SITE_STRICT=true in env to opt into this.
 
 const IS_PROD = process.env.NODE_ENV === 'production';
-const SAME_SITE_STRICT = process.env.SAME_SITE_STRICT === 'true';
 
-// In production with cross-domain deployment: __Secure- prefix (Secure only).
-// In production with same-domain: __Host- prefix (Secure + no Domain + Path=/).
-// In development: no prefix (plain names, http).
+// The web app and API are deployed on different sites (Vercel + Render), so
+// production sessions must use the cross-site-safe __Secure- cookie prefix.
+// SameSite=Strict/__Host- would make a fresh browser lose the session after
+// login because the SPA cannot send those cookies to the API.
 const cookieName = (name) => {
-  if (!IS_PROD) return name;
-  return SAME_SITE_STRICT ? `__Host-${name}` : `__Secure-${name}`;
+  return IS_PROD ? `__Secure-${name}` : name;
 };
 
 const cookieOptions = (maxAge, overrides = {}) => ({
   httpOnly: true,
   secure: IS_PROD,
-  sameSite: IS_PROD ? (SAME_SITE_STRICT ? 'strict' : 'none') : 'lax',
+  sameSite: IS_PROD ? 'none' : 'lax',
   path: '/',
   maxAge,
   ...overrides

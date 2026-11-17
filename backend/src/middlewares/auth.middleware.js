@@ -6,23 +6,21 @@ const { deriveAccountStatus } = require('../controllers/auth.controller');
 
 const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV === 'production' ? null : 'fallback_secret');
 const IS_PROD = process.env.NODE_ENV === 'production';
-const SAME_SITE_STRICT = process.env.SAME_SITE_STRICT === 'true';
 
 // Must match the cookie naming logic in auth.controller.js exactly.
 const cookieName = (name) => {
   if (!IS_PROD) return name;
-  return SAME_SITE_STRICT ? `__Host-${name}` : `__Secure-${name}`;
+  return `__Secure-${name}`;
 };
 
 const readAuthCookie = (req, name) => {
   const cookieHeader = req.headers.cookie || '';
-  const prefixed = cookieName(name);
-  const match = cookieHeader
-    .split(';')
-    .map((v) => v.trim())
-    .find((v) => v.startsWith(`${prefixed}=`));
+  const prefixes = IS_PROD
+    ? [`__Secure-${name}=`, `__Host-${name}=`]
+    : [`${name}=`];
+  const match = cookieHeader.split(';').map((v) => v.trim()).find((value) => prefixes.some((prefix) => value.startsWith(prefix)));
   if (!match) return '';
-  return decodeURIComponent(match.slice(prefixed.length + 1));
+  return decodeURIComponent(match.slice(match.indexOf('=') + 1));
 };
 
 const unsafeMethods = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
