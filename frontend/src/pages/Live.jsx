@@ -22,6 +22,38 @@ function Surface({ children, className = '' }) {
   return <section className={`rounded-[1.5rem] border border-[#34483B]/10 bg-[#F3EBDD]/85 shadow-[0_18px_55px_rgba(52,72,59,0.12)] backdrop-blur-xl ${className}`}>{children}</section>;
 }
 
+function LivePreview({ session }) {
+  const mediaRef = useRef(null);
+  useEffect(() => {
+    let room;
+    let cancelled = false;
+    const connectPreview = async () => {
+      try {
+        const data = await apiRequest(`/api/live/${session.id}/token`);
+        if (cancelled) return;
+        room = new Room({ adaptiveStream: true, dynacast: true });
+        const attach = (track) => {
+          if (track.kind !== Track.Kind.Video || !mediaRef.current) return;
+          const element = track.attach();
+          element.muted = true;
+          element.autoplay = true;
+          element.playsInline = true;
+          element.className = 'absolute inset-0 h-full w-full object-cover';
+          mediaRef.current.replaceChildren(element);
+        };
+        room.on(RoomEvent.TrackSubscribed, attach);
+        await room.connect(data.serverUrl, data.token, { autoSubscribe: true });
+        room.remoteParticipants.forEach((participant) => participant.trackPublications.forEach((publication) => {
+          if (publication.isSubscribed && publication.track) attach(publication.track);
+        }));
+      } catch { /* Fall back to the visual preview when media is unavailable. */ }
+    };
+    connectPreview();
+    return () => { cancelled = true; room?.disconnect(); mediaRef.current?.replaceChildren(); };
+  }, [session.id]);
+  return <div ref={mediaRef} className="absolute inset-0" aria-hidden="true" />;
+}
+
 export default function Live({ user }) {
   const navigate = useNavigate();
   const { id: liveId } = useParams();
@@ -53,6 +85,17 @@ export default function Live({ user }) {
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
+    if (!active) return undefined;
+    const timer = window.setInterval(async () => {
+      try {
+        const data = await apiRequest('/api/live');
+        const current = (data.sessions || []).find((item) => item.id === active.id);
+        if (current) setActive((previous) => ({ ...previous, ...current }));
+      } catch { /* presence refresh is best effort */ }
+    }, 4000);
+    return () => window.clearInterval(timer);
+  }, [active?.id]);
+  useEffect(() => {
     if (!message) return undefined;
     const timer = window.setTimeout(() => setMessage(''), 20000);
     return () => window.clearTimeout(timer);
@@ -69,11 +112,12 @@ export default function Live({ user }) {
         if (cancelled) return;
         room = new Room({ adaptiveStream: true, dynacast: true });
         roomRef.current = room;
-        room.on(RoomEvent.DataReceived, (payload) => {
+        room.on(RoomEvent.DataReceived, (payload, participant) => {
           try {
             const event = JSON.parse(new TextDecoder().decode(payload));
-            if (event.type === 'chat') setLiveMessages((current) => [...current.slice(-49), event]);
-            if (event.type === 'reaction') setLiveMessages((current) => [...current.slice(-49), { ...event, text: `${event.emoji} reaction` }]);
+            const sender = event.sender || participant?.identity || participant?.name || 'Listener';
+            if (event.type === 'chat') setLiveMessages((current) => [...current.slice(-49), { ...event, sender }]);
+            if (event.type === 'reaction') setLiveMessages((current) => [...current.slice(-49), { ...event, sender, text: `${event.emoji} reaction` }]);
           } catch { /* Ignore malformed room data from clients. */ }
         });
         const attachTrack = (track) => {
@@ -186,7 +230,7 @@ export default function Live({ user }) {
       ) : (
         <section className="live-lobby-surface rounded-[2rem] p-5 shadow-2xl sm:p-8">
           <div className="mb-7 flex flex-wrap items-end justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.22em] text-primary-label/55">On air now</p><h2 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">Find a room to step into</h2><p className="mt-2 max-w-xl text-sm text-primary-label/65">Preview the atmosphere before you join the conversation.</p></div><span className="rounded-full bg-primary-label/10 px-3 py-1.5 text-xs font-semibold text-primary-label/70">{sessions.length} live {sessions.length === 1 ? 'room' : 'rooms'}</span></div>
-          {sessions.length === 0 ? <div className="live-empty-state rounded-2xl px-5 py-20 text-center"><Radio size={30} className="mx-auto mb-4 text-primary-label/45" /><p className="font-semibold">No one is live right now.</p><p className="mt-2 text-sm text-primary-label/55">Start a room and your preview will appear here.</p></div> : <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">{sessions.map((session) => { const hostName = session.host?.username || session.host?.name || 'Host'; const avatar = session.host?.avatarUrl; return <article key={session.id} className="live-preview-card group min-w-0 overflow-hidden rounded-2xl text-left"><button type="button" onClick={() => join(session)} className="block w-full text-left" aria-label={`Join ${session.title}`}><div className="live-preview-art relative aspect-[16/10] overflow-hidden">{avatar ? <img src={avatar} alt="" className="absolute inset-0 h-full w-full object-cover opacity-55 transition duration-500 group-hover:scale-105" /> : <div className="absolute inset-0 live-preview-pattern" />}<div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-black/25" /><div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full bg-[#ff4d67] px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-white"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" /> Live</div><div className="absolute inset-0 grid place-items-center"><span className="grid h-14 w-14 place-items-center rounded-2xl border border-white/25 bg-white/15 text-white backdrop-blur-md transition group-hover:scale-105"><Radio size={24} /></span></div><div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3 text-white"><div className="min-w-0"><h3 className="truncate text-lg font-semibold">{session.title}</h3><p className="mt-1 truncate text-xs text-white/70">Hosted by {hostName}</p></div><span className="shrink-0 text-xs text-white/75"><Users size={13} className="mr-1 inline" />{session.viewerCount || 0}</span></div></div></button><div className="flex items-center justify-between gap-3 px-4 py-3"><p className="min-w-0 truncate text-xs text-primary-label/60">{session.description || 'Live conversation in progress'}</p><button type="button" onClick={() => join(session)} className="shrink-0 rounded-lg bg-primary-label px-3 py-2 text-xs font-semibold text-primary-background transition hover:-translate-y-0.5">Join room</button></div></article>; })}</div>}
+          {sessions.length === 0 ? <div className="live-empty-state rounded-2xl px-5 py-20 text-center"><Radio size={30} className="mx-auto mb-4 text-primary-label/45" /><p className="font-semibold">No one is live right now.</p><p className="mt-2 text-sm text-primary-label/55">Start a room and your preview will appear here.</p></div> : <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">{sessions.map((session) => { const hostName = session.host?.username || session.host?.name || 'Host'; const avatar = session.host?.avatarUrl; return <article key={session.id} className="live-preview-card group min-w-0 overflow-hidden rounded-2xl text-left"><button type="button" onClick={() => join(session)} className="block w-full text-left" aria-label={`Join ${session.title}`}><div className="live-preview-art relative aspect-[16/10] overflow-hidden">{avatar ? <img src={avatar} alt="" className="absolute inset-0 h-full w-full object-cover opacity-55 transition duration-500 group-hover:scale-105" /> : <div className="absolute inset-0 live-preview-pattern" />}<LivePreview session={session} /><div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-black/25" /><div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full bg-[#ff4d67] px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-white"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" /> Live</div><div className="absolute inset-0 grid place-items-center"><span className="grid h-14 w-14 place-items-center rounded-2xl border border-white/25 bg-white/15 text-white backdrop-blur-md transition group-hover:scale-105"><Radio size={24} /></span></div><div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3 text-white"><div className="min-w-0"><h3 className="truncate text-lg font-semibold">{session.title}</h3><p className="mt-1 truncate text-xs text-white/70">Hosted by {hostName}</p></div><span className="shrink-0 text-xs text-white/75"><Users size={13} className="mr-1 inline" />{session.viewerCount || 0}</span></div></div></button><div className="flex items-center justify-between gap-3 px-4 py-3"><p className="min-w-0 truncate text-xs text-primary-label/60">{session.description || 'Live conversation in progress'}</p><button type="button" onClick={() => join(session)} className="shrink-0 rounded-lg bg-primary-label px-3 py-2 text-xs font-semibold text-primary-background transition hover:-translate-y-0.5">Join room</button></div></article>; })}</div>}
         </section>
       )}
     </div>
