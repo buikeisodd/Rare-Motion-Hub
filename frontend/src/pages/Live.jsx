@@ -29,7 +29,7 @@ function LivePreview({ session }) {
     let cancelled = false;
     const connectPreview = async () => {
       try {
-        const data = await apiRequest(`/api/live/${session.id}/token`);
+        const data = await apiRequest(`/api/live/${session.id}/token?preview=1`);
         if (cancelled) return;
         room = new Room({ adaptiveStream: true, dynacast: true });
         const attach = (track) => {
@@ -42,6 +42,7 @@ function LivePreview({ session }) {
           mediaRef.current.replaceChildren(element);
         };
         room.on(RoomEvent.TrackSubscribed, attach);
+        room.on(RoomEvent.Disconnected, () => { if (!cancelled) mediaRef.current?.replaceChildren(); });
         await room.connect(data.serverUrl, data.token, { autoSubscribe: true });
         room.remoteParticipants.forEach((participant) => participant.trackPublications.forEach((publication) => {
           if (publication.isSubscribed && publication.track) attach(publication.track);
@@ -112,6 +113,7 @@ export default function Live({ user }) {
         if (cancelled) return;
         room = new Room({ adaptiveStream: true, dynacast: true });
         roomRef.current = room;
+        room.on(RoomEvent.Disconnected, () => { if (!cancelled) { setConnected(false); setPublishing(false); } });
         room.on(RoomEvent.DataReceived, (payload, participant) => {
           try {
             const event = JSON.parse(new TextDecoder().decode(payload));
