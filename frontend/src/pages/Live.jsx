@@ -76,6 +76,7 @@ export default function Live({ user }) {
   const attachedTrackIds = useRef(new Set());
   const [requestStatus, setRequestStatus] = useState('');
   const [joinRequests, setJoinRequests] = useState([]);
+  const [connectionNonce, setConnectionNonce] = useState(0);
 
   const load = useCallback(async () => {
     try {
@@ -159,7 +160,7 @@ export default function Live({ user }) {
     };
     connect();
     return () => { cancelled = true; setConnected(false); setPublishing(false); setVideoUnavailable(false); setCameraOn(true); setMicOn(true); setLiveMessages([]); attachedTrackIds.current.clear(); roomRef.current = null; room?.disconnect(); document.getElementById('live-media-stage')?.replaceChildren(); };
-  }, [active?.id]);
+  }, [active?.id, connectionNonce]);
 
   const start = async (event) => {
     event.preventDefault();
@@ -194,7 +195,7 @@ export default function Live({ user }) {
   const requestToSpeak = async () => { try { const data = await apiRequest(`/api/live/${active.id}/request`, { method: 'POST' }); setRequestStatus(data.status); } catch (error) { setMessage(error.message?.toLowerCase().includes('source not found') ? 'This live room is no longer available. The room will close shortly.' : error.message || 'We could not send your request right now.'); } };
   const resolveRequest = async (request, action) => { try { await apiRequest(`/api/live/${active.id}/requests/resolve`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: request.userId, action }) }); setJoinRequests((current) => current.filter((item) => item.userId !== request.userId)); } catch (error) { setMessage(error.message); } };
   useEffect(() => { if (!active || active.hostId !== user?.id) return undefined; const timer = window.setInterval(async () => { try { const data = await apiRequest(`/api/live/${active.id}/requests`); setJoinRequests(data.requests || []); } catch { /* host request polling is best effort */ } }, 3000); return () => window.clearInterval(timer); }, [active, user?.id]);
-  useEffect(() => { if (!active || active.hostId === user?.id || requestStatus !== 'pending') return undefined; const timer = window.setInterval(async () => { try { const data = await apiRequest(`/api/live/${active.id}/request-status`); if (data.status === 'accepted') { setRequestStatus('accepted'); setActive({ ...active }); } } catch { /* request polling is best effort */ } }, 2000); return () => window.clearInterval(timer); }, [active, requestStatus, user?.id]);
+  useEffect(() => { if (!active || active.hostId === user?.id || requestStatus !== 'pending') return undefined; const timer = window.setInterval(async () => { try { const data = await apiRequest(`/api/live/${active.id}/request-status`); if (data.status === 'accepted') { setRequestStatus('accepted'); setConnectionNonce((value) => value + 1); } } catch { /* request polling is best effort */ } }, 2000); return () => window.clearInterval(timer); }, [active?.id, active?.hostId, requestStatus, user?.id]);
 
   return <main className={`live-page min-h-screen bg-primary-background text-primary-label ${active ? 'live-page-active' : ''}`}>
     <div className="live-page-inner mx-auto w-full max-w-6xl px-4 pb-24 pt-5 sm:px-8 lg:px-12">
