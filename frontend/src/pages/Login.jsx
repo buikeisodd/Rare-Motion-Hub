@@ -198,14 +198,14 @@ const apiUrl = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || 'htt
       <div className="pointer-events-none absolute -bottom-48 right-[-8rem] h-[30rem] w-[30rem] rounded-full bg-[#8DEBFF]/[0.05] blur-3xl" />
       <div className="relative mx-auto grid h-full min-h-0 w-full max-w-6xl items-center gap-5 py-1 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,27rem)] lg:gap-10">
         <section className="hidden lg:block animate-fade-in">
-          <StarlightLogo className="mb-10 h-10 text-[#F7F4EC]" showTagline={false} markClassName="h-16 w-16 sm:h-20 sm:w-20" />
+          <StarlightLogo className="mb-10 h-10 text-[#F7F4EC]" showTagline={false} markClassName="h-16 w-16 brightness-0 invert sm:h-20 sm:w-20" />
           <p className="mb-5 text-xs font-semibold uppercase tracking-[0.3em] text-primary-label/70">A softer place for unfinished ideas</p>
           <h1 className="max-w-xl text-5xl font-semibold leading-[0.96] tracking-tight text-white"><span key={quoteIndex} className="inline-block animate-fade-in">{loginQuotes[quoteIndex]}</span></h1>
           <p className="mt-7 max-w-md text-base leading-relaxed text-[#A6A09A]">Keep your projects close, hear every version, and share the work when it feels ready.</p>
         </section>
 
         <div className="mx-auto w-full max-w-sm animate-fade-in">
-          <div className="mb-3 lg:hidden"><StarlightLogo className="h-10 text-[#F7F4EC]" showTagline={false} markClassName="h-16 w-16 sm:h-20 sm:w-20" /></div>
+          <div className="mb-3 lg:hidden"><StarlightLogo className="h-10 text-[#F7F4EC]" showTagline={false} markClassName="h-16 w-16 brightness-0 invert sm:h-20 sm:w-20" /></div>
           <div className="mb-3 lg:hidden"><h1 className="text-2xl font-semibold tracking-tight text-white"><span key={quoteIndex} className="inline-block animate-fade-in">{loginQuotes[quoteIndex]}</span></h1><p className="mt-1 text-xs leading-relaxed text-[#A6A09A]">Your private studio for projects, playback and collaboration.</p></div>
           <div className="login-surface rounded-[1.5rem] border border-white/[0.08] bg-[#111111] p-3 shadow-2xl sm:p-5">
           <p className="mb-2 max-w-sm text-center text-[11px] leading-tight text-[#A6A09A]">By continuing you confirm that this email belongs to an approved Starlight Station collaborator.</p>
@@ -322,12 +322,12 @@ const apiUrl = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || 'htt
             <div className="h-px flex-1 bg-border md:h-full md:w-px" />
           </div>
 
-            <div className="grid content-center gap-1.5 rounded-xl border border-[#cbd8ce] bg-white/45 p-2 sm:p-2.5">
+            <div className="grid content-center gap-1.5 rounded-xl border border-white/[0.09] bg-[#171717] p-2 sm:p-2.5">
             <button
               type="button"
               onClick={() => handleProviderAuth('Google')}
               disabled={Boolean(providerLoading)}
-              className="mx-auto flex min-h-9 w-[92%] items-center justify-center gap-3 rounded-xl border border-[#bdcdbf] bg-white/65 px-4 py-2.5 text-sm font-semibold text-[#17221c] transition-all hover:border-[#6F8974] hover:bg-[#fff] hover:scale-[1.01]"
+              className="mx-auto flex min-h-9 w-[92%] items-center justify-center gap-3 rounded-xl border border-white/[0.12] bg-[#222222] px-4 py-2.5 text-sm font-semibold text-[#F7F4EC] transition-all hover:border-white/25 hover:bg-[#2b2b2b] hover:scale-[1.01]"
             >
               {providerLoading === 'Google' ? <Loader2 className="h-5 w-5 animate-spin" /> : <GoogleIcon className="h-5 w-5" />}
               Continue with Google
@@ -336,7 +336,7 @@ const apiUrl = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || 'htt
               type="button"
               onClick={() => handleProviderAuth('Apple')}
               disabled={Boolean(providerLoading)}
-              className="mx-auto flex min-h-9 w-[92%] items-center justify-center gap-3 rounded-xl border border-[#bdcdbf] bg-white/65 px-4 py-2.5 text-sm font-semibold text-[#17221c] transition-all hover:border-[#6F8974] hover:bg-[#fff] hover:scale-[1.01]"
+              className="mx-auto flex min-h-9 w-[92%] items-center justify-center gap-3 rounded-xl border border-white/[0.12] bg-[#222222] px-4 py-2.5 text-sm font-semibold text-[#F7F4EC] transition-all hover:border-white/25 hover:bg-[#2b2b2b] hover:scale-[1.01]"
             >
               {providerLoading === 'Apple' ? <Loader2 className="h-5 w-5 animate-spin" /> : <AppleIcon className="h-5 w-5 text-black" />}
               Continue with Apple
@@ -345,7 +345,7 @@ const apiUrl = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || 'htt
               type="button"
               onClick={handlePhoneAuth}
               disabled={Boolean(providerLoading)}
-              className="mx-auto flex min-h-9 w-[92%] items-center justify-center gap-3 rounded-xl border border-[#bdcdbf] bg-white/65 px-4 py-2.5 text-sm font-semibold text-[#17221c] transition-all hover:border-[#6F8974] hover:bg-[#fff] hover:scale-[1.01]"
+              className="mx-auto flex min-h-9 w-[92%] items-center justify-center gap-3 rounded-xl border border-white/[0.12] bg-[#222222] px-4 py-2.5 text-sm font-semibold text-[#F7F4EC] transition-all hover:border-white/25 hover:bg-[#2b2b2b] hover:scale-[1.01]"
             >
               {providerLoading === 'Phone' ? <Loader2 className="h-5 w-5 animate-spin" /> : <Phone className="h-5 w-5 text-black" />}
               Continue with phone number
