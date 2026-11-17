@@ -88,6 +88,7 @@ export default function Live({ user }) {
   const [chatText, setChatText] = useState('');
   const roomRef = useRef(null);
   const screenTracksRef = useRef([]);
+  const screenElementsRef = useRef([]);
   const attachedTrackIds = useRef(new Set());
   const [requestStatus, setRequestStatus] = useState('');
   const [joinRequests, setJoinRequests] = useState([]);
@@ -143,7 +144,7 @@ export default function Live({ user }) {
           if (trackId && attachedTrackIds.current.has(trackId)) return;
           if (trackId) attachedTrackIds.current.add(trackId);
           const element = track.attach();
-          if (track.kind === Track.Kind.Video) element.className = 'h-full min-h-[16rem] w-full rounded-xl object-contain';
+          if (track.kind === Track.Kind.Video) element.className = track.source === Track.Source.ScreenShare ? 'h-full min-h-[16rem] w-full rounded-xl object-contain bg-black' : 'h-full min-h-[16rem] w-full rounded-xl object-contain';
           if (track.kind === Track.Kind.Audio) element.className = 'hidden';
           document.getElementById('live-media-stage')?.appendChild(element);
         };
@@ -174,7 +175,7 @@ export default function Live({ user }) {
       } catch (error) { setMessage(error.message || 'Could not connect to the live room.'); }
     };
     connect();
-    return () => { cancelled = true; screenTracksRef.current.forEach((track) => { try { room?.localParticipant.unpublishTrack(track); } catch {} track.stop(); }); screenTracksRef.current = []; setScreenSharing(false); setConnected(false); setPublishing(false); setVideoUnavailable(false); setCameraOn(true); setMicOn(true); setLiveMessages([]); attachedTrackIds.current.clear(); roomRef.current = null; room?.disconnect(); document.getElementById('live-media-stage')?.replaceChildren(); };
+    return () => { cancelled = true; screenTracksRef.current.forEach((track) => { try { room?.localParticipant.unpublishTrack(track); } catch {} track.stop(); }); screenTracksRef.current = []; screenElementsRef.current.forEach((element) => element.remove()); screenElementsRef.current = []; setScreenSharing(false); setConnected(false); setPublishing(false); setVideoUnavailable(false); setCameraOn(true); setMicOn(true); setLiveMessages([]); attachedTrackIds.current.clear(); roomRef.current = null; room?.disconnect(); document.getElementById('live-media-stage')?.replaceChildren(); };
   }, [active?.id, connectionNonce]);
 
   const start = async (event) => {
@@ -211,6 +212,8 @@ export default function Live({ user }) {
       track.stop();
     }
     screenTracksRef.current = [];
+    screenElementsRef.current.forEach((element) => element.remove());
+    screenElementsRef.current = [];
     setScreenSharing(false);
   };
   const toggleScreenShare = async () => {
@@ -225,6 +228,13 @@ export default function Live({ user }) {
       const videoTrack = new LocalVideoTrack(videoSource);
       await participant.publishTrack(videoTrack, { source: Track.Source.ScreenShare, name: 'screen-share' });
       screenTracksRef.current = [videoTrack];
+      const localElement = videoTrack.attach();
+      localElement.muted = true;
+      localElement.autoplay = true;
+      localElement.playsInline = true;
+      localElement.className = 'live-local-screen-share absolute inset-0 z-10 h-full w-full rounded-xl object-contain';
+      document.getElementById('live-media-stage')?.appendChild(localElement);
+      screenElementsRef.current = [localElement];
       const audioSource = stream.getAudioTracks()[0];
       if (audioSource) {
         const audioTrack = new LocalAudioTrack(audioSource);
