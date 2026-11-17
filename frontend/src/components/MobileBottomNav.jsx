@@ -1,4 +1,4 @@
-import { Bookmark, Compass, Inbox, Library, Search, UserRound } from 'lucide-react';
+import { Compass, Inbox, Library, Radio, Store, UserRound } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 export default function MobileBottomNav({ user, onInbox }) {
@@ -8,8 +8,8 @@ export default function MobileBottomNav({ user, onInbox }) {
   const items = [
     { label: 'Library', to: '/library', icon: Library },
     { label: 'Feed', to: '/feed', icon: Compass },
-    { label: 'Search', to: '/search', icon: Search },
-    { label: 'Saved', to: '/saved', icon: Bookmark },
+    { label: 'Live', to: '/live', icon: Radio },
+    { label: 'Marketplace', to: '/marketplace', icon: Store },
     { label: 'Profile', to: `/profile/${user.id}`, icon: UserRound },
   ];
 

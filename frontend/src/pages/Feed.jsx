@@ -386,8 +386,8 @@ export default function Feed({ user, savedOnly = false }) {
       <Link to="/library" className="grid h-9 w-9 place-items-center rounded-full bg-shading hover:bg-highlight" aria-label="Back to library">
         <ArrowLeft className="h-4 w-4" />
       </Link>
-      <Link to="/feed" className="grid h-9 w-9 place-items-center rounded-full bg-transparent" aria-label="Feed">
-        
+      <Link to="/search" className="grid h-9 w-9 place-items-center rounded-full bg-shading hover:bg-highlight" aria-label="Search" title="Search">
+        <Search className="h-4 w-4" />
       </Link>
       <Link to="/settings" className="grid h-9 w-9 place-items-center rounded-full bg-shading hover:bg-highlight" aria-label="Open settings">
         <Settings className="h-4 w-4" />
