@@ -45,7 +45,10 @@ function MessageToast({ message, onDismiss, onOpen }) {
   const sendReply = async (event) => {
     event.preventDefault();
     if (!reply.trim()) return;
-    await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api/messages`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ recipientId: message.senderId, conversationType: 'dm', text: reply.trim() }) });
+    // Keep browser auth on the same-origin proxy in production. Direct calls
+    // to Render do not carry the Vercel-hosted session cookie reliably.
+    const apiBase = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:4000');
+    await fetch(`${apiBase}/api/messages`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ recipientId: message.senderId, conversationType: 'dm', text: reply.trim() }) });
     setReply(''); onDismiss();
   };
   return <div className="fixed right-4 top-4 z-[120] w-[min(23rem,calc(100vw-2rem))] rounded-2xl border border-border bg-[#F3EBDD]/95 p-3 text-[#34483B] shadow-2xl backdrop-blur-xl"><button type="button" onClick={onDismiss} className="float-right text-lg" aria-label="Dismiss message">x</button><button type="button" onClick={onOpen} className="block max-w-[90%] text-left"><strong className="block truncate">{message.sender?.name || 'New message'}</strong><span className="mt-1 block truncate text-sm">{message.text || 'Sent you a message'}</span></button><form onSubmit={sendReply} className="mt-3 flex gap-2"><input value={reply} onChange={(event) => setReply(event.target.value)} placeholder="Reply..." className="min-w-0 flex-1 rounded-xl bg-white/60 px-3 py-2 text-sm outline-none" /><button className="rounded-xl bg-[#34483B] px-3 py-2 text-xs font-semibold text-[#F3EBDD]">Send</button></form></div>;
@@ -348,7 +351,11 @@ function App() {
     if (!user?.id) return undefined;
     const poll = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api/conversations?userId=${encodeURIComponent(user.id)}`, { credentials: 'include' });
+        // Production browser sessions belong to the frontend origin. Using a
+        // direct Render URL here can produce a false 401 and trigger the
+        // global logout handler while the user is already in the library.
+        const apiBase = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:4000');
+        const response = await fetch(`${apiBase}/api/conversations?userId=${encodeURIComponent(user.id)}`, { credentials: 'include' });
         const data = await response.json();
         const incoming = (data.conversations || []).map((item) => item.lastMessage).filter((message) => message && message.recipientId === user.id && message.senderId !== user.id && !seenMessageRef.current.has(message.id));
         incoming.forEach((message) => seenMessageRef.current.add(message.id));
