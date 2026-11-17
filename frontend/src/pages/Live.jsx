@@ -154,15 +154,25 @@ export default function Live({ user }) {
           if (previous) previous.remove();
           const element = track.attach();
           if (track.kind === Track.Kind.Video) {
+            element.autoplay = true;
+            element.playsInline = true;
+            element.muted = true;
             element.className = track.source === Track.Source.ScreenShare ? 'live-screen-share h-full w-full object-contain bg-black' : 'h-full w-full object-cover';
             element.dataset.liveSource = track.source === Track.Source.ScreenShare ? 'screen' : 'camera';
             videoTilesRef.current.set(tileKey, element);
           }
           if (track.kind === Track.Kind.Audio) element.className = 'hidden';
           document.getElementById('live-media-stage')?.appendChild(element);
+          if (track.kind === Track.Kind.Video) element.play?.().catch(() => {});
           setVideoTileCount(videoTilesRef.current.size);
         };
-        room.on(RoomEvent.TrackSubscribed, attachTrack); room.on(RoomEvent.TrackPublished, async (publication) => { try { await publication.setSubscribed(true); } catch { /* already subscribed */ } });
+        room.on(RoomEvent.TrackSubscribed, attachTrack);
+        room.on(RoomEvent.TrackPublished, async (publication, participant) => {
+          try {
+            await publication.setSubscribed(true);
+            if (publication.track) attachTrack(publication.track, publication, participant);
+          } catch { /* the publication may have ended while joining */ }
+        });
         await room.connect(data.serverUrl, data.token, { autoSubscribe: true });
         if (data.canPublish) {
           try {
@@ -187,9 +197,14 @@ export default function Live({ user }) {
             }
           });
         }
-        room.remoteParticipants.forEach((participant) => participant.trackPublications.forEach((publication) => {
-          if (publication.isSubscribed && publication.track) attachTrack(publication.track, publication, participant);
-        }));
+        for (const participant of room.remoteParticipants.values()) {
+          for (const publication of participant.trackPublications.values()) {
+            if (publication.kind === Track.Kind.Video && !publication.isSubscribed) {
+              try { await publication.setSubscribed(true); } catch { /* publication may have ended */ }
+            }
+            if (publication.isSubscribed && publication.track) attachTrack(publication.track, publication, participant);
+          }
+        }
         setPublishing(Boolean(data.canPublish)); setConnected(true);
       } catch (error) { setMessage(error.message || 'Could not connect to the live room.'); }
     };
