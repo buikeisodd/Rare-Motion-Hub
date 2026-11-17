@@ -450,6 +450,9 @@ const apiUrl = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || 'htt
     setUser(null);
     setAuthStatus('unauthenticated');
     setJustAuthenticated(false);
+    // Logout is an explicit authentication action. Always land on the sign-in
+    // screen; the public landing page is reserved for a fresh public visit.
+    window.location.replace('/login');
   };
 
   const handleUserUpdate = (nextUser) => {
