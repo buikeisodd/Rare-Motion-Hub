@@ -383,14 +383,10 @@ const apiUrl = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || 'htt
     async function restoreSession() {
       const requestEpoch = authEpoch.current;
       try {
-        let res = await fetch(`${apiUrl}/api/auth/me`, { credentials: 'include' });
-        // /auth/me is intentionally exempt from the global interceptor. If a
-        // returning browser has an expired access cookie but a valid refresh
-        // cookie, refresh once here before treating it as signed out.
-        if (res.status === 401) {
-          const refreshed = await fetch(`${apiUrl}/api/auth/refresh`, { method: 'POST', credentials: 'include' });
-          if (refreshed.ok) res = await fetch(`${apiUrl}/api/auth/me`, { credentials: 'include' });
-        }
+        // The global fetch layer owns silent refresh. Keeping bootstrap on
+        // that same single-flight path prevents two refresh requests from
+        // rotating the same one-time refresh token concurrently.
+        const res = await fetch(`${apiUrl}/api/auth/me`, { credentials: 'include' });
         if (cancelled) return;
         // A slow startup request must not undo a login that completed while
         // it was in flight (common on mobile networks).

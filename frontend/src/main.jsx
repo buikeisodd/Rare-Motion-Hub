@@ -12,7 +12,6 @@ const originalFetch = window.fetch;
 let refreshPromise = null;
 
 const isAuthExemptUrl = (url) => (
-  url.includes('/api/auth/me') ||
   url.includes('/api/auth/refresh') ||
   url.includes('/api/auth/register') ||
   url.includes('/api/auth/login') ||
@@ -115,7 +114,10 @@ window.fetch = async (url, options = {}) => {
       res = await originalFetch(url, retryOptions);
       if (res.status !== 401) return res;
     }
-    forceLogout();
+    // /auth/me is the bootstrap probe. A failed refresh there means the
+    // browser is simply unauthenticated; let App render the login state
+    // without forcing a navigation that can create a redirect loop.
+    if (!url.includes('/api/auth/me')) forceLogout();
     return res;
   }
 
