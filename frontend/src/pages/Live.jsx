@@ -111,6 +111,13 @@ export default function Live({ user }) {
         const data = await apiRequest('/api/live');
         const current = (data.sessions || []).find((item) => item.id === active.id);
         if (current) setActive((previous) => ({ ...previous, ...current }));
+        else {
+          setMessage('The host has disconnected. This live has ended.');
+          roomRef.current?.disconnect();
+          setActive(null);
+          setSessions((items) => items.filter((item) => item.id !== active.id));
+          navigate('/live');
+        }
       } catch { /* presence refresh is best effort */ }
     }, 4000);
     return () => window.clearInterval(timer);
@@ -139,6 +146,13 @@ export default function Live({ user }) {
             const sender = event.sender || participant?.identity || participant?.name || 'Listener';
             if (event.type === 'chat') setLiveMessages((current) => [...current.slice(-49), { ...event, sender }]);
             if (event.type === 'reaction') setLiveMessages((current) => [...current.slice(-49), { ...event, sender, text: `${event.emoji} reaction` }]);
+            if (event.type === 'host-ended') {
+              setMessage('The host has disconnected. This live has ended.');
+              room?.disconnect();
+              setActive(null);
+              setSessions((items) => items.filter((item) => item.id !== active.id));
+              navigate('/live');
+            }
           } catch { /* Ignore malformed room data from clients. */ }
         });
         const attachTrack = (track, publication, participant, force = false) => {
@@ -248,7 +262,18 @@ export default function Live({ user }) {
   const end = async () => {
     if (!active || active.hostId !== user?.id) return;
     setBusy(true);
-    try { await fetch(`${apiUrl}/api/live/${active.id}/end`, { method: 'POST', credentials: 'include' }); setActive(null); setSessions((current) => current.filter((item) => item.id !== active.id)); navigate('/live'); }
+    try {
+      if (roomRef.current && connected) {
+        await roomRef.current.localParticipant.publishData(
+          new TextEncoder().encode(JSON.stringify({ type: 'host-ended', sender: user?.username || user?.name || 'Host' })),
+          { reliable: true },
+        );
+      }
+      await fetch(`${apiUrl}/api/live/${active.id}/end`, { method: 'POST', credentials: 'include' });
+      setActive(null);
+      setSessions((current) => current.filter((item) => item.id !== active.id));
+      navigate('/live');
+    }
     catch { setMessage('Could not end live room.'); } finally { setBusy(false); }
   };
 
