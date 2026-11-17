@@ -159,7 +159,7 @@ export default function Live({ user }) {
     };
     connect();
     return () => { cancelled = true; setConnected(false); setPublishing(false); setVideoUnavailable(false); setCameraOn(true); setMicOn(true); setLiveMessages([]); attachedTrackIds.current.clear(); roomRef.current = null; room?.disconnect(); document.getElementById('live-media-stage')?.replaceChildren(); };
-  }, [active]);
+  }, [active?.id]);
 
   const start = async (event) => {
     event.preventDefault();
