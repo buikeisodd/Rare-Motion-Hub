@@ -22,6 +22,19 @@ function Surface({ children, className = '' }) {
   return <section className={`rounded-[1.5rem] border border-[#34483B]/10 bg-[#F3EBDD]/85 shadow-[0_18px_55px_rgba(52,72,59,0.12)] backdrop-blur-xl ${className}`}>{children}</section>;
 }
 
+const commentTones = [
+  { border: '#B86BFF', background: 'rgba(184,107,255,.1)', text: '#7F35B2' },
+  { border: '#FF5A67', background: 'rgba(255,90,103,.1)', text: '#B62F3D' },
+  { border: '#E4B43C', background: 'rgba(228,180,60,.14)', text: '#936D00' },
+  { border: '#F28C3A', background: 'rgba(242,140,58,.12)', text: '#A44D0B' },
+  { border: '#3EA7A0', background: 'rgba(62,167,160,.11)', text: '#13736D' },
+];
+
+function toneForComment(sender = '') {
+  const hash = Array.from(sender).reduce((total, character) => total + character.charCodeAt(0), 0);
+  return commentTones[hash % commentTones.length];
+}
+
 function LivePreview({ session }) {
   const mediaRef = useRef(null);
   useEffect(() => {
@@ -221,7 +234,7 @@ export default function Live({ user }) {
             </div>
             <aside className="live-chat-panel live-chat-overlay absolute bottom-0 right-0 top-0 flex min-h-0 w-full max-w-sm flex-col border-l border-primary-background/10 p-4 text-primary-label">
               <div className="mb-3 flex items-center justify-end"><button type="button" onClick={sendReaction} aria-label="Send reaction" className="rounded-xl p-2 text-red-600"><Heart size={18} /></button></div>
-              <div className="live-chat-list min-h-0 flex-1 space-y-2 overflow-y-auto text-sm">{liveMessages.map((item, index) => <p className="live-chat-message" key={`${item.sender}-${index}`}><strong>{item.sender}</strong> {item.text}</p>)}</div>
+              <div className="live-chat-list min-h-0 flex-1 space-y-2 overflow-y-auto text-sm">{liveMessages.map((item, index) => { const tone = toneForComment(item.sender); return <p className="live-chat-message" style={{ borderLeftColor: tone.border, backgroundColor: tone.background }} key={`${item.sender}-${index}`}><strong style={{ color: tone.text }}>{item.sender}</strong> {item.text}</p>; })}</div>
               <form onSubmit={sendChat} className="mt-3 flex gap-2"><input value={chatText} onChange={(event) => setChatText(event.target.value)} placeholder="Say something..." className="min-w-0 flex-1 rounded-xl border border-primary-label/15 bg-white/60 px-3 py-2 outline-none" /><button type="submit" aria-label="Send message" className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary-label text-primary-background"><Send size={16} /></button></form>
             </aside>
           </div>
