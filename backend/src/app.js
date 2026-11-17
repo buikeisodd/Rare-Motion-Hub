@@ -21,10 +21,9 @@ const IS_PROD = process.env.NODE_ENV === 'production';
 // the response anyway, but we enforce it here explicitly so a misconfigured
 // environment variable can't accidentally open a security hole.
 //
-// Production: CORS_ORIGINS must be set. Comma-separated list of exact
-// origins, e.g. "https://app.starlightstation.com,https://starlightstation.com".
-// The app will log a warning and serve no credentialed cross-origin requests
-// if this var is missing in production.
+// Production: CORS_ORIGINS may contain additional exact origins. FRONTEND_URL
+// and the deployed Vercel origin are included as exact fallbacks so a missing
+// Render variable does not break the primary web application.
 //
 // Development: falls back to localhost on both common Vite ports (5173, 3000).
 // Never include these in the production list.
@@ -36,15 +35,14 @@ const explicitOrigins = (process.env.CORS_ORIGINS || '')
   .map((o) => o.trim())
   .filter(Boolean);
 
-if (IS_PROD && explicitOrigins.length === 0) {
-  console.warn(
-    '[CORS] WARNING: NODE_ENV=production but CORS_ORIGINS is not set. ' +
-    'No cross-origin requests with credentials will be permitted. ' +
-    'Set CORS_ORIGINS to a comma-separated list of allowed origins.'
-  );
-}
+const configuredFrontendOrigin = (process.env.FRONTEND_URL || '')
+  .trim()
+  .replace(/\/$/, '');
+const deployedFrontendOrigin = 'https://rare-motion-hub.vercel.app';
 
-const allowedOrigins = IS_PROD ? explicitOrigins : [...explicitOrigins, ...DEV_ORIGINS];
+const allowedOrigins = IS_PROD
+  ? [...new Set([...explicitOrigins, configuredFrontendOrigin, deployedFrontendOrigin].filter(Boolean))]
+  : [...explicitOrigins, ...DEV_ORIGINS];
 
 const originCallback = (origin, callback) => {
   if (!origin) return callback(null, true);
@@ -53,7 +51,9 @@ const originCallback = (origin, callback) => {
   if (!IS_PROD && (origin.includes('localhost') || origin.includes('127.0.0.1'))) {
     return callback(null, true);
   }
-  return callback(Object.assign(new Error('Not allowed by CORS'), { status: 403 }));
+  const error = Object.assign(new Error('Not allowed by CORS'), { status: 403 });
+  console.warn(`[CORS] Rejected origin: ${origin || '(none)'}`);
+  return callback(error);
 };
 
 app.use(cors({
