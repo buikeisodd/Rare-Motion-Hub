@@ -143,12 +143,18 @@ const cookieOptions = (maxAge, overrides = {}) => ({
 
 const clearAuthCookies = (res) => {
   const opts = cookieOptions(0);
-  res.clearCookie(cookieName('accessToken'), opts);
-  res.clearCookie(cookieName('refreshToken'), opts);
-  res.clearCookie(cookieName('sessionId'), opts);
+  const names = ['accessToken', 'refreshToken', 'sessionId'];
+  names.forEach((name) => {
+    res.clearCookie(cookieName(name), opts);
+    // Remove cookies issued by the previous production naming scheme so an
+    // old browser cannot keep presenting a stale session beside the current
+    // __Secure cookie.
+    if (IS_PROD) res.clearCookie(`__Host-${name}`, opts);
+  });
   // csrfToken is readable by JS (httpOnly: false) so the frontend
   // can include it in request headers for CSRF double-submit.
   res.clearCookie(cookieName('csrfToken'), { ...opts, httpOnly: false });
+  if (IS_PROD) res.clearCookie('__Host-csrfToken', { ...opts, httpOnly: false });
 };
 
 const readCookie = (req, name) => {

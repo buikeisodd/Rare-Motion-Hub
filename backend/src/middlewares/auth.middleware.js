@@ -18,9 +18,15 @@ const readAuthCookie = (req, name) => {
   const prefixes = IS_PROD
     ? [`__Secure-${name}=`, `__Host-${name}=`]
     : [`${name}=`];
-  const match = cookieHeader.split(';').map((v) => v.trim()).find((value) => prefixes.some((prefix) => value.startsWith(prefix)));
-  if (!match) return '';
-  return decodeURIComponent(match.slice(match.indexOf('=') + 1));
+  const items = cookieHeader.split(';').map((v) => v.trim());
+  // Prefer the current __Secure cookie over the legacy __Host cookie. A
+  // browser can retain both after deployment, and header order is not a
+  // reliable indication of which session is current.
+  for (const prefix of prefixes) {
+    const match = items.find((value) => value.startsWith(prefix));
+    if (match) return decodeURIComponent(match.slice(prefix.length));
+  }
+  return '';
 };
 
 const unsafeMethods = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
