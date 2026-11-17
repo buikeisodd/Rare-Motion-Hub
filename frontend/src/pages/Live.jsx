@@ -146,10 +146,15 @@ export default function Live({ user }) {
           if (trackId) attachedTrackIds.current.add(trackId);
           const tileKey = participant?.identity || (track.source === Track.Source.ScreenShare ? 'local-screen' : 'local-camera');
           const previous = videoTilesRef.current.get(tileKey);
+          // Screen share is the participant's primary tile. A camera
+          // publication can arrive after it and must not replace the shared
+          // screen due to LiveKit event ordering.
+          if (track.source !== Track.Source.ScreenShare && previous?.dataset?.liveSource === 'screen') return;
           if (previous) previous.remove();
           const element = track.attach();
           if (track.kind === Track.Kind.Video) {
             element.className = track.source === Track.Source.ScreenShare ? 'live-screen-share h-full w-full object-contain bg-black' : 'h-full w-full object-cover';
+            element.dataset.liveSource = track.source === Track.Source.ScreenShare ? 'screen' : 'camera';
             videoTilesRef.current.set(tileKey, element);
           }
           if (track.kind === Track.Kind.Audio) element.className = 'hidden';
@@ -169,6 +174,7 @@ export default function Live({ user }) {
             const element = publication.track?.attach();
             if (element) {
               element.className = 'h-full w-full object-cover';
+              element.dataset.liveSource = 'camera';
               const previous = videoTilesRef.current.get(user?.id || 'local-camera');
               if (previous) previous.remove();
               videoTilesRef.current.set(user?.id || 'local-camera', element);
