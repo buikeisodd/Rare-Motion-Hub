@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link, useNavigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import Login from './pages/Login';
+import Landing from './pages/Landing';
 import VerifyEmail from './pages/VerifyEmail';
 import Dashboard from './pages/Dashboard';
 import Project from './pages/Project';
@@ -159,6 +160,7 @@ function AnimatedRoutes({ user, authStatus, handleLogin, handleLogout, handleUse
     return (
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
+          <Route path="/" element={<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><Landing /></motion.div>} />
           <Route path="/login" element={<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><Login onLogin={handleLogin} /></motion.div>} />
           <Route path="/verify-email" element={<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}><VerifyEmail onLogin={handleLogin} /></motion.div>} />
           <Route path="/shared/:type/:id" element={<Navigate to={`/login?redirect=${encodeURIComponent(location.pathname)}`} replace />} />
