@@ -5,7 +5,8 @@ import ChatInbox from '../components/ChatInbox';
 import ConfirmModal from '../components/ConfirmModal';
 import UserAvatar from '../components/UserAvatar';
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+// Production uses the same-origin Vercel /api proxy so auth cookies stay first-party.
+const apiUrl = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:4000');
 const authFetch = (url, options = {}) => {
   return fetch(url, { ...options, credentials: 'include' });
 };

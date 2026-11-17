@@ -4,7 +4,8 @@ import { Link, useParams } from 'react-router-dom';
 import { ChevronLeft, Music, Play } from 'lucide-react';
 import PageLoading from '../components/PageLoading';
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+// Production uses the same-origin Vercel /api proxy so auth cookies stay first-party.
+const apiUrl = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:4000');
 
 function ListenerAvatar({ listener }) {
   return <UserAvatar user={listener} size="h-9 w-9 sm:h-11 sm:w-11" />;

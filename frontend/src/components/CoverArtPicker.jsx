@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, UploadCloud, Image as ImageIcon, Trash2, Loader2 } from 'lucide-react';
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+// Production uses the same-origin Vercel /api proxy so auth cookies stay first-party.
+const apiUrl = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:4000');
 
 export default function CoverArtPicker({ isOpen, onClose, onSelect, projectId, userId, onRefresh, projectCoverUrl }) {
   const [covers, setCovers] = useState([]);

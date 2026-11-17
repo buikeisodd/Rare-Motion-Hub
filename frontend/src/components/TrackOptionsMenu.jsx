@@ -7,7 +7,8 @@ import {
 } from 'lucide-react';
 import ConfirmModal from './ConfirmModal';
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+// Production uses the same-origin Vercel /api proxy so auth cookies stay first-party.
+const apiUrl = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:4000');
 
 function formatTrackDate(dateStr) {
   if (!dateStr) return '';
@@ -882,7 +883,7 @@ export default function TrackOptionsMenu({
 }
 
 export function replaceTrackAudio(track, file, userId, onProgress) {
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+  const apiUrl = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:4000');
   const csrfToken = localStorage.getItem('csrfToken');
   const readApiResponse = async (response, fallbackMessage) => {
     const text = await response.text();

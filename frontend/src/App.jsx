@@ -362,7 +362,8 @@ function App() {
   const [justAuthenticated, setJustAuthenticated] = useState(false);
   const [mobileInboxOpen, setMobileInboxOpen] = useState(false);
   const authEpoch = useRef(0);
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+// Production uses the same-origin Vercel /api proxy so auth cookies stay first-party.
+const apiUrl = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:4000');
 
   const deriveAuthStatus = (userData) => {
     if (!userData) return 'unauthenticated';

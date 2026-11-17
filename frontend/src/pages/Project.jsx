@@ -11,7 +11,8 @@ import MarqueeInput from '../components/MarqueeInput';
 import TrackOptionsMenu, { replaceTrackAudio } from '../components/TrackOptionsMenu';
 import { useAudio } from '../context/AudioContext';
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+// Production uses the same-origin Vercel /api proxy so auth cookies stay first-party.
+const apiUrl = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:4000');
 
 function timeAgo(dateStr) {
   const uploaded = new Date(dateStr);

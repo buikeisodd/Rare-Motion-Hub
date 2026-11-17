@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft, Bookmark, Play, Music2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+// Production uses the same-origin Vercel /api proxy so auth cookies stay first-party.
+const apiUrl = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:4000');
 export default function Saved() {
   const [items, setItems] = useState([]); const [beats, setBeats] = useState([]);
   useEffect(() => { Promise.all([fetch(apiUrl + '/api/feed', { credentials: 'include' }).then((res) => res.json()), fetch(apiUrl + '/api/marketplace/saved', { credentials: 'include' }).then((res) => res.ok ? res.json() : { beats: [] })]).then(([feed, marketplace]) => { setItems((feed.items || []).filter((item) => item.savedByMe)); setBeats(marketplace.beats || []); }).catch(() => {}); }, []);

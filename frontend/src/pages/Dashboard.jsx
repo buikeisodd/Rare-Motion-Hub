@@ -9,7 +9,8 @@ import MarqueeInput from '../components/MarqueeInput';
 import { useAudio } from '../context/AudioContext';
 import { defaultGradient, gradientFor } from '../utils/gradients';
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+// Production uses the same-origin Vercel /api proxy so auth cookies stay first-party.
+const apiUrl = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:4000');
 // Cookie-only auth — credentials:include sends HttpOnly cookies automatically.
 // The global fetch interceptor in main.jsx adds the CSRF header.
 const authHeaders = (json = false) => ({

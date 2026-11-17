@@ -3,7 +3,8 @@ import { Search, X, UserRound, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import UserAvatar from './UserAvatar';
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+// Production uses the same-origin Vercel /api proxy so auth cookies stay first-party.
+const apiUrl = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:4000');
 
 export default function UserSearch({ currentUser, onSelectUser }) {
   const [query, setQuery] = useState('');

@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { X, Copy, Check } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+// Production uses the same-origin Vercel /api proxy so auth cookies stay first-party.
+const apiUrl = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:4000');
 
 export default function ShareLinkModal({ isOpen, onClose, type, targetId, userId }) {
   const [expiration, setExpiration] = useState('never');

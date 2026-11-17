@@ -63,7 +63,8 @@ export default function UploadModal({ isOpen, onClose, onSuccess, onProgress, on
     setError('');
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+// Production uses the same-origin Vercel /api proxy so auth cookies stay first-party.
+const apiUrl = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:4000');
       // Credentials are in HttpOnly cookies — no Authorization header needed.
       const signatureRes = await fetch(`${apiUrl}/api/upload/signature`, { credentials: 'include' });
       const signature = await signatureRes.json();

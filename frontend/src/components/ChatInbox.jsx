@@ -5,7 +5,8 @@ import { Link } from 'react-router-dom';
 import ConfirmModal from './ConfirmModal';
 import UserAvatar from './UserAvatar';
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+// Production uses the same-origin Vercel /api proxy so auth cookies stay first-party.
+const apiUrl = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:4000');
 const authFetch = (url, options = {}) => fetch(url, { ...options, credentials: 'include' });
 const formatChatTime = (value) => {
   if (!value) return '';

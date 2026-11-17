@@ -3,7 +3,8 @@ import { ArrowLeft, Pause, Play, MoreHorizontal, Trash2, Upload, Store, X, Plus,
 import { Link } from 'react-router-dom';
 import ConfirmModal from '../components/ConfirmModal';
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+// Production uses the same-origin Vercel /api proxy so auth cookies stay first-party.
+const apiUrl = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:4000');
 const CATEGORIES = ['beat', 'song', 'sample'];
 const INSTRUMENTS = ['Piano', 'Guitar', 'Bass', 'Drums', '808', 'Strings', 'Brass', 'Woodwind', 'Synth', 'Vocal', 'Percussion', 'Orchestral', 'FX', 'Other'];
 const MUSICAL_KEYS = ['C major', 'D major', 'E major', 'F major', 'G major', 'A major', 'B major', 'C minor', 'D minor', 'E minor', 'F minor', 'G minor', 'A minor', 'B minor', 'C sharp major', 'D sharp major', 'F sharp major', 'G sharp major', 'A sharp major', 'C sharp minor', 'D sharp minor', 'F sharp minor', 'G sharp minor', 'A sharp minor'];

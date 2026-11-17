@@ -4,7 +4,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Radio, Video, X, LogOut, Users, ArrowLeft, Mic, MicOff, Camera, CameraOff, Send, Heart } from 'lucide-react';
 import { Room, RoomEvent, Track } from 'livekit-client';
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+// Production uses the same-origin Vercel /api proxy so auth cookies stay first-party.
+const apiUrl = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:4000');
 
 async function apiRequest(path, options = {}) {
   const response = await fetch(`${apiUrl}${path}`, { ...options, credentials: 'include' });

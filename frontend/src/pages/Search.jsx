@@ -3,7 +3,8 @@ import { ArrowLeft, Search as SearchIcon, UserRound } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import UserAvatar from '../components/UserAvatar';
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+// Production uses the same-origin Vercel /api proxy so auth cookies stay first-party.
+const apiUrl = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:4000');
 
 const authFetch = (url, options = {}) => {
   const csrfToken = localStorage.getItem('csrfToken');

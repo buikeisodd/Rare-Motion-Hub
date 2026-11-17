@@ -3,7 +3,8 @@ import { Archive, ArrowLeft, Bookmark, CreditCard, LogOut, Shield, Trash2, UserR
 import { Link, useNavigate } from 'react-router-dom';
 import ConfirmModal from '../components/ConfirmModal';
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+// Production uses the same-origin Vercel /api proxy so auth cookies stay first-party.
+const apiUrl = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:4000');
 
 export default function Settings({ user, onLogout }) {
   const navigate = useNavigate();

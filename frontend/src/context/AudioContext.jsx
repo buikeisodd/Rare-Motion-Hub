@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useRef, useEffect } from 'react';
 
 const AudioPlayerContext = createContext(null);
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+// Production uses the same-origin Vercel /api proxy so auth cookies stay first-party.
+const apiUrl = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:4000');
 
 const resolveTrackUrl = (url) => {
   if (!url) return url;

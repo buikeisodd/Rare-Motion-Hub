@@ -9,7 +9,8 @@ import ConfirmModal from '../components/ConfirmModal';
 import { useAudio } from '../context/AudioContext';
 import UserAvatar from '../components/UserAvatar';
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+// Production uses the same-origin Vercel /api proxy so auth cookies stay first-party.
+const apiUrl = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:4000');
 const MAX_QUICK_ADD_SUGGESTIONS = 5;
 const Link = (props) => <RouterLink {...props} to={(props.children === 'Settings' || (Array.isArray(props.children) && props.children.includes('Settings'))) ? '/settings' : props.to} />;
 const dateLabel = (value) => value ? new Date(value).toLocaleDateString([], { month: 'short', day: 'numeric' }) : '';

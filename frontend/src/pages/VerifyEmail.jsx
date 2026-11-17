@@ -7,7 +7,8 @@ export default function VerifyEmail({ onLogin }) {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const [state, setState] = useState({ status: 'loading', message: 'Verifying your email...' });
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+// Production uses the same-origin Vercel /api proxy so auth cookies stay first-party.
+const apiUrl = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:4000');
 
   useEffect(() => {
     const token = params.get('token');
