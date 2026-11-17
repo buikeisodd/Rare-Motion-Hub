@@ -18,6 +18,13 @@ async function apiRequest(path, options = {}) {
   return body;
 }
 
+function promoteLiveVideo(element) {
+  const stage = document.getElementById('live-media-stage');
+  if (!stage || !element) return;
+  stage.querySelectorAll('video').forEach((video) => video.classList.remove('live-featured'));
+  element.classList.add('live-featured');
+}
+
 function Surface({ children, className = '' }) {
   return <section className={`rounded-[1.5rem] border border-[#34483B]/10 bg-[#F3EBDD]/85 shadow-[0_18px_55px_rgba(52,72,59,0.12)] backdrop-blur-xl ${className}`}>{children}</section>;
 }
@@ -144,7 +151,11 @@ export default function Live({ user }) {
           if (trackId && attachedTrackIds.current.has(trackId)) return;
           if (trackId) attachedTrackIds.current.add(trackId);
           const element = track.attach();
-          if (track.kind === Track.Kind.Video) element.className = track.source === Track.Source.ScreenShare ? 'h-full min-h-[16rem] w-full rounded-xl object-contain bg-black' : 'h-full min-h-[16rem] w-full rounded-xl object-contain';
+          if (track.kind === Track.Kind.Video) {
+            element.className = track.source === Track.Source.ScreenShare ? 'live-screen-share h-full min-h-[16rem] w-full rounded-xl object-contain bg-black' : 'h-full min-h-[16rem] w-full rounded-xl object-contain';
+            element.addEventListener('click', () => promoteLiveVideo(element));
+            if (track.source === Track.Source.ScreenShare) promoteLiveVideo(element);
+          }
           if (track.kind === Track.Kind.Audio) element.className = 'hidden';
           document.getElementById('live-media-stage')?.appendChild(element);
         };
@@ -162,6 +173,7 @@ export default function Live({ user }) {
             const element = publication.track?.attach();
             if (element) {
               element.className = 'h-full min-h-[16rem] w-full rounded-xl object-cover';
+              element.addEventListener('click', () => promoteLiveVideo(element));
               const trackId = publication.track.sid || publication.track.mediaStreamTrack?.id;
               if (trackId) attachedTrackIds.current.add(trackId);
               document.getElementById('live-media-stage')?.appendChild(element);
@@ -232,7 +244,8 @@ export default function Live({ user }) {
       localElement.muted = true;
       localElement.autoplay = true;
       localElement.playsInline = true;
-      localElement.className = 'live-local-screen-share absolute inset-0 z-10 h-full w-full rounded-xl object-contain';
+      localElement.className = 'live-local-screen-share live-screen-share live-featured absolute inset-0 z-10 h-full w-full rounded-xl object-contain';
+      localElement.addEventListener('click', () => promoteLiveVideo(localElement));
       document.getElementById('live-media-stage')?.appendChild(localElement);
       screenElementsRef.current = [localElement];
       const audioSource = stream.getAudioTracks()[0];
