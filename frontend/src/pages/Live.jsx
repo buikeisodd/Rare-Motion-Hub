@@ -220,7 +220,7 @@ export default function Live({ user }) {
       {active ? (
         <Surface className="live-room-shell relative flex min-h-[calc(100vh-8rem)] min-h-0 flex-col overflow-hidden">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-primary-label/10 px-5 py-4">
-            <div><p className="text-xs font-bold uppercase tracking-[0.18em] text-primary-label/60">Live room</p><h2 className="mt-1 text-2xl font-semibold">{active.title}</h2></div>
+            <div><h2 className="text-2xl font-semibold">{active.title}</h2></div>
             <div className="flex items-center gap-3 text-sm text-primary-label/70">
               <span className="inline-flex items-center gap-1"><Users size={15} /> {active.viewerCount || active.viewerIds?.length || 0}</span>
               {active.hostId !== user?.id && !publishing && <button type="button" onClick={requestToSpeak} disabled={requestStatus === 'pending'} className="rounded-xl bg-primary-label px-3 py-2 text-xs font-semibold text-primary-background">{requestStatus === 'pending' ? 'Request sent' : 'Request to join'}</button>}
