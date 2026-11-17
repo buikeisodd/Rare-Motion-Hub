@@ -133,9 +133,6 @@ const cookieOptions = (maxAge, overrides = {}) => ({
   httpOnly: true,
   secure: IS_PROD,
   sameSite: IS_PROD ? 'none' : 'lax',
-  // Allows the session to remain available when a browser partitions or
-  // blocks third-party cookies during the Vercel-to-Render transition.
-  ...(IS_PROD ? { partitioned: true } : {}),
   path: '/',
   maxAge,
   ...overrides
@@ -143,18 +140,23 @@ const cookieOptions = (maxAge, overrides = {}) => ({
 
 const clearAuthCookies = (res) => {
   const opts = cookieOptions(0);
+  // Clear both cookie generations. The previous deployment used the
+  // Partitioned attribute, which browsers store separately from an otherwise
+  // identical first-party cookie.
+  const partitionedOpts = { ...opts, partitioned: true };
+  const cookieVariants = [opts, partitionedOpts];
   const names = ['accessToken', 'refreshToken', 'sessionId'];
   names.forEach((name) => {
-    res.clearCookie(cookieName(name), opts);
+    cookieVariants.forEach((variant) => res.clearCookie(cookieName(name), variant));
     // Remove cookies issued by the previous production naming scheme so an
     // old browser cannot keep presenting a stale session beside the current
     // __Secure cookie.
-    if (IS_PROD) res.clearCookie(`__Host-${name}`, opts);
+    if (IS_PROD) cookieVariants.forEach((variant) => res.clearCookie(`__Host-${name}`, variant));
   });
   // csrfToken is readable by JS (httpOnly: false) so the frontend
   // can include it in request headers for CSRF double-submit.
-  res.clearCookie(cookieName('csrfToken'), { ...opts, httpOnly: false });
-  if (IS_PROD) res.clearCookie('__Host-csrfToken', { ...opts, httpOnly: false });
+  cookieVariants.forEach((variant) => res.clearCookie(cookieName('csrfToken'), { ...variant, httpOnly: false }));
+  if (IS_PROD) cookieVariants.forEach((variant) => res.clearCookie('__Host-csrfToken', { ...variant, httpOnly: false }));
 };
 
 const readCookie = (req, name) => {
