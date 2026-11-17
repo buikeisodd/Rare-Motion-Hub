@@ -18,13 +18,6 @@ async function apiRequest(path, options = {}) {
   return body;
 }
 
-function promoteLiveVideo(element) {
-  const stage = document.getElementById('live-media-stage');
-  if (!stage || !element) return;
-  stage.querySelectorAll('video').forEach((video) => video.classList.remove('live-featured'));
-  element.classList.add('live-featured');
-}
-
 function Surface({ children, className = '' }) {
   return <section className={`rounded-[1.5rem] border border-[#34483B]/10 bg-[#F3EBDD]/85 shadow-[0_18px_55px_rgba(52,72,59,0.12)] backdrop-blur-xl ${className}`}>{children}</section>;
 }
@@ -96,6 +89,7 @@ export default function Live({ user }) {
   const roomRef = useRef(null);
   const screenTracksRef = useRef([]);
   const screenElementsRef = useRef([]);
+  const videoTilesRef = useRef(new Map());
   const attachedTrackIds = useRef(new Set());
   const [requestStatus, setRequestStatus] = useState('');
   const [joinRequests, setJoinRequests] = useState([]);
@@ -146,15 +140,17 @@ export default function Live({ user }) {
             if (event.type === 'reaction') setLiveMessages((current) => [...current.slice(-49), { ...event, sender, text: `${event.emoji} reaction` }]);
           } catch { /* Ignore malformed room data from clients. */ }
         });
-        const attachTrack = (track) => {
+        const attachTrack = (track, publication, participant) => {
           const trackId = track.sid || track.mediaStreamTrack?.id;
           if (trackId && attachedTrackIds.current.has(trackId)) return;
           if (trackId) attachedTrackIds.current.add(trackId);
+          const tileKey = participant?.identity || (track.source === Track.Source.ScreenShare ? 'local-screen' : 'local-camera');
+          const previous = videoTilesRef.current.get(tileKey);
+          if (previous) previous.remove();
           const element = track.attach();
           if (track.kind === Track.Kind.Video) {
-            element.className = track.source === Track.Source.ScreenShare ? 'live-screen-share h-full min-h-[16rem] w-full rounded-xl object-contain bg-black' : 'h-full min-h-[16rem] w-full rounded-xl object-contain';
-            element.addEventListener('click', () => promoteLiveVideo(element));
-            if (track.source === Track.Source.ScreenShare) promoteLiveVideo(element);
+            element.className = track.source === Track.Source.ScreenShare ? 'live-screen-share h-full w-full object-contain bg-black' : 'h-full w-full object-cover';
+            videoTilesRef.current.set(tileKey, element);
           }
           if (track.kind === Track.Kind.Audio) element.className = 'hidden';
           document.getElementById('live-media-stage')?.appendChild(element);
@@ -172,8 +168,10 @@ export default function Live({ user }) {
           room.localParticipant.videoTrackPublications.forEach((publication) => {
             const element = publication.track?.attach();
             if (element) {
-              element.className = 'h-full min-h-[16rem] w-full rounded-xl object-cover';
-              element.addEventListener('click', () => promoteLiveVideo(element));
+              element.className = 'h-full w-full object-cover';
+              const previous = videoTilesRef.current.get(user?.id || 'local-camera');
+              if (previous) previous.remove();
+              videoTilesRef.current.set(user?.id || 'local-camera', element);
               const trackId = publication.track.sid || publication.track.mediaStreamTrack?.id;
               if (trackId) attachedTrackIds.current.add(trackId);
               document.getElementById('live-media-stage')?.appendChild(element);
@@ -181,13 +179,13 @@ export default function Live({ user }) {
           });
         }
         room.remoteParticipants.forEach((participant) => participant.trackPublications.forEach((publication) => {
-          if (publication.isSubscribed && publication.track) attachTrack(publication.track);
+          if (publication.isSubscribed && publication.track) attachTrack(publication.track, publication, participant);
         }));
         setPublishing(Boolean(data.canPublish)); setConnected(true);
       } catch (error) { setMessage(error.message || 'Could not connect to the live room.'); }
     };
     connect();
-    return () => { cancelled = true; screenTracksRef.current.forEach((track) => { try { room?.localParticipant.unpublishTrack(track); } catch {} track.stop(); }); screenTracksRef.current = []; screenElementsRef.current.forEach((element) => element.remove()); screenElementsRef.current = []; setScreenSharing(false); setConnected(false); setPublishing(false); setVideoUnavailable(false); setCameraOn(true); setMicOn(true); setLiveMessages([]); attachedTrackIds.current.clear(); roomRef.current = null; room?.disconnect(); document.getElementById('live-media-stage')?.replaceChildren(); };
+    return () => { cancelled = true; screenTracksRef.current.forEach((track) => { try { room?.localParticipant.unpublishTrack(track); } catch {} track.stop(); }); screenTracksRef.current = []; screenElementsRef.current.forEach((element) => element.remove()); screenElementsRef.current = []; videoTilesRef.current.clear(); setScreenSharing(false); setConnected(false); setPublishing(false); setVideoUnavailable(false); setCameraOn(true); setMicOn(true); setLiveMessages([]); attachedTrackIds.current.clear(); roomRef.current = null; room?.disconnect(); document.getElementById('live-media-stage')?.replaceChildren(); };
   }, [active?.id, connectionNonce]);
 
   const start = async (event) => {
@@ -244,8 +242,10 @@ export default function Live({ user }) {
       localElement.muted = true;
       localElement.autoplay = true;
       localElement.playsInline = true;
-      localElement.className = 'live-local-screen-share live-screen-share live-featured absolute inset-0 z-10 h-full w-full rounded-xl object-contain';
-      localElement.addEventListener('click', () => promoteLiveVideo(localElement));
+      localElement.className = 'live-local-screen-share live-screen-share h-full w-full object-contain';
+      const previousCamera = videoTilesRef.current.get(user?.id || 'local-camera');
+      if (previousCamera) previousCamera.remove();
+      videoTilesRef.current.set(user?.id || 'local-camera', localElement);
       document.getElementById('live-media-stage')?.appendChild(localElement);
       screenElementsRef.current = [localElement];
       const audioSource = stream.getAudioTracks()[0];
