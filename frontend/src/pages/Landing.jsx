@@ -1,4 +1,5 @@
-import { ArrowRight, Headphones, Layers3, Radio, Sparkles, MessageCircle, ShoppingBag, BarChart3, Heart } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ArrowRight, Headphones, Layers3, Radio, MessageCircle, ShoppingBag, BarChart3, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import StarlightLogo from '../components/StarlightLogo';
 
@@ -11,7 +12,21 @@ const highlights = [
   { icon: BarChart3, title: 'See the signal', text: 'Understand listens, engagement, and project momentum through focused insights.' },
 ];
 
+const landingQuotes = [
+  'Make room for the next sound.',
+  'Let the unfinished become something.',
+  'Keep the idea moving.',
+  'Hear what comes next.',
+  'Give the work a place to grow.',
+];
+
 export default function Landing() {
+  const [quoteIndex, setQuoteIndex] = useState(0);
+  useEffect(() => {
+    const timer = window.setInterval(() => setQuoteIndex((current) => (current + 1) % landingQuotes.length), 4200);
+    return () => window.clearInterval(timer);
+  }, []);
+
   return (
     <main className="landing-page min-h-screen overflow-hidden bg-primary-background text-primary-label">
       <div className="landing-glow landing-glow-one" aria-hidden="true" />
@@ -26,8 +41,7 @@ export default function Landing() {
 
       <section className="relative z-10 mx-auto grid min-h-[min(760px,calc(100vh-5rem))] w-full max-w-7xl items-center gap-12 px-5 pb-16 pt-10 sm:px-8 lg:grid-cols-[minmax(0,1.02fr)_minmax(25rem,.98fr)] lg:px-12 lg:pb-24 lg:pt-16">
         <div className="max-w-2xl">
-          <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary-label/15 bg-white/30 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-secondary-label"><Sparkles size={14} /> A softer place for unfinished ideas</p>
-          <h1 className="max-w-2xl text-[clamp(3.25rem,8vw,7.5rem)] font-semibold leading-[.9] tracking-[-.06em]">Make room for the next sound.</h1>
+          <h1 className="max-w-2xl text-[clamp(3.25rem,8vw,7.5rem)] font-semibold leading-[.9] tracking-[-.06em]"><span key={quoteIndex} className="inline-block animate-fade-in">{landingQuotes[quoteIndex]}</span></h1>
           <p className="mt-7 max-w-xl text-base leading-7 text-secondary-label sm:text-lg sm:leading-8">Starlight Station gives your music a place to grow, with every version, conversation, and collaboration kept close.</p>
           <div className="mt-9 flex flex-wrap items-center gap-3"><Link to="/login?mode=register" className="landing-primary-action inline-flex min-h-12 items-center gap-2 rounded-xl px-5 py-3 font-semibold">Start creating <ArrowRight size={17} /></Link><Link to="/login" className="landing-secondary-action inline-flex min-h-12 items-center rounded-xl px-5 py-3 font-semibold">Sign in</Link></div>
           <p className="mt-5 text-xs text-secondary-label/75">Projects, playback, collaboration, and live rooms in one studio.</p>
