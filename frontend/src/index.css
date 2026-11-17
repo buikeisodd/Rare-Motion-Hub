@@ -652,6 +652,13 @@ div[class*="bg-\\[\\#F3EBDD\\]\\/92"] { background: rgba(243,235,221,.98) !impor
 .live-controls { border: 0 !important; }
 .live-chat-list p { animation: live-comment-in .3s ease both; }
 .live-chat-list p:nth-last-child(n+6) { opacity: .18; filter: blur(.25px); }
+.live-lobby-surface { background: rgba(243,235,221,.78); border: 1px solid rgba(52,72,59,.1); }
+.live-preview-card { background: rgba(255,255,255,.38); border: 1px solid rgba(52,72,59,.12); box-shadow: 0 16px 40px rgba(52,72,59,.1); transition: transform .22s ease, box-shadow .22s ease, background .22s ease; }
+.live-preview-card:hover { transform: translateY(-4px); background: rgba(255,255,255,.62); box-shadow: 0 22px 50px rgba(52,72,59,.16); }
+.live-preview-art { background: linear-gradient(135deg,#34483B 0%,#6F8974 48%,#D2C9B7 100%); }
+.live-preview-pattern { background: radial-gradient(circle at 25% 30%, rgba(255,255,255,.24) 0 2px, transparent 3px), radial-gradient(circle at 75% 65%, rgba(255,255,255,.16) 0 3px, transparent 4px), linear-gradient(135deg,#34483B,#17231C 62%,#7C9180); background-size: 26px 26px, 34px 34px, auto; }
+.live-chat-message { border-left: 3px solid #B86BFF; padding: .45rem .65rem; border-radius: .55rem; background: rgba(184,107,255,.1); }
+.live-chat-message strong { color: #7F35B2; }
 @keyframes live-comment-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 @media (max-width: 1023px) {
   .live-page-active .live-page-inner { padding: .75rem; }
