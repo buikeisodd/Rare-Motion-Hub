@@ -181,6 +181,11 @@ const issueAuthSession = async (req, res, user) => {
   if (!user || user.emailVerified === false) {
     throw new AppError('Please verify your email before signing in.', 403);
   }
+  // A browser may still carry cookies from an earlier deployment (including
+  // Partitioned and __Host variants). Clear every known variant before
+  // issuing the new session so the browser cannot send two competing auth
+  // sessions on the next request.
+  clearAuthCookies(res);
   const { session, refreshToken } = await createRefreshSession({ req, userId: user.id });
   const csrfToken = createOpaqueToken(24);
   const accessToken = tokenForUser(user.id, session.sessionId);
