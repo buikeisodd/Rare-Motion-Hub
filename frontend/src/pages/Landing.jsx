@@ -2,14 +2,15 @@ import { useEffect, useState } from 'react';
 import { ArrowRight, Headphones, Layers3, Radio, MessageCircle, ShoppingBag, BarChart3, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import StarlightLogo from '../components/StarlightLogo';
+import heroImage from '../assets/hero.png';
 
 const highlights = [
-  { icon: Layers3, title: 'Keep every version', text: 'A calm home for projects, folders, and the ideas between the first take and the finished sound.' },
-  { icon: Headphones, title: 'Listen in context', text: 'Play, compare, comment, and return to the exact version that made you stop and listen.' },
-  { icon: Radio, title: 'Share the moment', text: 'Bring collaborators and listeners into the work through previews, stories, and live rooms.' },
-  { icon: MessageCircle, title: 'Stay in the conversation', text: 'Chat with collaborators, reply to stories, and keep every useful reaction beside the work.' },
-  { icon: ShoppingBag, title: 'Find the next sound', text: 'Browse beats, songs, and samples in the marketplace, then save the sounds worth returning to.' },
-  { icon: BarChart3, title: 'See the signal', text: 'Understand listens, engagement, and project momentum through focused insights.' },
+  { icon: Layers3, title: 'Keep every version', text: 'Projects, folders, and the ideas between the first take and the finished sound.', image: heroImage, position: 'center' },
+  { icon: Headphones, title: 'Listen in context', text: 'Play, compare, comment, and return to the exact version that made you stop and listen.', image: '/brand/rare-motion-mark.jpg', position: 'center' },
+  { icon: Radio, title: 'Share the moment', text: 'Bring collaborators and listeners into the work through previews, stories, and live rooms.', image: heroImage, position: '70% center' },
+  { icon: MessageCircle, title: 'Stay in the conversation', text: 'Chat with collaborators, reply to stories, and keep every useful reaction beside the work.', image: '/brand/rare-motion-mark.jpg', position: '35% center' },
+  { icon: ShoppingBag, title: 'Find the next sound', text: 'Browse beats, songs, and samples in the marketplace, then save the sounds worth returning to.', image: heroImage, position: '25% center' },
+  { icon: BarChart3, title: 'See the signal', text: 'Understand listens, engagement, and project momentum through focused insights.', image: '/brand/rare-motion-mark.jpg', position: '65% center' },
 ];
 
 const landingQuotes = [
@@ -58,7 +59,7 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className="relative z-10 mx-auto w-full max-w-7xl px-5 pb-16 sm:px-8 lg:px-12 lg:pb-24"><div className="mb-8 max-w-xl"><p className="text-xs font-bold uppercase tracking-[0.22em] text-secondary-label">One station, many ways to move</p><h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Everything around the idea, in one place.</h2></div><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{highlights.map(({ icon: Icon, title, text }) => <article key={title} className="landing-highlight rounded-2xl p-5 sm:p-6"><Icon size={21} className="mb-8 text-primary-label/70" /><h2 className="text-lg font-semibold">{title}</h2><p className="mt-2 text-sm leading-6 text-secondary-label">{text}</p></article>)}</div></section>
+      <section className="relative z-10 mx-auto w-full max-w-7xl px-5 pb-16 sm:px-8 lg:px-12 lg:pb-24"><div className="mb-8 max-w-xl"><p className="text-xs font-bold uppercase tracking-[0.22em] text-secondary-label">One station, many ways to move</p><h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Everything around the idea, in one place.</h2></div><div className="landing-feature-grid">{highlights.map(({ icon: Icon, title, text, image, position }, index) => <article key={title} className={`landing-feature-card landing-feature-${index + 1}`}><div className="landing-feature-image"><img src={image} alt="" style={{ objectPosition: position }} /><div className="landing-feature-wash" /><span className="landing-feature-icon"><Icon size={19} /></span></div><div className="p-5 sm:p-6"><h2 className="text-lg font-semibold">{title}</h2><p className="mt-2 text-sm leading-6 text-secondary-label">{text}</p></div></article>)}</div></section>
       <footer className="relative z-10 mx-auto flex w-full max-w-7xl flex-wrap justify-between gap-3 border-t border-primary-label/10 px-5 py-6 text-xs text-secondary-label sm:px-8 lg:px-12"><span>Starlight Station</span><span>Make room for what comes next.</span></footer>
     </main>
   );
