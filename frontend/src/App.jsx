@@ -450,9 +450,9 @@ const apiUrl = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || 'htt
     setUser(null);
     setAuthStatus('unauthenticated');
     setJustAuthenticated(false);
-    // Logout is an explicit authentication action. Always land on the sign-in
-    // screen; the public landing page is reserved for a fresh public visit.
-    window.location.replace('/login');
+    // A signed-out user returns to the public landing page. Sign in remains
+    // available there as the explicit next action.
+    window.location.replace('/');
   };
 
   const handleUserUpdate = (nextUser) => {
