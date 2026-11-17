@@ -133,6 +133,9 @@ const cookieOptions = (maxAge, overrides = {}) => ({
   httpOnly: true,
   secure: IS_PROD,
   sameSite: IS_PROD ? 'none' : 'lax',
+  // Allows the session to remain available when a browser partitions or
+  // blocks third-party cookies during the Vercel-to-Render transition.
+  ...(IS_PROD ? { partitioned: true } : {}),
   path: '/',
   maxAge,
   ...overrides
