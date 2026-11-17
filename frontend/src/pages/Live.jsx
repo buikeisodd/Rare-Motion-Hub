@@ -141,9 +141,9 @@ export default function Live({ user }) {
             if (event.type === 'reaction') setLiveMessages((current) => [...current.slice(-49), { ...event, sender, text: `${event.emoji} reaction` }]);
           } catch { /* Ignore malformed room data from clients. */ }
         });
-        const attachTrack = (track, publication, participant) => {
+        const attachTrack = (track, publication, participant, force = false) => {
           const trackId = track.sid || track.mediaStreamTrack?.id;
-          if (trackId && attachedTrackIds.current.has(trackId)) return;
+          if (!force && trackId && attachedTrackIds.current.has(trackId)) return;
           if (trackId) attachedTrackIds.current.add(trackId);
           const tileKey = participant?.identity || (track.source === Track.Source.ScreenShare ? 'local-screen' : 'local-camera');
           const previous = videoTilesRef.current.get(tileKey);
@@ -172,6 +172,21 @@ export default function Live({ user }) {
             await publication.setSubscribed(true);
             if (publication.track) attachTrack(publication.track, publication, participant);
           } catch { /* the publication may have ended while joining */ }
+        });
+        room.on(RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
+          if (track.kind !== Track.Kind.Video) return;
+          const tileKey = participant?.identity || 'local-camera';
+          const currentElement = videoTilesRef.current.get(tileKey);
+          if (currentElement) currentElement.remove();
+          videoTilesRef.current.delete(tileKey);
+          const cameraPublication = Array.from(participant?.videoTrackPublications?.values?.() || [])
+            .find((candidate) => candidate.source === Track.Source.Camera && candidate.isSubscribed && candidate.track);
+          if (cameraPublication?.track) {
+            const cameraId = cameraPublication.track.sid || cameraPublication.track.mediaStreamTrack?.id;
+            if (cameraId) attachedTrackIds.current.delete(cameraId);
+            attachTrack(cameraPublication.track, cameraPublication, participant, true);
+          }
+          setVideoTileCount(videoTilesRef.current.size);
         });
         await room.connect(data.serverUrl, data.token, { autoSubscribe: true });
         if (data.canPublish) {
