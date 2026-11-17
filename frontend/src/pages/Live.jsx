@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Radio, Video, X, LogOut, Users, ArrowLeft, Mic, MicOff, Camera, CameraOff, Send, Heart } from 'lucide-react';
-import { Room, RoomEvent, Track } from 'livekit-client';
+import { Radio, Video, X, LogOut, Users, ArrowLeft, Mic, MicOff, Camera, CameraOff, MonitorUp, MonitorOff, Send, Heart } from 'lucide-react';
+import { LocalAudioTrack, LocalVideoTrack, Room, RoomEvent, Track } from 'livekit-client';
 
 // Production uses the same-origin Vercel /api proxy so auth cookies stay first-party.
 const apiUrl = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:4000');
@@ -83,9 +83,11 @@ export default function Live({ user }) {
   const [videoUnavailable, setVideoUnavailable] = useState(false);
   const [cameraOn, setCameraOn] = useState(true);
   const [micOn, setMicOn] = useState(true);
+  const [screenSharing, setScreenSharing] = useState(false);
   const [liveMessages, setLiveMessages] = useState([]);
   const [chatText, setChatText] = useState('');
   const roomRef = useRef(null);
+  const screenTracksRef = useRef([]);
   const attachedTrackIds = useRef(new Set());
   const [requestStatus, setRequestStatus] = useState('');
   const [joinRequests, setJoinRequests] = useState([]);
@@ -172,7 +174,7 @@ export default function Live({ user }) {
       } catch (error) { setMessage(error.message || 'Could not connect to the live room.'); }
     };
     connect();
-    return () => { cancelled = true; setConnected(false); setPublishing(false); setVideoUnavailable(false); setCameraOn(true); setMicOn(true); setLiveMessages([]); attachedTrackIds.current.clear(); roomRef.current = null; room?.disconnect(); document.getElementById('live-media-stage')?.replaceChildren(); };
+    return () => { cancelled = true; screenTracksRef.current.forEach((track) => { try { room?.localParticipant.unpublishTrack(track); } catch {} track.stop(); }); screenTracksRef.current = []; setScreenSharing(false); setConnected(false); setPublishing(false); setVideoUnavailable(false); setCameraOn(true); setMicOn(true); setLiveMessages([]); attachedTrackIds.current.clear(); roomRef.current = null; room?.disconnect(); document.getElementById('live-media-stage')?.replaceChildren(); };
   }, [active?.id, connectionNonce]);
 
   const start = async (event) => {
@@ -202,6 +204,39 @@ export default function Live({ user }) {
 
   const toggleCamera = async () => { const next = !cameraOn; await roomRef.current?.localParticipant.setCameraEnabled(next); setCameraOn(next); };
   const toggleMic = async () => { const next = !micOn; await roomRef.current?.localParticipant.setMicrophoneEnabled(next); setMicOn(next); };
+  const stopScreenShare = async () => {
+    const room = roomRef.current;
+    for (const track of screenTracksRef.current) {
+      try { await room?.localParticipant.unpublishTrack(track); } catch { /* track may already be unpublished */ }
+      track.stop();
+    }
+    screenTracksRef.current = [];
+    setScreenSharing(false);
+  };
+  const toggleScreenShare = async () => {
+    if (screenSharing) { await stopScreenShare(); return; }
+    const participant = roomRef.current?.localParticipant;
+    if (!participant) return;
+    try {
+      if (!navigator.mediaDevices?.getDisplayMedia) throw new Error('Screen sharing is not supported by this browser.');
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: true });
+      const videoSource = stream.getVideoTracks()[0];
+      if (!videoSource) throw new Error('No screen or window was selected.');
+      const videoTrack = new LocalVideoTrack(videoSource);
+      await participant.publishTrack(videoTrack, { source: Track.Source.ScreenShare, name: 'screen-share' });
+      screenTracksRef.current = [videoTrack];
+      const audioSource = stream.getAudioTracks()[0];
+      if (audioSource) {
+        const audioTrack = new LocalAudioTrack(audioSource);
+        await participant.publishTrack(audioTrack, { source: Track.Source.ScreenShareAudio, name: 'screen-audio' });
+        screenTracksRef.current.push(audioTrack);
+      }
+      videoSource.addEventListener('ended', () => { stopScreenShare(); }, { once: true });
+      setScreenSharing(true);
+    } catch (error) {
+      if (error?.name !== 'AbortError' && error?.name !== 'NotAllowedError') setMessage(error?.message || 'Could not share your screen.');
+    }
+  };
   const sendLiveData = async (event) => { if (!roomRef.current || !connected) return; const payload = { ...event, sender: user?.username || user?.name || 'Listener' }; setLiveMessages((current) => [...current.slice(-49), payload]); await roomRef.current.localParticipant.publishData(new TextEncoder().encode(JSON.stringify(payload)), { reliable: true }); };
   const sendChat = async (event) => { event.preventDefault(); if (!chatText.trim()) return; const text = chatText.trim(); setChatText(''); await sendLiveData({ type: 'chat', text }); };
   const sendReaction = async () => { await sendLiveData({ type: 'reaction', emoji: '♥️', text: '♥️ reaction' }); };
@@ -240,7 +275,7 @@ export default function Live({ user }) {
           </div>
           <div className="live-controls absolute bottom-4 left-1/2 z-30 flex -translate-x-1/2 flex-wrap items-center justify-center gap-2 rounded-2xl border border-white/10 bg-black/75 px-3 py-2 text-white shadow-2xl backdrop-blur-xl">
             {publishing && joinRequests.length > 0 && <div className="absolute bottom-20 left-1/2 z-20 flex -translate-x-1/2 flex-wrap items-center gap-2 rounded-xl bg-[#F3EBDD] p-3 text-xs text-primary-label shadow-xl">{joinRequests.map((request) => <span key={request.userId} className="flex items-center gap-2"><strong>{request.userId}</strong><button type="button" onClick={() => resolveRequest(request, 'accept')} className="rounded-lg bg-primary-label px-2 py-1 text-primary-background">Accept</button><button type="button" onClick={() => resolveRequest(request, 'decline')} className="rounded-lg bg-red-100 px-2 py-1 text-red-700">Decline</button></span>)}</div>}
-            {publishing && <><button type="button" onClick={toggleMic} aria-label={micOn ? 'Mute microphone' : 'Unmute microphone'} className="grid h-11 w-11 place-items-center rounded-xl bg-primary-background/15">{micOn ? <Mic size={18} /> : <MicOff size={18} />}</button><button type="button" onClick={toggleCamera} aria-label={cameraOn ? 'Turn camera off' : 'Turn camera on'} className="grid h-11 w-11 place-items-center rounded-xl bg-primary-background/15">{cameraOn ? <Camera size={18} /> : <CameraOff size={18} />}</button></>}
+            {publishing && <><button type="button" onClick={toggleMic} aria-label={micOn ? 'Mute microphone' : 'Unmute microphone'} className="grid h-11 w-11 place-items-center rounded-xl bg-primary-background/15">{micOn ? <Mic size={18} /> : <MicOff size={18} />}</button><button type="button" onClick={toggleCamera} aria-label={cameraOn ? 'Turn camera off' : 'Turn camera on'} className="grid h-11 w-11 place-items-center rounded-xl bg-primary-background/15">{cameraOn ? <Camera size={18} /> : <CameraOff size={18} />}</button><button type="button" onClick={toggleScreenShare} aria-label={screenSharing ? 'Stop sharing screen' : 'Share screen'} title={screenSharing ? 'Stop sharing screen' : 'Share screen'} className={`grid h-11 w-11 place-items-center rounded-xl ${screenSharing ? 'bg-[#F3EBDD] text-[#34483B]' : 'bg-primary-background/15'}`}>{screenSharing ? <MonitorOff size={18} /> : <MonitorUp size={18} />}</button></>}
           </div>
         </Surface>
       ) : (
