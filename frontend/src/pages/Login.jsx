@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { Eye, EyeOff, Loader2, Mail, Lock, Phone, Timer } from 'lucide-react';
-import StarlightLogo from '../components/StarlightLogo';
 import VerificationModal from '../components/VerificationModal';
 
 const loginQuotes = ['Make room for the next sound.', 'Let the unfinished become something.', 'Keep the idea moving.', 'Hear what comes next.', 'Give the work a place to grow.'];
@@ -198,14 +197,12 @@ const apiUrl = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || 'htt
       <div className="pointer-events-none absolute -bottom-48 right-[-8rem] h-[30rem] w-[30rem] rounded-full bg-[#8DEBFF]/[0.05] blur-3xl" />
       <div className="relative mx-auto grid h-full min-h-0 w-full max-w-6xl items-center gap-5 py-1 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,27rem)] lg:gap-10">
         <section className="hidden lg:block animate-fade-in">
-          <StarlightLogo className="mb-10 h-10 text-[#F7F4EC]" showTagline={false} markClassName="h-16 w-16 brightness-0 invert sm:h-20 sm:w-20" />
           <p className="mb-5 text-xs font-semibold uppercase tracking-[0.3em] text-primary-label/70">A softer place for unfinished ideas</p>
           <h1 className="max-w-xl text-5xl font-semibold leading-[0.96] tracking-tight text-white"><span key={quoteIndex} className="inline-block animate-fade-in">{loginQuotes[quoteIndex]}</span></h1>
           <p className="mt-7 max-w-md text-base leading-relaxed text-[#A6A09A]">Keep your projects close, hear every version, and share the work when it feels ready.</p>
         </section>
 
         <div className="mx-auto w-full max-w-sm animate-fade-in">
-          <div className="mb-3 lg:hidden"><StarlightLogo className="h-10 text-[#F7F4EC]" showTagline={false} markClassName="h-16 w-16 brightness-0 invert sm:h-20 sm:w-20" /></div>
           <div className="mb-3 lg:hidden"><h1 className="text-2xl font-semibold tracking-tight text-white"><span key={quoteIndex} className="inline-block animate-fade-in">{loginQuotes[quoteIndex]}</span></h1><p className="mt-1 text-xs leading-relaxed text-[#A6A09A]">Your private studio for projects, playback and collaboration.</p></div>
           <div className="login-surface rounded-[1.5rem] border border-white/[0.08] bg-[#111111] p-3 shadow-2xl sm:p-5">
           <p className="mb-2 max-w-sm text-center text-[11px] leading-tight text-[#A6A09A]">By continuing you confirm that this email belongs to an approved Starlight Station collaborator.</p>
