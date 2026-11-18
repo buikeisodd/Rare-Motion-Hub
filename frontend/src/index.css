@@ -1051,6 +1051,16 @@ article button[aria-label="Remove from saved"]:hover { color: #3E3E3E; }
   font-size: 1.35rem;
   line-height: 1;
 }
+
+/* Project and folder cards use elevation instead of a visible outline. */
+.library-project-card,
+.library-folder-card,
+.library-project-card:hover,
+.library-folder-card:hover {
+  border: 0 !important;
+  border-color: transparent !important;
+  box-shadow: 0 16px 34px rgba(0, 0, 0, .24), inset 0 1px 0 rgba(255, 255, 255, .06) !important;
+}
 @media (max-width: 639px) {
   .chat-inbox-overlay { align-items: stretch; }
   .chat-inbox-shell { border-radius: 0; }
