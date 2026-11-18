@@ -6,6 +6,7 @@ const {
   makeId,
   publicUser,
   normalizeTrack,
+  notifyListen,
   findAccessibleTrack,
   trackOwnerId,
   trackMediaPath,
@@ -729,6 +730,10 @@ const recordListen = async (req, res, next) => {
     if (!track) return next(new AppError('Track not found', 404));
     const project = db.projects.find((item) => item.id === (req.body?.projectId || track.projectId));
     if (!project) return next(new AppError('Project not found', 404));
+    const sourceTrackId = track.sourceTrackId || track.sourceItemId;
+    const sourceTrack = (sourceTrackId && db.tracks.find((item) => item.id === sourceTrackId)) || track;
+    const sourceProject = db.projects.find((item) => item.id === sourceTrack.projectId) || project;
+    const ownerId = track.sourceOwnerId || sourceTrack.sourceOwnerId || sourceProject.userId || project.userId;
     const playedAt = new Date().toISOString();
     db.playEvents.push({
       id: makeId(),
@@ -738,6 +743,12 @@ const recordListen = async (req, res, next) => {
       ownerId: project.userId,
       userId: req.userId,
       playedAt
+    });
+    notifyListen(db, {
+      ownerId,
+      actorId: req.userId,
+      project: { id: sourceProject.id, name: sourceProject.title || sourceProject.name },
+      track: { id: sourceTrack.id, title: sourceTrack.title || track.title }
     });
     await writeDB(db);
     res.status(201).json({ recorded: true, playedAt });

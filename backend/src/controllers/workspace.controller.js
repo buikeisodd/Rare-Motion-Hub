@@ -520,6 +520,22 @@ const saveSharedItem = async (req, res, next) => {
     db.folders.push(...savedFolders);
     db.projects.push(...savedProjects);
     db.tracks.push(...savedTracks);
+    const ownerId = sourceOwnerId(source);
+    if (ownerId && ownerId !== userId) {
+      const actor = db.users.find((item) => item.id === userId);
+      const savedName = source.title || source.name || 'shared item';
+      db.notifications.push({
+        id: makeId(),
+        userId: ownerId,
+        type: 'shared_item_saved',
+        actor: publicUser(actor),
+        project: type === 'project' ? { id: source.id, name: savedName } : null,
+        folder: type === 'folder' ? { id: source.id, name: savedName } : null,
+        message: `${actor?.name || 'Someone'} saved your ${type} to their library`,
+        read: false,
+        createdAt: new Date().toISOString()
+      });
+    }
     await writeDB(db);
     invalidateCache(`workspace:${userId}`);
     const rootFolder = savedFolders.find((folder) => !folder.parentFolderId);
