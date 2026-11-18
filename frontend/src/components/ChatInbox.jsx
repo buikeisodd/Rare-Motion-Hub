@@ -143,11 +143,20 @@ export default function ChatInbox({ user, isOpen, onToggle, startConversationWit
     if (!active) return undefined;
     const scrollToLatest = () => {
       const list = messageListRef.current || chatSectionRef.current?.querySelector('.overflow-y-auto');
-      if (list) list.scrollTop = list.scrollHeight;
+      if (list) {
+        list.style.scrollBehavior = 'auto';
+        list.scrollTop = list.scrollHeight;
+      }
     };
     scrollToLatest();
     const frame = window.requestAnimationFrame(scrollToLatest);
-    return () => window.cancelAnimationFrame(frame);
+    const list = messageListRef.current || chatSectionRef.current?.querySelector('.overflow-y-auto');
+    const observer = list ? new MutationObserver(scrollToLatest) : null;
+    observer?.observe(list, { childList: true, subtree: true, characterData: true });
+    return () => {
+      window.cancelAnimationFrame(frame);
+      observer?.disconnect();
+    };
   }, [active?.type, active?.partner?.id, active?.group?.id, messages]);
 
   useEffect(() => {
