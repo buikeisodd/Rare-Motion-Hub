@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Bookmark, Heart, Library, MessageCircle, MoreHorizontal, Pause, Play, Plus, Radio, Search, Send, Settings, Store, Trash2, UserRound, Volume2, VolumeX, X } from 'lucide-react';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { defaultGradient, gradientFor } from '../utils/gradients';
 import ChatInbox from '../components/ChatInbox';
@@ -251,6 +251,7 @@ function FeedCard({ item, user, onUpdate, onDelete, muted, onMutedChange, volume
 }
 
 export default function Feed({ user, savedOnly = false }) {
+  const location = useLocation();
   const [items, setItems] = useState([]); const [loading, setLoading] = useState(true); const [loadingMore, setLoadingMore] = useState(false); const [nextCursor, setNextCursor] = useState(null); const [hasMore, setHasMore] = useState(true); const [error, setError] = useState(''); const [muted, setMuted] = useState(true); const [volume, setVolume] = useState(0.8);
   const feedSentinel = useRef(null);
   const [inboxOpen, setInboxOpen] = useState(false);
@@ -271,7 +272,8 @@ export default function Feed({ user, savedOnly = false }) {
   const loadFeedPage = async (cursor = null) => {
     const params = new URLSearchParams({ limit: '20' });
     if (cursor) params.set('cursor', cursor);
-    const res = await fetch(`${apiUrl}/api/feed?${params}`, { credentials: 'include' });
+    if (!cursor) params.set('refresh', String(Date.now()));
+    const res = await fetch(`${apiUrl}/api/feed?${params}`, { credentials: 'include', cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || 'Could not load feed.');
     const incoming = Array.isArray(data.items) ? data.items.filter(Boolean) : [];
@@ -279,7 +281,14 @@ export default function Feed({ user, savedOnly = false }) {
     setNextCursor(data.nextCursor || null);
     setHasMore(Boolean(data.hasMore));
   };
-  useEffect(() => { loadFeedPage().catch((err) => setError(err.message)).finally(() => setLoading(false)); }, []);
+  useEffect(() => {
+    setItems([]);
+    setNextCursor(null);
+    setHasMore(true);
+    setError('');
+    setLoading(true);
+    loadFeedPage().catch((err) => setError(err.message)).finally(() => setLoading(false));
+  }, [location.key]);
   useEffect(() => {
     const node = feedSentinel.current;
     if (!node || !hasMore) return undefined;
