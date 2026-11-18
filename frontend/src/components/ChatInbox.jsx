@@ -199,7 +199,16 @@ export default function ChatInbox({ user, isOpen, onToggle, startConversationWit
       const response = await authFetch(`${apiUrl}/api/messages?${query}`);
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || 'Could not load conversation.');
-      setMessages((Array.isArray(data.messages) ? data.messages : []).map(normalizeMessage).filter(Boolean));
+      const incoming = (Array.isArray(data.messages) ? data.messages : []).map(normalizeMessage).filter(Boolean);
+      // Polling can win the race against an in-flight send. Preserve local
+      // optimistic messages until the server response replaces them by their
+      // clientRequestId, otherwise a sent message briefly disappears.
+      setMessages((current) => {
+        const pending = current.filter((message) => message.pending && message.clientRequestId);
+        if (!pending.length) return incoming;
+        const confirmedIds = new Set(incoming.map((message) => message.clientRequestId).filter(Boolean));
+        return [...incoming, ...pending.filter((message) => !confirmedIds.has(message.clientRequestId))];
+      });
     } catch (err) { if (!silent) setMessages([]); if (conversation.type === 'group' && err.message === 'Group not found.') setGroupRemoved(true); setError(conversation.type === 'group' && err.message === 'Group not found.' ? 'You were removed from this group by the admin.' : (err.message || 'Could not load conversation.')); }
     finally { if (!silent) setLoading(false); }
   }, []);
