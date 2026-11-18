@@ -914,10 +914,18 @@ a[aria-label]:active {
 }
 .feed-volume-control input[type="range"]:focus-visible { outline: 2px solid #F3EBDD; outline-offset: 3px; }
 .feed-preview-status {
-  background: rgba(243, 235, 221, .68) !important;
-  color: #2B2B2B !important;
-  border-block: 1px solid rgba(43, 43, 43, .12);
-  backdrop-filter: blur(14px);
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 5;
+  min-height: 2.5rem;
+  display: flex;
+  align-items: center;
+  background: linear-gradient(0deg, rgba(0, 0, 0, .56), rgba(0, 0, 0, .18) 72%, transparent) !important;
+  color: #F3EBDD !important;
+  text-shadow: 0 1px 7px rgba(0, 0, 0, .55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 .feed-follow-button { background: #2B2B2B !important; border: 1px solid rgba(243, 235, 221, .16); box-shadow: 0 6px 16px rgba(0, 0, 0, .18); }
 .feed-follow-button:hover:not(:disabled), .feed-post-options:hover { background: #3E3E3E !important; }
