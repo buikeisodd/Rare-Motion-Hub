@@ -1040,6 +1040,17 @@ article button[aria-label="Remove from saved"]:hover { color: #3E3E3E; }
   background: #4A4A4A !important;
   color: #FFFFFF !important;
 }
+.chat-inbox-shell section header button[aria-label="Back to inbox"] {
+  display: grid !important;
+  color: #F3EBDD !important;
+  background: rgba(243, 235, 221, .08) !important;
+}
+.chat-inbox-shell section header button[aria-label="Back to inbox"] svg { display: none; }
+.chat-inbox-shell section header button[aria-label="Back to inbox"]::before {
+  content: "×";
+  font-size: 1.35rem;
+  line-height: 1;
+}
 @media (max-width: 639px) {
   .chat-inbox-overlay { align-items: stretch; }
   .chat-inbox-shell { border-radius: 0; }
