@@ -716,7 +716,15 @@ const getUser = async (req, res, next) => {
       const project = projects.find((item) => item.id === track.projectId);
       return { id: track.id, title: track.title, url: track.url, projectId: track.projectId, coverArt: project?.coverArt || null, publishedAt: track.publishedAt };
     });
-    res.json({ user: { ...publicUser(userSafe), email, emailVerified: user.emailVerified !== false, followsYou: (user.following || []).includes(req.userId) }, isFollowing: (user.followers || []).includes(req.userId), posts });
+    const followerUsers = user.followers?.length ? await User.find({ id: { $in: user.followers } }).lean() : [];
+    const followingUsers = user.following?.length ? await User.find({ id: { $in: user.following } }).lean() : [];
+    res.json({
+      user: { ...publicUser(userSafe), email, emailVerified: user.emailVerified !== false, followsYou: (user.following || []).includes(req.userId) },
+      isFollowing: (user.followers || []).includes(req.userId),
+      followers: followerUsers.map(publicUser),
+      following: followingUsers.map(publicUser),
+      posts
+    });
   } catch (error) {
     next(error);
   }
