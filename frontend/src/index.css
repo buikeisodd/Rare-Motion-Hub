@@ -1023,6 +1023,14 @@ article button[aria-label="Remove from saved"]:hover { color: #3E3E3E; }
 }
 .chat-inbox-shell input::placeholder { color: rgba(243, 235, 221, .45) !important; }
 .chat-inbox-shell .chat-message-action { color: #F3EBDD !important; }
+.chat-inbox-shell [aria-label="Message actions"] {
+  background: transparent !important;
+  color: #F3EBDD !important;
+}
+.chat-inbox-shell [aria-label="Message actions"]:hover:not(:disabled) {
+  background: rgba(243, 235, 221, .14) !important;
+  color: #F3EBDD !important;
+}
 @media (max-width: 639px) {
   .chat-inbox-overlay { align-items: stretch; }
   .chat-inbox-shell { border-radius: 0; }
