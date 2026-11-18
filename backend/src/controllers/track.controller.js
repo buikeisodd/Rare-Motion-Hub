@@ -662,7 +662,18 @@ const deleteFeedComment = async (req, res, next) => {
     const commentCollection = isFeedComment ? 'feedComments' : 'comments';
     const index = (track[commentCollection] || []).findIndex((comment) => comment.id === req.params.commentId && comment.userId === req.userId);
     if (index < 0) return next(new AppError('Comment not found', 404));
-    track[commentCollection].splice(index, 1);
+    const deletedIds = new Set([req.params.commentId]);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      track[commentCollection].forEach((comment) => {
+        if (comment.parentId && deletedIds.has(comment.parentId) && !deletedIds.has(comment.id)) {
+          deletedIds.add(comment.id);
+          changed = true;
+        }
+      });
+    }
+    track[commentCollection] = track[commentCollection].filter((comment) => !deletedIds.has(comment.id));
     await writeDB(db);
     res.json({ success: true });
   } catch (error) { next(error); }
