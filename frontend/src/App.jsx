@@ -12,6 +12,7 @@ import ProjectInsights from './pages/ProjectInsights';
 import Feed from './pages/Feed';
 import Saved from './pages/Saved';
 import Settings from './pages/Settings';
+import CoverArtStorage from './pages/CoverArtStorage';
 import Profile from './pages/Profile';
 import Search from './pages/Search';
 import Marketplace from './pages/Marketplace';
@@ -199,6 +200,7 @@ function AnimatedRoutes({ user, authStatus, handleLogin, handleLogout, handleUse
         <Route path="/live/:id" element={<motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><Live user={user} /></motion.div>} />
         <Route path="/saved" element={<motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><Saved /></motion.div>} />
         <Route path="/settings" element={<motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><Settings user={user} onLogout={handleLogout} /></motion.div>} />
+        <Route path="/settings/cover-art" element={<motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><CoverArtStorage user={user} /></motion.div>} />
         <Route path="/profile/:id" element={<motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><Profile user={user} onUserUpdate={handleUserUpdate} /></motion.div>} />
         <Route path="/folder/:id" element={<motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><Folder user={user} onLogout={handleLogout} /></motion.div>} />
         <Route path="/project/:id" element={<motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} transition={{ duration: 0.3 }}><Project user={user} onLogout={handleLogout} /></motion.div>} />
