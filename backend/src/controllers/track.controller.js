@@ -91,8 +91,6 @@ const promoteTrackToCloudinary = async (track, localPath, userId) => {
       folder: 'raremotionhub/tracks'
     });
     const db = ensureDBShape(await readDB());
-    const viewer = db.users.find((user) => user.id === req.userId);
-    const following = new Set(viewer?.following || []);
     const index = db.tracks.findIndex((item) => item.id === track.id);
     if (index === -1) {
       await cloudinary.uploader.destroy(uploadResult.public_id, { resource_type: uploadResult.resource_type || 'video' }).catch(() => {});

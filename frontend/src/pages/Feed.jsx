@@ -187,7 +187,7 @@ function FeedPublishModal({ open, onClose, projects, onPublished }) {
 function FeedCard({ item, user, onUpdate, onDelete, muted, onMutedChange, volume, onVolumeChange }) {
   const cardRef = useRef(null); const audioRef = useRef(null);
   const navigate = useNavigate();
-  const [playing, setPlaying] = useState(false); const [comment, setComment] = useState(''); const [replyTo, setReplyTo] = useState(null); const [showComments, setShowComments] = useState(false); const [menuOpen, setMenuOpen] = useState(false); const [mutationBusy, setMutationBusy] = useState(false); const [commentToDelete, setCommentToDelete] = useState(null);
+  const [playing, setPlaying] = useState(false); const [followed, setFollowed] = useState(Boolean(item.isFollowing)); const [comment, setComment] = useState(''); const [replyTo, setReplyTo] = useState(null); const [showComments, setShowComments] = useState(false); const [menuOpen, setMenuOpen] = useState(false); const [mutationBusy, setMutationBusy] = useState(false); const [commentToDelete, setCommentToDelete] = useState(null);
   const stop = () => { audioRef.current?.pause(); setPlaying(false); };
   const play = async () => { if (!audioRef.current) return; try { await audioRef.current.play(); setPlaying(true); } catch { setPlaying(false); } };
   useEffect(() => {
