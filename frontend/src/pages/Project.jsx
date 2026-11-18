@@ -238,7 +238,7 @@ export default function Project({ user }) {
   if (loading) return <PageLoading />;
   if (!project) return <div className="text-center mt-20">Project not found</div>;
 
-  const isOwner = String(project.userId) === String(user.id);
+  const isOwner = project.isOwner === undefined ? String(project.userId) === String(user.id) : Boolean(project.isOwner);
 
   return (
     <div className={`project-page-shell relative min-h-screen bg-primary-background pb-32 text-primary-label md:pb-10 ${currentTrack ? 'has-active-player' : ''}`}>
@@ -421,14 +421,15 @@ export default function Project({ user }) {
                     )}
                   </div>
                   <div className="flex items-center gap-1 text-primary-label" onClick={(event) => event.stopPropagation()}>
-                    {isOwner && <TrackOptionsMenu
+                    <TrackOptionsMenu
                       track={track}
                       userId={user.id}
+                      canEdit={isOwner}
                       onTrackUpdate={handleTrackUpdate}
                       onTrackDelete={handleDeleteTrack}
                       onAddToQueue={(queuedTrack) => addToQueue(queuedTrack)}
                       onPlay={handlePlay}
-                    />}
+                    />
                   </div>
                 </div>
               ))

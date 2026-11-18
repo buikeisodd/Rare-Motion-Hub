@@ -57,7 +57,7 @@ const normalizeTrack = (track) => ({
   url: track.filename ? `${BASE_URL}/api/media/tracks/${track.id}` : track.url
 });
 
-const trackOwnerId = (track) => track.sourceUserId || track.uploader?.id || track.userId;
+const trackOwnerId = (track) => track.sourceUserId || track.sourceOwnerId || track.uploader?.id || track.userId;
 
 const trackMediaPath = (track) => path.join(uploadDir, trackOwnerId(track), track.filename);
 

@@ -684,7 +684,8 @@ function TrackDetailsModal({
   onTrackDelete,
   onAddToQueue,
   onPlay,
-  onOpenSubModal
+  onOpenSubModal,
+  canEdit = true
 }) {
   const [showVersions, setShowVersions] = useState(false);
   const [showFeedEditor, setShowFeedEditor] = useState(false);
@@ -739,19 +740,19 @@ function TrackDetailsModal({
   };
 
   const actions = [
-    { id: 'rename', label: 'Rename', icon: Pencil, onClick: () => onOpenSubModal('rename') },
-    { id: 'insights', label: 'Insights', icon: BarChart3, onClick: () => onOpenSubModal('insights') },
+    ...(canEdit ? [{ id: 'rename', label: 'Rename', icon: Pencil, onClick: () => onOpenSubModal('rename') }] : []),
+    ...(canEdit ? [{ id: 'insights', label: 'Insights', icon: BarChart3, onClick: () => onOpenSubModal('insights') }] : []),
     { id: 'comments', label: 'Comments', icon: MessageCircle, onClick: () => setShowComments(true) },
     { id: 'notes', label: 'Notes', icon: FileText, onClick: () => onOpenSubModal('notes') },
-    { id: 'replace', label: 'Replace audio', icon: FileAudio, onClick: () => onOpenSubModal('replace') },
-    { id: 'stems', label: 'Split stems', icon: Layers, onClick: () => onOpenSubModal('stems') },
+    ...(canEdit ? [{ id: 'replace', label: 'Replace audio', icon: FileAudio, onClick: () => onOpenSubModal('replace') }] : []),
+    ...(canEdit ? [{ id: 'stems', label: 'Split stems', icon: Layers, onClick: () => onOpenSubModal('stems') }] : []),
     { id: 'queue', label: 'Add to queue', icon: ListPlus, onClick: () => { onAddToQueue(track); onClose(); } },
     // Keep the selected track in this flow so publishing starts directly at
     // the caption/preview editor instead of losing context on a feed redirect.
-    { id: 'feed', label: 'Create feed preview', icon: Radio, onClick: () => setShowFeedEditor(true) },
-    ...(track.isPublished ? [{ id: 'remove-feed', label: publishing ? 'Removing preview...' : 'Delete feed preview', icon: Trash2, onClick: toggleFeedPublication, danger: true }] : []),
+    ...(canEdit ? [{ id: 'feed', label: 'Create feed preview', icon: Radio, onClick: () => setShowFeedEditor(true) }] : []),
+    ...(canEdit && track.isPublished ? [{ id: 'remove-feed', label: publishing ? 'Removing preview...' : 'Delete feed preview', icon: Trash2, onClick: toggleFeedPublication, danger: true }] : []),
     { id: 'export', label: 'Export', icon: Download, onClick: exportTrack },
-    { id: 'delete', label: 'Delete', icon: Trash2, onClick: () => onOpenSubModal('delete'), danger: true }
+    ...(canEdit ? [{ id: 'delete', label: 'Delete', icon: Trash2, onClick: () => onOpenSubModal('delete'), danger: true }] : [])
   ];
 
   return (
@@ -816,7 +817,8 @@ export default function TrackOptionsMenu({
   onTrackUpdate,
   onTrackDelete,
   onAddToQueue,
-  onPlay
+  onPlay,
+  canEdit = true
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [subModal, setSubModal] = useState(null);
@@ -861,6 +863,7 @@ export default function TrackOptionsMenu({
         onTrackDelete={onTrackDelete}
         onAddToQueue={onAddToQueue}
         onPlay={onPlay}
+        canEdit={canEdit}
         onOpenSubModal={openSubModal}
       />
 

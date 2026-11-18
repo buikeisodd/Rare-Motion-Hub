@@ -43,6 +43,8 @@ const UserSchema = new Schema({
 const ProjectSchema = new Schema({
   id: { type: String, required: true, unique: true },
   userId: String,
+  sourceProjectId: String,
+  sourceOwnerId: String,
   folderId: String,
   title: String,
   name: String,
@@ -63,6 +65,7 @@ const ProjectSchema = new Schema({
 const TrackSchema = new Schema({
   id: { type: String, required: true, unique: true },
   sourceTrackId: String,
+  sourceUserId: String,
   userId: String,
   projectId: String,
   title: String,
@@ -132,6 +135,8 @@ const StorySchema = new Schema({
 const FolderSchema = new Schema({
   id: { type: String, required: true, unique: true },
   userId: String,
+  sourceFolderId: String,
+  sourceOwnerId: String,
   parentFolderId: String,
   title: String,
   name: String,

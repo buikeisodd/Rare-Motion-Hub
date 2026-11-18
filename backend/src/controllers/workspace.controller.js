@@ -22,6 +22,9 @@ const { removeDirIfExists, removeFileIfExists, stemsDir, coverDir } = require('.
 const { AppError } = require('../middlewares/error.middleware');
 
 const canAccessItem = (item, userId) => item && (item.userId === userId || item.visibility !== 'private' || (item.allowedUserIds || []).includes(userId));
+const sourceProjectId = (project) => project?.sourceProjectId || project?.sourceItemId || project?.id;
+const sourceFolderId = (folder) => folder?.sourceFolderId || folder?.sourceItemId || folder?.id;
+const sourceOwnerId = (item) => item?.sourceOwnerId || item?.userId;
 
 const getWorkspace = async (req, res, next) => {
   try {
@@ -311,7 +314,7 @@ const updateProject = async (req, res, next) => {
     const { title, name, artist, visibility, allowedUserIds } = req.body;
     const userId = req.userId;
     const db = ensureDBShape(await readDB());
-    const projectIndex = db.projects.findIndex((project) => project.id === req.params.id && project.userId === userId);
+    const projectIndex = db.projects.findIndex((project) => project.id === req.params.id && project.userId === userId && !project.sourceProjectId);
     if (projectIndex === -1) return next(new AppError('Project not found', 404));
 
     const nextTitle = (title ?? name ?? db.projects[projectIndex].title ?? db.projects[projectIndex].name ?? '').trim() || defaultTitleFor('project');
@@ -342,7 +345,7 @@ const moveProject = async (req, res, next) => {
     const { folderId } = req.body;
     const userId = req.userId;
     const db = ensureDBShape(await readDB());
-    const projIndex = db.projects.findIndex(p => p.id === req.params.id && p.userId === userId);
+    const projIndex = db.projects.findIndex(p => p.id === req.params.id && p.userId === userId && !p.sourceProjectId);
     if (projIndex === -1) return next(new AppError('Project not found', 404));
     if (folderId && !db.folders.some((folder) => folder.id === folderId && folder.userId === userId)) {
       return next(new AppError('Folder not found', 404));
@@ -494,7 +497,7 @@ const saveSharedItem = async (req, res, next) => {
       : [];
     const folderMap = new Map();
     const savedFolders = sourceFolders.map((folder) => {
-      const copy = { ...stripMongoIds(folder), id: makeId(), userId, sourceItemId: folder.id, sourceOwnerId: folder.userId, allowedUserIds: [], accessRequests: [] };
+      const copy = { ...stripMongoIds(folder), id: makeId(), userId, sourceFolderId: sourceFolderId(folder), sourceOwnerId: sourceOwnerId(folder), sourceItemId: folder.id, allowedUserIds: [], accessRequests: [] };
       folderMap.set(folder.id, copy.id);
       return copy;
     });
@@ -505,14 +508,14 @@ const saveSharedItem = async (req, res, next) => {
 
     const projectMap = new Map();
     const savedProjects = sourceProjects.map((project) => {
-      const copy = { ...stripMongoIds(project), id: makeId(), userId, sourceItemId: project.id, sourceOwnerId: project.userId, allowedUserIds: [], accessRequests: [] };
+      const copy = { ...stripMongoIds(project), id: makeId(), userId, sourceProjectId: sourceProjectId(project), sourceOwnerId: sourceOwnerId(project), sourceItemId: project.id, allowedUserIds: [], accessRequests: [] };
       copy.folderId = project.folderId ? (folderMap.get(project.folderId) || null) : (type === 'folder' ? folderMap.get(source.id) : null);
       projectMap.set(project.id, copy.id);
       return copy;
     });
     const savedTracks = db.tracks
       .filter((track) => projectMap.has(track.projectId))
-      .map((track) => ({ ...stripMongoIds(track), id: makeId(), sourceTrackId: track.sourceTrackId || track.sourceItemId || track.id, userId, projectId: projectMap.get(track.projectId), sourceItemId: track.id, sourceOwnerId: track.userId, uploader: { id: userId, name: db.users.find((item) => item.id === userId)?.name || '' } }));
+      .map((track) => ({ ...stripMongoIds(track), id: makeId(), sourceTrackId: track.sourceTrackId || track.sourceItemId || track.id, sourceUserId: track.sourceUserId || track.sourceOwnerId || track.userId, userId, projectId: projectMap.get(track.projectId), sourceItemId: track.id, sourceOwnerId: track.sourceOwnerId || track.userId, uploader: { id: userId, name: db.users.find((item) => item.id === userId)?.name || '' } }));
 
     db.folders.push(...savedFolders);
     db.projects.push(...savedProjects);
@@ -575,13 +578,24 @@ const getProject = async (req, res, next) => {
       const db = ensureDBShape(await readDB());
       const project = db.projects.find((item) => item.id === req.params.id);
       if (!project) return { error: 'Project not found', status: 404 };
-      if (!canAccessItem(project, userId)) return { error: 'This project is private.', status: 403 };
+      const canonicalProject = db.projects.find((item) => item.id === sourceProjectId(project)) || project;
+      const sharedAccess = project.sourceProjectId && project.userId === userId;
+      if (!canAccessItem(project, userId) && !sharedAccess) return { error: 'This project is private.', status: 403 };
       const tracks = db.tracks.filter((track) => track.projectId === project.id).map((track) => {
         const sourceId = track.sourceTrackId || track.sourceItemId;
         const source = sourceId ? db.tracks.find((item) => item.id === sourceId) : null;
-        return normalizeTrack({ ...track, comments: source?.comments || track.comments || [] });
+        const comments = source?.comments || track.comments || [];
+        return normalizeTrack({
+          ...track,
+          notes: source?.notes ?? track.notes,
+          noteMemos: source?.noteMemos ?? track.noteMemos,
+          comments: comments.map((comment) => ({
+            ...comment,
+            user: publicUser(db.users.find((user) => user.id === comment.userId))
+          }))
+        });
       });
-      return { project: normalizeLibraryItem(project, db, 'project'), tracks };
+      return { project: { ...normalizeLibraryItem(project, db, 'project'), ownerId: sourceOwnerId(canonicalProject), isOwner: sourceOwnerId(canonicalProject) === userId, isSharedCopy: Boolean(project.sourceProjectId) }, tracks };
     })();
 
     if (data.error) return next(new AppError(data.error, data.status));

@@ -142,7 +142,7 @@ const uploadTrackController = async (req, res, next) => {
       if (req.file) removeFileIfExists(req.file.path);
       return next(new AppError('Unauthorized user.', 401));
     }
-    if (projectId && !db.projects.some((project) => project.id === projectId && project.userId === userId)) {
+    if (projectId && !db.projects.some((project) => project.id === projectId && project.userId === userId && !project.sourceProjectId)) {
       if (req.file) removeFileIfExists(req.file.path);
       return next(new AppError('Project not found', 404));
     }
@@ -248,7 +248,7 @@ const createCloudinaryTrack = async (req, res, next) => {
     const db = ensureDBShape(await readDB());
     const uploader = db.users.find((user) => user.id === userId);
     if (!uploader) return next(new AppError('Unauthorized user.', 401));
-    if (projectId && !db.projects.some((project) => project.id === projectId && project.userId === userId)) {
+    if (projectId && !db.projects.some((project) => project.id === projectId && project.userId === userId && !project.sourceProjectId)) {
       return next(new AppError('Project not found', 404));
     }
     const versionId = makeId();
@@ -359,23 +359,26 @@ const deleteTrack = async (req, res, next) => {
 const patchTrack = async (req, res, next) => {
   try {
     const userId = req.userId;
-
-    const track = await Track.findOne({ id: req.params.id }).lean();
-    if (!track) return next(new AppError('Track not found', 404));
-
+    const db = ensureDBShape(await readDB());
+    const requestedTrack = findAccessibleTrack(db, req.params.id, userId);
+    if (!requestedTrack) return next(new AppError('Track not found', 404));
+    const track = canonicalCommentTrack(db, requestedTrack);
     const updates = {};
     const { title, notes } = req.body;
     if (title !== undefined) {
+      if (trackOwnerId(track) !== userId) return next(new AppError('Only the project owner can rename this track.', 403));
       const nextTitle = title.toString().trim();
       if (!nextTitle) return next(new AppError('Track title is required.', 400));
       updates.title = nextTitle;
     }
     if (notes !== undefined) updates.notes = notes.toString();
-
-    const updated = await Track.findOneAndUpdate({ id: req.params.id }, updates, { returnDocument: 'after' }).lean();
+    Object.assign(track, updates);
+    await writeDB(db);
+    const updated = await Track.findOneAndUpdate({ id: track.id }, updates, { returnDocument: 'after' }).lean();
     invalidateCache(`workspace:${userId}`);
-    if (track.projectId) invalidateCache(`project:${track.projectId}:${userId}`);
-    res.json({ track: normalizeTrack(updated) });
+    if (requestedTrack.projectId) invalidateCache(`project:${requestedTrack.projectId}:${userId}`);
+    if (track.projectId && track.projectId !== requestedTrack.projectId) invalidateCache(`project:${track.projectId}:${trackOwnerId(track)}`);
+    res.json({ track: normalizeTrack(updated || track) });
   } catch (error) {
     next(error);
   }
