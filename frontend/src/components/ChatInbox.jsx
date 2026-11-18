@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Ban, CheckCheck, Copy, Inbox, Link2, Menu, MessageCircle, MoreHorizontal, Pin, Plus, Reply, Search, Send, ShieldCheck, Star, Trash2, UserPlus, Users, X } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 import { Link } from 'react-router-dom';
@@ -139,11 +139,16 @@ export default function ChatInbox({ user, isOpen, onToggle, startConversationWit
   const messageListRef = useRef(null);
   const chatSectionRef = useRef(null);
 
-  useEffect(() => {
-    const list = messageListRef.current || chatSectionRef.current?.querySelector('.overflow-y-auto');
-    if (!list || !active) return;
-    list.scrollTop = list.scrollHeight;
-  }, [active?.type, active?.partner?.id, active?.group?.id, messages.length]);
+  useLayoutEffect(() => {
+    if (!active) return undefined;
+    const scrollToLatest = () => {
+      const list = messageListRef.current || chatSectionRef.current?.querySelector('.overflow-y-auto');
+      if (list) list.scrollTop = list.scrollHeight;
+    };
+    scrollToLatest();
+    const frame = window.requestAnimationFrame(scrollToLatest);
+    return () => window.cancelAnimationFrame(frame);
+  }, [active?.type, active?.partner?.id, active?.group?.id, messages]);
 
   useEffect(() => {
     if (!deleteFeedback) return undefined;
