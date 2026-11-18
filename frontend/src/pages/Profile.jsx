@@ -16,6 +16,7 @@ export default function Profile({ user, onUserUpdate }) {
   const [profile, setProfile] = useState(null);
   const [posts, setPosts] = useState([]);
   const [socialLists, setSocialLists] = useState({ followers: [], following: [] });
+  const [mutualFollowers, setMutualFollowers] = useState([]);
   const [socialOpen, setSocialOpen] = useState(null);
   const [following, setFollowing] = useState(false);
   const [unfollowConfirmOpen, setUnfollowConfirmOpen] = useState(false);
@@ -38,6 +39,7 @@ export default function Profile({ user, onUserUpdate }) {
         setProfile(data.user);
         setPosts(data.posts || []);
         setSocialLists({ followers: data.followers || [], following: data.following || [] });
+        setMutualFollowers(data.mutualFollowers || []);
         setFollowing(Boolean(data.isFollowing));
         setDraft({ name: data.user?.name || '', username: data.user?.username || '', bio: data.user?.bio || '' });
       });
@@ -150,7 +152,7 @@ export default function Profile({ user, onUserUpdate }) {
         <section className="profile-dossier-hero grid gap-4 rounded-[1.5rem] border border-border bg-shading/35 p-4 shadow-sm sm:grid-cols-[10rem_1fr] sm:gap-6 sm:p-5 lg:grid-cols-[13rem_1fr] lg:gap-8">
           <div className="mx-auto sm:mx-0"><UserAvatar user={profile} size="h-28 w-28 sm:h-40 sm:w-40 lg:h-52 lg:w-52" className="rounded-[1.5rem] ring-1 ring-border" /></div>
           <div className="min-w-0">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-5"><div className="min-w-0"><h1 className="truncate text-2xl font-semibold sm:text-3xl">{profile.name || 'Profile'}</h1><p className="mt-0.5 truncate text-sm text-secondary-label">@{profile.username || profile.name || 'user'}</p></div><div className="flex flex-wrap gap-2">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-5"><div className="min-w-0"><h1 className="truncate text-2xl font-semibold sm:text-3xl">{profile.name || 'Profile'}</h1><p className="mt-0.5 truncate text-sm text-secondary-label">@{profile.username || profile.name || 'user'}</p>{profile.id !== user?.id && mutualFollowers.length > 0 && <p className="mt-2 truncate text-xs text-secondary-label">Followed by <Link to={`/profile/${mutualFollowers[0].id}`} className="font-semibold text-primary-label hover:underline">{mutualFollowers[0].name || mutualFollowers[0].username || 'an account'}</Link>{mutualFollowers.length > 1 && ` and ${mutualFollowers.length - 1} ${mutualFollowers.length - 1 === 1 ? 'other' : 'others'}`}</p>}</div><div className="flex flex-wrap gap-2">
               {profile.id === user?.id ? <div className="relative"><button type="button" onClick={() => setProfileMenuOpen((value) => !value)} className="grid h-11 w-11 place-items-center rounded-xl bg-shading transition-colors hover:bg-highlight" aria-label="Profile actions" aria-expanded={profileMenuOpen}><MoreHorizontal className="h-5 w-5" /></button>{profileMenuOpen && <div className="absolute right-0 top-full z-20 mt-2 w-56 rounded-2xl border border-border panel-bg p-1.5 shadow-2xl"><button type="button" onClick={() => { setProfileMenuOpen(false); setEditing(true); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold hover:bg-highlight"><Edit3 className="h-4 w-4" />Edit profile</button><button type="button" onClick={() => { setProfileMenuOpen(false); setAccountChooserOpen(true); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold hover:bg-highlight"><UserPlus className="h-4 w-4" />Previously logged in accounts</button><button type="button" onClick={() => { setProfileMenuOpen(false); navigate('/login'); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold hover:bg-highlight"><ArrowLeft className="h-4 w-4 rotate-180" />Log into another account</button></div>}</div> : <button onClick={toggleFollow} className={`inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-colors ${following ? 'bg-shading hover:bg-highlight' : 'bg-primary-label text-primary-background hover:opacity-85'}`}>{following ? <Check className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}{following ? 'Following' : profile.followsYou ? 'Follow Back' : 'Follow'}</button>}
               {profile.id !== user?.id && <button onClick={openMessage} className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-shading px-5 py-2.5 text-sm font-semibold transition-colors hover:bg-highlight"><MessageCircle className="h-4 w-4" />Message</button>}
             </div></div>

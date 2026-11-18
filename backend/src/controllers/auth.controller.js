@@ -718,11 +718,15 @@ const getUser = async (req, res, next) => {
     });
     const followerUsers = user.followers?.length ? await User.find({ id: { $in: user.followers } }).lean() : [];
     const followingUsers = user.following?.length ? await User.find({ id: { $in: user.following } }).lean() : [];
+    const viewerUser = req.userId ? await User.findOne({ id: req.userId }).select('following').lean() : null;
+    const mutualIds = new Set((viewerUser?.following || []).filter((followingId) => (user.followers || []).includes(followingId)));
+    const mutualFollowers = followerUsers.filter((follower) => mutualIds.has(follower.id)).map(publicUser);
     res.json({
       user: { ...publicUser(userSafe), email, emailVerified: user.emailVerified !== false, followsYou: (user.following || []).includes(req.userId) },
       isFollowing: (user.followers || []).includes(req.userId),
       followers: followerUsers.map(publicUser),
       following: followingUsers.map(publicUser),
+      mutualFollowers,
       posts
     });
   } catch (error) {
