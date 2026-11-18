@@ -772,7 +772,7 @@ div[class*="bg-\\[\\#F3EBDD\\]\\/92"] { background: rgba(243,235,221,.98) !impor
   backdrop-filter: blur(10px) saturate(1.04);
   -webkit-backdrop-filter: blur(10px) saturate(1.04);
   opacity: 1;
-  border-bottom: 1px solid rgba(243, 235, 221, .12);
+  border-bottom: 0;
   text-shadow: 0 1px 8px rgba(0, 0, 0, .5);
 }
 
@@ -868,12 +868,15 @@ a[aria-label]:active {
 .feed-volume-control,
 .feed-follow-button { min-height: 36px; color: #F3EBDD !important; }
 .feed-post-options { min-width: 36px; background: rgba(43, 43, 43, .78) !important; }
-.feed-volume-control { background: rgba(43, 43, 43, .88) !important; color: #F3EBDD !important; border: 1px solid rgba(243, 235, 221, .18); transition: background .18s ease, box-shadow .18s ease, transform .18s ease; }
+.feed-volume-control { background: rgba(43, 43, 43, .88) !important; color: #F3EBDD !important; border: 1px solid rgba(243, 235, 221, .18); transition: background .18s ease, box-shadow .18s ease, transform .18s ease; touch-action: manipulation; }
 .feed-volume-control button {
   color: #F3EBDD !important;
   background: transparent !important;
   border: 1px solid transparent;
   box-shadow: none;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  touch-action: manipulation;
 }
 .feed-volume-control button:hover { background: rgba(243, 235, 221, .14) !important; color: #FFFDF7 !important; }
 .feed-volume-control input[type="range"] {
@@ -883,6 +886,7 @@ a[aria-label]:active {
   background: linear-gradient(to right, #F3EBDD 0 var(--volume-value, 0%), rgba(243, 235, 221, .28) var(--volume-value, 0%) 100%);
   accent-color: #F3EBDD !important;
   cursor: pointer;
+  touch-action: none;
 }
 .feed-volume-control input[type="range"]::-webkit-slider-runnable-track {
   height: 5px;
