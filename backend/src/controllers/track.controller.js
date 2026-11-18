@@ -587,8 +587,14 @@ const addFeedComment = async (req, res, next) => {
     if (!track) return next(new AppError(isFeedComment ? 'Preview not found' : 'Track is not accessible', 404));
     const parentId = req.body.parentId ? String(req.body.parentId) : null;
     const commentCollection = isFeedComment ? 'feedComments' : 'comments';
+    const clientRequestId = req.body.clientRequestId ? String(req.body.clientRequestId) : null;
+    const existingComment = clientRequestId ? (track[commentCollection] || []).find((entry) => entry.userId === req.userId && entry.clientRequestId === clientRequestId) : null;
+    if (existingComment) {
+      const existingUser = db.users.find((user) => user.id === existingComment.userId);
+      return res.status(200).json({ idempotent: true, comment: { ...existingComment, likes: existingComment.likes || [], likeCount: (existingComment.likes || []).length, likedByMe: (existingComment.likes || []).includes(req.userId), user: existingUser ? { id: existingUser.id, name: existingUser.name, avatarUrl: existingUser.avatarUrl || null } : null } });
+    }
     if (parentId && !(track[commentCollection] || []).some((entry) => entry.id === parentId)) return next(new AppError('Comment not found', 404));
-    const comment = { id: makeId(), userId: req.userId, text, parentId, likes: [], createdAt: new Date().toISOString() };
+    const comment = { id: makeId(), userId: req.userId, clientRequestId, text, parentId, likes: [], createdAt: new Date().toISOString() };
     track[commentCollection] ||= [];
     track[commentCollection].push(comment);
     const actor = db.users.find((user) => user.id === req.userId);

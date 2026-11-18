@@ -110,8 +110,8 @@ const TrackSchema = new Schema({
   previewEnd: Number,
   likes: [String],
   savedBy: [String],
-  comments: [{ id: String, userId: String, text: String, parentId: String, createdAt: String, likes: [String] }],
-  feedComments: [{ id: String, userId: String, text: String, parentId: String, createdAt: String, likes: [String] }],
+  comments: [{ id: String, userId: String, clientRequestId: String, text: String, parentId: String, createdAt: String, likes: [String] }],
+  feedComments: [{ id: String, userId: String, clientRequestId: String, text: String, parentId: String, createdAt: String, likes: [String] }],
 });
 
 const StorySchema = new Schema({

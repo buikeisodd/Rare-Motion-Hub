@@ -110,6 +110,7 @@ function TrackCommentsModal({ isOpen, onClose, track }) {
   const [text, setText] = useState('');
   const [error, setError] = useState('');
   const [replyTo, setReplyTo] = useState(null);
+  const requestIdRef = useRef(null);
   useEffect(() => {
     if (!isOpen || !track?.id) return;
     let cancelled = false;
@@ -128,9 +129,10 @@ function TrackCommentsModal({ isOpen, onClose, track }) {
     event.preventDefault(); if (!text.trim()) return;
     setError('');
     const csrfToken = localStorage.getItem('csrfToken');
-    const response = await fetch(`${apiUrl}/api/tracks/${track.id}/comments`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', ...(csrfToken ? { 'x-csrf-token': csrfToken } : {}) }, body: JSON.stringify({ text: text.trim(), parentId: replyTo?.id || null }) });
+    const clientRequestId = requestIdRef.current || (requestIdRef.current = crypto.randomUUID());
+    const response = await fetch(`${apiUrl}/api/tracks/${track.id}/comments`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', ...(csrfToken ? { 'x-csrf-token': csrfToken } : {}) }, body: JSON.stringify({ text: text.trim(), parentId: replyTo?.id || null, clientRequestId }) });
     if (!response.ok) { const data = await response.json().catch(() => ({})); setError(data.error || 'Could not send comment.'); return; }
-    const data = await response.json(); setComments((items) => [...items, data.comment]); setText(''); setReplyTo(null);
+    const data = await response.json(); setComments((items) => items.some((item) => item.id === data.comment.id) ? items : [...items, data.comment]); setText(''); setReplyTo(null); requestIdRef.current = null;
   };
   const like = async (comment) => {
     const liked = !comment.likedByMe;
