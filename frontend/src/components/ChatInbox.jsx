@@ -206,8 +206,18 @@ export default function ChatInbox({ user, isOpen, onToggle, startConversationWit
       setMessages((current) => {
         const pending = current.filter((message) => message.pending && message.clientRequestId);
         if (!pending.length) return incoming;
-        const confirmedIds = new Set(incoming.map((message) => message.clientRequestId).filter(Boolean));
-        return [...incoming, ...pending.filter((message) => !confirmedIds.has(message.clientRequestId))];
+        const matchedPending = new Set();
+        const reconciled = incoming.map((message) => {
+          const match = pending.find((candidate) => {
+            if (matchedPending.has(candidate.clientRequestId)) return false;
+            if (message.clientRequestId && message.clientRequestId === candidate.clientRequestId) return true;
+            const timeGap = Math.abs(new Date(message.createdAt).getTime() - new Date(candidate.createdAt).getTime());
+            return message.senderId === candidate.senderId && message.text === candidate.text && timeGap < 30000;
+          });
+          if (match) matchedPending.add(match.clientRequestId);
+          return message;
+        });
+        return [...reconciled, ...pending.filter((message) => !matchedPending.has(message.clientRequestId))];
       });
     } catch (err) { if (!silent) setMessages([]); if (conversation.type === 'group' && err.message === 'Group not found.') setGroupRemoved(true); setError(conversation.type === 'group' && err.message === 'Group not found.' ? 'You were removed from this group by the admin.' : (err.message || 'Could not load conversation.')); }
     finally { if (!silent) setLoading(false); }
@@ -250,7 +260,11 @@ export default function ChatInbox({ user, isOpen, onToggle, startConversationWit
       if (!response.ok) throw new Error(data.error || 'Message could not be sent.');
       const message = normalizeMessage(data.message);
       if (!message) throw new Error('The server returned an invalid message.');
-      setMessages((current) => current.map((item) => item.clientRequestId === clientRequestId ? message : item)); loadConversations();
+      setMessages((current) => {
+        const pendingIndex = current.findIndex((item) => item.clientRequestId === clientRequestId);
+        if (pendingIndex < 0) return current.some((item) => item.id === message.id) ? current : [...current, message];
+        return current.map((item, index) => index === pendingIndex ? message : item);
+      }); loadConversations();
     } catch (err) { setMessages((current) => current.filter((item) => item.clientRequestId !== clientRequestId)); setText(value); setError(err.message || 'Message could not be sent.'); }
     finally { setSending(false); }
   };
