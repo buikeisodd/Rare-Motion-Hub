@@ -140,6 +140,10 @@ export default function ChatInbox({ user, isOpen, onToggle, startConversationWit
   const chatSectionRef = useRef(null);
   const stickToBottomRef = useRef(true);
 
+  useEffect(() => {
+    stickToBottomRef.current = true;
+  }, [active?.type, active?.partner?.id, active?.group?.id]);
+
   useLayoutEffect(() => {
     if (!active) return undefined;
     const scrollToLatest = () => {
@@ -149,7 +153,6 @@ export default function ChatInbox({ user, isOpen, onToggle, startConversationWit
         list.scrollTop = list.scrollHeight;
       }
     };
-    stickToBottomRef.current = true;
     scrollToLatest();
     const frame = window.requestAnimationFrame(scrollToLatest);
     const list = messageListRef.current || chatSectionRef.current?.querySelector('.overflow-y-auto');
