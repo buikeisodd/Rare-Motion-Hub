@@ -110,6 +110,7 @@ function TrackCommentsModal({ isOpen, onClose, track }) {
   const [text, setText] = useState('');
   const [error, setError] = useState('');
   const [replyTo, setReplyTo] = useState(null);
+  const [commentToDelete, setCommentToDelete] = useState(null);
   const requestIdRef = useRef(null);
   useEffect(() => {
     if (!isOpen || !track?.id) return;
@@ -140,8 +141,30 @@ function TrackCommentsModal({ isOpen, onClose, track }) {
     const csrfToken = localStorage.getItem('csrfToken');
     await fetch(`${apiUrl}/api/tracks/${track.id}/comments/${comment.id}/like`, { method: 'POST', credentials: 'include', headers: csrfToken ? { 'x-csrf-token': csrfToken } : {} });
   };
+  const deleteComment = async () => {
+    if (!commentToDelete) return;
+    const commentId = commentToDelete.id;
+    setCommentToDelete(null);
+    try {
+      const csrfToken = localStorage.getItem('csrfToken');
+      const response = await fetch(`${apiUrl}/api/tracks/${track.id}/comments/${commentId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: csrfToken ? { 'x-csrf-token': csrfToken } : {}
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || 'Could not delete comment.');
+      }
+      setComments((items) => items.filter((item) => item.id !== commentId && item.parentId !== commentId));
+      if (replyTo?.id === commentId) setReplyTo(null);
+    } catch (deleteError) {
+      setError(deleteError.message);
+    }
+  };
   const roots = comments.filter((comment) => !comment.parentId);
-  return createPortal(<div className="fixed inset-0 z-[95] grid place-items-center bg-black/65 p-4 backdrop-blur-xl" onClick={onClose}><div className="track-comments-modal flex max-h-[min(42rem,calc(100dvh-2rem))] w-full max-w-lg flex-col rounded-2xl border border-white/10 bg-[#151515]/95 p-5 text-[#F7F4EC] shadow-2xl backdrop-blur-xl" onClick={(event) => event.stopPropagation()}><div className="mb-4 flex shrink-0 items-start justify-between"><div><h2 className="text-xl font-bold">Track comments</h2><p className="mt-1 max-w-[18rem] truncate text-sm opacity-70">{track.title}</p></div><button type="button" onClick={onClose} aria-label="Close comments" className="grid h-9 w-9 place-items-center rounded-xl bg-white/10"><X className="h-4 w-4" /></button></div><div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">{roots.length ? roots.map((comment) => <div key={comment.id}><div className="rounded-xl bg-white/[.07] px-3 py-2.5 text-sm"><div className="flex items-start gap-3"><div className="min-w-0 flex-1"><p className="mb-1 text-xs font-bold opacity-70">{comment.user?.name || 'Listener'}</p><p className="break-words leading-relaxed">{comment.text}</p></div><button type="button" onClick={() => like(comment)} className={`grid shrink-0 place-items-center gap-0.5 text-xs ${comment.likedByMe ? 'text-red-500' : 'opacity-60'}`} aria-label="Like comment"><Heart className={`h-4 w-4 ${comment.likedByMe ? 'fill-current' : ''}`} /><span>{comment.likeCount || 0}</span></button></div><button type="button" onClick={() => { setReplyTo(comment); setText(''); }} className="mt-2 text-xs font-semibold opacity-70 hover:opacity-100">Reply</button></div>{comments.filter((reply) => reply.parentId === comment.id).map((reply) => <div key={reply.id} className="ml-5 mt-2 rounded-xl border-l-2 border-white/20 bg-white/[.04] px-3 py-2 text-sm"><p className="mb-1 text-xs font-bold opacity-70">{reply.user?.name || 'Listener'}</p><p className="break-words">{reply.text}</p></div>)}</div>) : <p className="py-10 text-center text-sm opacity-65">Be the first to comment.</p>}</div>{error && <p className="mt-3 shrink-0 text-xs text-red-400">{error}</p>}{replyTo && <div className="mt-3 flex shrink-0 items-center justify-between rounded-xl bg-white/[.07] px-3 py-2 text-xs"><span className="min-w-0 truncate">Replying to {replyTo.user?.name || 'comment'}</span><button type="button" onClick={() => setReplyTo(null)} aria-label="Cancel reply"><X className="h-4 w-4" /></button></div>}<form onSubmit={submit} className="mt-3 flex shrink-0 gap-2 border-t border-white/10 pt-4"><input value={text} onChange={(event) => setText(event.target.value)} placeholder={replyTo ? 'Write a reply...' : 'Add a comment...'} className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/[.07] px-3 py-2.5 text-sm text-[#F7F4EC] outline-none placeholder:text-white/45 focus:border-white/30 focus:bg-white/10" /><button type="submit" className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#F7F4EC] text-[#080909]" aria-label="Post comment"><Send className="h-4 w-4" /></button></form></div></div>, document.body);
+  const renderDeleteButton = (comment) => comment.userId === userId ? <button type="button" onClick={() => setCommentToDelete(comment)} className="ml-auto inline-flex items-center gap-1 text-xs text-red-300/80 hover:text-red-200" aria-label="Delete comment"><Trash2 className="h-3.5 w-3.5" />Delete</button> : null;
+  return createPortal(<><div className="fixed inset-0 z-[95] grid place-items-center bg-black/65 p-4 backdrop-blur-xl" onClick={onClose}><div className="track-comments-modal flex max-h-[min(42rem,calc(100dvh-2rem))] w-full max-w-lg flex-col rounded-2xl border border-white/10 bg-[#151515]/95 p-5 text-[#F7F4EC] shadow-2xl backdrop-blur-xl" onClick={(event) => event.stopPropagation()}><div className="mb-4 flex shrink-0 items-start justify-between"><div><h2 className="text-xl font-bold">Track comments</h2><p className="mt-1 max-w-[18rem] truncate text-sm opacity-70">{track.title}</p></div><button type="button" onClick={onClose} aria-label="Close comments" className="grid h-9 w-9 place-items-center rounded-xl bg-white/10"><X className="h-4 w-4" /></button></div><div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">{roots.length ? roots.map((comment) => <div key={comment.id}><div className="rounded-xl bg-white/[.07] px-3 py-2.5 text-sm"><div className="flex items-start gap-3"><div className="min-w-0 flex-1"><div className="mb-1 flex items-center gap-2"><p className="text-xs font-bold opacity-70">{comment.user?.name || 'Listener'}</p>{renderDeleteButton(comment)}</div><p className="break-words leading-relaxed">{comment.text}</p></div><button type="button" onClick={() => like(comment)} className={`grid shrink-0 place-items-center gap-0.5 text-xs ${comment.likedByMe ? 'text-red-500' : 'opacity-60'}`} aria-label="Like comment"><Heart className={`h-4 w-4 ${comment.likedByMe ? 'fill-current' : ''}`} /><span>{comment.likeCount || 0}</span></button></div><button type="button" onClick={() => { setReplyTo(comment); setText(''); }} className="mt-2 text-xs font-semibold opacity-70 hover:opacity-100">Reply</button></div>{comments.filter((reply) => reply.parentId === comment.id).map((reply) => <div key={reply.id} className="ml-5 mt-2 rounded-xl border-l-2 border-white/20 bg-white/[.04] px-3 py-2 text-sm"><div className="mb-1 flex items-center gap-2"><p className="text-xs font-bold opacity-70">{reply.user?.name || 'Listener'}</p>{renderDeleteButton(reply)}</div><p className="break-words">{reply.text}</p></div>)}</div>) : <p className="py-10 text-center text-sm opacity-65">Be the first to comment.</p>}</div>{error && <p className="mt-3 shrink-0 text-xs text-red-400">{error}</p>}{replyTo && <div className="mt-3 flex shrink-0 items-center justify-between rounded-xl bg-white/[.07] px-3 py-2 text-xs"><span className="min-w-0 truncate">Replying to {replyTo.user?.name || 'comment'}</span><button type="button" onClick={() => setReplyTo(null)} aria-label="Cancel reply"><X className="h-4 w-4" /></button></div>}<form onSubmit={submit} className="mt-3 flex shrink-0 gap-2 border-t border-white/10 pt-4"><input value={text} onChange={(event) => setText(event.target.value)} placeholder={replyTo ? 'Write a reply...' : 'Add a comment...'} className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/[.07] px-3 py-2.5 text-sm text-[#F7F4EC] outline-none placeholder:text-white/45 focus:border-white/30 focus:bg-white/10" /><button type="submit" className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#F7F4EC] text-[#080909]" aria-label="Post comment"><Send className="h-4 w-4" /></button></form></div></div><ConfirmModal isOpen={Boolean(commentToDelete)} onClose={() => setCommentToDelete(null)} onConfirm={deleteComment} title="Delete comment?" message="Your comment and its replies will be removed from this track." confirmText="Delete comment" /></>, document.body);
 }
 
 function FeedPreviewModal({ isOpen, onClose, track, onSaved }) {
@@ -807,7 +830,7 @@ function TrackDetailsModal({
         onTrackUpdate={onTrackUpdate}
         onPlay={onPlay}
       />
-      <TrackCommentsModal isOpen={showComments} onClose={() => setShowComments(false)} track={track} />
+      <TrackCommentsModal isOpen={showComments} onClose={() => setShowComments(false)} track={track} userId={userId} />
       <FeedPreviewModal isOpen={showFeedEditor} onClose={() => setShowFeedEditor(false)} track={track} onSaved={onTrackUpdate} />
     </>
   );

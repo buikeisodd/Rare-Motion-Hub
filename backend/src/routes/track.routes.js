@@ -50,6 +50,7 @@ router.get('/tracks/:id/comments', requireUserId, getTrackComments);
 router.post('/feed/tracks/:id/comments', requireUserId, addFeedComment);
 router.post('/tracks/:id/comments', requireUserId, addFeedComment);
 router.delete('/feed/tracks/:id/comments/:commentId', requireUserId, deleteFeedComment);
+router.delete('/tracks/:id/comments/:commentId', requireUserId, deleteFeedComment);
 router.post('/feed/tracks/:id/comments/:commentId/like', requireUserId, toggleCommentLike);
 router.post('/tracks/:id/comments/:commentId/like', requireUserId, toggleCommentLike);
 router.get('/tracks/:id/insights', requireUserId, getTrackInsights);
