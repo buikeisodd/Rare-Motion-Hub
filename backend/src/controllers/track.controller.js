@@ -91,6 +91,8 @@ const promoteTrackToCloudinary = async (track, localPath, userId) => {
       folder: 'raremotionhub/tracks'
     });
     const db = ensureDBShape(await readDB());
+    const viewer = db.users.find((user) => user.id === req.userId);
+    const following = new Set(viewer?.following || []);
     const index = db.tracks.findIndex((item) => item.id === track.id);
     if (index === -1) {
       await cloudinary.uploader.destroy(uploadResult.public_id, { resource_type: uploadResult.resource_type || 'video' }).catch(() => {});
@@ -419,6 +421,8 @@ const publishTrack = async (req, res, next) => {
 const getFeed = async (req, res, next) => {
   try {
     const db = ensureDBShape(await readDB());
+    const viewer = db.users.find((user) => user.id === req.userId);
+    const following = new Set(viewer?.following || []);
     const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 20, 1), 50);
     let cursor = null;
     if (req.query.cursor) {
@@ -444,7 +448,26 @@ const getFeed = async (req, res, next) => {
         const dateDifference = new Date(b.publishedAt || b.uploadedAt) - new Date(a.publishedAt || a.uploadedAt);
         return dateDifference || String(b.id).localeCompare(String(a.id));
       });
-    const pageTracks = publishedTracks.filter((track) => {
+    const followedTracks = publishedTracks.filter((track) => {
+      const ownerId = trackOwnerId(track);
+      return ownerId === req.userId || following.has(ownerId);
+    });
+    const discoveryTracks = publishedTracks.filter((track) => {
+      const ownerId = trackOwnerId(track);
+      return ownerId !== req.userId && !following.has(ownerId);
+    });
+    if (!cursor) {
+      for (let index = discoveryTracks.length - 1; index > 0; index -= 1) {
+        const randomIndex = Math.floor(Math.random() * (index + 1));
+        [discoveryTracks[index], discoveryTracks[randomIndex]] = [discoveryTracks[randomIndex], discoveryTracks[index]];
+      }
+      followedTracks.push(...discoveryTracks.slice(0, Math.min(4, discoveryTracks.length)));
+      followedTracks.sort((a, b) => {
+        const dateDifference = new Date(b.publishedAt || b.uploadedAt) - new Date(a.publishedAt || a.uploadedAt);
+        return dateDifference || String(b.id).localeCompare(String(a.id));
+      });
+    }
+    const pageTracks = followedTracks.filter((track) => {
       if (!cursor?.timestamp) return true;
       const timestamp = new Date(track.publishedAt || track.uploadedAt).getTime();
       const cursorTimestamp = new Date(cursor.timestamp).getTime();
@@ -459,6 +482,7 @@ const getFeed = async (req, res, next) => {
           ...normalizeTrack(track),
           owner: owner ? { id: owner.id, name: owner.name, avatarUrl: owner.avatarUrl || null } : null,
           project: project ? { id: project.id, title: project.title || project.name, coverArt: project.coverArt || null } : null,
+          isFollowing: owner ? following.has(owner.id) : false,
           likeCount: (track.likes || []).length,
           likedByMe: (track.likes || []).includes(req.userId),
           savedByMe: (track.savedBy || []).includes(req.userId),
