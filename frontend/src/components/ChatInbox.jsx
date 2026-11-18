@@ -138,24 +138,31 @@ export default function ChatInbox({ user, isOpen, onToggle, startConversationWit
   const handledTargetId = useRef(null);
   const messageListRef = useRef(null);
   const chatSectionRef = useRef(null);
+  const stickToBottomRef = useRef(true);
 
   useLayoutEffect(() => {
     if (!active) return undefined;
     const scrollToLatest = () => {
       const list = messageListRef.current || chatSectionRef.current?.querySelector('.overflow-y-auto');
-      if (list) {
+      if (list && stickToBottomRef.current) {
         list.style.scrollBehavior = 'auto';
         list.scrollTop = list.scrollHeight;
       }
     };
+    stickToBottomRef.current = true;
     scrollToLatest();
     const frame = window.requestAnimationFrame(scrollToLatest);
     const list = messageListRef.current || chatSectionRef.current?.querySelector('.overflow-y-auto');
     const observer = list ? new MutationObserver(scrollToLatest) : null;
+    const onScroll = () => {
+      stickToBottomRef.current = list.scrollHeight - list.scrollTop - list.clientHeight < 48;
+    };
+    list?.addEventListener('scroll', onScroll, { passive: true });
     observer?.observe(list, { childList: true, subtree: true, characterData: true });
     return () => {
       window.cancelAnimationFrame(frame);
       observer?.disconnect();
+      list?.removeEventListener('scroll', onScroll);
     };
   }, [active?.type, active?.partner?.id, active?.group?.id, messages]);
 
@@ -273,6 +280,7 @@ export default function ChatInbox({ user, isOpen, onToggle, startConversationWit
     setSending(true); setError('');
     const isGroup = active.type === 'group';
     const clientRequestId = crypto.randomUUID();
+    stickToBottomRef.current = true;
     const optimistic = normalizeMessage({ id: `pending-${clientRequestId}`, clientRequestId, senderId: user.id, recipientId: isGroup ? null : active.partner.id, groupId: isGroup ? active.group.id : null, conversationType: isGroup ? 'group' : 'dm', text: value, replyToMessageId: replyingTo?.id || null, createdAt: new Date().toISOString(), pending: true });
     setMessages((current) => [...current, optimistic]);
     setText(''); setReplyingTo(null);
