@@ -1031,6 +1031,15 @@ article button[aria-label="Remove from saved"]:hover { color: #3E3E3E; }
   background: rgba(243, 235, 221, .14) !important;
   color: #F3EBDD !important;
 }
+.chat-inbox-shell form button[aria-label="Send message"] {
+  background: #343434 !important;
+  color: #F3EBDD !important;
+  border: 1px solid rgba(243, 235, 221, .18);
+}
+.chat-inbox-shell form button[aria-label="Send message"]:hover:not(:disabled) {
+  background: #4A4A4A !important;
+  color: #FFFFFF !important;
+}
 @media (max-width: 639px) {
   .chat-inbox-overlay { align-items: stretch; }
   .chat-inbox-shell { border-radius: 0; }
