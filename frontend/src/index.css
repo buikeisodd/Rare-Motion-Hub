@@ -965,3 +965,66 @@ article button[aria-label="Remove from saved"]:hover { color: #3E3E3E; }
 }
 .project-track-row-active .text-secondary-label { color: rgba(247, 244, 236, .72) !important; }
 
+/* Chat is a focused workspace. Keep its surfaces independent from the
+   cream modal system used elsewhere so navigation and messages do not blur
+   into one another. */
+.chat-inbox-overlay {
+  background: rgba(0, 0, 0, .68);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+.chat-inbox-shell {
+  background: #151515;
+  color: #F3EBDD;
+  border-color: rgba(243, 235, 221, .14);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, .48);
+}
+.chat-inbox-shell aside {
+  background: #1B1B1B;
+  border-color: rgba(243, 235, 221, .1) !important;
+}
+.chat-inbox-shell section {
+  background: #111111;
+}
+.chat-inbox-shell header,
+.chat-inbox-shell form,
+.chat-inbox-shell .border-b,
+.chat-inbox-shell .border-t {
+  border-color: rgba(243, 235, 221, .1) !important;
+}
+.chat-inbox-shell .bg-shading,
+.chat-inbox-shell .bg-shading\/50,
+.chat-inbox-shell .bg-shading\/60 {
+  background-color: rgba(243, 235, 221, .07) !important;
+}
+.chat-inbox-shell .bg-primary-background {
+  background-color: #111111 !important;
+}
+.chat-inbox-shell .text-primary-label { color: #F3EBDD !important; }
+.chat-inbox-shell .text-secondary-label { color: rgba(243, 235, 221, .62) !important; }
+.chat-inbox-shell button:hover:not(:disabled),
+.chat-inbox-shell a:hover { background-color: rgba(243, 235, 221, .12); }
+.chat-inbox-shell aside > div > button.bg-primary-label,
+.chat-inbox-shell form button.bg-primary-label {
+  background-color: #F3EBDD !important;
+  color: #151515 !important;
+}
+.chat-inbox-shell section > div.flex-1 > div > div[class*="bg-primary-label"] {
+  background-color: #343434 !important;
+  color: #F3EBDD !important;
+}
+.chat-inbox-shell section > div.flex-1 > div > div[class*="bg-shading"] {
+  background-color: #242424 !important;
+  color: #F3EBDD !important;
+}
+.chat-inbox-shell input {
+  color: #F3EBDD !important;
+  background-color: rgba(243, 235, 221, .08) !important;
+}
+.chat-inbox-shell input::placeholder { color: rgba(243, 235, 221, .45) !important; }
+.chat-inbox-shell .chat-message-action { color: #F3EBDD !important; }
+@media (max-width: 639px) {
+  .chat-inbox-overlay { align-items: stretch; }
+  .chat-inbox-shell { border-radius: 0; }
+}
+
