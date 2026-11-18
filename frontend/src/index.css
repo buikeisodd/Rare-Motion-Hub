@@ -297,6 +297,10 @@
     color: var(--rmh-bg) !important;
   }
 
+  .track-comments-modal button[type="submit"] svg {
+    color: var(--rmh-bg) !important;
+  }
+
   .text-red-400 svg,
   .text-red-500 svg,
   .text-red-600 svg {
