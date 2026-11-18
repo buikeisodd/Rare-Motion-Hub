@@ -209,7 +209,7 @@ function FeedCard({ item, user, onUpdate, onDelete, muted, onMutedChange, volume
   const reactComment = async (entry) => { const next = !entry.likedByMe; onUpdate(item.id, { ...entry, likedByMe: next, likeCount: Math.max(0, (entry.likeCount || 0) + (next ? 1 : -1)) }, 'comment-like'); const res = await fetch(`${apiUrl}/api/feed/tracks/${item.id}/comments/${entry.id}/like`, { method: 'POST', ...mutationOptions() }); if (!res.ok) onUpdate(item.id, { ...entry, likedByMe: !next, likeCount: entry.likeCount || 0 }, 'comment-like'); };
   const roots = (item.comments || []).filter((entry) => !entry.parentId); const replies = (id) => (item.comments || []).filter((entry) => entry.parentId === id);
   return <motion.article ref={cardRef} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="relative mx-auto w-full max-w-xl overflow-hidden rounded-2xl border border-border bg-shading/35">
-    <header className="feed-post-header absolute inset-x-0 top-0 z-20 flex items-center gap-3 border-b border-[#F3EBDD]/15 bg-[#34483B]/78 px-4 py-3 text-[#F3EBDD] shadow-[0_8px_22px_rgba(52,72,59,.38)] backdrop-blur-xl">
+    <header className="feed-post-header absolute inset-x-0 top-0 z-20 flex items-center gap-3 px-4 py-3 text-[#F3EBDD]">
       <RouterLink to={'/profile/' + item.owner?.id} className="flex items-center gap-3 min-w-0 flex-1 group">
         <UserAvatar user={item.owner || user} size="h-8 w-8" />
         <div className="min-w-0 flex-1">

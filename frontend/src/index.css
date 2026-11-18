@@ -767,12 +767,13 @@ div[class*="bg-\\[\\#F3EBDD\\]\\/92"] { background: rgba(243,235,221,.98) !impor
 .glass button:is(.text-red-500, .text-red-600, [class*="text-red"]):hover:not(:disabled),
 .create-flow-surface button:is(.text-red-500, .text-red-600, [class*="text-red"]):hover:not(:disabled) { color: #080909 !important; background: #FF5C6C !important; }
 .feed-post-header {
-  background: rgba(52, 72, 59, 0.82);
+  background: linear-gradient(180deg, rgba(0, 0, 0, .5) 0%, rgba(0, 0, 0, .2) 68%, transparent 100%);
   color: #f3ebdd;
-  backdrop-filter: blur(24px) saturate(1.08);
-  -webkit-backdrop-filter: blur(24px) saturate(1.08);
+  backdrop-filter: blur(10px) saturate(1.04);
+  -webkit-backdrop-filter: blur(10px) saturate(1.04);
   opacity: 1;
-  box-shadow: 0 10px 26px rgba(24, 35, 28, 0.24);
+  border-bottom: 1px solid rgba(243, 235, 221, .12);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, .5);
 }
 
 /* MobileLanding owns the phone presentation. */
