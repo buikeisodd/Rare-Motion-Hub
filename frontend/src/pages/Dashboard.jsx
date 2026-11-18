@@ -883,7 +883,15 @@ export default function Dashboard({ user, onLogout, onUserUpdate }) {
         </nav>
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-          <div className="relative">
+          <div
+            className="relative"
+            onMouseEnter={() => {
+              setIsNotificationsOpen(true);
+              setIsProfileOpen(false);
+              setIsAddMenuOpen(false);
+            }}
+            onMouseLeave={() => setIsNotificationsOpen(false)}
+          >
             <button onClick={handleOpenNotifications} className="relative grid h-10 w-10 place-items-center rounded-2xl bg-shading text-primary-label transition-colors hover:bg-highlight sm:h-11 sm:w-11" aria-label="Notifications">
               <Bell className="h-5 w-5 fill-current text-[#FF8A3D]" />
               {totalNotifications > 0 && <span className="absolute right-2.5 top-2.5 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-primary-background" aria-label="New notifications" />}
