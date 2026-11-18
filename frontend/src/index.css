@@ -1061,6 +1061,31 @@ article button[aria-label="Remove from saved"]:hover { color: #3E3E3E; }
   border-color: transparent !important;
   box-shadow: 0 16px 34px rgba(0, 0, 0, .24), inset 0 1px 0 rgba(255, 255, 255, .06) !important;
 }
+
+.notification-panel {
+  background: rgba(24, 24, 24, .94) !important;
+  color: #F3EBDD !important;
+  border: 1px solid rgba(243, 235, 221, .14);
+  backdrop-filter: blur(24px) saturate(.95);
+  -webkit-backdrop-filter: blur(24px) saturate(.95);
+}
+.notification-panel .bg-shading {
+  background: rgba(243, 235, 221, .08) !important;
+}
+.notification-panel .bg-primary-label\/10 {
+  background: rgba(243, 235, 221, .13) !important;
+}
+.notification-panel .text-primary-label { color: #F3EBDD !important; }
+.notification-panel .text-secondary-label { color: rgba(243, 235, 221, .62) !important; }
+.notification-panel button:hover:not(:disabled),
+.notification-panel a:hover {
+  background: rgba(243, 235, 221, .14) !important;
+  color: #F3EBDD !important;
+}
+.notification-panel button.bg-primary-label {
+  background: #F3EBDD !important;
+  color: #181818 !important;
+}
 @media (max-width: 639px) {
   .chat-inbox-overlay { align-items: stretch; }
   .chat-inbox-shell { border-radius: 0; }

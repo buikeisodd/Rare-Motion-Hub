@@ -398,7 +398,7 @@ function NotificationsMenu({ isOpen, notifications, conversations, onRead, onCle
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: -10 }}
           transition={{ duration: 0.15 }}
-          className="absolute left-auto right-0 top-full mt-2 z-50 w-72 rounded-[1.25rem] border border-border panel-bg p-3 shadow-2xl origin-top-right"
+          className="notification-panel absolute left-auto right-0 top-full mt-2 z-50 w-72 rounded-[1.25rem] p-3 shadow-2xl origin-top-right"
         >
           <div className="mb-2 grid grid-cols-2 gap-1 rounded-xl bg-shading p-1">
             {['unread', 'read'].map((value) => (
