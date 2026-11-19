@@ -944,7 +944,9 @@ a[aria-label]:active {
 .feed-follow-button { background: #2B2B2B !important; border: 1px solid rgba(243, 235, 221, .16); box-shadow: 0 6px 16px rgba(0, 0, 0, .18); }
 .feed-main article img { image-rendering: auto; object-position: center; backface-visibility: hidden; }
 div[class*="max-w-[78%]"]:has(div.h-20) { max-width: min(92%, 34rem); }
-div[class*="max-w-[78%]"] > div.h-20 { height: 7.5rem; }
+div[class*="max-w-[78%]"] > div.mb-2:has(div.h-20) { width: min(30rem, 100%); }
+div[class*="max-w-[78%]"] > div.mb-2 > div.h-20 { height: 10rem; }
+[class*="relative z-10 mt-7"][class*="bg-[#34483B]/72"] { background: rgba(0, 0, 0, .45) !important; border: 1px solid rgba(243, 235, 221, .2); color: #F3EBDD; backdrop-filter: blur(18px) saturate(.85); -webkit-backdrop-filter: blur(18px) saturate(.85); }
 .feed-main article > div:last-child > h2 + p { display: none; }
 .feed-main article > div:last-child > .mt-3 { justify-content: flex-start; }
 .feed-main article > div:last-child > .mt-3 > button:first-child { margin-left: auto; }
