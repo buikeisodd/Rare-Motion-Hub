@@ -145,6 +145,16 @@ export default function Live({ user }) {
         room = new Room({ adaptiveStream: true, dynacast: true });
         roomRef.current = room;
         room.on(RoomEvent.Disconnected, () => { if (!cancelled) { setConnected(false); setPublishing(false); } });
+        room.on(RoomEvent.ParticipantConnected, (participant) => {
+          const name = participant.name || participant.identity || 'A viewer';
+          if (active.hostId === user?.id) setLiveViewerCount((count) => count + 1);
+          setLiveMessages((current) => [...current.slice(-49), { type: 'presence', sender: name, text: 'joined the live', system: true }]);
+        });
+        room.on(RoomEvent.ParticipantDisconnected, (participant) => {
+          const name = participant.name || participant.identity || 'A viewer';
+          if (active.hostId === user?.id) setLiveViewerCount((count) => Math.max(0, count - 1));
+          setLiveMessages((current) => [...current.slice(-49), { type: 'presence', sender: name, text: 'left the live', system: true }]);
+        });
         room.on(RoomEvent.DataReceived, (payload, participant) => {
           try {
             const event = JSON.parse(new TextDecoder().decode(payload));
@@ -378,7 +388,7 @@ export default function Live({ user }) {
             </div>
             <aside className="live-chat-panel live-chat-overlay absolute bottom-0 right-0 top-0 flex min-h-0 w-full max-w-sm flex-col border-l border-primary-background/10 p-4 text-primary-label">
               <div className="mb-3 flex items-center justify-end"><button type="button" onClick={sendReaction} aria-label="Send reaction" className="rounded-xl p-2 text-red-600"><Heart size={18} /></button></div>
-              <div className="live-chat-list min-h-0 flex-1 space-y-2 overflow-y-auto text-sm">{liveMessages.map((item, index) => { const tone = toneForComment(item.sender); return <p className="live-chat-message" style={{ borderLeftColor: tone.border, backgroundColor: tone.background }} key={`${item.sender}-${index}`}><strong style={{ color: tone.text }}>{item.sender}</strong> {item.text}</p>; })}</div>
+              <div className="live-chat-list min-h-0 flex-1 space-y-2 overflow-y-auto text-sm">{liveMessages.map((item, index) => { const tone = toneForComment(item.sender); return <p className={`live-chat-message ${item.system ? 'live-chat-presence' : ''}`} style={{ borderLeftColor: tone.border, backgroundColor: tone.background }} key={`${item.type}-${item.sender}-${item.text}-${index}`}><strong style={{ color: tone.text }}>{item.sender}</strong> {item.text}</p>; })}</div>
               <form onSubmit={sendChat} className="mt-3 flex gap-2"><input value={chatText} onChange={(event) => setChatText(event.target.value)} placeholder="Say something..." className="min-w-0 flex-1 rounded-xl border border-primary-label/15 bg-white/60 px-3 py-2 outline-none" /><button type="submit" aria-label="Send message" className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary-label text-primary-background"><Send size={16} /></button></form>
             </aside>
           </div>
