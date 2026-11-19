@@ -643,7 +643,8 @@ div[class*="bg-\\[\\#F3EBDD\\]\\/92"] { background: rgba(243,235,221,.98) !impor
   }
 
   .feed-shell:has(.feed-sidebar:hover) .feed-main > div {
-    max-width: 38rem;
+    max-width: 39rem;
+    margin-left: 9rem;
   }
 }
 @media (prefers-reduced-motion: reduce) {
