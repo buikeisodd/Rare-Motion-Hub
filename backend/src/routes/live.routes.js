@@ -1,10 +1,11 @@
 const express = require('express');
 const { requireUserId } = require('../middlewares/auth.middleware');
-const { listLive, startLive, endLive, joinLive, getLiveToken, requestToJoin, listJoinRequests, resolveJoinRequest, leaveParticipants, getJoinRequestStatus } = require('../controllers/live.controller');
+const { listLive, startLive, endLive, joinLive, leaveLive, getLiveToken, requestToJoin, listJoinRequests, resolveJoinRequest, leaveParticipants, getJoinRequestStatus } = require('../controllers/live.controller');
 const router = express.Router();
 router.get('/', requireUserId, listLive);
 router.post('/', requireUserId, startLive);
 router.post('/:id/join', requireUserId, joinLive);
+router.post('/:id/leave', requireUserId, leaveLive);
 router.get('/:id/token', requireUserId, getLiveToken);
 router.post('/:id/request', requireUserId, requestToJoin);
 router.get('/:id/request-status', requireUserId, getJoinRequestStatus);

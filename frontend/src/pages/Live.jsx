@@ -85,6 +85,7 @@ export default function Live({ user }) {
   const [micOn, setMicOn] = useState(true);
   const [screenSharing, setScreenSharing] = useState(false);
   const [liveMessages, setLiveMessages] = useState([]);
+  const [liveViewerCount, setLiveViewerCount] = useState(0);
   const [chatText, setChatText] = useState('');
   const [videoTileCount, setVideoTileCount] = useState(0);
   const roomRef = useRef(null);
@@ -92,6 +93,7 @@ export default function Live({ user }) {
   const screenElementsRef = useRef([]);
   const videoTilesRef = useRef(new Map());
   const attachedTrackIds = useRef(new Set());
+  const joinedLiveRef = useRef(null);
   const [requestStatus, setRequestStatus] = useState('');
   const [joinRequests, setJoinRequests] = useState([]);
   const [connectionNonce, setConnectionNonce] = useState(0);
@@ -110,7 +112,10 @@ export default function Live({ user }) {
       try {
         const data = await apiRequest('/api/live');
         const current = (data.sessions || []).find((item) => item.id === active.id);
-        if (current) setActive((previous) => ({ ...previous, ...current }));
+        if (current) {
+          setActive((previous) => ({ ...previous, ...current }));
+          setLiveViewerCount(Number(current.viewerCount ?? current.viewerIds?.length ?? 0));
+        }
         else {
           setMessage('The host has disconnected. This live has ended.');
           roomRef.current?.disconnect();
@@ -144,8 +149,10 @@ export default function Live({ user }) {
           try {
             const event = JSON.parse(new TextDecoder().decode(payload));
             const sender = event.sender || participant?.identity || participant?.name || 'Listener';
+            // Only conversational events belong in the comment stream. Presence
+            // is tracked by the live session, never rendered as a chat message.
             if (event.type === 'chat') setLiveMessages((current) => [...current.slice(-49), { ...event, sender }]);
-            if (event.type === 'reaction') setLiveMessages((current) => [...current.slice(-49), { ...event, sender, text: `${event.emoji} reaction` }]);
+            else if (event.type === 'reaction') setLiveMessages((current) => [...current.slice(-49), { ...event, sender, text: `${event.emoji} reaction` }]);
             if (event.type === 'host-ended') {
               setMessage('The host has disconnected. This live has ended.');
               room?.disconnect();
@@ -238,7 +245,7 @@ export default function Live({ user }) {
       } catch (error) { setMessage(error.message || 'Could not connect to the live room.'); }
     };
     connect();
-    return () => { cancelled = true; screenTracksRef.current.forEach((track) => { try { room?.localParticipant.unpublishTrack(track); } catch {} track.stop(); }); screenTracksRef.current = []; screenElementsRef.current.forEach((element) => element.remove()); screenElementsRef.current = []; videoTilesRef.current.clear(); setVideoTileCount(0); setScreenSharing(false); setConnected(false); setPublishing(false); setVideoUnavailable(false); setCameraOn(true); setMicOn(true); setLiveMessages([]); attachedTrackIds.current.clear(); roomRef.current = null; room?.disconnect(); document.getElementById('live-media-stage')?.replaceChildren(); };
+    return () => { cancelled = true; const sessionId = joinedLiveRef.current; if (sessionId && active.hostId !== user?.id) { joinedLiveRef.current = null; fetch(`${apiUrl}/api/live/${sessionId}/leave`, { method: 'POST', credentials: 'include', keepalive: true }).catch(() => {}); } screenTracksRef.current.forEach((track) => { try { room?.localParticipant.unpublishTrack(track); } catch {} track.stop(); }); screenTracksRef.current = []; screenElementsRef.current.forEach((element) => element.remove()); screenElementsRef.current = []; videoTilesRef.current.clear(); setVideoTileCount(0); setScreenSharing(false); setConnected(false); setPublishing(false); setVideoUnavailable(false); setCameraOn(true); setMicOn(true); setLiveMessages([]); setLiveViewerCount(0); attachedTrackIds.current.clear(); roomRef.current = null; room?.disconnect(); document.getElementById('live-media-stage')?.replaceChildren(); };
   }, [active?.id, connectionNonce]);
 
   const start = async (event) => {
@@ -255,6 +262,8 @@ export default function Live({ user }) {
     setBusy(true); setMessage('');
     try {
       const data = await apiRequest(`/api/live/${session.id}/join`, { method: 'POST' });
+      joinedLiveRef.current = session.id;
+      setLiveViewerCount(Number(data.viewerCount ?? 0));
       setActive(data.session || session); setSessions((current) => current.map((item) => item.id === session.id ? { ...item, viewerCount: data.viewerCount } : item)); navigate(`/live/${session.id}`);
     } catch (error) { setMessage(error.message); } finally { setBusy(false); }
   };
@@ -357,7 +366,7 @@ export default function Live({ user }) {
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-primary-label/10 px-5 py-4">
             <div><h2 className="text-2xl font-semibold">{active.title}</h2></div>
             <div className="flex items-center gap-3 text-sm text-primary-label/70">
-              <span className="inline-flex items-center gap-1"><Users size={15} /> {active.viewerCount || active.viewerIds?.length || 0}</span>
+              <span className="inline-flex items-center gap-1"><Users size={15} /> {liveViewerCount}</span>
               {active.hostId !== user?.id && !publishing && <button type="button" onClick={requestToSpeak} disabled={requestStatus === 'pending'} className="rounded-xl bg-primary-label px-3 py-2 text-xs font-semibold text-primary-background">{requestStatus === 'pending' ? 'Request sent' : 'Request to join'}</button>}
               {active.hostId === user?.id && <button type="button" onClick={end} disabled={busy} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-red-600 px-4 py-2 font-semibold text-white disabled:opacity-50"><LogOut size={16} /> End</button>}
               <button type="button" onClick={() => navigate('/live')} aria-label="Close live room" className="grid h-10 w-10 place-items-center rounded-xl bg-primary-label/10"><X size={18} /></button>
