@@ -411,7 +411,7 @@ export default function Feed({ user, savedOnly = false }) {
     </header>
     <QuickAdd suggestions={activeSuggestions} requests={friendRequests} onFollow={followSuggestion} onDismiss={dismissSuggestion} onDecline={declineFriendRequest} />
     <main className="feed-main px-4 pb-20 pt-4 sm:px-8 lg:ml-28 xl:mr-80">
-      <div className="mx-auto max-w-2xl py-3">
+      <div className="mx-auto max-w-3xl py-3">
         <CompactQuickAdd suggestions={activeSuggestions} requests={friendRequests} onFollow={followSuggestion} onDismiss={dismissSuggestion} onDecline={declineFriendRequest} />
         <StoryRail stories={stories} user={user} onCreate={() => setCreateOpen(true)} onOpen={setStoryViewer} onDelete={async (id) => { const res = await fetch(`${apiUrl}/api/stories/${id}`, { method: 'DELETE' }); if (res.ok) setStories((current) => current.filter((story) => story.id !== id)); return res.ok; }} />
         {currentTrack && <div className="mb-6 w-full max-w-sm rounded-3xl bg-[#1c1c1e]/80 shadow-2xl backdrop-blur-xl xl:fixed xl:bottom-4 xl:right-4 xl:z-20 xl:mb-0 xl:w-72"><AudioPlayer cardModal minimal /></div>}
