@@ -943,6 +943,8 @@ a[aria-label]:active {
 }
 .feed-follow-button { background: #2B2B2B !important; border: 1px solid rgba(243, 235, 221, .16); box-shadow: 0 6px 16px rgba(0, 0, 0, .18); }
 .feed-main article img { image-rendering: auto; object-position: center; backface-visibility: hidden; }
+.feed-main article > div:last-child > h2 + p { display: none; }
+.feed-main article > div:last-child > .mt-3 { justify-content: flex-end; }
 .feed-follow-button:hover:not(:disabled), .feed-post-options:hover { background: #3E3E3E !important; }
 .feed-volume-control:hover { background: rgba(62, 62, 62, .94) !important; color: #F3EBDD !important; transform: translateY(-1px); box-shadow: 0 8px 18px rgba(0, 0, 0, .24); }
 article button[aria-label="Like preview"],
