@@ -31,7 +31,7 @@ const getDirectMessageAccess = async (senderId, recipientId) => {
     }).lean()
   ]);
   if (!sender || !recipient) return { error: 'User not found.', status: 404 };
-  const connected = (sender.following || []).includes(recipientId) || (recipient.following || []).includes(senderId);
+  const connected = (sender.following || []).includes(recipientId) && (recipient.following || []).includes(senderId);
   if (connected) return { kind: 'message' };
   const hasIncomingRequest = previous.some((message) => message.senderId === recipientId && message.recipientId === senderId && message.messageKind === 'request');
   if (hasIncomingRequest) return { kind: 'message' };
@@ -484,7 +484,7 @@ const getMessages = async (req, res, next) => {
 const sendMessageController = async (req, res, next) => {
   try {
     const body = req.body && typeof req.body === 'object' ? req.body : {};
-    const { recipientId, groupId, conversationType, text, replyToMessageId, storyId, clientRequestId } = body;
+    const { recipientId, groupId, conversationType, text, replyToMessageId, storyId, sharedPreview, clientRequestId } = body;
     const senderId = req.userId;
     if (!text?.trim()) return next(new AppError('text required.', 400));
     const type = conversationType || 'dm';
@@ -528,6 +528,7 @@ const sendMessageController = async (req, res, next) => {
       replyToMessageId: replyToMessageId || null,
       storyId: storyId || null,
       storyPreview,
+      sharedPreview: sharedPreview || null,
     });
 
     db.messages.push(msg);
